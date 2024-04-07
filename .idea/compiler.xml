@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="api.tools" target="17" />
+      <module name="api.tools.main" target="17" />
+      <module name="api.tools.populateDb" target="17" />
+      <module name="api.tools.populateDb.main" target="17" />
+      <module name="api.tools.populateDb.test" target="17" />
+      <module name="api.tools.test" target="17" />
+      <module name="dev.botta.trantor.trantor" target="17" />
+      <module name="dev.botta.trantor.trantor.main" target="17" />
+      <module name="dev.botta.trantor.trantor.test" target="17" />
+      <module name="trantor.buildSrc" target="17" />
+      <module name="trantor.buildSrc.main" target="17" />
+      <module name="trantor.buildSrc.test" target="17" />
+      <module name="trantor.framework-platform.main" target="17" />
+      <module name="trantor.framework-platform.test" target="17" />
+      <module name="trantor.trantor-core" target="17" />
+      <module name="trantor.trantor-core.main" target="17" />
+      <module name="trantor.trantor-core.test" target="17" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
