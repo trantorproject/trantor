@@ -1,0 +1,10 @@
+*-debug.log
+*-error.log
+.pnp.*
+/.nyc_output
+/dist
+/lib
+/tmp
+node_modules
+oclif.lock
+oclif.manifest.json
