@@ -22,7 +22,7 @@
           <set>
             <option value="$PROJECT_DIR$/api" />
             <option value="$PROJECT_DIR$/api/buildSrc" />
-            <option value="$PROJECT_DIR$/api/framework-platform" />
+            <option value="$PROJECT_DIR$/api/dependencies" />
             <option value="$PROJECT_DIR$/api/trantor-core" />
           </set>
         </option>

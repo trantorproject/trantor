@@ -25,6 +25,10 @@ tasks.withType<Test>().configureEach {
     reports.junitXml.required.set(false)
 }
 
+tasks.named<Copy>("processResources") {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
 kotlin {
     sourceSets["main"].apply {
         kotlin.srcDirs("src", "generated")
@@ -46,3 +50,4 @@ java {
         resources.srcDir("test_resources")
     }
 }
+

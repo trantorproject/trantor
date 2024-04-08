@@ -1,4 +1,4 @@
 rootProject.name = "api"
 
-include("framework-platform")
+include("dependencies")
 include("trantor-core")
