@@ -1,11 +1,12 @@
 plugins {
-    kotlin("jvm")
+    kotlin("jvm") version "1.9.23"
+    id("dev.botta.kotlin-conventions") version "1.0.0"
 }
 
 allprojects {
-    if (project.name == "dependencies") return@allprojects
+    if (project.name == "trantor-bom") return@allprojects
 
-    apply(plugin = "dev.botta.trantor.build.conventions")
+    apply(plugin = "dev.botta.kotlin-conventions")
 
     repositories { mavenCentral() }
 
@@ -13,7 +14,7 @@ allprojects {
     version = rootProject.file("VERSION").readText().trim()
 
     dependencies {
-        api(platform(project(":dependencies")))
+        api(platform(project(":trantor-bom")))
         implementation(kotlin("stdlib"))
         implementation(kotlin("reflect"))
         testImplementation("org.junit.jupiter:junit-jupiter")

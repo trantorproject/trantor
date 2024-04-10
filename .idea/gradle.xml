@@ -7,23 +7,23 @@
         <compositeConfiguration>
           <compositeBuild compositeDefinitionSource="SCRIPT">
             <builds>
-              <build path="$PROJECT_DIR$/api/buildSrc" name="buildSrc">
+              <build path="$PROJECT_DIR$/../../open-source/kotlin/kotlin-conventions-gradle-plugin" name="kotlin-conventions-gradle-plugin">
                 <projects>
-                  <project path="$PROJECT_DIR$/api/buildSrc" />
+                  <project path="$PROJECT_DIR$/../../open-source/kotlin/kotlin-conventions-gradle-plugin" />
                 </projects>
               </build>
             </builds>
           </compositeBuild>
         </compositeConfiguration>
-        <option name="testRunner" value="PLATFORM" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$/api" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/backend" />
         <option name="gradleJvm" value="#JAVA_HOME" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$/api" />
-            <option value="$PROJECT_DIR$/api/buildSrc" />
-            <option value="$PROJECT_DIR$/api/dependencies" />
-            <option value="$PROJECT_DIR$/api/trantor-core" />
+            <option value="$PROJECT_DIR$/../../open-source/kotlin/kotlin-conventions-gradle-plugin" />
+            <option value="$PROJECT_DIR$/backend" />
+            <option value="$PROJECT_DIR$/backend/trantor-bom" />
+            <option value="$PROJECT_DIR$/backend/trantor-core" />
+            <option value="$PROJECT_DIR$/backend/trantor-web" />
           </set>
         </option>
       </GradleProjectSettings>
