@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "1.9.23"
-    id("dev.botta.kotlin-conventions") version "1.0.0"
+    id("dev.botta.kotlin-conventions") version "0.1.0"
 }
 
 allprojects {
@@ -15,10 +15,11 @@ allprojects {
 
     dependencies {
         api(platform(project(":trantor-bom")))
+        implementation("dev.botta:kotlin-extensions")
+        implementation("dev.botta:time")
+        implementation("dev.botta:env")
         implementation(kotlin("stdlib"))
         implementation(kotlin("reflect"))
-        testImplementation("org.junit.jupiter:junit-jupiter")
-        testImplementation("org.assertj:assertj-core")
-        testImplementation("io.mockk:mockk")
+        if (project.name != "trantor-test") testImplementation(project(":trantor-test"))
     }
 }

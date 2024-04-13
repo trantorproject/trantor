@@ -12,6 +12,11 @@
                   <project path="$PROJECT_DIR$/../../open-source/kotlin/kotlin-conventions-gradle-plugin" />
                 </projects>
               </build>
+              <build path="$PROJECT_DIR$/../trantor-gradle-plugin" name="trantor-gradle-plugin">
+                <projects>
+                  <project path="$PROJECT_DIR$/../trantor-gradle-plugin" />
+                </projects>
+              </build>
             </builds>
           </compositeBuild>
         </compositeConfiguration>
@@ -20,9 +25,11 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$/../../open-source/kotlin/kotlin-conventions-gradle-plugin" />
+            <option value="$PROJECT_DIR$/../trantor-gradle-plugin" />
             <option value="$PROJECT_DIR$/backend" />
             <option value="$PROJECT_DIR$/backend/trantor-bom" />
             <option value="$PROJECT_DIR$/backend/trantor-core" />
+            <option value="$PROJECT_DIR$/backend/trantor-test" />
             <option value="$PROJECT_DIR$/backend/trantor-web" />
           </set>
         </option>

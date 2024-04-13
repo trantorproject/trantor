@@ -6,5 +6,6 @@ include("trantor-test")
 include("trantor-web")
 
 pluginManagement {
-    includeBuild("../../../open-source/kotlin/kotlin-conventions-gradle-plugin")
+    val trantorPluginDir = file("../../trantor-gradle-plugin")
+    if (trantorPluginDir.exists()) includeBuild(trantorPluginDir.path)
 }

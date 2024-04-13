@@ -3,6 +3,7 @@
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="FrameworkDetectionExcludesConfiguration">
     <file type="web" url="file://$PROJECT_DIR$/../../open-source/kotlin/kotlin-conventions-gradle-plugin" />
+    <file type="web" url="file://$PROJECT_DIR$/../trantor-gradle-plugin" />
     <file type="web" url="file://$PROJECT_DIR$/backend" />
   </component>
   <component name="ProjectRootManager">
