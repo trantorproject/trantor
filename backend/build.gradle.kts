@@ -14,12 +14,12 @@ allprojects {
     version = rootProject.file("VERSION").readText().trim()
 
     dependencies {
-        api(platform(project(":trantor-bom")))
-        implementation("dev.botta:kotlin-extensions")
+        api(platform(project(":libraries:trantor-bom")))
+        api("dev.botta:kotlin-extensions")
         implementation("dev.botta:time")
         implementation("dev.botta:env")
         implementation(kotlin("stdlib"))
         implementation(kotlin("reflect"))
-        if (project.name != "trantor-test") testImplementation(project(":trantor-test"))
+        if (project.name != "trantor-test") testImplementation(project(":libraries:trantor-test"))
     }
 }
