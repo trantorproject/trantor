@@ -15,10 +15,7 @@ allprojects {
 
     dependencies {
         api(platform(project(":libraries:trantor-bom")))
-        api("dev.botta:kotlin-extensions")
-        implementation("dev.botta:time")
-        implementation("dev.botta:env")
-        implementation(kotlin("stdlib"))
+        api(kotlin("stdlib"))
         implementation(kotlin("reflect"))
         if (project.name != "trantor-test") testImplementation(project(":libraries:trantor-test"))
     }

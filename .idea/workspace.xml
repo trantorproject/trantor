@@ -5,10 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="837debc9-2f06-4b3b-a987-b3fcba88f7e8" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/settings.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/settings.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-app-services/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-app-services/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-bom/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-bom/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-core/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-core/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-data/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-data/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-domain/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-domain/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-tx/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-tx/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-web/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-web/build.gradle.kts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,7 +58,13 @@
                 <item name="backend" type="f1a62948:ProjectNode" />
                 <item name="backend" type="2d1252cf:ModuleNode" />
                 <item name="Tasks" type="e4a08cd1:TasksNode" />
-                <item name="build" type="c8890929:TasksNode$1" />
+                <item name="verification" type="c8890929:TasksNode$1" />
+              </path>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="backend" type="f1a62948:ProjectNode" />
+                <item name="backend" type="2d1252cf:ModuleNode" />
+                <item name="apps" type="2d1252cf:ModuleNode" />
               </path>
             </expand>
             <select />
@@ -71,33 +86,40 @@
     <option name="showExcludedFiles" value="false" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Gradle.Build backend.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.backend [build].executor&quot;: &quot;Run&quot;,
-    &quot;Kotlin.SampleKt.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/404/sandbox/micronaut-demo&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.Build backend.executor": "Run",
+    "Gradle.backend [allTests].executor": "Run",
+    "Gradle.backend [build].executor": "Run",
+    "Gradle.backend [check].executor": "Run",
+    "Gradle.backend [test].executor": "Run",
+    "JUnit.All in backend.executor": "Run",
+    "JUnit.All in trantor.executor": "Run",
+    "JUnit.MoneyTest.executor": "Run",
+    "Kotlin.SampleKt.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/404/sandbox/micronaut-demo",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "yarn",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "reference.settingsdialog.project.gradle",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;kotlin-gradle-user-dirs&quot;: [
-      &quot;C:\\Users\\nico\\.gradle&quot;
+  "keyToStringList": {
+    "kotlin-gradle-user-dirs": [
+      "C:\\Users\\nico\\.gradle"
     ]
   }
-}</component>
-  <component name="RunManager" selected="Gradle.backend [build]">
-    <configuration name="backend [build]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+}]]></component>
+  <component name="RunManager" selected="JUnit.All in backend">
+    <configuration name="backend [allTests]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$/backend" />
@@ -108,7 +130,7 @@
         </option>
         <option name="taskNames">
           <list>
-            <option value="build" />
+            <option value="allTests" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -119,17 +141,110 @@
       <RunAsTest>false</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="SampleKt" type="JetRunConfigurationType" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="dev.botta.trantor.core.SampleKt" />
-      <module name="backend.trantor-core.main" />
+    <configuration name="backend [check]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/backend" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="check" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="backend [test]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/backend" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value="test" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>false</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="All in backend" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="backend" />
+      <extension name="net.ashald.envfile">
+        <option name="IS_ENABLED" value="false" />
+        <option name="IS_SUBST" value="false" />
+        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+        <option name="IS_IGNORE_MISSING_FILES" value="false" />
+        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+        <ENTRIES>
+          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+        </ENTRIES>
+      </extension>
+      <option name="PACKAGE_NAME" value="" />
+      <option name="MAIN_CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="TEST_OBJECT" value="package" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="MoneyTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="backend.libraries.trantor-domain.test" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="dev.botta.trantor.domain.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <extension name="net.ashald.envfile">
+        <option name="IS_ENABLED" value="false" />
+        <option name="IS_SUBST" value="false" />
+        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+        <option name="IS_IGNORE_MISSING_FILES" value="false" />
+        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+        <ENTRIES>
+          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+        </ENTRIES>
+      </extension>
+      <option name="PACKAGE_NAME" value="dev.botta.trantor.domain" />
+      <option name="MAIN_CLASS_NAME" value="dev.botta.trantor.domain.MoneyTest" />
+      <option name="METHOD_NAME" value="" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Gradle.backend [allTests]" />
+      <item itemvalue="Gradle.backend [check]" />
+      <item itemvalue="Gradle.backend [test]" />
+      <item itemvalue="JUnit.All in backend" />
+      <item itemvalue="JUnit.MoneyTest" />
+    </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.backend [build]" />
-        <item itemvalue="Kotlin.SampleKt" />
+        <item itemvalue="JUnit.All in backend" />
+        <item itemvalue="JUnit.MoneyTest" />
+        <item itemvalue="Gradle.backend [check]" />
+        <item itemvalue="Gradle.backend [allTests]" />
+        <item itemvalue="Gradle.backend [test]" />
       </list>
     </recent_temporary>
   </component>
@@ -154,6 +269,7 @@
       <workItem from="1712784536346" duration="401000" />
       <workItem from="1712797136558" duration="632000" />
       <workItem from="1712923679548" duration="38000" />
+      <workItem from="1713125295430" duration="313000" />
     </task>
     <servers />
   </component>

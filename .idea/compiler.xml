@@ -5,6 +5,18 @@
       <module name="backend.buildSrc" target="17" />
       <module name="backend.buildSrc.main" target="17" />
       <module name="backend.buildSrc.test" target="17" />
+      <module name="backend.trantor-core" target="17" />
+      <module name="backend.trantor-core.main" target="17" />
+      <module name="backend.trantor-core.test" target="17" />
+      <module name="backend.trantor-test" target="17" />
+      <module name="backend.trantor-test.main" target="17" />
+      <module name="backend.trantor-test.test" target="17" />
+      <module name="backend.trantor-web" target="17" />
+      <module name="backend.trantor-web.main" target="17" />
+      <module name="backend.trantor-web.test" target="17" />
+      <module name="kotlin-conventions-gradle-plugin" target="17" />
+      <module name="kotlin-conventions-gradle-plugin.main" target="17" />
+      <module name="kotlin-conventions-gradle-plugin.test" target="17" />
     </bytecodeTargetLevel>
   </component>
 </project>

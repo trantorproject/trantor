@@ -7,11 +7,6 @@
         <compositeConfiguration>
           <compositeBuild compositeDefinitionSource="SCRIPT">
             <builds>
-              <build path="$PROJECT_DIR$/../../open-source/kotlin/kotlin-conventions-gradle-plugin" name="kotlin-conventions-gradle-plugin">
-                <projects>
-                  <project path="$PROJECT_DIR$/../../open-source/kotlin/kotlin-conventions-gradle-plugin" />
-                </projects>
-              </build>
               <build path="$PROJECT_DIR$/../trantor-gradle-plugin" name="trantor-gradle-plugin">
                 <projects>
                   <project path="$PROJECT_DIR$/../trantor-gradle-plugin" />
@@ -20,17 +15,25 @@
             </builds>
           </compositeBuild>
         </compositeConfiguration>
+        <option name="testRunner" value="PLATFORM" />
         <option name="externalProjectPath" value="$PROJECT_DIR$/backend" />
         <option name="gradleJvm" value="#JAVA_HOME" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$/../../open-source/kotlin/kotlin-conventions-gradle-plugin" />
             <option value="$PROJECT_DIR$/../trantor-gradle-plugin" />
             <option value="$PROJECT_DIR$/backend" />
-            <option value="$PROJECT_DIR$/backend/trantor-bom" />
-            <option value="$PROJECT_DIR$/backend/trantor-core" />
-            <option value="$PROJECT_DIR$/backend/trantor-test" />
-            <option value="$PROJECT_DIR$/backend/trantor-web" />
+            <option value="$PROJECT_DIR$/backend/apps" />
+            <option value="$PROJECT_DIR$/backend/apps/trantor-app-rest-api" />
+            <option value="$PROJECT_DIR$/backend/libraries" />
+            <option value="$PROJECT_DIR$/backend/libraries/trantor-app-services" />
+            <option value="$PROJECT_DIR$/backend/libraries/trantor-bom" />
+            <option value="$PROJECT_DIR$/backend/libraries/trantor-core" />
+            <option value="$PROJECT_DIR$/backend/libraries/trantor-data" />
+            <option value="$PROJECT_DIR$/backend/libraries/trantor-domain" />
+            <option value="$PROJECT_DIR$/backend/libraries/trantor-rest-api" />
+            <option value="$PROJECT_DIR$/backend/libraries/trantor-test" />
+            <option value="$PROJECT_DIR$/backend/libraries/trantor-tx" />
+            <option value="$PROJECT_DIR$/backend/libraries/trantor-web" />
           </set>
         </option>
       </GradleProjectSettings>

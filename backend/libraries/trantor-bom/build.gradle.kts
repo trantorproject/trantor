@@ -21,5 +21,6 @@ dependencies {
         api("io.javalin:javalin:6.1.3")
         api("org.eclipse.jetty:jetty-client:11.0.20")
         api("org.slf4j:slf4j-simple:2.0.13")
+        api("com.zaxxer:HikariCP:5.1.0")
     }
 }
