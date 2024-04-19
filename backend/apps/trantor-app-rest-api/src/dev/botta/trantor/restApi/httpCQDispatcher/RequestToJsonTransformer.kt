@@ -1,0 +1,9 @@
+package dev.botta.trantor.restApi.httpCQDispatcher
+
+import dev.botta.json.values.JsonObject
+import io.javalin.http.Context
+import kotlin.reflect.KClass
+
+interface RequestToJsonTransformer {
+    fun transform(context: Context, json: JsonObject?, type: KClass<*>)
+}

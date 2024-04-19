@@ -1,10 +1,11 @@
 package dev.botta.trantor.web.server
 
+import dev.botta.trantor.web.server.controllers.*
 import dev.botta.trantor.web.server.logs.*
 import dev.botta.trantor.web.server.stats.*
 import io.javalin.Javalin
 import io.javalin.config.JettyConfig
-import io.javalin.http.*
+import io.javalin.http.Context
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.StatisticsHandler
 import org.eclipse.jetty.util.thread.QueuedThreadPool
@@ -14,6 +15,7 @@ import java.util.*
 class HttpServer(private val config: Config) {
     private val logger = LoggerFactory.getLogger(javaClass.simpleName)
     private val javalin: Javalin
+    private val routeRegister: RouteRegister
     private val threadPool = QueuedThreadPool(config.maxThreads, config.minThreads, config.idleTimeout)
     private var managementThreadPool: QueuedThreadPool? = null
     private val statisticsHandler = StatisticsHandler()
@@ -28,6 +30,7 @@ class HttpServer(private val config: Config) {
             config.requestLogger.http(::logRequest)
             configureJetty(config.jetty)
         }
+        routeRegister = RouteRegister(javalin)
     }
 
     private fun configureJetty(jettyConfig: JettyConfig) {
@@ -50,7 +53,8 @@ class HttpServer(private val config: Config) {
     }
 
     fun start() {
-        logger.info("Starting HttpServer with id $id")
+        logger.info("Starting with id $id")
+        logger.info("ThreadPool configured with min: ${threadPool.minThreads} max: ${threadPool.maxThreads} idleTimeout: ${threadPool.idleTimeout}ms")
         javalin.start(config.port)
     }
 
@@ -58,16 +62,28 @@ class HttpServer(private val config: Config) {
         javalin.stop()
     }
 
-    fun <T: Exception> registerException(clazz: Class<T>, handler: ExceptionHandler<T>) {
-        javalin.exception(clazz, handler)
+    fun <T: Exception> registerException(clazz: Class<T>, handler: HttpErrorHandler<T>) {
+        javalin.exception(clazz) { error: T, ctx: Context ->
+            handler.handle(error, ctx, logger)
+        }
     }
 
-    inline fun <reified T: Exception> registerException(handler: ExceptionHandler<T>) {
+    inline fun <reified T: Exception> registerException(handler: HttpErrorHandler<T>) {
         registerException(T::class.java, handler)
     }
 
     fun addInterceptor(interceptor: HttpRequestInterceptor) {
         javalin.before { interceptor.onRequest(it) }
+    }
+
+    fun registerControllers(vararg controllers: Controller) {
+        controllers.forEach { registerController(it) }
+    }
+
+    private fun registerController(controller: Controller) {
+        controller.registerRoutesIn(routeRegister)
+        logger.info(controller::class.qualifiedName + " registered")
+        controller.getChildControllers().forEach { registerController(it) }
     }
 
     data class Config(
