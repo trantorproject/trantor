@@ -16,7 +16,8 @@ allprojects {
     dependencies {
         api(platform(project(":libraries:trantor-bom")))
         api(kotlin("stdlib"))
-        implementation(kotlin("reflect"))
+        api(kotlin("reflect"))
+        implementation("org.slf4j:slf4j-simple")
         if (project.name != "trantor-test") testImplementation(project(":libraries:trantor-test"))
     }
 }

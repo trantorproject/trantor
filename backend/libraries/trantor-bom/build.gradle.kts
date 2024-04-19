@@ -11,8 +11,9 @@ dependencies {
     api(platform("org.assertj:assertj-bom:3.25.3"))
 
     constraints {
-        api("dev.botta:cqbus:1.0.0")
         api("io.mockk:mockk:1.13.10")
+        api("io.rest-assured:rest-assured:5.4.0")
+        api("dev.botta:cqbus:1.0.0")
         api("dev.botta:kotlin-extensions:1.0.2")
         api("dev.botta:time:1.0.0")
         api("dev.botta:env:2.0.0")

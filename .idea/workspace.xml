@@ -5,19 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="837debc9-2f06-4b3b-a987-b3fcba88f7e8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-app-services/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-app-services/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-bom/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-bom/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-core/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-core/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-data/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-data/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-domain/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-domain/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-tx/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-tx/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/libraries/trantor-web/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/libraries/trantor-web/build.gradle.kts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -269,7 +257,7 @@
       <workItem from="1712784536346" duration="401000" />
       <workItem from="1712797136558" duration="632000" />
       <workItem from="1712923679548" duration="38000" />
-      <workItem from="1713125295430" duration="313000" />
+      <workItem from="1713125295430" duration="656000" />
     </task>
     <servers />
   </component>
