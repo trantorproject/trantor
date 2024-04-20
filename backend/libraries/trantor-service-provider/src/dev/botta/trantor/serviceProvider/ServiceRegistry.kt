@@ -94,6 +94,11 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
     }
 
     private fun <T> createTypeFactory(type: Class<T>): ImplementationFactory<T> {
-        return { type.getDeclaredConstructor().newInstance() }
+        try {
+            val defaultConstructor = type.getDeclaredConstructor()
+            return { defaultConstructor.newInstance() }
+        } catch (e: NoSuchMethodException) {
+            throw MustHaveDefaultNoArgsConstructorError(type)
+        }
     }
 }

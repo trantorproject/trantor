@@ -289,18 +289,44 @@ class ServiceRegistryTest {
         }
     }
 
+    @Test
+    fun `override service different lifetime`() {
+        registry.addTransient<MyService>({ MyClass() })
+        registry.addSingleton<MyService>({ MyClass2() })
+
+        assertThat(registry.size).isEqualTo(1)
+        assertThat(registry[0].key).isNull()
+        assertThat(registry[0].lifetime).isEqualTo(Singleton)
+        assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+    }
+
+    @Test
+    fun `don't fails when adding type with constructor with default args`() {
+        assertDoesNotThrow {
+            registry.addTransient<ClassWithConstructorWithDefaults>()
+        }
+    }
+
     private val registry = ServiceRegistry()
     private val provider = mockk<ServiceProvider>()
-}
 
-interface MyService {
-    fun sum(a: Int, b: Int): Int
-}
+    interface MyService {
+        fun sum(a: Int, b: Int): Int
+    }
 
-class MyClass: MyService {
-    override fun sum(a: Int, b: Int) = a + b
-}
+    class MyClass: MyService {
+        override fun sum(a: Int, b: Int) = a + b
+    }
 
-class MyClass2: MyService {
-    override fun sum(a: Int, b: Int) = a + b
+    class MyClass2: MyService {
+        override fun sum(a: Int, b: Int) = a + b
+    }
+
+    class ClassWithoutEmptyConstructor(val param: String): MyService {
+        override fun sum(a: Int, b: Int) = a + b
+    }
+
+    class ClassWithConstructorWithDefaults(val param: String = "value"): MyService {
+        override fun sum(a: Int, b: Int) = a + b
+    }
 }
