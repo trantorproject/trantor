@@ -83,7 +83,7 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         addService(serviceType, factory, Singleton, key)
     }
 
-    private fun <TService> addService(
+    private fun <TService: Any> addService(
         serviceType: Class<TService>,
         factory: ImplementationFactory<TService>,
         lifetime: ServiceLifetimes,
@@ -91,6 +91,11 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
     ) = apply {
         removeIf { it.serviceType == serviceType && it.key == key }
         add(ServiceDescriptor(serviceType, factory, lifetime, key))
+    }
+
+    fun tryAdd(descriptor: ServiceDescriptor<*>) {
+        if (any { it.serviceType == descriptor.serviceType && it.key == descriptor.key }) return
+        add(descriptor)
     }
 
     private fun <T> createTypeFactory(type: Class<T>): ImplementationFactory<T> {

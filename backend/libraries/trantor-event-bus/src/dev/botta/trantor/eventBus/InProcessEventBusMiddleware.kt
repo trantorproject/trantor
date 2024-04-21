@@ -1,4 +1,4 @@
-package dev.botta.trantor.appServices.eventBus
+package dev.botta.trantor.eventBus
 
 import dev.botta.cqbus.*
 import dev.botta.cqbus.requests.Request

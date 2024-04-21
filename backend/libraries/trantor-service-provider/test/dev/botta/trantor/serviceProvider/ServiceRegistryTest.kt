@@ -307,6 +307,17 @@ class ServiceRegistryTest {
         }
     }
 
+    @Test
+    fun `tryAdd only adds descriptor if not already declared`() {
+        registry.addSingleton<MyService>({ MyClass() })
+        registry.tryAdd(ServiceDescriptor.singleton<MyService>({ MyClass2() }))
+
+        assertThat(registry.size).isEqualTo(1)
+        assertThat(registry[0].key).isNull()
+        assertThat(registry[0].lifetime).isEqualTo(Singleton)
+        assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+    }
+
     private val registry = ServiceRegistry()
     private val provider = mockk<ServiceProvider>()
 
