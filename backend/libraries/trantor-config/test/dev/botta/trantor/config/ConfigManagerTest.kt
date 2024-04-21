@@ -2,7 +2,8 @@
 
 package dev.botta.trantor.config
 
-import dev.botta.trantor.config.providers.*
+import dev.botta.json.Json
+import dev.botta.trantor.config.providers.addMemoryCollection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
 
@@ -166,6 +167,19 @@ class ConfigManagerTest {
     @Nested
     inner class `config section` {
         @Test
+        fun `get root section`() {
+            manager.addMemoryCollection(
+                "key1" to "value1",
+                "key2" to "value2",
+            )
+
+            val section = manager.getSection("")
+
+            assertThat(section["key1"]).isEqualTo("value1")
+            assertThat(section["key2"]).isEqualTo("value2")
+        }
+
+        @Test
         fun `get returns child path`() {
             manager.addMemoryCollection(
                 "section:key1" to "value1",
@@ -208,6 +222,93 @@ class ConfigManagerTest {
             assertThat(subSections[0].path).isEqualTo("section:sub-section")
             assertThat(subSections[1].key).isEqualTo("sub-section2")
             assertThat(subSections[1].path).isEqualTo("section:sub-section2")
+        }
+    }
+
+    @Nested
+    inner class toJson {
+        @Test
+        fun `simple string value to json`() {
+            manager.addMemoryCollection("key1" to "value")
+
+            val json = manager.getSection("key1").toJson()
+
+            assertThat(json).isEqualTo(Json.value("value"))
+        }
+
+        @Test
+        fun `simple null value to json`() {
+            manager.addMemoryCollection("key1" to null)
+
+            val json = manager.getSection("key1").toJson()
+
+            assertThat(json).isEqualTo(Json.value(null))
+        }
+
+        @Test
+        fun `simple number value to json`() {
+            manager.addMemoryCollection("key1" to "5")
+
+            val json = manager.getSection("key1").toJson()
+
+            assertThat(json).isEqualTo(Json.value("5"))
+        }
+
+        @Test
+        fun `missing value to json`() {
+            manager.addMemoryCollection()
+
+            val json = manager.getSection("key1").toJson()
+
+            assertThat(json).isEqualTo(Json.value(null))
+        }
+
+        @Test
+        fun `section to object json`() {
+            manager.addMemoryCollection(
+                "section:sub-section:key1" to "value1",
+                "section:sub-section:key2" to "value2",
+            )
+
+            val json = manager.getSection("section").toJson()
+
+            assertThat(json).isEqualTo(Json.obj(
+                "sub-section" to Json.obj(
+                    "key1" to "value1",
+                    "key2" to "value2",
+                )
+            ))
+        }
+
+        @Test
+        fun `array section to json`() {
+            manager.addMemoryCollection(
+                "section:0" to "value1",
+                "section:1" to "value2",
+                "section:size" to "2",
+                "section:__config_type__" to "Array",
+            )
+
+            val json = manager.getSection("section").toJson()
+
+            assertThat(json).isEqualTo(Json.array("value1", "value2"))
+        }
+
+        @Test
+        fun `manager toJson`() {
+            manager.addMemoryCollection(
+                "section:key1" to "value1",
+                "section:key2" to "value2",
+            )
+
+            val json = manager.toJson()
+
+            assertThat(json).isEqualTo(Json.obj(
+                "section" to Json.obj(
+                    "key1" to "value1",
+                    "key2" to "value2",
+                )
+            ))
         }
     }
 

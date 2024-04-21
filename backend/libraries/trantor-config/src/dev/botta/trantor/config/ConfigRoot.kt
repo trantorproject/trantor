@@ -29,10 +29,12 @@ class ConfigRoot(providers: List<ConfigProvider> = listOf()): Config {
 
     override fun getChildren() = doGetChildren(null)
 
+    override fun toJson() = getSection("").toJson()
+
     fun getChildren(path: String) = doGetChildren(path)
 
     private fun doGetChildren(path: String? = null): List<ConfigSection> {
-        val prefix = if (path == null) "" else "$path:"
+        val prefix = if (path.isNullOrEmpty()) "" else "$path:"
         return providers
             .flatMap { it.paths.filter { p -> p.startsWith(prefix) } }
             .map { it.removePrefix(prefix).split(":").first() }

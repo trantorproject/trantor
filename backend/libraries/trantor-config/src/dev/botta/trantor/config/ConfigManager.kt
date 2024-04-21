@@ -14,4 +14,6 @@ class ConfigManager: Config {
     override fun getSection(path: String) = root.getSection(path)
 
     override fun getChildren() = root.getChildren()
+
+    override fun toJson() = root.toJson()
 }
