@@ -38,8 +38,10 @@ class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProv
         return descriptors.mapNotNull { getInstanceFor(it) }
     }
 
-    private fun ServiceDescriptor<*>.createInstance(): Any {
-        return implementationFactory(this@DefaultServiceProvider) as Any
+    private fun <T: Any> ServiceDescriptor<T>.createInstance(): T {
+        val instance = implementationFactory(this@DefaultServiceProvider)
+        registry.getConfigurations(serviceType, key).forEach { it(instance) }
+        return instance
     }
 
     override fun enterScope() {

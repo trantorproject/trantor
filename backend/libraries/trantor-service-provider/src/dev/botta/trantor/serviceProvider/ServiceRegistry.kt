@@ -2,7 +2,11 @@ package dev.botta.trantor.serviceProvider
 
 import dev.botta.trantor.serviceProvider.ServiceLifetimes.*
 
+typealias ServiceConfiguration<T> = (service: T) -> Unit
+
 class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
+    private val configurations: MutableList<ServiceConfigurationItem<*>> = mutableListOf()
+
     inline fun <reified TService: Any, reified TImplementation: TService> addTransient(key: String? = null) = apply {
         addTransient(TService::class.java, TImplementation::class.java, key)
     }
@@ -97,6 +101,31 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         add(descriptor)
     }
 
+    fun <TService: Any> configure(serviceType: Class<TService>, configuration: ServiceConfiguration<TService>) {
+        configure(serviceType, null, configuration)
+    }
+
+    fun <TService: Any> configure(serviceType: Class<TService>, key: String?, configuration: ServiceConfiguration<TService>) {
+        configurations.add(ServiceConfigurationItem(ServiceDescriptor.serviceId(serviceType, key), configuration))
+    }
+
+    inline fun <reified TService: Any> configure(key: String, noinline configuration: ServiceConfiguration<TService>) {
+        configure(TService::class.java, key, configuration)
+    }
+
+    inline fun <reified TService: Any> configure(noinline configuration: ServiceConfiguration<TService>) {
+        configure(TService::class.java, configuration)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <TService: Any> getConfigurations(serviceType: Class<TService>, key: String? = null): List<ServiceConfiguration<TService>> {
+        val serviceId = ServiceDescriptor.serviceId(serviceType, key)
+        return configurations.filter { it.serviceId == serviceId }.map { it.configuration as ServiceConfiguration<TService> }
+    }
+
+    inline fun <reified TService: Any> getConfigurations(key: String? = null) =
+        getConfigurations(TService::class.java, key)
+
     private fun <T> createTypeFactory(type: Class<T>): ImplementationFactory<T> {
         try {
             val defaultConstructor = type.getDeclaredConstructor()
@@ -105,4 +134,6 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
             throw MustHaveDefaultNoArgsConstructorError(type)
         }
     }
+
+    data class ServiceConfigurationItem<T: Any>(val serviceId: String, val configuration: ServiceConfiguration<T>)
 }

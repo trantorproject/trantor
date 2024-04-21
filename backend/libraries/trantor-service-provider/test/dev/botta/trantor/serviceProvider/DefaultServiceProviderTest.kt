@@ -1,3 +1,5 @@
+@file:Suppress("ClassName")
+
 package dev.botta.trantor.serviceProvider
 
 import org.assertj.core.api.Assertions.assertThat
@@ -16,45 +18,297 @@ class DefaultServiceProviderTest {
         assertThrows<ServiceNotRegisteredError> { provider.get<MyService>("other key") }
     }
 
-    @Test
-    fun `get transient service returns implementation class instance`() {
-        registry.addTransient<MyService, MyClass>()
+    @Nested
+    inner class `get transient service` {
+        @Test
+        fun `returns implementation class instance`() {
+            registry.addTransient<MyService, MyClass>()
 
-        val obj = provider.get<MyService>()
+            val obj = provider.get<MyService>()
 
-        assertThat(obj).isInstanceOf(MyClass::class.java)
+            assertThat(obj).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `called multiple times returns different instances`() {
+            registry.addTransient<MyService, MyClass>()
+
+            val obj1 = provider.get<MyService>()
+            val obj2 = provider.get<MyService>()
+
+            assertThat(obj1).isInstanceOf(MyClass::class.java)
+            assertThat(obj2).isInstanceOf(MyClass::class.java)
+            assertThat(obj1 !== obj2).isTrue()
+        }
+
+        @Test
+        fun `applies configuration for each instance`() {
+            registry.addTransient<MyService, MyClass>()
+            registry.configure<MyService> { it.name = "new name" }
+
+            val obj1 = provider.get<MyService>()
+            val obj2 = provider.get<MyService>()
+
+            assertThat(obj1.name).isEqualTo("new name")
+            assertThat(obj2.name).isEqualTo("new name")
+        }
+
+        @Test
+        fun `applies all configurations for each instance`() {
+            registry.addTransient<MyService, MyClass>()
+            registry.configure<MyService> { it.name = "new name 1" }
+            registry.configure<MyService> { it.name = "new name 2" }
+
+            val obj1 = provider.get<MyService>()
+            val obj2 = provider.get<MyService>()
+
+            assertThat(obj1.name).isEqualTo("new name 2")
+            assertThat(obj2.name).isEqualTo("new name 2")
+        }
+
+        @Test
+        fun `applies all configurations matching key for each instance`() {
+            registry.addTransient<MyService, MyClass>()
+            registry.addTransient<MyService, MyClass>("some key")
+            registry.configure<MyService>("some key") { it.name = "new name 1" }
+            registry.configure<MyService>("some key") { it.name = "new name 2" }
+            registry.configure<MyService> { it.name = "new name 3" }
+
+            val obj1 = provider.get<MyService>("some key")
+            val obj2 = provider.get<MyService>("some key")
+            val obj3 = provider.get<MyService>()
+
+            assertThat(obj1.name).isEqualTo("new name 2")
+            assertThat(obj2.name).isEqualTo("new name 2")
+            assertThat(obj3.name).isEqualTo("new name 3")
+        }
     }
 
-    @Test
-    fun `get transient service called multiple times returns different instances`() {
-        registry.addTransient<MyService, MyClass>()
+    @Nested
+    inner class `get singleton service` {
+        @Test
+        fun `returns implementation class instance`() {
+            registry.addSingleton<MyService, MyClass>()
 
-        val obj1 = provider.get<MyService>()
-        val obj2 = provider.get<MyService>()
+            val obj = provider.get<MyService>()
 
-        assertThat(obj1).isInstanceOf(MyClass::class.java)
-        assertThat(obj2).isInstanceOf(MyClass::class.java)
-        assertThat(obj1 !== obj2).isTrue()
+            assertThat(obj).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `called multiple times returns same instance`() {
+            registry.addSingleton<MyService, MyClass>()
+
+            val obj1 = provider.get<MyService>()
+            val obj2 = provider.get<MyService>()
+
+            assertThat(obj1).isInstanceOf(MyClass::class.java)
+            assertThat(obj1 === obj2).isTrue()
+        }
+
+        @Test
+        fun `with keys`() {
+            registry.addSingleton<MyService, MyClass>()
+            registry.addSingleton<MyService, MyClass>("some key")
+
+            val obj1 = provider.get<MyService>()
+            val obj2 = provider.get<MyService>("some key")
+            val obj3 = provider.get<MyService>("some key")
+
+            assertThat(obj1).isInstanceOf(MyClass::class.java)
+            assertThat(obj2).isInstanceOf(MyClass::class.java)
+            assertThat(obj1 !== obj2).isTrue()
+            assertThat(obj2 === obj3).isTrue()
+        }
+
+        @Test
+        fun `applies configuration`() {
+            registry.addSingleton<MyService, MyClass>()
+            registry.configure<MyService> { it.name = "new name" }
+
+            val obj = provider.get<MyService>()
+
+            assertThat(obj.name).isEqualTo("new name")
+        }
+
+        @Test
+        fun `applies all configurations`() {
+            registry.addSingleton<MyService, MyClass>()
+            registry.configure<MyService> { it.name = "new name 1" }
+            registry.configure<MyService> { it.name = "new name 2" }
+
+            val obj = provider.get<MyService>()
+
+            assertThat(obj.name).isEqualTo("new name 2")
+        }
+
+        @Test
+        fun `applies all configurations matching key for each instance`() {
+            registry.addSingleton<MyService, MyClass>()
+            registry.addSingleton<MyService, MyClass>("some key")
+            registry.configure<MyService>("some key") { it.name = "new name 1" }
+            registry.configure<MyService>("some key") { it.name = "new name 2" }
+            registry.configure<MyService> { it.name = "new name 3" }
+
+            val obj1 = provider.get<MyService>("some key")
+            val obj2 = provider.get<MyService>()
+
+            assertThat(obj1.name).isEqualTo("new name 2")
+            assertThat(obj2.name).isEqualTo("new name 3")
+        }
     }
 
-    @Test
-    fun `get singleton service returns implementation class instance`() {
-        registry.addSingleton<MyService, MyClass>()
+    @Nested
+    inner class `get scoped service` {
+        @Test
+        fun `fails when not in scope`() {
+            registry.addScoped<MyService, MyClass>()
 
-        val obj = provider.get<MyService>()
+            assertThrows<ServiceNotRegisteredError> { provider.get<MyService>() }
+        }
 
-        assertThat(obj).isInstanceOf(MyClass::class.java)
+        @Test
+        fun `fails after leaving scope`() {
+            registry.addScoped<MyService, MyClass>()
+            provider.enterScope()
+            provider.leaveScope()
+
+            assertThrows<ServiceNotRegisteredError> { provider.get<MyService>() }
+        }
+
+        @Test
+        fun `returns same instance when in scope`() {
+            registry.addScoped<MyService, MyClass>()
+            provider.enterScope()
+
+            val obj1 = provider.get<MyService>()
+            val obj2 = provider.get<MyService>()
+
+            assertThat(obj1).isInstanceOf(MyClass::class.java)
+            assertThat(obj1 === obj2).isTrue()
+        }
+
+        @Test
+        fun `with key`() {
+            registry.addScoped<MyService, MyClass>()
+            registry.addScoped<MyService, MyClass>("some key")
+            provider.enterScope()
+
+            val obj1 = provider.get<MyService>()
+            val obj2 = provider.get<MyService>("some key")
+            val obj3 = provider.get<MyService>("some key")
+
+            assertThat(obj1).isInstanceOf(MyClass::class.java)
+            assertThat(obj2).isInstanceOf(MyClass::class.java)
+            assertThat(obj1 !== obj2).isTrue()
+            assertThat(obj2 === obj3).isTrue()
+        }
+
+        @Test
+        fun `applies configuration`() {
+            registry.addScoped<MyService, MyClass>()
+            registry.configure<MyService> { it.name = "new name" }
+            provider.enterScope()
+
+            val obj = provider.get<MyService>()
+
+            assertThat(obj.name).isEqualTo("new name")
+        }
+
+        @Test
+        fun `applies all configurations`() {
+            registry.addScoped<MyService, MyClass>()
+            registry.configure<MyService> { it.name = "new name 1" }
+            registry.configure<MyService> { it.name = "new name 2" }
+            provider.enterScope()
+
+            val obj = provider.get<MyService>()
+
+            assertThat(obj.name).isEqualTo("new name 2")
+        }
+
+        @Test
+        fun `applies all configurations matching key for each instance`() {
+            registry.addScoped<MyService, MyClass>()
+            registry.addScoped<MyService, MyClass>("some key")
+            registry.configure<MyService>("some key") { it.name = "new name 1" }
+            registry.configure<MyService>("some key") { it.name = "new name 2" }
+            registry.configure<MyService> { it.name = "new name 3" }
+            provider.enterScope()
+
+            val obj1 = provider.get<MyService>("some key")
+            val obj2 = provider.get<MyService>()
+
+            assertThat(obj1.name).isEqualTo("new name 2")
+            assertThat(obj2.name).isEqualTo("new name 3")
+        }
     }
 
-    @Test
-    fun `get singleton service called multiple times returns same instance`() {
-        registry.addSingleton<MyService, MyClass>()
+    @Nested
+    inner class getAll {
+        @Test
+        fun `returns a new instance for each declaration`() {
+            registry.addTransient<MyService, MyClass>()
+            registry.addSingleton<MyService, MyClass2>()
 
-        val obj1 = provider.get<MyService>()
-        val obj2 = provider.get<MyService>()
+            val services1 = provider.getAll<MyService>()
+            val services2 = provider.getAll<MyService>()
 
-        assertThat(obj1).isInstanceOf(MyClass::class.java)
-        assertThat(obj1 === obj2).isTrue()
+            assertThat(services1.size).isEqualTo(2)
+            assertThat(services1[0]).isInstanceOf(MyClass::class.java)
+            assertThat(services1[1]).isInstanceOf(MyClass2::class.java)
+            assertThat(services2.size).isEqualTo(2)
+            assertThat(services2[0]).isInstanceOf(MyClass::class.java)
+            assertThat(services2[1]).isInstanceOf(MyClass2::class.java)
+            assertThat(services1[0] !== services2[0]).isTrue()
+            assertThat(services1[1] === services2[1]).isTrue()
+        }
+
+        @Test
+        fun `returns a new instance for each declaration with given key`() {
+            registry.addSingleton<MyService, MyClass2>()
+            registry.addTransient<MyService, MyClass>("some key")
+            registry.addSingleton<MyService, MyClass2>("some key")
+
+            val services1 = provider.getAll<MyService>("some key")
+            val services2 = provider.getAll<MyService>("some key")
+
+            assertThat(services1.size).isEqualTo(2)
+            assertThat(services1[0]).isInstanceOf(MyClass::class.java)
+            assertThat(services1[1]).isInstanceOf(MyClass2::class.java)
+            assertThat(services2.size).isEqualTo(2)
+            assertThat(services2[0]).isInstanceOf(MyClass::class.java)
+            assertThat(services2[1]).isInstanceOf(MyClass2::class.java)
+            assertThat(services1[0] !== services2[0]).isTrue()
+            assertThat(services1[1] === services2[1]).isTrue()
+        }
+
+        @Test
+        fun `returns each with with all configurations applied`() {
+            registry.addTransient<MyService, MyClass>()
+            registry.addSingleton<MyService, MyClass2>()
+            registry.configure<MyService> { it.name = "new name 1" }
+            registry.configure<MyService> { it.name = "new name 2" }
+
+            val services = provider.getAll<MyService>()
+
+            assertThat(services[0].name).isEqualTo("new name 2")
+            assertThat(services[1].name).isEqualTo("new name 2")
+        }
+
+        @Test
+        fun `returns each with with all configurations matching key applied`() {
+            registry.addTransient<MyService, MyClass>("some key")
+            registry.addSingleton<MyService, MyClass2>("some key")
+            registry.configure<MyService>("some key") { it.name = "new name 1" }
+            registry.configure<MyService>("some key") { it.name = "new name 2" }
+            registry.configure<MyService> { it.name = "new name 3" }
+
+            val services = provider.getAll<MyService>("some key")
+
+            assertThat(services[0].name).isEqualTo("new name 2")
+            assertThat(services[1].name).isEqualTo("new name 2")
+        }
     }
 
     @Test
@@ -69,114 +323,23 @@ class DefaultServiceProviderTest {
         assertThat(obj1 === obj2).isTrue()
     }
 
-    @Test
-    fun `get singleton service with keys`() {
-        registry.addSingleton<MyService, MyClass>()
-        registry.addSingleton<MyService, MyClass>("some key")
-
-        val obj1 = provider.get<MyService>()
-        val obj2 = provider.get<MyService>("some key")
-        val obj3 = provider.get<MyService>("some key")
-
-        assertThat(obj1).isInstanceOf(MyClass::class.java)
-        assertThat(obj2).isInstanceOf(MyClass::class.java)
-        assertThat(obj1 !== obj2).isTrue()
-        assertThat(obj2 === obj3).isTrue()
-    }
-
-    @Test
-    fun `scoped service fails when not in scope`() {
-        registry.addScoped<MyService, MyClass>()
-
-        assertThrows<ServiceNotRegisteredError> { provider.get<MyService>() }
-    }
-
-    @Test
-    fun `scoped service fails after leaving scope`() {
-        registry.addScoped<MyService, MyClass>()
-        provider.enterScope()
-        provider.leaveScope()
-
-        assertThrows<ServiceNotRegisteredError> { provider.get<MyService>() }
-    }
-
-    @Test
-    fun `scoped service returns same instance when in scope`() {
-        registry.addScoped<MyService, MyClass>()
-        provider.enterScope()
-
-        val obj1 = provider.get<MyService>()
-        val obj2 = provider.get<MyService>()
-
-        assertThat(obj1).isInstanceOf(MyClass::class.java)
-        assertThat(obj1 === obj2).isTrue()
-    }
-
-    @Test
-    fun `scoped service with key`() {
-        registry.addScoped<MyService, MyClass>()
-        registry.addScoped<MyService, MyClass>("some key")
-        provider.enterScope()
-
-        val obj1 = provider.get<MyService>()
-        val obj2 = provider.get<MyService>("some key")
-        val obj3 = provider.get<MyService>("some key")
-
-        assertThat(obj1).isInstanceOf(MyClass::class.java)
-        assertThat(obj2).isInstanceOf(MyClass::class.java)
-        assertThat(obj1 !== obj2).isTrue()
-        assertThat(obj2 === obj3).isTrue()
-    }
-
-    @Test
-    fun `getAll returns a new instance for each declaration`() {
-        registry.addTransient<MyService, MyClass>()
-        registry.addSingleton<MyService, MyClass2>()
-
-        val services1 = provider.getAll<MyService>()
-        val services2 = provider.getAll<MyService>()
-
-        assertThat(services1.size).isEqualTo(2)
-        assertThat(services1[0]).isInstanceOf(MyClass::class.java)
-        assertThat(services1[1]).isInstanceOf(MyClass2::class.java)
-        assertThat(services2.size).isEqualTo(2)
-        assertThat(services2[0]).isInstanceOf(MyClass::class.java)
-        assertThat(services2[1]).isInstanceOf(MyClass2::class.java)
-        assertThat(services1[0] !== services2[0]).isTrue()
-        assertThat(services1[1] === services2[1]).isTrue()
-    }
-
-    @Test
-    fun `getAll returns a new instance for each declaration with given key`() {
-        registry.addSingleton<MyService, MyClass2>()
-        registry.addTransient<MyService, MyClass>("some key")
-        registry.addSingleton<MyService, MyClass2>("some key")
-
-        val services1 = provider.getAll<MyService>("some key")
-        val services2 = provider.getAll<MyService>("some key")
-
-        assertThat(services1.size).isEqualTo(2)
-        assertThat(services1[0]).isInstanceOf(MyClass::class.java)
-        assertThat(services1[1]).isInstanceOf(MyClass2::class.java)
-        assertThat(services2.size).isEqualTo(2)
-        assertThat(services2[0]).isInstanceOf(MyClass::class.java)
-        assertThat(services2[1]).isInstanceOf(MyClass2::class.java)
-        assertThat(services1[0] !== services2[0]).isTrue()
-        assertThat(services1[1] === services2[1]).isTrue()
-    }
-
     private val registry = ServiceRegistry()
     private val provider = DefaultServiceProvider(registry)
 
     interface MyService {
+        var name: String
         fun sum(a: Int, b: Int): Int
     }
 
     class MyClass: MyService {
+        override var name: String = ""
+
         override fun sum(a: Int, b: Int) = a + b
     }
 
     class MyClass2: MyService {
+        override var name: String = ""
+
         override fun sum(a: Int, b: Int) = a + b
     }
 }

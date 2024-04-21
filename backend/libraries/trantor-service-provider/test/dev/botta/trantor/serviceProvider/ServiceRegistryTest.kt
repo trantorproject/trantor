@@ -302,6 +302,56 @@ class ServiceRegistryTest {
         }
     }
 
+    @Nested
+    inner class `service configurations` {
+        @Test
+        fun add() {
+            registry.addSingleton<MyService, MyClass>()
+            val configuration: (MyService) -> Unit = { it.name = "new name" }
+            registry.configure<MyService>(configuration)
+
+            assertThat(registry.getConfigurations<MyService>()).containsExactly(configuration)
+        }
+
+        @Test
+        fun `add multiple`() {
+            registry.addSingleton<MyService, MyClass>()
+            val configuration1: (MyService) -> Unit = { it.name = "new name" }
+            registry.configure<MyService>(configuration1)
+            val configuration2: (MyService) -> Unit = { it.name = "other name" }
+            registry.configure<MyService>(configuration2)
+
+            assertThat(registry.getConfigurations<MyService>()).containsExactly(configuration1, configuration2)
+        }
+
+        @Test
+        fun `add with key`() {
+            registry.addSingleton<MyService, MyClass>("some key")
+            val configuration: (MyService) -> Unit = { it.name = "new name" }
+            registry.configure<MyService>("some key", configuration)
+
+            assertThat(registry.getConfigurations<MyService>()).isEmpty()
+            assertThat(registry.getConfigurations<MyService>("some key")).containsExactly(configuration)
+        }
+
+        @Test
+        fun `add multiple with key`() {
+            registry.addSingleton<MyService, MyClass>()
+            val configuration1: (MyService) -> Unit = { it.name = "new name 1" }
+            registry.configure<MyService>("some key", configuration1)
+            val configuration2: (MyService) -> Unit = { it.name = "new name 2" }
+            registry.configure<MyService>(configuration2)
+            val configuration3: (MyService) -> Unit = { it.name = "new name 3" }
+            registry.configure<MyService>("some key", configuration3)
+
+            assertThat(registry.getConfigurations<MyService>()).containsExactly(configuration2)
+            assertThat(registry.getConfigurations<MyService>("some key")).containsExactly(
+                configuration1,
+                configuration3
+            )
+        }
+    }
+
     @Test
     fun `declare multiple services with different lifetimes`() {
         registry.addTransient<MyService>({ MyClass() })
@@ -338,22 +388,31 @@ class ServiceRegistryTest {
     private val provider = mockk<ServiceProvider>()
 
     interface MyService {
+        var name: String
         fun sum(a: Int, b: Int): Int
     }
 
     class MyClass: MyService {
+        override var name: String = ""
+
         override fun sum(a: Int, b: Int) = a + b
     }
 
     class MyClass2: MyService {
+        override var name: String = ""
+
         override fun sum(a: Int, b: Int) = a + b
     }
 
     class ClassWithoutEmptyConstructor(val param: String): MyService {
+        override var name: String = ""
+
         override fun sum(a: Int, b: Int) = a + b
     }
 
     class ClassWithConstructorWithDefaults(val param: String = "value"): MyService {
+        override var name: String = ""
+
         override fun sum(a: Int, b: Int) = a + b
     }
 }

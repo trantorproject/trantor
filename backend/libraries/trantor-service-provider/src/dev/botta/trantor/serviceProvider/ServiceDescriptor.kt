@@ -8,9 +8,13 @@ data class ServiceDescriptor<T: Any>(
     val lifetime: ServiceLifetimes = Singleton,
     val key: String? = null,
 ) {
-    val serviceId = if (key === null) serviceType.name else serviceType.name + "." + key
+    val serviceId = serviceId(serviceType, key)
 
     companion object {
+        fun serviceId(serviceType: Class<*>, key: String? = null): String {
+            return if (key === null) serviceType.name else serviceType.name + "." + key
+        }
+
         fun <T: Any> singleton(
             serviceType: Class<T>,
             implementationFactory: ImplementationFactory<T>,
