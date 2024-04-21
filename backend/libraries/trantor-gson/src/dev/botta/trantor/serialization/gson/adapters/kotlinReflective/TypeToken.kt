@@ -1,4 +1,4 @@
-package dev.botta.trantor.serialization.gson.kotlinReflective
+package dev.botta.trantor.serialization.gson.adapters.kotlinReflective
 
 import com.google.gson.internal.`$Gson$Types`
 import com.google.gson.reflect.TypeToken

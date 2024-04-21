@@ -1,6 +1,6 @@
 @file:Suppress("UNCHECKED_CAST")
 
-package dev.botta.trantor.serialization.gson
+package dev.botta.trantor.serialization.gson.adapters
 
 import com.google.gson.*
 import com.google.gson.internal.Streams

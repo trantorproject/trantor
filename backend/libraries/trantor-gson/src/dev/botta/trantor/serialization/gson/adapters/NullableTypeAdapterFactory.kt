@@ -1,4 +1,4 @@
-package dev.botta.trantor.serialization.gson
+package dev.botta.trantor.serialization.gson.adapters
 
 import com.google.gson.Gson
 import com.google.gson.JsonParseException

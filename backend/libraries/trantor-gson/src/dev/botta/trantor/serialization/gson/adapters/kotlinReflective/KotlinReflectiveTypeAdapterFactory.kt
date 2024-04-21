@@ -1,4 +1,4 @@
-package dev.botta.trantor.serialization.gson.kotlinReflective
+package dev.botta.trantor.serialization.gson.adapters.kotlinReflective
 
 import com.google.gson.*
 import com.google.gson.annotations.JsonAdapter

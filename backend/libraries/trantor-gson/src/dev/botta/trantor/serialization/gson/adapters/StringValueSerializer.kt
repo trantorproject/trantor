@@ -1,4 +1,4 @@
-package dev.botta.trantor.serialization.gson
+package dev.botta.trantor.serialization.gson.adapters
 
 import com.google.gson.*
 import java.lang.reflect.Type

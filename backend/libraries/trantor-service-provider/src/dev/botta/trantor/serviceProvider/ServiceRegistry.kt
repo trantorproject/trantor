@@ -67,8 +67,8 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         addSingleton(TService::class.java, { implementation }, key)
     }
 
-    inline fun <reified TService: Any> addSingleton(noinline factory: ImplementationFactory<TService>, key: String? = null) = apply {
-        addSingleton(TService::class.java, factory, key)
+    inline fun <reified TService: Any> addSingleton(noinline factory: ImplementationFactory<TService>) = apply {
+        addSingleton(TService::class.java, factory, null)
     }
 
     inline fun <reified TService: Any> addSingleton(key: String, implementation: TService) = apply {

@@ -4,13 +4,13 @@ import com.google.gson.JsonParseException
 import dev.botta.json.parser.JsonParseError
 import dev.botta.trantor.appServices.CQDispatcher
 import dev.botta.trantor.appServices.auth.*
+import dev.botta.trantor.core.serialization.Serializer
 import dev.botta.trantor.domain.errors.*
-import dev.botta.trantor.webApi.auth.SessionTokenAuthenticationMiddleware
-import dev.botta.trantor.webApi.httpCQDispatcher.HttpCQDispatcher
-import dev.botta.trantor.serialization.Serializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
 import dev.botta.trantor.web.server.*
 import dev.botta.trantor.web.server.controllers.Controller
+import dev.botta.trantor.webApi.auth.SessionTokenAuthenticationMiddleware
+import dev.botta.trantor.webApi.httpCQDispatcher.HttpCQDispatcher
 import io.javalin.http.Context
 import org.slf4j.Logger
 

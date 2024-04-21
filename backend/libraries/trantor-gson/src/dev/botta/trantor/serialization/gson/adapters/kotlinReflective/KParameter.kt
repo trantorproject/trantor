@@ -1,4 +1,4 @@
-package dev.botta.trantor.serialization.gson.kotlinReflective
+package dev.botta.trantor.serialization.gson.adapters.kotlinReflective
 
 import com.google.gson.annotations.SerializedName
 import java.lang.reflect.Field

@@ -6,9 +6,9 @@ import dev.botta.cqbus.requests.Request
 import dev.botta.json.Json
 import dev.botta.trantor.appServices.CQDispatcher
 import dev.botta.trantor.core.Event
-import dev.botta.trantor.webApi.httpCQDispatcher.transformers.*
-import dev.botta.trantor.serialization.Serializer
+import dev.botta.trantor.core.serialization.Serializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
+import dev.botta.trantor.webApi.httpCQDispatcher.transformers.*
 import io.javalin.http.Context
 import kotlin.reflect.KClass
 
