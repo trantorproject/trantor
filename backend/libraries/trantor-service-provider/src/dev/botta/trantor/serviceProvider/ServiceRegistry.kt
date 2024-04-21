@@ -96,7 +96,7 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         add(ServiceDescriptor(serviceType, factory, lifetime, key))
     }
 
-    fun tryAdd(descriptor: ServiceDescriptor<*>) {
+    fun ensureAdded(descriptor: ServiceDescriptor<*>) {
         if (any { it.serviceType == descriptor.serviceType && it.key == descriptor.key }) return
         add(descriptor)
     }

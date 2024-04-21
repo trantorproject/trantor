@@ -1,7 +1,7 @@
 package dev.botta.trantor.web.server
 
-import dev.botta.trantor.web.server.controllers.*
-import dev.botta.trantor.web.server.logs.*
+import dev.botta.trantor.web.server.controllers.Controller
+import dev.botta.trantor.web.server.logs.HttpRequestLogger
 import dev.botta.trantor.web.server.stats.*
 import io.javalin.Javalin
 import io.javalin.config.JettyConfig
@@ -12,17 +12,18 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool
 import org.slf4j.LoggerFactory
 import java.util.*
 
-class HttpServer(private val config: Config) {
-    private val logger = LoggerFactory.getLogger(javaClass.simpleName)
+class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
+    private val logger = LoggerFactory.getLogger(javaClass.name)
     private val javalin: Javalin
     private val routeRegister: RouteRegister
     private val threadPool = QueuedThreadPool(config.maxThreads, config.minThreads, config.idleTimeout)
     private var managementThreadPool: QueuedThreadPool? = null
     private val statisticsHandler = StatisticsHandler()
-    private val requestLogger: HttpRequestLogger = config.requestLogger ?: DefaultHttpRequestLogger(logger)
+    private val requestLogger: HttpRequestLogger = config.requestLoggerFactory(logger)
     val id = UUID.randomUUID().toString()
     val stats: HttpServerStats
         get() = statisticsHandler.getStats(threadPool, managementThreadPool)
+    override val routes get() = routeRegister
 
     init {
         javalin = Javalin.create { config ->
@@ -85,14 +86,5 @@ class HttpServer(private val config: Config) {
         logger.info(controller::class.qualifiedName + " registered")
         controller.getChildControllers().forEach { registerController(it) }
     }
-
-    data class Config(
-        val port: Int = 80,
-        val isStatsEnabled: Boolean = false,
-        val managementPort: Int = -1,
-        val idleTimeout: Int = 30_000,
-        val maxThreads: Int = 250,
-        val minThreads: Int = 8,
-        val requestLogger: HttpRequestLogger? = null,
-    )
 }
+

@@ -10,7 +10,7 @@ import java.util.concurrent.*
 import org.eclipse.jetty.client.HttpClient as JettyHttp
 
 class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient {
-    private val logger = LoggerFactory.getLogger(javaClass.simpleName)
+    private val logger = LoggerFactory.getLogger(javaClass.name)
     private val httpClient = JettyHttp()
 
     init {

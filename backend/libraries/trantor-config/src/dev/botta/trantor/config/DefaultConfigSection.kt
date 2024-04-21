@@ -13,4 +13,6 @@ class DefaultConfigSection(private val root: ConfigRoot, override val path: Stri
     override fun getChildren(): List<ConfigSection> {
         return root.getChildren(path)
     }
+
+    override fun toString() = "ConfigSection($path)"
 }

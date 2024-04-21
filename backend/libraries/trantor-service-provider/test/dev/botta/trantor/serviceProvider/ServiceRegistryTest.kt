@@ -72,8 +72,8 @@ class ServiceRegistryTest {
 
         @Test
         fun `declare multiple services for same type`() {
-            registry.addTransient<MyService>({ MyClass() })
-            registry.addTransient<MyService>({ MyClass2() })
+            registry.addTransient<MyService, MyClass>()
+            registry.addTransient<MyService, MyClass2>()
 
             assertThat(registry.size).isEqualTo(2)
             assertThat(registry[0].key).isNull()
@@ -84,9 +84,9 @@ class ServiceRegistryTest {
 
         @Test
         fun `declare multiple services with same key`() {
-            registry.addTransient<MyService>("key1", { MyClass() })
-            registry.addTransient<MyService>("key2", { MyClass() })
-            registry.addTransient<MyService>("key1", { MyClass2() })
+            registry.addTransient<MyService, MyClass>("key1")
+            registry.addTransient<MyService, MyClass>("key2")
+            registry.addTransient<MyService, MyClass2>("key1")
 
             assertThat(registry.size).isEqualTo(3)
             assertThat(registry[0].key).isEqualTo("key1")
@@ -162,8 +162,8 @@ class ServiceRegistryTest {
 
         @Test
         fun `declare multiple services for same type`() {
-            registry.addScoped<MyService>({ MyClass() })
-            registry.addScoped<MyService>({ MyClass2() })
+            registry.addScoped<MyService, MyClass>()
+            registry.addScoped<MyService, MyClass2>()
 
             assertThat(registry.size).isEqualTo(2)
             assertThat(registry[0].key).isNull()
@@ -174,9 +174,9 @@ class ServiceRegistryTest {
 
         @Test
         fun `declare multiple services with same key`() {
-            registry.addScoped<MyService>("key1", { MyClass() })
-            registry.addScoped<MyService>("key2", { MyClass() })
-            registry.addScoped<MyService>("key1", { MyClass2() })
+            registry.addScoped<MyService, MyClass>("key1")
+            registry.addScoped<MyService, MyClass>("key2")
+            registry.addScoped<MyService, MyClass2>("key1")
 
             assertThat(registry.size).isEqualTo(3)
             assertThat(registry[0].key).isEqualTo("key1")
@@ -276,8 +276,8 @@ class ServiceRegistryTest {
 
         @Test
         fun `declare multiple services for same type`() {
-            registry.addSingleton<MyService>({ MyClass() })
-            registry.addSingleton<MyService>({ MyClass2() })
+            registry.addSingleton<MyService, MyClass>()
+            registry.addSingleton<MyService, MyClass2>()
 
             assertThat(registry.size).isEqualTo(2)
             assertThat(registry[0].key).isNull()
@@ -288,9 +288,9 @@ class ServiceRegistryTest {
 
         @Test
         fun `declare multiple services with same key`() {
-            registry.addSingleton<MyService>("key1", { MyClass() })
-            registry.addSingleton<MyService>("key2", { MyClass() })
-            registry.addSingleton<MyService>("key1", { MyClass2() })
+            registry.addSingleton<MyService, MyClass>("key1")
+            registry.addSingleton<MyService, MyClass>("key2")
+            registry.addSingleton<MyService, MyClass2>("key1")
 
             assertThat(registry.size).isEqualTo(3)
             assertThat(registry[0].key).isEqualTo("key1")
@@ -354,8 +354,8 @@ class ServiceRegistryTest {
 
     @Test
     fun `declare multiple services with different lifetimes`() {
-        registry.addTransient<MyService>({ MyClass() })
-        registry.addSingleton<MyService>({ MyClass2() })
+        registry.addTransient<MyService, MyClass>()
+        registry.addSingleton<MyService, MyClass2>()
 
         assertThat(registry.size).isEqualTo(2)
         assertThat(registry[0].key).isNull()
@@ -374,9 +374,9 @@ class ServiceRegistryTest {
     }
 
     @Test
-    fun `tryAdd only adds descriptor if not already declared`() {
-        registry.addSingleton<MyService>({ MyClass() })
-        registry.tryAdd(ServiceDescriptor.singleton<MyService>({ MyClass2() }))
+    fun `ensureAdded only adds descriptor if not already declared`() {
+        registry.addSingleton<MyService, MyClass>()
+        registry.ensureAdded(ServiceDescriptor.singleton<MyService>({ MyClass2() }))
 
         assertThat(registry.size).isEqualTo(1)
         assertThat(registry[0].key).isNull()

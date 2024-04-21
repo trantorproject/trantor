@@ -19,7 +19,7 @@ class HttpApp(private val config: Config) {
     val httpCQDispatcher = HttpCQDispatcher(config.requestDispatcher, config.jsonSerializer)
 
     init {
-        handleKnownExceptions()
+        registerKnownExceptions()
         config.requestDispatcher.registerMiddleware(SessionTokenAuthenticationMiddleware())
     }
 
@@ -31,7 +31,7 @@ class HttpApp(private val config: Config) {
         httpServer.stop()
     }
 
-    private fun handleKnownExceptions() {
+    private fun registerKnownExceptions() {
         registerException<NotAuthenticatedError>(::notAuthenticatedErrorHandler)
         registerException<UnauthorizedAccessError>(::forbiddenErrorHandler)
         registerException<NotFoundError>(::notFoundErrorHandler)
@@ -89,7 +89,7 @@ class HttpApp(private val config: Config) {
 
     data class Config(
         val requestDispatcher: CQDispatcher,
-        val server: HttpServer.Config = HttpServer.Config(),
+        val server: HttpServerConfig = HttpServerConfig(),
         val jsonSerializer: Serializer = GsonSerializer(),
     )
 }

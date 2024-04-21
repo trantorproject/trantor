@@ -1,6 +1,7 @@
 package dev.botta.trantor.webApi.httpCQDispatcher
 
 import dev.botta.cqbus.requests.Request
+import dev.botta.trantor.web.server.RouteRegister
 import dev.botta.trantor.web.server.controllers.*
 
 abstract class CQController(val dispatcher: HttpCQDispatcher): Controller {

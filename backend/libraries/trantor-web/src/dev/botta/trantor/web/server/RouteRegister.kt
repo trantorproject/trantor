@@ -1,4 +1,4 @@
-package dev.botta.trantor.web.server.controllers
+package dev.botta.trantor.web.server
 
 import io.javalin.Javalin
 import io.javalin.http.*

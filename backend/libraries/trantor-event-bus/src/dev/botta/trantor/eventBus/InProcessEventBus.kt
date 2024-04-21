@@ -4,7 +4,7 @@ import dev.botta.trantor.core.Event
 import org.slf4j.LoggerFactory
 
 class InProcessEventBus: EventBus() {
-    private val logger = LoggerFactory.getLogger(javaClass.simpleName)
+    private val logger = LoggerFactory.getLogger(javaClass.name)
     private val handlers = mutableListOf<EventHandler>()
     private var inRequest: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
     private var pendingRequestEvents: ThreadLocal<MutableList<Event>> = ThreadLocal.withInitial { mutableListOf() }
