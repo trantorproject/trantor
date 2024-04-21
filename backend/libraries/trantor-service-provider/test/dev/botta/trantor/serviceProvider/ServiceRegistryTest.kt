@@ -71,26 +71,30 @@ class ServiceRegistryTest {
         }
 
         @Test
-        fun `override service`() {
+        fun `declare multiple services for same type`() {
             registry.addTransient<MyService>({ MyClass() })
             registry.addTransient<MyService>({ MyClass2() })
 
-            assertThat(registry.size).isEqualTo(1)
+            assertThat(registry.size).isEqualTo(2)
             assertThat(registry[0].key).isNull()
-            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry[1].key).isNull()
+            assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
         }
 
         @Test
-        fun `override service with same key`() {
+        fun `declare multiple services with same key`() {
             registry.addTransient<MyService>("key1", { MyClass() })
             registry.addTransient<MyService>("key2", { MyClass() })
             registry.addTransient<MyService>("key1", { MyClass2() })
 
-            assertThat(registry.size).isEqualTo(2)
-            assertThat(registry[0].key).isEqualTo("key2")
+            assertThat(registry.size).isEqualTo(3)
+            assertThat(registry[0].key).isEqualTo("key1")
             assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
-            assertThat(registry[1].key).isEqualTo("key1")
-            assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry[1].key).isEqualTo("key2")
+            assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry[2].key).isEqualTo("key1")
+            assertThat(registry[2].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
         }
     }
 
@@ -157,26 +161,30 @@ class ServiceRegistryTest {
         }
 
         @Test
-        fun `override service`() {
+        fun `declare multiple services for same type`() {
             registry.addScoped<MyService>({ MyClass() })
             registry.addScoped<MyService>({ MyClass2() })
 
-            assertThat(registry.size).isEqualTo(1)
+            assertThat(registry.size).isEqualTo(2)
             assertThat(registry[0].key).isNull()
-            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry[1].key).isNull()
+            assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
         }
 
         @Test
-        fun `override service with same key`() {
+        fun `declare multiple services with same key`() {
             registry.addScoped<MyService>("key1", { MyClass() })
             registry.addScoped<MyService>("key2", { MyClass() })
             registry.addScoped<MyService>("key1", { MyClass2() })
 
-            assertThat(registry.size).isEqualTo(2)
-            assertThat(registry[0].key).isEqualTo("key2")
+            assertThat(registry.size).isEqualTo(3)
+            assertThat(registry[0].key).isEqualTo("key1")
             assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
-            assertThat(registry[1].key).isEqualTo("key1")
-            assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry[1].key).isEqualTo("key2")
+            assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry[2].key).isEqualTo("key1")
+            assertThat(registry[2].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
         }
     }
 
@@ -265,39 +273,47 @@ class ServiceRegistryTest {
             assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
         }
 
+
         @Test
-        fun `override service`() {
+        fun `declare multiple services for same type`() {
             registry.addSingleton<MyService>({ MyClass() })
             registry.addSingleton<MyService>({ MyClass2() })
 
-            assertThat(registry.size).isEqualTo(1)
+            assertThat(registry.size).isEqualTo(2)
             assertThat(registry[0].key).isNull()
-            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry[1].key).isNull()
+            assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
         }
 
         @Test
-        fun `override service with same key`() {
+        fun `declare multiple services with same key`() {
             registry.addSingleton<MyService>("key1", { MyClass() })
             registry.addSingleton<MyService>("key2", { MyClass() })
             registry.addSingleton<MyService>("key1", { MyClass2() })
 
-            assertThat(registry.size).isEqualTo(2)
-            assertThat(registry[0].key).isEqualTo("key2")
+            assertThat(registry.size).isEqualTo(3)
+            assertThat(registry[0].key).isEqualTo("key1")
             assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
-            assertThat(registry[1].key).isEqualTo("key1")
-            assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry[1].key).isEqualTo("key2")
+            assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry[2].key).isEqualTo("key1")
+            assertThat(registry[2].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
         }
     }
 
     @Test
-    fun `override service different lifetime`() {
+    fun `declare multiple services with different lifetimes`() {
         registry.addTransient<MyService>({ MyClass() })
         registry.addSingleton<MyService>({ MyClass2() })
 
-        assertThat(registry.size).isEqualTo(1)
+        assertThat(registry.size).isEqualTo(2)
         assertThat(registry[0].key).isNull()
-        assertThat(registry[0].lifetime).isEqualTo(Singleton)
-        assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+        assertThat(registry[0].lifetime).isEqualTo(Transient)
+        assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        assertThat(registry[1].key).isNull()
+        assertThat(registry[1].lifetime).isEqualTo(Singleton)
+        assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
     }
 
     @Test

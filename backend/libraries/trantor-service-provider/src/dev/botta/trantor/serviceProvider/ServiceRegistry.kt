@@ -89,7 +89,6 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         lifetime: ServiceLifetimes,
         key: String? = null
     ) = apply {
-        removeIf { it.serviceType == serviceType && it.key == key }
         add(ServiceDescriptor(serviceType, factory, lifetime, key))
     }
 

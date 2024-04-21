@@ -14,18 +14,28 @@ class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProv
     override fun <T: Any> get(type: Class<T>, key: String?) =
         tryGet(type, key) ?: throw ServiceNotRegisteredError(type, key)
 
-    @Suppress("UNCHECKED_CAST")
     @Synchronized
     override fun <T: Any> tryGet(type: Class<T>, key: String?): T? {
-        val descriptor = registry.singleOrNull { it.serviceType == type && it.key == key } ?: return null
-        return when(descriptor.lifetime) {
+        val descriptor = registry.lastOrNull { it.serviceType == type && it.key == key } ?: return null
+        return getInstanceFor(descriptor)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T: Any> getInstanceFor(descriptor: ServiceDescriptor<*>): T? {
+        return when (descriptor.lifetime) {
             Transient -> descriptor.createInstance()
-            Singleton -> singletonCache.getOrPut(serviceId(type, key)) { descriptor.createInstance() }
+            Singleton -> singletonCache.getOrPut(descriptor.serviceId) { descriptor.createInstance() }
             Scoped -> {
                 if (inScope.get() == false) return null
-                scopeCache.get().getOrPut(serviceId(type, key)) { descriptor.createInstance() }
+                scopeCache.get().getOrPut(descriptor.serviceId) { descriptor.createInstance() }
             }
         } as T
+    }
+
+    @Synchronized
+    override fun <T: Any> getAll(type: Class<T>, key: String?): List<T> {
+        val descriptors = registry.filter { it.serviceType == type && it.key == key }
+        return descriptors.mapNotNull { getInstanceFor(it) }
     }
 
     private fun ServiceDescriptor<*>.createInstance(): Any {
@@ -40,9 +50,5 @@ class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProv
     override fun leaveScope() {
         scopeCache.get().clear()
         inScope.set(false)
-    }
-
-    private fun serviceId(type: Class<*>, key: String?): String {
-        return if (key === null) type.name else type.name + "." + key
     }
 }
