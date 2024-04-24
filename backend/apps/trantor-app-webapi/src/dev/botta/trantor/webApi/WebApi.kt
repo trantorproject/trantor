@@ -1,9 +1,14 @@
 package dev.botta.trantor.webApi
 
+import com.google.gson.JsonParseException
+import dev.botta.json.parser.JsonParseError
+import dev.botta.trantor.appServices.auth.*
 import dev.botta.trantor.config.Config
+import dev.botta.trantor.domain.errors.*
 import dev.botta.trantor.serviceProvider.*
 import dev.botta.trantor.web.server.*
 import dev.botta.trantor.web.server.controllers.Controller
+import dev.botta.trantor.webApi.errorHandlers.*
 
 class WebApi(val config: Config, val services: ServiceProvider): RouteRegistrant {
     private val httpServer = HttpServer(services.getOrDefault<HttpServerConfig> { HttpServerConfig() })
@@ -11,37 +16,33 @@ class WebApi(val config: Config, val services: ServiceProvider): RouteRegistrant
     override val routes get() = httpServer.routes
 
     init {
-        registerKnownExceptions()
+        addKnownExceptions()
     }
 
-    private fun registerKnownExceptions() {
-//        registerException<NotAuthenticatedError>(::notAuthenticatedErrorHandler)
-//        registerException<UnauthorizedAccessError>(::forbiddenErrorHandler)
-//        registerException<NotFoundError>(::notFoundErrorHandler)
-//        registerException<DomainError>(::badRequestJsonErrorHandler)
-//        registerException<JsonParseError>(::badRequestJsonErrorHandler)
-//        registerException<JsonParseException>(::badRequestJsonErrorHandler)
-//        registerException<Exception>(::internalServerErrorHandler)
+    private fun addKnownExceptions() {
+        addNotAuthenticatedError<NotAuthenticatedError>()
+        addForbiddenError<UnauthorizedAccessError>()
+        addNotFoundError<NotFoundError>()
+        addBadRequestError<DomainError>()
+        addBadRequestError<JsonParseError>()
+        addBadRequestError<JsonParseException>()
+        addInternalError<Exception>()
     }
 
     fun addInterceptor(interceptor: HttpRequestInterceptor) {
         httpServer.addInterceptor(interceptor)
     }
 
-    fun <T: Exception> registerException(clazz: Class<T>, handler: HttpErrorHandler<T>) {
-        httpServer.registerException(clazz, handler)
+    fun <T: Exception> addErrorHandler(handler: BaseJsonErrorHandler<T>) {
+        httpServer.addErrorHandler(handler)
     }
 
-    inline fun <reified T: Exception> registerException(handler: HttpErrorHandler<T>) {
-        registerException(T::class.java, handler)
-    }
-
-    fun registerController(controller: Controller) {
-        httpServer.registerControllers(controller)
+    fun addController(controller: Controller) {
+        httpServer.addControllers(controller)
     }
 
     fun registerControllers(vararg controllers: Controller) {
-        httpServer.registerControllers(*controllers)
+        httpServer.addControllers(*controllers)
     }
 
     fun start() {

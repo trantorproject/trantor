@@ -63,21 +63,17 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
         javalin.stop()
     }
 
-    fun <T: Exception> registerException(clazz: Class<T>, handler: HttpErrorHandler<T>) {
-        javalin.exception(clazz) { error: T, ctx: Context ->
-            handler.handle(error, ctx, logger)
+    fun <T: Exception> addErrorHandler(errorHandler: HttpErrorHandler<T>) {
+        javalin.exception(errorHandler.errorType) { error: T, ctx: Context ->
+            errorHandler.handle(error, ctx, logger)
         }
-    }
-
-    inline fun <reified T: Exception> registerException(handler: HttpErrorHandler<T>) {
-        registerException(T::class.java, handler)
     }
 
     fun addInterceptor(interceptor: HttpRequestInterceptor) {
         javalin.before { interceptor.onRequest(it) }
     }
 
-    fun registerControllers(vararg controllers: Controller) {
+    fun addControllers(vararg controllers: Controller) {
         controllers.forEach { registerController(it) }
     }
 

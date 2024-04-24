@@ -19,8 +19,8 @@ class WebApiBuilder(appName: String? = null) {
         services.addSingleton<AppEnvironment>(environment)
         services.addSingleton<Config>(config)
 
-        //config.addJsonResource("appConfig.json")
-        //config.addJsonResource("appConfig.${env}.json")
+        //config.addJsonResource("app.json")
+        //config.addJsonResource("app.${env}.json")
 
         addDefaultServices()
     }
