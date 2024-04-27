@@ -1,0 +1,23 @@
+{
+  "booleanProperty": true,
+  "nullProperty": null,
+  "intProperty": 3,
+  "floatProperty": 3.14,
+  "stringProperty": "hello",
+  "arrayProperty": [
+    true, null, 3, 3.14, "hello", [1, 2, 3]
+  ],
+  "objectProperty": {
+    "property1": "value 1",
+    "property2": [1, 2, 3],
+    "property3": {
+      "subproperty1": null,
+      "subproperty2": "sub property value"
+    },
+    "property4": [
+      {
+        "subarray_property1": "value1"
+      }
+    ]
+  }
+}

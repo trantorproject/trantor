@@ -6,7 +6,7 @@ import dev.botta.json.values.JsonValue
 private const val CONFIG_TYPE_KEY = "__config_type__"
 
 class DefaultConfigSection(private val root: ConfigRoot, override val path: String): ConfigSection {
-    override val key: String by lazy { path.split(":").last() }
+    override val key: String by lazy { path.split(".").last() }
 
     override val value: String?
         get() = root[path]
@@ -17,11 +17,11 @@ class DefaultConfigSection(private val root: ConfigRoot, override val path: Stri
 
     override fun getChildren() = root.getChildren(path)
 
-    override fun toString() = "ConfigSection($path)"
+    override fun toString() = if (value != null) "ConfigSection($path, $value)" else "ConfigSection($path)"
 
-    private fun isArray() = get(CONFIG_TYPE_KEY) == "Array"
+    private fun isArray() = get(CONFIG_TYPE_KEY) == "array"
 
-    private fun getSubPath(otherPath: String) = if (path.isEmpty()) otherPath else "$path:$otherPath"
+    private fun getSubPath(otherPath: String) = if (path.isEmpty()) otherPath else "$path.$otherPath"
 
     override fun toJson(): JsonValue {
         val childrenJson = getChildren().associate { it.key to it.toJson() }

@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "1.9.23"
-    id("dev.botta.kotlin-conventions") version "0.1.0"
+    id("dev.botta.kotlin-conventions") version "0.3.0"
 }
 
 allprojects {
