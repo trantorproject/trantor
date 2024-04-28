@@ -11,6 +11,8 @@ class ConfigManager: Config {
 
     override fun get(path: String) = root[path]
 
+    override fun hasSection(path: String) = root.hasSection(path)
+
     override fun getSection(path: String) = root.getSection(path)
 
     override fun getChildren() = root.getChildren()

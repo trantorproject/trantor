@@ -1,6 +1,6 @@
 package dev.botta.trantor.webApi
 
-import dev.botta.trantor.appServices.CQDispatcher
+import dev.botta.trantor.appServices.CQEDispatcher
 import dev.botta.trantor.core.serialization.Serializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
 import dev.botta.trantor.web.server.*
@@ -41,7 +41,7 @@ class HttpApp(private val config: Config) {
     }
 
     data class Config(
-        val requestDispatcher: CQDispatcher,
+        val requestDispatcher: CQEDispatcher,
         val server: HttpServerConfig = HttpServerConfig(),
         val jsonSerializer: Serializer = GsonSerializer(),
     )

@@ -13,6 +13,8 @@ class DefaultConfigSection(private val root: ConfigRoot, override val path: Stri
 
     override fun get(path: String) = root[getSubPath(path)]
 
+    override fun hasSection(path: String) = root.hasSection(getSubPath(path))
+
     override fun getSection(path: String) = root.getSection(getSubPath(path))
 
     override fun getChildren() = root.getChildren(path)

@@ -25,6 +25,8 @@ class ConfigRoot(providers: List<ConfigProvider> = listOf()): Config {
         return null
     }
 
+    override fun hasSection(path: String) = providers.any { it.hasSection(path) }
+
     override fun getSection(path: String) = DefaultConfigSection(this, path)
 
     override fun getChildren() = doGetChildren(null)

@@ -12,7 +12,6 @@ class WebApiBuilder(appName: String? = null, environmentName: String? = null) {
     val environment: AppEnvironment
 
     init {
-//        System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true")
         if (environmentName != null) config.addMemoryCollection("environment" to environmentName)
         config.addEnvironmentVariables()
         config.addEnvironmentVariables("TRANTOR_")
