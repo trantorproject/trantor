@@ -1,6 +1,6 @@
 package dev.botta.trantor.webApi.errorHandlers
 
-import dev.botta.trantor.webApi.WebApi
+import dev.botta.trantor.webApi.BaseWebApi
 import kotlin.reflect.KClass
 
 class BadRequestErrorHandler<T: Exception>(override val errorType: Class<T>): BaseJsonErrorHandler<T>() {
@@ -9,6 +9,6 @@ class BadRequestErrorHandler<T: Exception>(override val errorType: Class<T>): Ba
     constructor(errorType: KClass<T>): this(errorType.java)
 }
 
-inline fun <reified T: Exception> WebApi.addBadRequestError() {
+inline fun <reified T: Exception> BaseWebApi.addBadRequestError() {
     addErrorHandler(BadRequestErrorHandler(T::class))
 }

@@ -17,6 +17,6 @@ class InternalErrorHandler<T: Exception>(override val errorType: Class<T>): Base
     }
 }
 
-inline fun <reified T: Exception> WebApi.addInternalError() {
+inline fun <reified T: Exception> BaseWebApi.addInternalError() {
     addErrorHandler(InternalErrorHandler(T::class))
 }

@@ -1,6 +1,6 @@
 package dev.botta.trantor.webApi.errorHandlers
 
-import dev.botta.trantor.webApi.WebApi
+import dev.botta.trantor.webApi.BaseWebApi
 import kotlin.reflect.KClass
 
 class NotAuthenticatedErrorHandler<T: Exception>(override val errorType: Class<T>): BaseJsonErrorHandler<T>() {
@@ -9,6 +9,6 @@ class NotAuthenticatedErrorHandler<T: Exception>(override val errorType: Class<T
     constructor(errorType: KClass<T>): this(errorType.java)
 }
 
-inline fun <reified T: Exception> WebApi.addNotAuthenticatedError() {
+inline fun <reified T: Exception> BaseWebApi.addNotAuthenticatedError() {
     addErrorHandler(NotAuthenticatedErrorHandler(T::class))
 }
