@@ -5,8 +5,10 @@ import dev.botta.trantor.config.*
 import dev.botta.trantor.config.providers.*
 import dev.botta.trantor.eventBus.*
 import dev.botta.trantor.serialization.gson.addGsonSerializer
-import dev.botta.trantor.serviceProvider.ServiceRegistry
+import dev.botta.trantor.serviceProvider.*
+import dev.botta.trantor.tx.*
 import dev.botta.trantor.web.server.HttpServerConfig
+import dev.botta.trantor.webApi.httpCQDispatcher.HttpCQDispatcher
 
 abstract class BaseWebApiBuilder<T: BaseWebApi>(appName: String? = null, environmentName: String? = null) {
     val config = ConfigManager()
@@ -40,6 +42,8 @@ abstract class BaseWebApiBuilder<T: BaseWebApi>(appName: String? = null, environ
         // Add Metrics
         services.addSingleton<CQBus>()
         services.addSingleton<EventBus, InProcessEventBus>()
+        services.addSingleton<TransactionManager, NullTransactionManager>()
+        services.addSingleton<HttpCQDispatcher> { HttpCQDispatcher(it.get(), it.get(), it.get()) }
         services.addConfig<HttpServerConfig>("httpServer")
         services.addGsonSerializer()
     }
