@@ -1,10 +1,14 @@
-package dev.botta.trantor.webApi.httpCQDispatcher
+package dev.botta.trantor.webApi.appModule
 
 import dev.botta.cqbus.requests.Request
+import dev.botta.trantor.appServices.AppModule
+import dev.botta.trantor.core.serialization.JsonSerializer
 import dev.botta.trantor.web.server.RouteRegister
 import dev.botta.trantor.web.server.controllers.*
 
-abstract class CQController(val dispatcher: HttpCQDispatcher): Controller {
+abstract class AppModuleController(val dispatcher: AppModuleHttpDispatcher): Controller {
+    constructor(appModule: AppModule, serializer: JsonSerializer): this(AppModuleHttpDispatcher(appModule, serializer))
+
     protected inline fun <reified T: Request<*>> get(http: RouteRegister, path: String) {
         http.get(path) { dispatcher.execute<T>(it) }
     }

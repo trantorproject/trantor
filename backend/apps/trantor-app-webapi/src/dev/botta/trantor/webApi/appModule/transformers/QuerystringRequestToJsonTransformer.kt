@@ -1,7 +1,7 @@
-package dev.botta.trantor.webApi.httpCQDispatcher.transformers
+package dev.botta.trantor.webApi.appModule.transformers
 
 import dev.botta.json.values.JsonObject
-import dev.botta.trantor.webApi.httpCQDispatcher.RequestToJsonTransformer
+import dev.botta.trantor.webApi.appModule.RequestToJsonTransformer
 import io.javalin.http.Context
 import kotlin.reflect.KClass
 

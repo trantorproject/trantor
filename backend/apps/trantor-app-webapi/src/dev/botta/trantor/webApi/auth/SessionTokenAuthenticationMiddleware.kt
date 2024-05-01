@@ -2,6 +2,7 @@ package dev.botta.trantor.webApi.auth
 
 import dev.botta.cqbus.*
 import dev.botta.cqbus.requests.Request
+import dev.botta.trantor.appServices.AppModule
 import io.javalin.http.Context
 
 class SessionTokenAuthenticationMiddleware: Middleware {
@@ -19,4 +20,8 @@ class SessionTokenAuthenticationMiddleware: Middleware {
     }
 
     private fun getAuthorizationHeader(context: ExecutionContext) = context.get<Context>()?.header("Authorization")
+}
+
+fun AppModule.addSessionTokenAuthentication() {
+    registerMiddleware(SessionTokenAuthenticationMiddleware())
 }

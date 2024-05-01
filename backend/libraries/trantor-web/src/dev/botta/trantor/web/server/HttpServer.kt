@@ -11,8 +11,6 @@ import org.eclipse.jetty.server.handler.StatisticsHandler
 import org.eclipse.jetty.util.thread.QueuedThreadPool
 import org.slf4j.LoggerFactory
 import java.util.*
-import java.util.logging.Level
-import java.util.logging.Logger
 
 class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
     private val logger = LoggerFactory.getLogger(javaClass.name)
@@ -81,7 +79,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
     }
 
     private fun registerController(controller: Controller) {
-        controller.registerRoutesIn(routeRegister)
+        controller.registerRoutes(routeRegister)
         logger.info(controller::class.qualifiedName + " registered")
         controller.getChildControllers().forEach { registerController(it) }
     }

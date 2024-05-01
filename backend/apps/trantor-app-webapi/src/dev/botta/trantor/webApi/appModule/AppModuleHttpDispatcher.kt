@@ -1,21 +1,17 @@
-package dev.botta.trantor.webApi.httpCQDispatcher
+package dev.botta.trantor.webApi.appModule
 
 import com.google.gson.JsonParseException
-import dev.botta.cqbus.*
+import dev.botta.cqbus.ExecutionContext
 import dev.botta.cqbus.requests.Request
 import dev.botta.json.Json
+import dev.botta.trantor.appServices.AppModule
 import dev.botta.trantor.core.Event
 import dev.botta.trantor.core.serialization.JsonSerializer
-import dev.botta.trantor.eventBus.EventBus
-import dev.botta.trantor.webApi.httpCQDispatcher.transformers.*
+import dev.botta.trantor.webApi.appModule.transformers.*
 import io.javalin.http.Context
 import kotlin.reflect.KClass
 
-class HttpCQDispatcher(
-    private val cqBus: CQBus,
-    private val eventBus: EventBus,
-    private val serializer: JsonSerializer,
-) {
+class AppModuleHttpDispatcher(private val appModule: AppModule, private val serializer: JsonSerializer) {
     private val transformers = mutableListOf(
         QuerystringRequestToJsonTransformer(),
         PathParamRequestToJsonTransformer(),
@@ -26,7 +22,7 @@ class HttpCQDispatcher(
         execute(T::class, ctx, statusCode)
     }
 
-    fun notify(event: Event) { eventBus.publish(event) }
+    fun notify(event: Event) { appModule.notify(event) }
 
     fun <T: Request<*>> execute(actionClass: KClass<T>, ctx: Context, statusCode: Int = 200) {
         val action = ctx.deserializedBody(actionClass)
@@ -34,7 +30,7 @@ class HttpCQDispatcher(
         ctx.serialized(actionResponse, statusCode)
     }
 
-    private fun <R> execute(action: Request<R>, ctx: Context) = cqBus.execute(action, ExecutionContext().with(ctx))
+    private fun <R> execute(action: Request<R>, ctx: Context) = appModule.execute(action, ExecutionContext().with(ctx))
 
     fun <T: Any> Context.deserializedBody(type: KClass<T>): T {
         val json = jsonWithRequestParameters(type)

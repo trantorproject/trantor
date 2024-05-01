@@ -1,4 +1,4 @@
-package dev.botta.trantor.webApi.httpCQDispatcher
+package dev.botta.trantor.webApi.appModule
 
 import dev.botta.json.values.JsonObject
 import io.javalin.http.Context

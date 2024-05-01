@@ -14,4 +14,3 @@ class SystemIdentity: Identity {
 
 fun <T: Request<R>, R> CQBus.executeAsSystem(request: T): R =
     execute(request, ExecutionContext().withIdentity(SystemIdentity()))
-
