@@ -1,12 +1,16 @@
 package dev.botta.trantor.data.jdbc.transactions.manager
 
-import dev.botta.trantor.data.jdbc.DataSource
+import dev.botta.trantor.data.jdbc.transactions.TransactionAwareDataSource
 import dev.botta.trantor.data.jdbc.transactions.JdbcTransaction
 import dev.botta.trantor.tx.*
 import java.sql.Connection
 
-abstract class JdbcTransactionManager(private val dataSource: DataSource): TransactionManager {
+abstract class JdbcTransactionManager(private val dataSource: TransactionAwareDataSource): TransactionManager {
     protected abstract var activeTransaction: JdbcTransaction?
+
+    init {
+        dataSource.transactionManager = this
+    }
 
     val activeConnection: Connection?
         get() = activeTransaction?.connection
@@ -20,19 +24,13 @@ abstract class JdbcTransactionManager(private val dataSource: DataSource): Trans
         return activeTransaction!!
     }
 
-    private fun createTransaction(): JdbcTransaction {
-        return JdbcTransaction(dataSource.acquire(), ::onClose)
-    }
-
     fun hasActiveTransaction() = activeTransaction != null
 
-    private fun onClose() {
-        val connection = activeConnection!!
-        endTransaction()
-        dataSource.release(connection)
-    }
+    private fun createTransaction() = JdbcTransaction(dataSource.connection, ::onClose)
 
-    private fun endTransaction() {
+    private fun onClose() {
+        val connection = activeConnection
         activeTransaction = null
+        connection?.close()
     }
 }

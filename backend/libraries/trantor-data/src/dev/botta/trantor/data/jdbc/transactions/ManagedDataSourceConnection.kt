@@ -1,12 +1,12 @@
-package dev.botta.trantor.data.jdbc
+package dev.botta.trantor.data.jdbc.transactions
 
 import java.sql.*
 import java.util.*
 import java.util.concurrent.Executor
 
-class ManagedDataSourceConnection(private val datasource: DataSource, private val connection: Connection): Connection {
+class ManagedDataSourceConnection(private val connection: Connection, private val onClose: (connection: Connection) -> Unit): Connection {
     override fun close() {
-        datasource.release(connection)
+        onClose(connection)
     }
 
     override fun <T: Any?> unwrap(p0: Class<T>?): T {

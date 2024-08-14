@@ -1,6 +1,6 @@
 package dev.botta.trantor.data.jdbc
 
-import dev.botta.trantor.data.jdbc.connectionFactory.credentials.JdbcCredentials
+import dev.botta.trantor.data.jdbc.credentials.JdbcCredentials
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

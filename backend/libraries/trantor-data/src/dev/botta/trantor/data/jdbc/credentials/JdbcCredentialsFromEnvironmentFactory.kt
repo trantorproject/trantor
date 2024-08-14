@@ -1,4 +1,4 @@
-package dev.botta.trantor.data.jdbc.connectionFactory.credentials
+package dev.botta.trantor.data.jdbc.credentials
 
 import dev.botta.env.Env
 

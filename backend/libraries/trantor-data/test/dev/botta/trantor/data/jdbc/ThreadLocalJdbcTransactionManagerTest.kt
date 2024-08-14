@@ -1,6 +1,6 @@
 package dev.botta.trantor.data.jdbc
 
-import dev.botta.trantor.data.jdbc.connectionFactory.credentials.JdbcCredentials
+import dev.botta.trantor.data.jdbc.credentials.JdbcCredentials
 import dev.botta.trantor.data.jdbc.transactions.manager.ThreadLocalJdbcTransactionManager
 import dev.botta.trantor.tx.*
 import io.mockk.mockk
