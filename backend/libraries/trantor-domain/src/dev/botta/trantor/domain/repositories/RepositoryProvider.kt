@@ -1,4 +1,4 @@
-package dev.botta.trantor.data.repositories
+package dev.botta.trantor.domain.repositories
 
 import kotlin.reflect.KClass
 

@@ -4,6 +4,8 @@ import dev.botta.cqbus.requests.Query
 import dev.botta.trantor.appServices.useCases.search.SearchQuery.Results
 import java.time.LocalDateTime
 
+// TODO: agregar filters
+// TODO: ver si devolver mas cosas: page, totalPages, maxId, etc
 abstract class SearchQuery<T>(
     val pagination: Pagination? = null,
     val sorting: Sorting? = null,
