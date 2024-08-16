@@ -18,6 +18,13 @@ class ConfigManagerTest {
         }
 
         @Test
+        fun `retrieve existing key different case returns value`() {
+            manager.addMemoryCollection("key" to "value")
+
+            assertThat(manager["KEY"]).isEqualTo("value")
+        }
+
+        @Test
         fun `retrieve unexistent key returns null`() {
             manager.addMemoryCollection("key" to "value")
 
@@ -40,6 +47,14 @@ class ConfigManagerTest {
         }
 
         @Test
+        fun `retrieve path different case returns value`() {
+            manager.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
+
+            assertThat(manager["KEY"]).isEqualTo("value")
+            assertThat(manager["KEY.SUB_KEY"]).isEqualTo("sub_value")
+        }
+
+        @Test
         fun `retrieve unexisting path returns null`() {
             manager.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
 
@@ -49,6 +64,17 @@ class ConfigManagerTest {
         @Test
         fun `retrieve section with given key`() {
             manager.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
+
+            val section = manager.getSection("key")
+
+            assertThat(section.key).isEqualTo("key")
+            assertThat(section.path).isEqualTo("key")
+            assertThat(section.value).isEqualTo("value")
+        }
+
+        @Test
+        fun `retrieve section different case with given key`() {
+            manager.addMemoryCollection("KEY" to "value", "KEY.SUB_KEY" to "sub_value")
 
             val section = manager.getSection("key")
 
@@ -106,6 +132,40 @@ class ConfigManagerTest {
             assertThat(sections[0].value).isEqualTo("value1")
             assertThat(sections[1].key).isEqualTo("key2")
             assertThat(sections[1].path).isEqualTo("parent.key2")
+            assertThat(sections[1].value).isEqualTo("value2")
+        }
+
+        @Test
+        fun `sub-section getChildren returns grand sub-sections`() {
+            manager.addMemoryCollection(
+                "section.sub-section.key1" to "value1",
+                "section.sub-section.key2" to "value2",
+            )
+            val sections = manager.getSection("section").getChildren()
+
+            val subSections = sections.first().getChildren()
+
+            assertThat(subSections.size).isEqualTo(2)
+            assertThat(subSections[0].key).isEqualTo("key1")
+            assertThat(subSections[0].path).isEqualTo("section.sub-section.key1")
+            assertThat(subSections[0].value).isEqualTo("value1")
+            assertThat(subSections[1].key).isEqualTo("key2")
+            assertThat(subSections[1].path).isEqualTo("section.sub-section.key2")
+            assertThat(subSections[1].value).isEqualTo("value2")
+        }
+
+        @Test
+        fun `section getChildren returns section sub-sections ignoring case`() {
+            manager.addMemoryCollection("PARENT.KEY1" to "value1", "PARENT.KEY2" to "value2")
+
+            val sections = manager.getSection("parent").getChildren()
+
+            assertThat(sections.size).isEqualTo(2)
+            assertThat(sections[0].key).isEqualTo("KEY1")
+            assertThat(sections[0].path).isEqualTo("parent.KEY1")
+            assertThat(sections[0].value).isEqualTo("value1")
+            assertThat(sections[1].key).isEqualTo("KEY2")
+            assertThat(sections[1].path).isEqualTo("parent.KEY2")
             assertThat(sections[1].value).isEqualTo("value2")
         }
     }

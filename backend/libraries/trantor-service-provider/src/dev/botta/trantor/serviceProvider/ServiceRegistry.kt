@@ -75,7 +75,7 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         addSingleton(TService::class.java, { implementation }, key)
     }
 
-    inline fun <reified TService: Any> addSingleton(key: String, noinline factory: ImplementationFactory<TService>) = apply {
+    inline fun <reified TService: Any> addSingleton(key: String? = null, noinline factory: ImplementationFactory<TService>) = apply {
         addSingleton(TService::class.java, factory, key)
     }
 
@@ -96,6 +96,9 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         add(ServiceDescriptor(serviceType, factory, lifetime, key))
     }
 
+    fun has(serviceType: Class<*>, key: String? = null) =
+        any { it.serviceType == serviceType && it.key == key }
+
     fun ensureAdded(descriptor: ServiceDescriptor<*>) {
         if (any { it.serviceType == descriptor.serviceType && it.key == descriptor.key }) return
         add(descriptor)
@@ -108,6 +111,8 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
     fun <TService: Any> configure(serviceType: Class<TService>, key: String?, configuration: ServiceConfiguration<TService>) {
         configurations.add(ServiceConfigurationItem(ServiceDescriptor.serviceId(serviceType, key), configuration))
     }
+
+    inline fun <reified TService: Any> has(key: String? = null) = has(TService::class.java, key)
 
     inline fun <reified TService: Any> configure(key: String, noinline configuration: ServiceConfiguration<TService>) {
         configure(TService::class.java, key, configuration)

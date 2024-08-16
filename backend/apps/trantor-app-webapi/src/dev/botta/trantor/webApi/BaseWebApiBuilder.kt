@@ -13,9 +13,6 @@ abstract class BaseWebApiBuilder<T: BaseWebApi>(appName: String? = null, environ
 
     init {
         if (environmentName != null) config.addMemoryCollection("environment" to environmentName)
-        config.addEnvironmentVariables()
-        config.addEnvironmentVariables("TRANTOR_")
-
         environment = createAppEnvironment(appName)
         services.addSingleton<AppEnvironment>(environment)
         services.addSingleton<Config>(config)
@@ -23,6 +20,8 @@ abstract class BaseWebApiBuilder<T: BaseWebApi>(appName: String? = null, environ
         config.addJsonResource("settings.json")
         config.addJsonResource("settings.${environment.environmentName.lowercase()}.json")
         config.addJsonResource("settings.local.json")
+        config.addEnvironmentVariables()
+        config.addEnvironmentVariables("TRANTOR_")
 
         addDefaultServices()
     }

@@ -38,9 +38,9 @@ class ConfigRoot(providers: List<ConfigProvider> = listOf()): Config {
     private fun doGetChildren(path: String? = null): List<ConfigSection> {
         val prefix = if (path.isNullOrEmpty()) "" else "$path."
         return providers
-            .flatMap { it.paths.filter { p -> p.startsWith(prefix) } }
-            .map { it.removePrefix(prefix).split(".").first() }
-            .distinct()
+            .flatMap { it.paths.filter { p -> p.startsWith(prefix, ignoreCase = true) } }
+            .map { it.substring(prefix.length).split(".").first() }
+            .distinctBy { it.lowercase() }
             .sorted()
             .map { getSection(prefix + it) }
     }

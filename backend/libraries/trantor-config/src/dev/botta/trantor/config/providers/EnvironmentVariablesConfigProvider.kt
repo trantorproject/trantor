@@ -7,7 +7,11 @@ class EnvironmentVariablesConfigProvider(private val prefix: String = ""): Confi
     override fun load() {
         Env.getAll()
             .filter { it.name.startsWith(prefix, ignoreCase = true) }
-            .forEach { set(it.name.removePrefix(prefix), it.value) }
+            .forEach {
+                val name = it.name.removePrefix(prefix)
+                set(name, it.value)
+                if (name.contains("_")) set(name.replace("_", "."), it.value)
+            }
     }
 }
 

@@ -7,12 +7,15 @@ class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProv
     private var inScope: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
     private val scopeCache: ThreadLocal<MutableMap<String, Any>> = ThreadLocal.withInitial { mutableMapOf() }
 
-    override fun <T: Any> getOrDefault(type: Class<T>, key: String, default: () -> T) = tryGet(type, key) ?: default()
+    override fun <T: Any> getOrDefault(type: Class<T>, key: String?, default: () -> T) = tryGet(type, key) ?: default()
 
     override fun <T: Any> getOrDefault(type: Class<T>, default: () -> T) = tryGet(type) ?: default()
 
     override fun <T: Any> get(type: Class<T>, key: String?) =
         tryGet(type, key) ?: throw ServiceNotRegisteredError(type, key)
+
+    @Synchronized
+    override fun <T: Any> has(type: Class<T>, key: String?) = registry.any { it.serviceType == type && it.key == key }
 
     @Synchronized
     override fun <T: Any> tryGet(type: Class<T>, key: String?): T? {

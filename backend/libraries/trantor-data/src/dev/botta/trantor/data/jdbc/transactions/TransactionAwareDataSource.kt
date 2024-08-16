@@ -1,5 +1,6 @@
 package dev.botta.trantor.data.jdbc.transactions
 
+import dev.botta.trantor.data.jdbc.ManagedDataSourceConnection
 import dev.botta.trantor.data.jdbc.transactions.manager.JdbcTransactionManager
 import java.io.PrintWriter
 import java.sql.Connection
@@ -33,9 +34,10 @@ class TransactionAwareDataSource(private val innerDataSource: DataSource): DataS
         return iface.isInstance(this) || innerDataSource.isWrapperFor(iface)
     }
 
-    override fun getConnection(): Connection {
+    override fun getConnection(): Connection? {
         if (existsActiveTransaction()) return transactionManager?.activeConnection!!
-        return ManagedDataSourceConnection(innerDataSource.connection, ::release)
+        val connection = innerDataSource.connection ?: return null
+        return ManagedDataSourceConnection(connection, ::release)
     }
 
     private fun existsActiveTransaction() = transactionManager?.hasActiveTransaction() ?: false

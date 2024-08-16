@@ -2,8 +2,7 @@ package dev.botta.trantor.serialization.gson.adapters.kotlinReflective
 
 import com.google.gson.annotations.SerializedName
 import java.lang.reflect.Field
-import kotlin.reflect.KClass
-import kotlin.reflect.KParameter
+import kotlin.reflect.*
 
 /**
  * Returns the default value of this [KParameter] or `null`.

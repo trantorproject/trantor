@@ -1,4 +1,4 @@
-package dev.botta.trantor.data.jdbc.transactions
+package dev.botta.trantor.data.jdbc
 
 import java.sql.*
 import java.util.*

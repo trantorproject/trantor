@@ -5,6 +5,7 @@ import com.google.gson.annotations.JsonAdapter
 import com.google.gson.reflect.TypeToken
 import com.google.gson.stream.*
 import java.lang.reflect.*
+import java.util.*
 import kotlin.reflect.*
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.*
@@ -32,7 +33,7 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
         val declaringClass = primaryConstructor.javaConstructor!!.declaringClass
         val constructorAdapters = mutableMapOf<KParameter, TypeAdapter<*>>()
         val fieldAdapters = mutableMapOf<Field, TypeAdapter<*>>()
-        val constructorMap = mutableMapOf<String, KParameter>()
+        val constructorMap: MutableMap<String, KParameter> = TreeMap(String.CASE_INSENSITIVE_ORDER)
 
         primaryConstructor.parameters.forEach { parameter: KParameter ->
             val names = parameter.getSerializedNames(declaringClass)
@@ -115,7 +116,7 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
 
             constructorParams.forEach { (param, value) ->
                 if (value == null && !param.type.isMarkedNullable) {
-                    throw JsonParseException("${param.name} cannot be null")
+                    throw JsonParseException("${param.name} cannot be null in type '${kClass.simpleName}'")
                 }
             }
             try {

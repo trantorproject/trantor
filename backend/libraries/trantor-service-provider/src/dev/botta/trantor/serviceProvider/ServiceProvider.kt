@@ -1,7 +1,7 @@
 package dev.botta.trantor.serviceProvider
 
 interface ServiceProvider {
-    fun <T: Any> getOrDefault(type: Class<T>, key: String, default: () -> T): T
+    fun <T: Any> getOrDefault(type: Class<T>, key: String? = null, default: () -> T): T
 
     fun <T: Any> getOrDefault(type: Class<T>, default: () -> T): T
 
@@ -11,12 +11,14 @@ interface ServiceProvider {
 
     fun <T: Any> tryGet(type: Class<T>, key: String? = null): T?
 
+    fun <T: Any> has(type: Class<T>, key: String? = null): Boolean
+
     fun enterScope()
 
     fun leaveScope()
 }
 
-inline fun <reified T: Any> ServiceProvider.getOrDefault(key: String, noinline default: () -> T) = getOrDefault(T::class.java, key, default)
+inline fun <reified T: Any> ServiceProvider.getOrDefault(key: String? = null, noinline default: () -> T) = getOrDefault(T::class.java, key, default)
 
 inline fun <reified T: Any> ServiceProvider.getOrDefault(noinline default: () -> T) = getOrDefault(T::class.java, default)
 
@@ -26,3 +28,4 @@ inline fun <reified T: Any> ServiceProvider.getAll(key: String? = null) = getAll
 
 inline fun <reified T: Any> ServiceProvider.tryGet(key: String? = null) = tryGet(T::class.java, key)
 
+inline fun <reified T: Any> ServiceProvider.has(key: String? = null) = has(T::class.java, key)

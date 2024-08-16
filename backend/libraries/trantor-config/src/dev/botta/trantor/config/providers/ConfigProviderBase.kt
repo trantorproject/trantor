@@ -8,7 +8,7 @@ abstract class ConfigProviderBase: ConfigProvider {
 
     override fun has(key: String) = data.contains(key)
 
-    override fun hasSection(path: String) = data.any { it.key.startsWith(path) }
+    override fun hasSection(path: String) = data.any { it.key.startsWith(path, ignoreCase = true) }
 
     override fun get(path: String) = data[path]
 

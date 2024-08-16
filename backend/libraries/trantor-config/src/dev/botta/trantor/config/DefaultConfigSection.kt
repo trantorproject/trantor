@@ -19,8 +19,6 @@ class DefaultConfigSection(private val root: ConfigRoot, override val path: Stri
 
     override fun getChildren() = root.getChildren(path)
 
-    override fun toString() = if (value != null) "ConfigSection($path, $value)" else "ConfigSection($path)"
-
     private fun isArray() = get(CONFIG_TYPE_KEY) == "array"
 
     private fun getSubPath(otherPath: String) = if (path.isEmpty()) otherPath else "$path.$otherPath"
@@ -37,4 +35,6 @@ class DefaultConfigSection(private val root: ConfigRoot, override val path: Stri
         }
         return Json.obj(childrenJson.toList())
     }
+
+    override fun toString() = "ConfigSection($path)"
 }

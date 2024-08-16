@@ -1,11 +1,12 @@
 package dev.botta.trantor.data.jdbc
 
-import dev.botta.trantor.data.jdbc.credentials.JdbcCredentials
+import dev.botta.trantor.data.jdbc.transactions.TransactionAwareDataSource
 import dev.botta.trantor.data.jdbc.transactions.manager.ThreadLocalJdbcTransactionManager
 import dev.botta.trantor.tx.*
-import io.mockk.mockk
+import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
+import javax.sql.DataSource
 
 class ThreadLocalJdbcTransactionManagerTest {
     @Test
@@ -100,11 +101,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     @Test
     fun `the connection is committed when it leaves the transactional scope`() {
         val connection = ConnectionStub(savePoints)
-        dataSource =
-            DataSource(FixedConnectionFactory(connection), fakeJdbcCredentials) {
-                ThreadLocalJdbcTransactionManager(it)
-            }
-        val transactionManager = dataSource.transactionManager
+        every { dataSource.connection } returns connection
 
         transactionManager.transactional { }
 
@@ -114,11 +111,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     @Test
     fun `the connection is rollbacked when an exception occurs inside the transactional scope`() {
         val connection = ConnectionStub(savePoints)
-        dataSource =
-            DataSource(FixedConnectionFactory(connection), fakeJdbcCredentials) {
-                ThreadLocalJdbcTransactionManager(it)
-            }
-        val transactionManager = dataSource.transactionManager
+        every { dataSource.connection } returns connection
 
         assertThrows<Exception> {
             transactionManager.transactional { throw Exception("Some error") }
@@ -129,11 +122,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     @Test
     fun `a transaction can be commited inside a transactional scope`() {
         val connection = ConnectionStub(savePoints)
-        dataSource =
-            DataSource(FixedConnectionFactory(connection), fakeJdbcCredentials) {
-                ThreadLocalJdbcTransactionManager(it)
-            }
-        val transactionManager = dataSource.transactionManager
+        every { dataSource.connection } returns connection
 
         transactionManager.transactional { transaction ->
             transaction.commit()
@@ -145,11 +134,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     @Test
     fun `a transaction can be rollbacked inside a transactional scope`() {
         val connection = ConnectionStub(savePoints)
-        dataSource =
-            DataSource(FixedConnectionFactory(connection), fakeJdbcCredentials) {
-                ThreadLocalJdbcTransactionManager(it)
-            }
-        val transactionManager = dataSource.transactionManager
+        every { dataSource.connection } returns connection
 
         transactionManager.transactional { transaction ->
             transaction.rollback()
@@ -227,6 +212,12 @@ class ThreadLocalJdbcTransactionManagerTest {
         }
     }
 
+    @BeforeEach
+    fun beforeEach() {
+        val connection = ConnectionStub(savePoints)
+        every { dataSource.connection } returns connection
+    }
+
     private fun createThread(name: String = "OtherThread", runnable: Runnable): Thread {
         return Thread(runnable, name)
     }
@@ -237,10 +228,6 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     private var savePoints = SavePoints()
-    private val fakeJdbcCredentials = mockk<JdbcCredentials>()
-    private var dataSource =
-        DataSource(StubbedConnectionFactory(savePoints), fakeJdbcCredentials) {
-            ThreadLocalJdbcTransactionManager(it)
-        }
-    private val transactionManager = dataSource.transactionManager
+    private val dataSource = mockk<DataSource>()
+    private val transactionManager = ThreadLocalJdbcTransactionManager(TransactionAwareDataSource(dataSource))
 }
