@@ -5,4 +5,5 @@ dependencies {
     api("org.assertj:assertj-core")
     api("io.mockk:mockk")
     api("io.rest-assured:rest-assured")
+    runtimeOnly("org.junit.platform:junit-platform-launcher")
 }

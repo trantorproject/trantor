@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "1.9.23"
-    id("dev.botta.kotlin-conventions") version "0.3.0"
+    kotlin("jvm") version "2.1.20"
+    id("dev.botta.kotlin-conventions") version "0.4.2"
 }
 
 allprojects {
@@ -19,5 +19,9 @@ allprojects {
         api(kotlin("reflect"))
         implementation("org.slf4j:slf4j-simple")
         if (project.name != "trantor-test") testImplementation(project(":libraries:trantor-test"))
+    }
+
+    kotlin {
+        jvmToolchain(23)
     }
 }

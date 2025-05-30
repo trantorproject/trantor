@@ -1,10 +1,9 @@
 package dev.botta.trantor.serialization.gson.adapters.kotlinReflective
 
-import com.google.gson.internal.`$Gson$Types`
+import com.google.gson.internal.GsonTypes
 import com.google.gson.reflect.TypeToken
 import java.lang.reflect.Type
-import kotlin.reflect.*
-import kotlin.reflect.jvm.javaType
+import kotlin.reflect.KClass
 
 /**
  * Helper method for converting a [TypeToken] to a corresponding Kotlin class.
@@ -20,4 +19,4 @@ internal fun <T : Any> TypeToken<T>.toKClass(): KClass<T> =
  * Resolves for the type of the [property] that is member of the [TypeToken].
  */
 internal fun TypeToken<*>.resolveType(propertyType: Type): TypeToken<*> =
-    TypeToken.get(`$Gson$Types`.resolve(type, rawType, propertyType))
+    TypeToken.get(GsonTypes.resolve(type, rawType, propertyType))
