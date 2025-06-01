@@ -1,16 +1,16 @@
 package dev.botta.trantor.web.client.jetty
 
+import dev.botta.trantor.core.getLogger
 import dev.botta.trantor.web.client.*
 import org.eclipse.jetty.client.HttpResponseException
 import org.eclipse.jetty.client.api.*
 import org.eclipse.jetty.client.util.StringRequestContent
 import org.eclipse.jetty.http.HttpMethod
-import org.slf4j.LoggerFactory
 import java.util.concurrent.*
 import org.eclipse.jetty.client.HttpClient as JettyHttp
 
 class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient {
-    private val logger = LoggerFactory.getLogger(javaClass.name)
+    private val logger = getLogger()
     private val httpClient = JettyHttp()
 
     init {

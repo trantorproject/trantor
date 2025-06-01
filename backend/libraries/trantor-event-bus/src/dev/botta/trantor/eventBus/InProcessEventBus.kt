@@ -1,10 +1,9 @@
 package dev.botta.trantor.eventBus
 
-import dev.botta.trantor.core.Event
-import org.slf4j.LoggerFactory
+import dev.botta.trantor.core.*
 
 class InProcessEventBus: EventBus() {
-    private val logger = LoggerFactory.getLogger(javaClass.name)
+    private val logger = getLogger()
     private val handlers = mutableListOf<EventHandler>()
     private var inRequest: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
     private var pendingRequestEvents: ThreadLocal<MutableList<Event>> = ThreadLocal.withInitial { mutableListOf() }

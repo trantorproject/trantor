@@ -2,10 +2,10 @@ package dev.botta.trantor.appServices.middlewares
 
 import dev.botta.cqbus.*
 import dev.botta.cqbus.requests.Request
-import org.slf4j.LoggerFactory
+import dev.botta.trantor.core.getLogger
 
 class LoggingMiddleware: Middleware {
-    private val logger = LoggerFactory.getLogger(javaClass.name)
+    private val logger = getLogger()
 
     override fun <T: Request<R>, R> execute(request: T, next: (T) -> R, context: ExecutionContext): R {
         logger.info("Executing use case $request" )

@@ -1,5 +1,6 @@
 package dev.botta.trantor.web.server
 
+import dev.botta.trantor.core.getLogger
 import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.web.server.logs.HttpRequestLogger
 import dev.botta.trantor.web.server.stats.*
@@ -9,11 +10,10 @@ import io.javalin.http.Context
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.StatisticsHandler
 import org.eclipse.jetty.util.thread.QueuedThreadPool
-import org.slf4j.LoggerFactory
 import java.util.*
 
 class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
-    private val logger = LoggerFactory.getLogger(javaClass.name)
+    private val logger = getLogger()
     private val javalin: Javalin
     private val routeRegister: RouteRegister
     private val threadPool = QueuedThreadPool(config.maxThreads, config.minThreads, config.idleTimeout)

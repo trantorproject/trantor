@@ -1,12 +1,12 @@
 package dev.botta.trantor.data.jooq
 
+import dev.botta.trantor.core.getLogger
 import org.jooq.*
 import org.jooq.conf.Settings
 import org.jooq.impl.DSL
-import org.slf4j.LoggerFactory
 
 class SQLLogger: ExecuteListener {
-    private val logger = LoggerFactory.getLogger(javaClass.simpleName)
+    private val logger = getLogger()
 
     override fun executeStart(ctx: ExecuteContext) {
         val dsl: DSLContext = DSL.using(
