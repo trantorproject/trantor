@@ -8,30 +8,30 @@ class PropertiesResourceConfigProviderTest {
     @Test
     fun `don't fail if resource not found`() {
         assertDoesNotThrow {
-            manager.addPropertiesResource("invalid.json")
+            config.addPropertiesResource("invalid.json")
         }
     }
 
     @Test
     fun `string property`() {
-        manager.addPropertiesResource("settings.properties")
+        config.addPropertiesResource("settings.properties")
 
-        assertThat(manager["stringProperty"]).isEqualTo("value")
+        assertThat(config["stringProperty"]).isEqualTo("value")
     }
 
     @Test
     fun `empty property`() {
-        manager.addPropertiesResource("settings.properties")
+        config.addPropertiesResource("settings.properties")
 
-        assertThat(manager["emptyProperty"]).isEqualTo("")
+        assertThat(config["emptyProperty"]).isEqualTo("")
     }
 
     @Test
     fun `child property`() {
-        manager.addPropertiesResource("settings.properties")
+        config.addPropertiesResource("settings.properties")
 
-        assertThat(manager["parent.child"]).isEqualTo("child value")
+        assertThat(config["parent.child"]).isEqualTo("child value")
     }
 
-    private val manager = ConfigManager()
+    private val config = ConfigManager()
 }

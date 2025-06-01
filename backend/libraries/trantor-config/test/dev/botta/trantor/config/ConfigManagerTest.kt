@@ -12,60 +12,60 @@ class ConfigManagerTest {
     inner class `with single provider` {
         @Test
         fun `retrieve existing key returns value`() {
-            manager.addMemoryCollection("key" to "value")
+            config.addMemoryCollection("key" to "value")
 
-            assertThat(manager["key"]).isEqualTo("value")
+            assertThat(config["key"]).isEqualTo("value")
         }
 
         @Test
         fun `retrieve existing key different case returns value`() {
-            manager.addMemoryCollection("key" to "value")
+            config.addMemoryCollection("key" to "value")
 
-            assertThat(manager["KEY"]).isEqualTo("value")
+            assertThat(config["KEY"]).isEqualTo("value")
         }
 
         @Test
         fun `retrieve unexistent key returns null`() {
-            manager.addMemoryCollection("key" to "value")
+            config.addMemoryCollection("key" to "value")
 
-            assertThat(manager["other_key"]).isNull()
+            assertThat(config["other_key"]).isNull()
         }
 
         @Test
         fun `retrieve existing key with null value`() {
-            manager.addMemoryCollection("key" to null)
+            config.addMemoryCollection("key" to null)
 
-            assertThat(manager["key"]).isNull()
+            assertThat(config["key"]).isNull()
         }
 
         @Test
         fun `retrieve path returns value`() {
-            manager.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
+            config.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
 
-            assertThat(manager["key"]).isEqualTo("value")
-            assertThat(manager["key.sub_key"]).isEqualTo("sub_value")
+            assertThat(config["key"]).isEqualTo("value")
+            assertThat(config["key.sub_key"]).isEqualTo("sub_value")
         }
 
         @Test
         fun `retrieve path different case returns value`() {
-            manager.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
+            config.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
 
-            assertThat(manager["KEY"]).isEqualTo("value")
-            assertThat(manager["KEY.SUB_KEY"]).isEqualTo("sub_value")
+            assertThat(config["KEY"]).isEqualTo("value")
+            assertThat(config["KEY.SUB_KEY"]).isEqualTo("sub_value")
         }
 
         @Test
         fun `retrieve unexisting path returns null`() {
-            manager.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
+            config.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
 
-            assertThat(manager["key.other_key"]).isNull()
+            assertThat(config["key.other_key"]).isNull()
         }
 
         @Test
         fun `retrieve section with given key`() {
-            manager.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
+            config.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
 
-            val section = manager.getSection("key")
+            val section = config.getSection("key")
 
             assertThat(section.key).isEqualTo("key")
             assertThat(section.path).isEqualTo("key")
@@ -74,9 +74,9 @@ class ConfigManagerTest {
 
         @Test
         fun `retrieve section different case with given key`() {
-            manager.addMemoryCollection("KEY" to "value", "KEY.SUB_KEY" to "sub_value")
+            config.addMemoryCollection("KEY" to "value", "KEY.SUB_KEY" to "sub_value")
 
-            val section = manager.getSection("key")
+            val section = config.getSection("key")
 
             assertThat(section.key).isEqualTo("key")
             assertThat(section.path).isEqualTo("key")
@@ -85,9 +85,9 @@ class ConfigManagerTest {
 
         @Test
         fun `retrieve section with given path`() {
-            manager.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
+            config.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
 
-            val section = manager.getSection("key.sub_key")
+            val section = config.getSection("key.sub_key")
 
             assertThat(section.key).isEqualTo("sub_key")
             assertThat(section.path).isEqualTo("key.sub_key")
@@ -96,9 +96,9 @@ class ConfigManagerTest {
 
         @Test
         fun `retrieve unexistent section returns empty section`() {
-            manager.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
+            config.addMemoryCollection("key" to "value", "key.sub_key" to "sub_value")
 
-            val section = manager.getSection("other")
+            val section = config.getSection("other")
 
             assertThat(section.key).isEqualTo("other")
             assertThat(section.path).isEqualTo("other")
@@ -107,9 +107,9 @@ class ConfigManagerTest {
 
         @Test
         fun `getChildren returns root sections`() {
-            manager.addMemoryCollection("key1" to "value1", "key2" to "value2")
+            config.addMemoryCollection("key1" to "value1", "key2" to "value2")
 
-            val sections = manager.getChildren()
+            val sections = config.getChildren()
 
             assertThat(sections.size).isEqualTo(2)
             assertThat(sections[0].key).isEqualTo("key1")
@@ -122,9 +122,9 @@ class ConfigManagerTest {
 
         @Test
         fun `section getChildren returns section sub-sections`() {
-            manager.addMemoryCollection("parent.key1" to "value1", "parent.key2" to "value2")
+            config.addMemoryCollection("parent.key1" to "value1", "parent.key2" to "value2")
 
-            val sections = manager.getSection("parent").getChildren()
+            val sections = config.getSection("parent").getChildren()
 
             assertThat(sections.size).isEqualTo(2)
             assertThat(sections[0].key).isEqualTo("key1")
@@ -137,11 +137,11 @@ class ConfigManagerTest {
 
         @Test
         fun `sub-section getChildren returns grand sub-sections`() {
-            manager.addMemoryCollection(
+            config.addMemoryCollection(
                 "section.sub-section.key1" to "value1",
                 "section.sub-section.key2" to "value2",
             )
-            val sections = manager.getSection("section").getChildren()
+            val sections = config.getSection("section").getChildren()
 
             val subSections = sections.first().getChildren()
 
@@ -156,9 +156,9 @@ class ConfigManagerTest {
 
         @Test
         fun `section getChildren returns section sub-sections ignoring case`() {
-            manager.addMemoryCollection("PARENT.KEY1" to "value1", "PARENT.KEY2" to "value2")
+            config.addMemoryCollection("PARENT.KEY1" to "value1", "PARENT.KEY2" to "value2")
 
-            val sections = manager.getSection("parent").getChildren()
+            val sections = config.getSection("parent").getChildren()
 
             assertThat(sections.size).isEqualTo(2)
             assertThat(sections[0].key).isEqualTo("KEY1")
@@ -174,42 +174,42 @@ class ConfigManagerTest {
     inner class `with multiple providers` {
         @Test
         fun `retrieve existing key returns value from last added provider`() {
-            manager.addMemoryCollection("key" to "value")
-            manager.addMemoryCollection("key" to "value2")
+            config.addMemoryCollection("key" to "value")
+            config.addMemoryCollection("key" to "value2")
 
-            assertThat(manager["key"]).isEqualTo("value2")
+            assertThat(config["key"]).isEqualTo("value2")
         }
 
         @Test
         fun `retrieve existing key returns value from last added matching provider`() {
-            manager.addMemoryCollection("key" to "value", "other" to "other value")
-            manager.addMemoryCollection("key" to "value2")
+            config.addMemoryCollection("key" to "value", "other" to "other value")
+            config.addMemoryCollection("key" to "value2")
 
-            assertThat(manager["other"]).isEqualTo("other value")
+            assertThat(config["other"]).isEqualTo("other value")
         }
 
         @Test
         fun `retrieve existing key with null value from last added provider`() {
-            manager.addMemoryCollection("key" to "value")
-            manager.addMemoryCollection("key" to null)
+            config.addMemoryCollection("key" to "value")
+            config.addMemoryCollection("key" to null)
 
-            assertThat(manager["key"]).isNull()
+            assertThat(config["key"]).isNull()
         }
 
         @Test
         fun `returns null when key is not found in all providers`() {
-            manager.addMemoryCollection("key" to "value")
-            manager.addMemoryCollection("key" to "value2")
+            config.addMemoryCollection("key" to "value")
+            config.addMemoryCollection("key" to "value2")
 
-            assertThat(manager["other"]).isNull()
+            assertThat(config["other"]).isNull()
         }
 
         @Test
         fun `getChildren returns root sections from all providers`() {
-            manager.addMemoryCollection("key1" to "value1", "key2" to "value2")
-            manager.addMemoryCollection("key2" to "value2", "key3" to "value3")
+            config.addMemoryCollection("key1" to "value1", "key2" to "value2")
+            config.addMemoryCollection("key2" to "value2", "key3" to "value3")
 
-            val sections = manager.getChildren()
+            val sections = config.getChildren()
 
             assertThat(sections.size).isEqualTo(3)
             assertThat(sections[0].key).isEqualTo("key1")
@@ -228,12 +228,12 @@ class ConfigManagerTest {
     inner class `config section` {
         @Test
         fun `get root section`() {
-            manager.addMemoryCollection(
+            config.addMemoryCollection(
                 "key1" to "value1",
                 "key2" to "value2",
             )
 
-            val section = manager.getSection("")
+            val section = config.getSection("")
 
             assertThat(section["key1"]).isEqualTo("value1")
             assertThat(section["key2"]).isEqualTo("value2")
@@ -241,12 +241,12 @@ class ConfigManagerTest {
 
         @Test
         fun `get returns child path`() {
-            manager.addMemoryCollection(
+            config.addMemoryCollection(
                 "section.key1" to "value1",
                 "section.key2" to "value2",
             )
 
-            val section = manager.getSection("section")
+            val section = config.getSection("section")
 
             assertThat(section["key1"]).isEqualTo("value1")
             assertThat(section["key2"]).isEqualTo("value2")
@@ -254,11 +254,11 @@ class ConfigManagerTest {
 
         @Test
         fun `getSection returns child section`() {
-            manager.addMemoryCollection(
+            config.addMemoryCollection(
                 "section.sub-section.key1" to "value1",
                 "section.sub-section.key2" to "value2",
             )
-            val section = manager.getSection("section")
+            val section = config.getSection("section")
 
             val subSection = section.getSection("sub-section")
 
@@ -268,13 +268,13 @@ class ConfigManagerTest {
 
         @Test
         fun `getChildren returns child sections`() {
-            manager.addMemoryCollection(
+            config.addMemoryCollection(
                 "section.sub-section.key1" to "value1",
                 "section.sub-section.key2" to "value2",
                 "section.sub-section2.key1" to "value3",
                 "section.sub-section2.key2" to "value4",
             )
-            val section = manager.getSection("section")
+            val section = config.getSection("section")
 
             val subSections = section.getChildren()
 
@@ -289,48 +289,48 @@ class ConfigManagerTest {
     inner class toJson {
         @Test
         fun `simple string value to json`() {
-            manager.addMemoryCollection("key1" to "value")
+            config.addMemoryCollection("key1" to "value")
 
-            val json = manager.getSection("key1").toJson()
+            val json = config.getSection("key1").toJson()
 
             assertThat(json).isEqualTo(Json.value("value"))
         }
 
         @Test
         fun `simple null value to json`() {
-            manager.addMemoryCollection("key1" to null)
+            config.addMemoryCollection("key1" to null)
 
-            val json = manager.getSection("key1").toJson()
+            val json = config.getSection("key1").toJson()
 
             assertThat(json).isEqualTo(Json.value(null))
         }
 
         @Test
         fun `simple number value to json`() {
-            manager.addMemoryCollection("key1" to "5")
+            config.addMemoryCollection("key1" to "5")
 
-            val json = manager.getSection("key1").toJson()
+            val json = config.getSection("key1").toJson()
 
             assertThat(json).isEqualTo(Json.value("5"))
         }
 
         @Test
         fun `missing value to json`() {
-            manager.addMemoryCollection()
+            config.addMemoryCollection()
 
-            val json = manager.getSection("key1").toJson()
+            val json = config.getSection("key1").toJson()
 
             assertThat(json).isEqualTo(Json.value(null))
         }
 
         @Test
         fun `section to object json`() {
-            manager.addMemoryCollection(
+            config.addMemoryCollection(
                 "section.sub-section.key1" to "value1",
                 "section.sub-section.key2" to "value2",
             )
 
-            val json = manager.getSection("section").toJson()
+            val json = config.getSection("section").toJson()
 
             assertThat(json).isEqualTo(Json.obj(
                 "sub-section" to Json.obj(
@@ -342,26 +342,26 @@ class ConfigManagerTest {
 
         @Test
         fun `array section to json`() {
-            manager.addMemoryCollection(
+            config.addMemoryCollection(
                 "section.0" to "value1",
                 "section.1" to "value2",
                 "section.size" to "2",
                 "section.__config_type__" to "array",
             )
 
-            val json = manager.getSection("section").toJson()
+            val json = config.getSection("section").toJson()
 
             assertThat(json).isEqualTo(Json.array("value1", "value2"))
         }
 
         @Test
         fun `manager toJson`() {
-            manager.addMemoryCollection(
+            config.addMemoryCollection(
                 "section.key1" to "value1",
                 "section.key2" to "value2",
             )
 
-            val json = manager.toJson()
+            val json = config.toJson()
 
             assertThat(json).isEqualTo(Json.obj(
                 "section" to Json.obj(
@@ -372,5 +372,5 @@ class ConfigManagerTest {
         }
     }
 
-    private val manager = ConfigManager()
+    private val config = ConfigManager()
 }

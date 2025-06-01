@@ -33,7 +33,6 @@ abstract class BaseWebApiBuilder<T: BaseWebApi>(appName: String? = null, environ
     }
 
     private fun addDefaultServices() {
-        // Add Logger
         // Add Metrics
         services.addConfig<HttpServerConfig>("httpServer")
         services.addGsonSerializer()

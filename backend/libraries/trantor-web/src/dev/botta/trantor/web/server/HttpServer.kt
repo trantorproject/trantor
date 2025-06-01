@@ -7,6 +7,7 @@ import dev.botta.trantor.web.server.stats.*
 import io.javalin.Javalin
 import io.javalin.config.JettyConfig
 import io.javalin.http.Context
+import org.apache.logging.log4j.core.config.Configurator
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.StatisticsHandler
 import org.eclipse.jetty.util.thread.QueuedThreadPool
@@ -35,7 +36,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
     }
 
     private fun configureJetty(jettyConfig: JettyConfig) {
-        System.setProperty("org.slf4j.simpleLogger.log.org.eclipse.jetty", "WARN")
+        Configurator.setLevel("org.eclipse.jetty", org.apache.logging.log4j.Level.WARN)
         jettyConfig.threadPool = threadPool
         if (config.isStatsEnabled) {
             jettyConfig.modifyServer { it.insertHandler(statisticsHandler) }
