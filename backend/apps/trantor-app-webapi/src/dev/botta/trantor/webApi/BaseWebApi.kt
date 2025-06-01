@@ -10,8 +10,7 @@ import dev.botta.trantor.web.server.*
 import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.webApi.errorHandlers.*
 
-abstract class BaseWebApi(registry: ServiceRegistry): RouteRegistrant {
-    val services = DefaultServiceProvider(registry)
+abstract class BaseWebApi(val services: ServiceProvider): RouteRegistrant {
     val config = services.get<Config>()
     val environment = services.get<AppEnvironment>()
     protected val httpServer = HttpServer(services.getOrDefault<HttpServerConfig> { HttpServerConfig() })

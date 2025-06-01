@@ -1,7 +1,7 @@
 package dev.botta.trantor.data.jdbc
 
 data class JdbcConfig(
-    val url: String = "",
-    val username: String = "",
-    val password: String = "",
+    var url: String = "",
+    var username: String = "",
+    var password: String = "",
 )

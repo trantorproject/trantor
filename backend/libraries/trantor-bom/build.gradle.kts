@@ -21,7 +21,10 @@ dependencies {
         api("com.google.code.gson:gson:2.13.1")
         api("io.javalin:javalin:6.6.0")
         api("org.eclipse.jetty:jetty-client:11.0.25")
-        api("org.slf4j:slf4j-simple:2.0.17")
+        api("org.slf4j:slf4j-api:2.0.17")
+        api("org.apache.logging.log4j:log4j-core:2.24.3")
+        api("org.apache.logging.log4j:log4j-slf4j2-impl:2.24.3")
+        api("org.fusesource.jansi:jansi:2.4.2")
         api("com.zaxxer:HikariCP:6.3.0")
         api("org.jooq:jooq:3.20.3")
     }

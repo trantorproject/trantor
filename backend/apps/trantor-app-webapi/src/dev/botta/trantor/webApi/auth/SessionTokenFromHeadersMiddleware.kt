@@ -5,7 +5,7 @@ import dev.botta.cqbus.requests.Request
 import dev.botta.trantor.appServices.AppModule
 import io.javalin.http.Context
 
-class SessionTokenAuthenticationMiddleware: Middleware {
+class SessionTokenFromHeadersMiddleware: Middleware {
     override fun <T: Request<R>, R> execute(request: T, next: (T) -> R, context: ExecutionContext): R {
         extractSessionTokenFrom(context)
         return next(request)
@@ -22,6 +22,6 @@ class SessionTokenAuthenticationMiddleware: Middleware {
     private fun getAuthorizationHeader(context: ExecutionContext) = context.get<Context>()?.header("Authorization")
 }
 
-fun AppModule.addSessionTokenAuthentication() {
-    registerMiddleware(SessionTokenAuthenticationMiddleware())
+fun AppModule.addSessionTokenFromHeaders() {
+    registerMiddleware(SessionTokenFromHeadersMiddleware())
 }

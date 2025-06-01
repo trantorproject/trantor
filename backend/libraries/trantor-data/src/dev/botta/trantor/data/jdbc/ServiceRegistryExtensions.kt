@@ -32,8 +32,27 @@ fun ServiceRegistry.addHikariCP(config: ServiceConfiguration<HikariConfig> = {})
     addHikariCP(null, config)
 }
 
+fun ServiceRegistry.addSimpleDataSource(key: String? = null) = apply {
+    addJdbcConfig(key)
+
+    addSingleton<DataSource>(key) {
+        val jdbcConfig = it.get<JdbcConfig>(key)
+        TransactionAwareDataSource(SimpleDataSource(jdbcConfig))
+    }
+}
+
 fun ServiceRegistry.addJdbcTransactionManager(key: String? = null) = apply {
     if (!has<DataSource>(key)) addHikariCP(key)
+
+    addSingleton<TransactionManager>(key) {
+        val dataSource = it.get<DataSource>()
+        if (dataSource !is TransactionAwareDataSource) throw Exception("DataSource must implement TransactionAwareDataSource to use transactions")
+        ThreadLocalJdbcTransactionManager(dataSource)
+    }
+}
+
+fun ServiceRegistry.addSimpleJdbcTransactionManager(key: String? = null) = apply {
+    if (!has<DataSource>(key)) addSimpleDataSource(key)
 
     addSingleton<TransactionManager>(key) {
         val dataSource = it.get<DataSource>()
