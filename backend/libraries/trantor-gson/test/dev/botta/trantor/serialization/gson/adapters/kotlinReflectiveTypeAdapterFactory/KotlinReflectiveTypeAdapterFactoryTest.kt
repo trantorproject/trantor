@@ -5,6 +5,7 @@ import com.google.gson.internal.bind.ReflectiveTypeAdapterFactory
 import com.google.gson.reflect.TypeToken
 import dev.botta.trantor.serialization.gson.adapters.kotlinReflective.KotlinReflectiveTypeAdapterFactory
 import io.mockk.*
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
 
@@ -208,7 +209,7 @@ class KotlinReflectiveTypeAdapterFactoryTest {
         val expectedData = stringDataWithDelegateObject()
         val actualData = gson.fromJson<StringDataWithDelegate>(STRING_DATA_WITH_DELEGATE_JSON)
         assertEquals(expectedData, actualData)
-        assertNotNull(actualData.lazyProperty)
+        assertThat(actualData.lazyProperty).isNotNull()
     }
 
     @Test
