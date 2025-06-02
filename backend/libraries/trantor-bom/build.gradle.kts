@@ -6,6 +6,10 @@ javaPlatform {
     allowDependencies()
 }
 
+
+extra.set("POM_NAME", "Trantor BOM (Bill of Materials)")
+extra.set("POM_DESCRIPTION", "This Bill of Materials POM can be used to ease dependency management when using Trantor Framework")
+
 dependencies {
     api(platform("org.junit:junit-bom:5.12.2"))
     api(platform("org.assertj:assertj-bom:3.27.3"))

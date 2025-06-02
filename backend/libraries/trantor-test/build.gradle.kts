@@ -7,3 +7,6 @@ dependencies {
     api("io.rest-assured:rest-assured")
     runtimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+extra.set("POM_NAME", "Trantor Test")
+extra.set("POM_DESCRIPTION", "Utilities to ease testing with Trantor")

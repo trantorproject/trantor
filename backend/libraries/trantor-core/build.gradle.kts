@@ -9,6 +9,9 @@ dependencies {
     runtimeOnly("org.fusesource.jansi:jansi")
 }
 
+extra.set("POM_NAME", "Trantor Core")
+extra.set("POM_DESCRIPTION", "Core building blocks of Trantor framework")
+
 tasks.register("generateBuildInfo") {
     val outputFile = layout.buildDirectory
         .file("generated/build-info/META-INF/trantor-build-info.properties")

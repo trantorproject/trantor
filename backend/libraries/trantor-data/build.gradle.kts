@@ -6,3 +6,6 @@ dependencies {
     implementation(project(":libraries:trantor-service-provider"))
     implementation(project(":libraries:trantor-config"))
 }
+
+extra.set("POM_NAME", "Trantor Data")
+extra.set("POM_DESCRIPTION", "JDBC and Jooq based data access layer")
