@@ -6,11 +6,10 @@ import dev.botta.trantor.serviceProvider.*
 fun <TService: Any> ServiceRegistry.addConfig(serviceType: Class<TService>, configSection: String, key: String? = null) = apply {
     addSingleton(
         serviceType,
-        { provider ->
-            val jsonSerializer = provider.get<JsonSerializer>()
-            val config = provider.get<Config>()
-            if (!config.hasSection(configSection)) throw Exception("Config section '$configSection' does not exist")
-            val section = config.getSection(configSection)
+        {
+            val jsonSerializer = it.get<JsonSerializer>()
+            if (!it.config.hasSection(configSection)) throw Exception("Config section '$configSection' does not exist")
+            val section = it.config.getSection(configSection)
             jsonSerializer.deserialize(section.toJson().toString(), serviceType)
         },
         key,

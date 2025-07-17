@@ -2,7 +2,7 @@ package dev.botta.trantor.serviceProvider
 
 import dev.botta.trantor.serviceProvider.ServiceLifetimes.*
 
-class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProvider {
+class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProvider() {
     private val singletonCache: MutableMap<String, Any> = mutableMapOf()
     private var inScope: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
     private val scopeCache: ThreadLocal<MutableMap<String, Any>> = ThreadLocal.withInitial { mutableMapOf() }

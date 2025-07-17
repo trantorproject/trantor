@@ -1,5 +1,6 @@
 rootProject.name = "backend"
 
+include("apps:trantor-app-console")
 include("apps:trantor-app-webapi")
 include("libraries:trantor-app-services")
 include("libraries:trantor-bom")

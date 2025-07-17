@@ -1,8 +1,7 @@
 package dev.botta.trantor.web.client
 
-class HttpRequest(val url: String) {
-    var body: String? = null
-    val headers = mutableMapOf<String, String>()
+class HttpRequest(val url: String, var body: String? = null, headers: Map<String, String> = mutableMapOf()) {
+    val headers = headers.toMutableMap()
 
     fun setHeader(header: String, value: String) {
         headers[header] = value

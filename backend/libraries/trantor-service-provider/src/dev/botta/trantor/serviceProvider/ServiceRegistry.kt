@@ -4,6 +4,7 @@ import dev.botta.trantor.serviceProvider.ServiceLifetimes.*
 
 typealias ServiceConfiguration<T> = (service: T) -> Unit
 
+@Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
 class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
     private val configurations: MutableList<ServiceConfigurationItem<*>> = mutableListOf()
 
@@ -15,16 +16,20 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         addTransient(TService::class.java, implementationType, key)
     }
 
-    inline fun <reified TService: Any> addTransient(noinline factory: ImplementationFactory<TService>, key: String? = null) = apply {
+    inline fun <reified TService: Any> addTransient(key: String?, noinline factory: ImplementationFactory<TService>) = apply {
         addTransient(TService::class.java, factory, key)
     }
 
-    inline fun <reified TService: Any> addTransient(key: String, noinline factory: ImplementationFactory<TService>) = apply {
-        addTransient(TService::class.java, factory, key)
+    inline fun <reified TService: Any> addTransient(noinline factory: ImplementationFactory<TService>) = apply {
+        addTransient(TService::class.java, factory)
     }
 
     fun <TService: Any, TImplementation: TService> addTransient(serviceType: Class<TService>, implementationType: Class<TImplementation>, key: String? = null) = apply {
         addTransient(serviceType, createTypeFactory(implementationType), key)
+    }
+
+    fun <TService: Any> addTransient(serviceType: Class<TService>, factory: ImplementationFactory<TService>) = apply {
+        addService(serviceType, factory, Transient)
     }
 
     fun <TService: Any> addTransient(serviceType: Class<TService>, factory: ImplementationFactory<TService>, key: String? = null) = apply {
@@ -39,11 +44,11 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         addScoped(TService::class.java, implementationType, key)
     }
 
-    inline fun <reified TService: Any> addScoped(noinline factory: ImplementationFactory<TService>, key: String? = null) = apply {
-        addScoped(TService::class.java, factory, key)
+    inline fun <reified TService: Any> addScoped(noinline factory: ImplementationFactory<TService>) = apply {
+        addScoped(TService::class.java, factory)
     }
 
-    inline fun <reified TService: Any> addScoped(key: String, noinline factory: ImplementationFactory<TService>) = apply {
+    inline fun <reified TService: Any> addScoped(key: String?, noinline factory: ImplementationFactory<TService>) = apply {
         addScoped(TService::class.java, factory, key)
     }
 
@@ -75,7 +80,7 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
         addSingleton(TService::class.java, { implementation }, key)
     }
 
-    inline fun <reified TService: Any> addSingleton(key: String? = null, noinline factory: ImplementationFactory<TService>) = apply {
+    inline fun <reified TService: Any> addSingleton(key: String?, noinline factory: ImplementationFactory<TService>) = apply {
         addSingleton(TService::class.java, factory, key)
     }
 

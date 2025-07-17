@@ -9,7 +9,7 @@ import org.eclipse.jetty.http.HttpMethod
 import java.util.concurrent.*
 import org.eclipse.jetty.client.HttpClient as JettyHttp
 
-class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient {
+class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient() {
     private val logger = getLogger()
     private val httpClient = JettyHttp()
 
@@ -18,18 +18,34 @@ class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient {
         httpClient.start()
     }
 
+    override fun get(request: HttpRequest): HttpResponse {
+        return sendRequest(HttpMethod.GET, request)
+    }
+
     override fun post(request: HttpRequest): HttpResponse {
-        val jettyRequest = createRequest(request.url)
-        jettyRequest.method(HttpMethod.POST)
-        addContentType(request, jettyRequest)
-        addRequestHeaders(request, jettyRequest)
-        val content = request.body ?: ""
-        jettyRequest.body(StringRequestContent(content))
+        return sendRequest(HttpMethod.POST, request)
+    }
+
+    override fun put(request: HttpRequest): HttpResponse {
+        return sendRequest(HttpMethod.PUT, request)
+    }
+
+    override fun patch(request: HttpRequest): HttpResponse {
+        return sendRequest(HttpMethod.PATCH, request)
+    }
+
+    override fun delete(request: HttpRequest): HttpResponse {
+        return sendRequest(HttpMethod.DELETE, request)
+    }
+
+    private fun sendRequest(method: HttpMethod, request: HttpRequest): HttpResponse {
+        val jettyRequest = createJettyRequest(request, method)
         val startTime = System.nanoTime()
         try {
             val response = jettyRequest.send()
-            logRequest(jettyRequest, response, startTime, content)
-            return HttpResponse(response.status, response.contentAsString)
+            logRequest(jettyRequest, response, startTime, request.body)
+            val headersMap = response.headers.iterator().asSequence().associate { it.name to it.value }
+            return HttpResponse(response.status, response.content, response.mediaType, response.encoding, headersMap)
         } catch (e: HttpResponseException) {
             logger.error("""${jettyRequest.method} ${jettyRequest.uri}""")
             throw HttpClientError(e.message, e)
@@ -37,6 +53,34 @@ class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient {
             logger.error("""${jettyRequest.method} ${jettyRequest.uri}""")
             throw e
         }
+    }
+
+//    private fun sendRequestAsync(method: HttpMethod, request: HttpRequest, listener: Response.CompleteListener) {
+//        val jettyRequest = createJettyRequest(request, method)
+//        val startTime = System.nanoTime()
+//        val listener = Response.CompleteListener { result ->
+//            if (result.isFailed) {
+//                logger.error("""${jettyRequest.method} ${jettyRequest.uri}""")
+////                throw HttpClientError(e.message, e)
+//
+//                return@CompleteListener
+//            }
+//            val response = result.response
+//            logRequest(jettyRequest, response, startTime, request.body)
+//            val headersMap = response.headers.iterator().asSequence().associate { it.name to it.value }
+//            val httpResponse = HttpResponse(response.status, response.content, response.mediaType, response.encoding, headersMap)
+//        }
+//    }
+
+    private fun createJettyRequest(request: HttpRequest, method: HttpMethod): Request {
+        val jettyRequest = createRequest(request.url)
+        jettyRequest.method(method)
+        if (method != HttpMethod.GET) {
+            jettyRequest.body(StringRequestContent(request.body ?: ""))
+            addContentType(request, jettyRequest)
+        }
+        addRequestHeaders(request, jettyRequest)
+        return jettyRequest
     }
 
     private fun createRequest(url: String): Request {
@@ -48,16 +92,6 @@ class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient {
     private fun addContentType(request: HttpRequest, jettyRequest: Request) {
         val contentType = request.headers["Content-Type"] ?: "application/x-www-form-urlencoded"
         jettyRequest.headers { it.put("Content-Type", contentType) }
-    }
-
-    override fun get(request: HttpRequest): HttpResponse {
-        val jettyRequest = createRequest(request.url)
-        jettyRequest.method(HttpMethod.GET)
-        addRequestHeaders(request, jettyRequest)
-        val startTime = System.nanoTime()
-        val response = jettyRequest.send()
-        logRequest(jettyRequest, response, startTime)
-        return HttpResponse(response.status, response.contentAsString)
     }
 
     private fun logRequest(request: Request, response: ContentResponse, startTime: Long, content: String? = null) {
