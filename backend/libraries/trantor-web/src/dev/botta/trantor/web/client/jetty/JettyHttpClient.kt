@@ -18,6 +18,14 @@ class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient() {
         httpClient.start()
     }
 
+    fun setConnectTimeout(value: Long) {
+        httpClient.connectTimeout = value
+    }
+
+    fun setIdleTimeout(value: Long) {
+        httpClient.idleTimeout = value
+    }
+
     override fun get(request: HttpRequest): HttpResponse {
         return sendRequest(HttpMethod.GET, request)
     }
