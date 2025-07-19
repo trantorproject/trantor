@@ -12,6 +12,7 @@ import org.eclipse.jetty.client.HttpClient as JettyHttp
 class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient() {
     private val logger = getLogger()
     private val httpClient = JettyHttp()
+    private var requestTimeout: Long = -1L
 
     init {
         httpClient.maxConnectionsPerDestination = maxConnectionsPerDestination
@@ -24,6 +25,10 @@ class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient() {
 
     fun setIdleTimeout(value: Long) {
         httpClient.idleTimeout = value
+    }
+
+    fun setRequestTimeout(value: Long) {
+        requestTimeout = value
     }
 
     override fun get(request: HttpRequest): HttpResponse {
@@ -82,6 +87,9 @@ class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient() {
 
     private fun createJettyRequest(request: HttpRequest, method: HttpMethod): Request {
         val jettyRequest = createRequest(request.url)
+        if (requestTimeout != -1L) {
+            jettyRequest.timeout(requestTimeout, TimeUnit.MILLISECONDS)
+        }
         jettyRequest.method(method)
         if (method != HttpMethod.GET) {
             jettyRequest.body(StringRequestContent(request.body ?: ""))

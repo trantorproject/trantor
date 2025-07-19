@@ -8,7 +8,7 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): AutoCloseab
     private val logger = getLogger()
     private val totalSubmitted = AtomicLong(0)
     private val droppedTasks = AtomicLong(0)
-
+    private val middlewares = mutableListOf<TaskPoolMiddleware>()
     private val taskQueue = LinkedBlockingQueue<Runnable>(settings.queueSize)
 
     private val executor: ThreadPoolExecutor = ThreadPoolExecutor(
@@ -25,13 +25,18 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): AutoCloseab
         }
     )
 
+    fun addMiddleware(middleware: TaskPoolMiddleware) {
+        middlewares.add(middleware)
+    }
+
     fun <T> schedule(task: () -> T): CompletableFuture<T> {
         totalSubmitted.incrementAndGet()
         val future = CompletableFuture<T>()
         try {
             executor.submit {
                 try {
-                    val result = task()
+                    val execute = applyMiddlewares(task)
+                    val result = execute()
                     future.complete(result)
                 } catch (e: Exception) {
                     future.completeExceptionally(e)
@@ -42,6 +47,15 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): AutoCloseab
         }
 
         return future
+    }
+
+    private fun <T> applyMiddlewares(execute: () -> T): () -> T {
+        var newExecute = execute
+        for (middleware in middlewares) {
+            val previousFunc = newExecute
+            newExecute = { middleware.execute(previousFunc) }
+        }
+        return newExecute
     }
 
     fun getMetrics() = TaskPoolMetrics(
