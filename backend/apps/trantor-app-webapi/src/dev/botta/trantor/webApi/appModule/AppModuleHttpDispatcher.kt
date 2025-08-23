@@ -5,6 +5,7 @@ import dev.botta.cqbus.ExecutionContext
 import dev.botta.cqbus.requests.Request
 import dev.botta.json.Json
 import dev.botta.trantor.appServices.AppModule
+import dev.botta.trantor.appServices.auth.SystemIdentity
 import dev.botta.trantor.core.Event
 import dev.botta.trantor.core.serialization.JsonSerializer
 import dev.botta.trantor.webApi.appModule.transformers.*
@@ -22,7 +23,9 @@ class AppModuleHttpDispatcher(private val appModule: AppModule, private val seri
         execute(T::class, ctx, statusCode)
     }
 
-    fun notify(event: Event) { appModule.notify(event) }
+    fun notify(event: Event) {
+        appModule.notify(event)
+    }
 
     fun <T: Request<*>> execute(actionClass: KClass<T>, ctx: Context, statusCode: Int = 200) {
         val action = ctx.deserializedBody(actionClass)
@@ -30,7 +33,11 @@ class AppModuleHttpDispatcher(private val appModule: AppModule, private val seri
         ctx.serialized(actionResponse, statusCode)
     }
 
-    private fun <R> execute(action: Request<R>, ctx: Context) = appModule.execute(action, ExecutionContext().with(ctx))
+    fun <R> execute(action: Request<R>, ctx: Context) =
+        appModule.execute(action, ExecutionContext().with("javalin_context", ctx))
+
+    fun <R> executeAsSystem(action: Request<R>, ctx: Context) =
+        appModule.execute(action, ExecutionContext().withIdentity(SystemIdentity()).with("javalin_context", ctx))
 
     fun <T: Any> Context.deserializedBody(type: KClass<T>): T {
         val json = jsonWithRequestParameters(type)

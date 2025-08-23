@@ -6,6 +6,7 @@ dependencies {
     api("org.slf4j:slf4j-api")
     api("org.apache.logging.log4j:log4j-core")
     api("org.apache.logging.log4j:log4j-slf4j2-impl")
+    api("com.github.f4b6a3:uuid-creator:6.1.1")
     runtimeOnly("org.fusesource.jansi:jansi")
 }
 

@@ -3,7 +3,7 @@ package dev.botta.trantor.core
 import dev.botta.time.Clock
 import java.util.*
 
-abstract class Event(open val id: String = UUID.randomUUID().toString()) {
+abstract class Event(open val id: UUID = UUID.randomUUID()) {
     val occurredOn = Clock.now()
 
     override fun equals(other: Any?) = other is Event && other.id == id

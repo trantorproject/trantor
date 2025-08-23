@@ -16,10 +16,10 @@ class SessionTokenFromHeadersMiddleware: Middleware {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) return
         val sessionToken = authorizationHeader.removePrefix("Bearer ")
         if (sessionToken.isBlank()) return
-        context["SessionToken"] = sessionToken
+        context["session_token"] = sessionToken
     }
 
-    private fun getAuthorizationHeader(context: ExecutionContext) = context.get<Context>()?.header("Authorization")
+    private fun getAuthorizationHeader(context: ExecutionContext) = (context["javalin_context"] as? Context)?.header("Authorization")
 }
 
 fun AppModule.addSessionTokenFromHeaders() {

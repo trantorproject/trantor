@@ -31,5 +31,6 @@ dependencies {
         api("org.fusesource.jansi:jansi:2.4.2")
         api("com.zaxxer:HikariCP:6.3.0")
         api("org.jooq:jooq:3.20.3")
+        api("com.github.f4b6a3:uuid-creator:6.1.1")
     }
 }

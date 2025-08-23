@@ -30,6 +30,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
         javalin = Javalin.create { config ->
             config.showJavalinBanner = false
             config.requestLogger.http(::logRequest)
+
             configureJetty(config.jetty)
         }
         routeRegister = RouteRegister(javalin)

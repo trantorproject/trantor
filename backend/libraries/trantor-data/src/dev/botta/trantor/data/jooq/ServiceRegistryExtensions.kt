@@ -1,5 +1,6 @@
 package dev.botta.trantor.data.jooq
 
+import dev.botta.trantor.config.addConfig
 import dev.botta.trantor.data.jdbc.*
 import dev.botta.trantor.serviceProvider.ServiceRegistry
 import dev.botta.trantor.tx.TransactionManager
@@ -12,6 +13,8 @@ fun ServiceRegistry.addJooq(key: String? = null) = apply {
     if (has<DSLContext>(key)) return@apply
 
     addJdbc(key)
+
+    addConfig<JooqConfig>("jooqConfig")
 
     addSingleton<DSLContext>(key) {
         val jdbcConfig = it.tryGet<JdbcConfig>(key)
