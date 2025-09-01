@@ -2,36 +2,48 @@ package dev.botta.trantor.web.server
 
 import io.javalin.Javalin
 import io.javalin.http.*
+import io.javalin.websocket.WsConfig
+import java.util.function.Consumer
 
 class RouteRegister(private val javalin: Javalin) {
-    fun before(handler: Handler): RouteRegister {
+    fun before(handler: Handler) = apply {
         javalin.before(handler)
-        return this
     }
 
-    fun post(path: String, handler: Handler): RouteRegister {
+    fun after(handler: Handler) = apply {
+        javalin.after(handler)
+    }
+
+    fun post(path: String, handler: Handler) = apply {
         registerRoute(HandlerType.POST, path, handler)
-        return this
     }
 
-    fun get(path: String, handler: Handler): RouteRegister {
+    fun get(path: String, handler: Handler) = apply {
         registerRoute(HandlerType.GET, path, handler)
-        return this
     }
 
-    fun put(path: String, handler: Handler): RouteRegister {
+    fun put(path: String, handler: Handler) = apply {
         registerRoute(HandlerType.PUT, path, handler)
-        return this
     }
 
-    fun patch(path: String, handler: Handler): RouteRegister {
+    fun patch(path: String, handler: Handler) = apply {
         registerRoute(HandlerType.PATCH, path, handler)
-        return this
     }
 
-    fun delete(path: String, handler: Handler): RouteRegister {
+    fun delete(path: String, handler: Handler) = apply {
         registerRoute(HandlerType.DELETE, path, handler)
-        return this
+    }
+
+    fun ws(path: String, consumer: Consumer<WsConfig>) = apply {
+        javalin.ws(path, consumer)
+    }
+
+    fun wsBefore(path: String, consumer: Consumer<WsConfig>) = apply {
+        javalin.wsBefore(path, consumer)
+    }
+
+    fun wsAfter(path: String, consumer: Consumer<WsConfig>) = apply {
+        javalin.wsAfter(path, consumer)
     }
 
     private fun registerRoute(verb: HandlerType, path: String, handler: Handler) {

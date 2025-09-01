@@ -4,7 +4,7 @@ import dev.botta.trantor.config.*
 import dev.botta.trantor.config.providers.*
 import dev.botta.trantor.serialization.gson.addGsonSerializer
 import dev.botta.trantor.serviceProvider.ServiceRegistry
-import dev.botta.trantor.web.server.HttpServerConfig
+import dev.botta.trantor.web.server.*
 
 abstract class BaseWebApiBuilder<T: BaseWebApi>(appName: String? = null, environmentName: String? = null) {
     val config = ConfigManager()
@@ -33,8 +33,8 @@ abstract class BaseWebApiBuilder<T: BaseWebApi>(appName: String? = null, environ
     }
 
     private fun addDefaultServices() {
-        // Add Metrics
         services.addConfig<HttpServerConfig>("httpServer")
+        services.addSingleton { HttpServer(it.getOrDefault<HttpServerConfig> { HttpServerConfig() }) }
         services.addGsonSerializer()
     }
 

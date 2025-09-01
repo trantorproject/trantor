@@ -90,9 +90,9 @@ class HierarchyTypeAdapterFactory<T> private constructor(
                 }
 
                 val clone = JsonObject()
-                if (jsonObject.has(typeFieldName)) {
-                    throw JsonParseException("cannot serialize ${srcType.name} because it already defines a field named " + typeFieldName)
-                }
+//                if (jsonObject.has(typeFieldName)) {
+//                    throw JsonParseException("cannot serialize ${srcType.name} because it already defines a field named " + typeFieldName)
+//                }
 
                 clone.add(typeFieldName, JsonPrimitive(label))
                 for (entry in jsonObject.entrySet()) {
