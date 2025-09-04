@@ -8,6 +8,7 @@ data class HttpServerConfig(
     var isStatsEnabled: Boolean = false,
     var managementPort: Int = -1,
     var idleTimeout: Int = 30_000,
+    var wsIdleTimeout: Int = 30_000,
     var maxThreads: Int = 250,
     var minThreads: Int = 8,
     var requestLoggerFactory: (logger: Logger) -> HttpRequestLogger = { DefaultHttpRequestLogger(it) },

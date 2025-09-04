@@ -17,14 +17,14 @@ abstract class SearchQueryBase<T, R: SearchResults<T>>(
         val totalItems: Long?
         val lastCreationDate: LocalDateTime?
     }
-
-    data class Results<T>(
-        override val items: List<T>,
-        override val page: Int,
-        override val pageSize: Int,
-        override val totalItems: Long? = null,
-        override val lastCreationDate: LocalDateTime? = null
-    ): SearchResults<T>
 }
+
+data class SearchResultsDto<T>(
+    override val items: List<T>,
+    override val page: Int,
+    override val pageSize: Int,
+    override val totalItems: Long? = null,
+    override val lastCreationDate: LocalDateTime? = null
+): SearchResults<T>
 
 typealias SearchQuery<T> = SearchQueryBase<T, SearchResults<T>>

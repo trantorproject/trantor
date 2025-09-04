@@ -11,6 +11,7 @@ import org.apache.logging.log4j.core.config.Configurator
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.StatisticsHandler
 import org.eclipse.jetty.util.thread.QueuedThreadPool
+import java.time.Duration
 import java.util.*
 
 class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
@@ -30,7 +31,6 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
         javalin = Javalin.create { config ->
             config.showJavalinBanner = false
             config.requestLogger.http(::logRequest)
-
             configureJetty(config.jetty)
         }
         routeRegister = RouteRegister(javalin)
@@ -49,6 +49,10 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
                 managementConnector.port = config.managementPort
                 managementConnector
             }
+        }
+
+        jettyConfig.modifyWebSocketServletFactory {
+            it.idleTimeout = Duration.ofMillis(config.wsIdleTimeout.toLong())
         }
     }
 
