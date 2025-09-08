@@ -33,11 +33,11 @@ class AppModuleHttpDispatcher(private val appModule: AppModule, private val seri
         ctx.serialized(actionResponse, statusCode)
     }
 
-    fun <R> execute(action: Request<R>, ctx: Context) =
-        appModule.execute(action, ExecutionContext().with("javalin_context", ctx))
+    fun <R> execute(action: Request<R>, ctx: Context, executionContext: ExecutionContext = ExecutionContext()) =
+        appModule.execute(action, executionContext.with("javalin_context", ctx))
 
-    fun <R> executeAsSystem(action: Request<R>, ctx: Context) =
-        appModule.execute(action, ExecutionContext().withIdentity(SystemIdentity()).with("javalin_context", ctx))
+    fun <R> executeAsSystem(action: Request<R>, ctx: Context, executionContext: ExecutionContext = ExecutionContext()) =
+        appModule.execute(action, executionContext.withIdentity(SystemIdentity()).with("javalin_context", ctx))
 
     fun <T: Any> Context.deserializedBody(type: KClass<T>): T {
         val json = jsonWithRequestParameters(type)

@@ -39,10 +39,12 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): AutoCloseab
                     val result = execute()
                     future.complete(result)
                 } catch (e: Exception) {
+                    logger.error(e.message, e)
                     future.completeExceptionally(e)
                 }
             }
         } catch (e: RejectedExecutionException) {
+            logger.error(e.message, e)
             future.completeExceptionally(e)
         }
 
