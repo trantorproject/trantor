@@ -3,6 +3,7 @@ package dev.botta.trantor.serialization.gson
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import dev.botta.time.*
+import dev.botta.trantor.core.lang.Maybe
 import dev.botta.trantor.core.serialization.JsonSerializer
 import dev.botta.trantor.domain.*
 import dev.botta.trantor.serialization.gson.adapters.*
@@ -16,6 +17,7 @@ class GsonSerializer: JsonSerializer {
 
     init {
         builder.registerTypeAdapterFactory(KotlinReflectiveTypeAdapterFactory.create())
+        builder.registerTypeAdapterFactory(MaybeTypeAdapterFactory())
         builder.registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeSerializer())
         builder.registerTypeAdapter(LocalDate::class.java, LocalDateSerializer())
         builder.registerTypeAdapter(LocalTime::class.java, LocalTimeSerializer())
