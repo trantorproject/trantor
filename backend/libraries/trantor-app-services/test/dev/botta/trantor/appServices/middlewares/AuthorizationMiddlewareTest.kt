@@ -31,7 +31,7 @@ class AuthorizationMiddlewareTest {
     }
 
     private val executionContext = ExecutionContext()
-    private val middleware = AuthorizationMiddleware()
+    private val middleware = RolesAuthorizationMiddleware()
 
     private class SomeIdentity(override val roles: List<String>): Identity {
         override val authenticationType: String? = null
@@ -42,6 +42,6 @@ class AuthorizationMiddlewareTest {
 
     private class SomePublicCommand: PureCommand
 
-    @Authorization(roles = ["admin"])
+    @RolesAuthorization(roles = ["admin"])
     private class SomeRestrictedToAdminCommand: PureCommand
 }

@@ -4,7 +4,7 @@ import dev.botta.cqbus.*
 import dev.botta.cqbus.requests.Request
 import dev.botta.trantor.appServices.auth.*
 
-class AuthorizationMiddleware: Middleware {
+class RolesAuthorizationMiddleware: Middleware {
     override fun <T: Request<R>, R> execute(request: T, next: (T) -> R, context: ExecutionContext): R {
         failIfNotAuthorized(request.javaClass, context)
         return next(request)
