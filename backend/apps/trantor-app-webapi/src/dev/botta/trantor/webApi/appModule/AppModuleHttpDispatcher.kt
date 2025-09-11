@@ -33,6 +33,11 @@ class AppModuleHttpDispatcher(private val appModule: AppModule, private val seri
         ctx.serialized(actionResponse, statusCode)
     }
 
+    fun <T: Request<R>, R> executeWithoutReturning(actionClass: KClass<T>, ctx: Context, statusCode: Int = 200): R {
+        val action = ctx.deserializedBody(actionClass)
+        return execute(action, ctx)
+    }
+
     fun <R> execute(action: Request<R>, ctx: Context, executionContext: ExecutionContext = ExecutionContext()) =
         appModule.execute(action, executionContext.with("javalin_context", ctx))
 
