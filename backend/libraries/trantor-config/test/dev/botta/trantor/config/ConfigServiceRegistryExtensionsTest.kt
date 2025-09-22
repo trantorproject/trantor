@@ -22,6 +22,16 @@ class ConfigServiceRegistryExtensionsTest {
     }
 
     @Test
+    fun `add missing config section`() {
+        services.addConfig<MySettings>("MySettings")
+
+        val settings = provider.get<MySettings>()
+
+        assertThat(settings.key).isEqualTo("default value")
+        assertThat(settings.other).isNull()
+    }
+
+    @Test
     fun `change mapped config service value`() {
         config.addMemoryCollection(
             "MySettings.key" to "some value",

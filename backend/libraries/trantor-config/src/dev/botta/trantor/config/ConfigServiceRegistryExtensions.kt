@@ -8,7 +8,7 @@ fun <TService: Any> ServiceRegistry.addConfig(serviceType: Class<TService>, conf
         serviceType,
         {
             val jsonSerializer = it.get<JsonSerializer>()
-            if (!it.config.hasSection(configSection)) throw Exception("Config section '$configSection' does not exist")
+            if (!it.config.hasSection(configSection)) return@addSingleton jsonSerializer.deserialize("{}", serviceType)
             val section = it.config.getSection(configSection)
             jsonSerializer.deserialize(section.toJson().toString(), serviceType)
         },

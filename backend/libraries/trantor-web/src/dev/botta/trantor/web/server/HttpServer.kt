@@ -5,7 +5,7 @@ import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.web.server.logs.HttpRequestLogger
 import dev.botta.trantor.web.server.stats.*
 import io.javalin.Javalin
-import io.javalin.config.JettyConfig
+import io.javalin.config.*
 import io.javalin.http.Context
 import org.apache.logging.log4j.core.config.Configurator
 import org.eclipse.jetty.server.*
@@ -28,10 +28,11 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
     override val routes get() = routeRegister
 
     init {
-        javalin = Javalin.create { config ->
-            config.showJavalinBanner = false
-            config.requestLogger.http(::logRequest)
-            configureJetty(config.jetty)
+        javalin = Javalin.create { javalinConfig ->
+            javalinConfig.showJavalinBanner = false
+            javalinConfig.requestLogger.http(::logRequest)
+            javalinConfig.http.maxRequestSize = config.maxRequestSizeInMb * SizeUnit.MB.multiplier
+            configureJetty(javalinConfig.jetty)
         }
         routeRegister = RouteRegister(javalin)
     }
@@ -39,6 +40,13 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
     private fun configureJetty(jettyConfig: JettyConfig) {
         Configurator.setLevel("org.eclipse.jetty", org.apache.logging.log4j.Level.WARN)
         jettyConfig.threadPool = threadPool
+        if (config.uploadsTempDirectory != null) {
+            jettyConfig.multipartConfig.cacheDirectory(config.uploadsTempDirectory!!)
+        }
+        jettyConfig.multipartConfig.maxFileSize(config.maxMultipartFileSizeInMb, SizeUnit.MB)
+        jettyConfig.multipartConfig.maxInMemoryFileSize(config.maxMultipartInMemoryFileSizeInMb, SizeUnit.MB)
+        jettyConfig.multipartConfig.maxTotalRequestSize(config.maxMultipartRequestSizeInMb, SizeUnit.MB)
+
         if (config.isStatsEnabled) {
             jettyConfig.modifyServer { it.insertHandler(statisticsHandler) }
         }

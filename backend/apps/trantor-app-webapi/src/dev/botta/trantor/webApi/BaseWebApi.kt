@@ -24,6 +24,7 @@ abstract class BaseWebApi(val services: ServiceProvider): RouteRegistrant {
     private fun addKnownExceptions() {
         addNotAuthenticatedError<NotAuthenticatedError>()
         addForbiddenError<UnauthorizedAccessError>()
+        addForbiddenError<ForbiddenError>()
         addNotFoundError<NotFoundError>()
         addBadRequestError<DomainError>()
         addBadRequestError<JsonParseError>()

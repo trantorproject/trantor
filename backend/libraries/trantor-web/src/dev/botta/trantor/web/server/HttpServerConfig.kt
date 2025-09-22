@@ -11,5 +11,10 @@ data class HttpServerConfig(
     var wsIdleTimeout: Int = 30_000,
     var maxThreads: Int = 250,
     var minThreads: Int = 8,
+    var uploadsTempDirectory: String? = null,
+    val maxRequestSizeInMb: Long = 1L,
+    var maxMultipartFileSizeInMb: Long = 100L,
+    var maxMultipartInMemoryFileSizeInMb: Int = 10,
+    val maxMultipartRequestSizeInMb: Long = 500L,
     var requestLoggerFactory: (logger: Logger) -> HttpRequestLogger = { DefaultHttpRequestLogger(it) },
 )

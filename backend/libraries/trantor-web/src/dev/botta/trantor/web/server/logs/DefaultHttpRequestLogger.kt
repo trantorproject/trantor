@@ -13,7 +13,13 @@ class DefaultHttpRequestLogger(private val logger: Logger): HttpRequestLogger {
         sb.append(" (" + executionTimeMs + "ms)")
         if (ctx.res().status >= 300 || ctx.res().status < 200) {
             sb.appendLine()
-            sb.append("Request Body: " + ctx.body())
+            if (ctx.req().contentType == "multipart/form-data") {
+                sb.append("Request Body: Multipart ${ctx.req().contentLength} bytes")
+            } else if (ctx.req().contentLength > 1_000_000) {
+                sb.append("Request Body: ${ctx.req().contentLength} bytes")
+            } else {
+                sb.append("Request Body: " + ctx.body())
+            }
             sb.appendLine()
             sb.append("Response Body: " + ctx.result())
             logger.error(sb.toString())
