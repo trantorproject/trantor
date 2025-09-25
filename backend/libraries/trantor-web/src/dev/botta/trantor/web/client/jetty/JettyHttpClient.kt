@@ -4,8 +4,8 @@ import dev.botta.trantor.core.getLogger
 import dev.botta.trantor.web.client.*
 import org.eclipse.jetty.client.HttpResponseException
 import org.eclipse.jetty.client.api.*
-import org.eclipse.jetty.client.util.StringRequestContent
-import org.eclipse.jetty.http.HttpMethod
+import org.eclipse.jetty.client.util.*
+import org.eclipse.jetty.http.*
 import java.util.concurrent.*
 import org.eclipse.jetty.client.HttpClient as JettyHttp
 
@@ -92,11 +92,35 @@ class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient() {
         }
         jettyRequest.method(method)
         if (method != HttpMethod.GET) {
-            jettyRequest.body(StringRequestContent(request.body ?: ""))
-            addContentType(request, jettyRequest)
+            when (request.body) {
+                is String? -> jettyRequest.body(StringRequestContent((request.body) as String? ?: ""))
+                is MultipartBody -> jettyRequest.body((request.body as MultipartBody).toMultiPartRequestContent())
+                else -> throw UnsupportedOperationException("Invalid body type")
+            }
+
+            if (request.body !is MultipartBody) addContentType(request, jettyRequest)
         }
         addRequestHeaders(request, jettyRequest)
         return jettyRequest
+    }
+
+    private fun MultipartBody.toMultiPartRequestContent(): Request.Content {
+        val content = MultiPartRequestContent()
+
+        parts.forEach {
+            when (it) {
+                is MultipartBody.FieldPart -> content.addFieldPart(it.name, StringRequestContent(it.value), it.fields?.toHttpFields())
+                is MultipartBody.FilePart -> content.addFilePart(it.name, it.fileName, InputStreamRequestContent(it.mimeType, it.data), it.fields?.toHttpFields())
+            }
+        }
+        content.close()
+        return content
+    }
+
+    private fun Map<String, String>.toHttpFields(): HttpFields {
+        val fields = HttpFields.build()
+        this.forEach { fields.put(it.key, it.value) }
+        return fields.asImmutable()
     }
 
     private fun createRequest(url: String): Request {
@@ -110,7 +134,7 @@ class JettyHttpClient(maxConnectionsPerDestination: Int = 1200): HttpClient() {
         jettyRequest.headers { it.put("Content-Type", contentType) }
     }
 
-    private fun logRequest(request: Request, response: ContentResponse, startTime: Long, content: String? = null) {
+    private fun logRequest(request: Request, response: ContentResponse, startTime: Long, content: Any? = null) {
         val executionTimeMs = (System.nanoTime() - startTime) / 1_000_000f
         val sb = StringBuilder()
         sb.append(request.method)
