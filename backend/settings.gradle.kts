@@ -15,10 +15,10 @@ include("libraries:trantor-test")
 include("libraries:trantor-tx")
 include("libraries:trantor-web")
 
-pluginManagement {
-    val trantorPluginDir = file("../../trantor-gradle-plugin")
-    if (trantorPluginDir.exists()) includeBuild(trantorPluginDir.path)
-}
+//pluginManagement {
+//    val trantorPluginDir = file("../../trantor-gradle-plugin")
+//    if (trantorPluginDir.exists()) includeBuild(trantorPluginDir.path)
+//}
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
