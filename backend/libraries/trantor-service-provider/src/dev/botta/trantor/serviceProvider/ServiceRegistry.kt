@@ -2,8 +2,6 @@ package dev.botta.trantor.serviceProvider
 
 import dev.botta.trantor.serviceProvider.ServiceLifetimes.*
 
-typealias ServiceConfiguration<T> = (service: T) -> Unit
-
 @Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
 class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
     private val configurations: MutableList<ServiceConfigurationItem<*>> = mutableListOf()
