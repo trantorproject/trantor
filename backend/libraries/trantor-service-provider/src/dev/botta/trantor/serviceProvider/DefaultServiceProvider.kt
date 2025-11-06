@@ -1,11 +1,15 @@
 package dev.botta.trantor.serviceProvider
 
 import dev.botta.trantor.serviceProvider.ServiceLifetimes.*
+import kotlin.reflect.KClass
+import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.jvm.jvmErasure
 
 class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProvider() {
     private val singletonCache: MutableMap<String, Any> = mutableMapOf()
     private var inScope: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
     private val scopeCache: ThreadLocal<MutableMap<String, Any>> = ThreadLocal.withInitial { mutableMapOf() }
+    private val valueResolvers by lazy { getAll<ServiceValueResolver>().associateBy { it.annotationType } }
 
     override fun <T: Any> getOrDefault(type: Class<T>, key: String?, default: () -> T) = tryGet(type, key) ?: default()
 
@@ -55,5 +59,37 @@ class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProv
     override fun leaveScope() {
         scopeCache.get().clear()
         inScope.set(false)
+    }
+
+    override fun <T: Any> create(type: KClass<T>): T {
+        val ctor = type.primaryConstructor
+            ?: throw IllegalArgumentException("Class ${type.simpleName} must have a primary constructor")
+
+        val args = mutableMapOf<kotlin.reflect.KParameter, Any?>()
+
+        for (param in ctor.parameters) {
+            val kType = param.type
+            val paramType = kType.jvmErasure.java
+
+            val annotation = param.annotations.firstOrNull { valueResolvers.containsKey(it.annotationClass) }
+            // Try using registered value resolver
+            if (annotation != null) {
+                val resolver = valueResolvers[annotation.annotationClass]!!
+                val resolvedValue = resolver.resolve(annotation, paramType, this)
+                args[param] = resolvedValue
+                continue
+            }
+
+            val dependency = tryGet(paramType)
+            when {
+                dependency != null -> args[param] = dependency
+                param.isOptional -> Unit // use default value
+                else -> throw ServiceNotRegisteredError(
+                    "Missing dependency for parameter '${param.name}' of type ${paramType.name} in ${type.simpleName}"
+                )
+            }
+        }
+
+        return ctor.callBy(args)
     }
 }

@@ -1,5 +1,7 @@
 package dev.botta.trantor.serviceProvider
 
+import kotlin.reflect.KClass
+
 abstract class ServiceProvider {
     abstract fun <T: Any> getOrDefault(type: Class<T>, key: String? = null, default: () -> T): T
 
@@ -17,6 +19,8 @@ abstract class ServiceProvider {
 
     abstract fun leaveScope()
 
+    abstract fun <T : Any> create(type: KClass<T>): T
+
     inline fun <reified T: Any> get(key: String? = null) = get(T::class.java, key)
 
     inline fun <reified T: Any> getOrDefault(key: String? = null, noinline default: () -> T) = getOrDefault(T::class.java, key, default)
@@ -28,4 +32,6 @@ abstract class ServiceProvider {
     inline fun <reified T: Any> tryGet(key: String? = null) = tryGet(T::class.java, key)
 
     inline fun <reified T: Any> has(key: String? = null) = has(T::class.java, key)
+
+    inline fun <reified T : Any> create(): T = create(T::class)
 }

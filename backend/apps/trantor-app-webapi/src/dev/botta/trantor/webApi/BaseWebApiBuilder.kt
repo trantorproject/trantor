@@ -16,6 +16,7 @@ abstract class BaseWebApiBuilder<T: BaseWebApi>(appName: String? = null, environ
         environment = createAppEnvironment(appName)
         services.addSingleton<AppEnvironment>(environment)
         services.addSingleton<Config>(config)
+        services.addConfigServiceValueResolver()
 
         config.addJsonResource("settings.json")
         config.addJsonResource("settings.${environment.environmentName.lowercase()}.json")

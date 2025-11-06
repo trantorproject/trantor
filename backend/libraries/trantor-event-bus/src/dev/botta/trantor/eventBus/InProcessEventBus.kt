@@ -1,6 +1,7 @@
 package dev.botta.trantor.eventBus
 
 import dev.botta.trantor.core.*
+import dev.botta.trantor.core.lang.shortName
 
 class InProcessEventBus: EventBus() {
     private val logger = getLogger()
@@ -17,7 +18,7 @@ class InProcessEventBus: EventBus() {
     }
 
     private fun doPublish(event: Event) {
-        logger.info("Publish event $event")
+        logger.info("Publish event ${event.javaClass.shortName()}")
 
         handlers.filter { it.canHandle(event) }.forEach {
             logger.info("Invoking event handler ${it.javaClass.simpleName}")

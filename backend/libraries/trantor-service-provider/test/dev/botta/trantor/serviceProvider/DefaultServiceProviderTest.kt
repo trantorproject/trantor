@@ -323,6 +323,54 @@ class DefaultServiceProviderTest {
         assertThat(obj1 === obj2).isTrue()
     }
 
+    @Nested
+    inner class create {
+        @Test
+        fun `create class instance without constructor params`() {
+            val instance = provider.create<ClassWithoutParams>()
+
+            assertThat(instance).isInstanceOf(ClassWithoutParams::class.java)
+        }
+
+        @Test
+        fun `create class instance with service param`() {
+            registry.addSingleton<MyService, MyClass>()
+
+            val instance = provider.create<ClassWithServiceParam>()
+
+            assertThat(instance).isInstanceOf(ClassWithServiceParam::class.java)
+            assertThat(instance.param).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `create class instance with optional param`() {
+            registry.addSingleton<MyService, MyClass>()
+
+            val instance = provider.create<ClassWithOptionalParam>()
+
+            assertThat(instance).isInstanceOf(ClassWithOptionalParam::class.java)
+            assertThat(instance.param1).isInstanceOf(MyClass::class.java)
+            assertThat(instance.param2).isEqualTo("default")
+        }
+
+        @Test
+        fun `fail if param not registered`() {
+            assertThrows<ServiceNotRegisteredError> {
+                provider.create<ClassWithServiceParam>()
+            }
+        }
+
+        @Test
+        fun `create class instance with value resolver param`() {
+            registry.addSingleton<ServiceValueResolver, ConfigServiceValueResolver>()
+
+            val instance = provider.create<ClassWithValueResolver>()
+
+            assertThat(instance).isInstanceOf(ClassWithValueResolver::class.java)
+            assertThat(instance.param).isEqualTo("config-key")
+        }
+    }
+
     private val registry = ServiceRegistry()
     private val provider = DefaultServiceProvider(registry)
 
@@ -341,5 +389,27 @@ class DefaultServiceProviderTest {
         override var name: String = ""
 
         override fun sum(a: Int, b: Int) = a + b
+    }
+
+    class ClassWithoutParams {
+    }
+
+    class ClassWithServiceParam(val param: MyService) {
+    }
+
+    class ClassWithOptionalParam(val param1: MyService, val param2: String = "default") {
+    }
+
+    annotation class ConfigValue(val key: String)
+
+    class ClassWithValueResolver(@param:ConfigValue("config-key") val param: String) {
+    }
+
+    class ConfigServiceValueResolver: ServiceValueResolver {
+        override val annotationType = ConfigValue::class
+
+        override fun resolve(annotation: Annotation, paramType: Class<*>, services: ServiceProvider): Any {
+            return (annotation as ConfigValue).key
+        }
     }
 }

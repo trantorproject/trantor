@@ -3,7 +3,6 @@ package dev.botta.trantor.serialization.gson
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import dev.botta.time.*
-import dev.botta.trantor.core.lang.Maybe
 import dev.botta.trantor.core.serialization.JsonSerializer
 import dev.botta.trantor.domain.*
 import dev.botta.trantor.serialization.gson.adapters.*
@@ -29,6 +28,8 @@ class GsonSerializer: JsonSerializer {
         builder.registerTypeAdapter(Money::class.java, StringValueSerializer({ Money(it) }, { it.plainString() }))
         builder.registerTypeAdapter(Email::class.java, StringValueSerializer({ Email(it) }))
     }
+
+    fun getGson() = builder.create()
 
     fun registerTypeAdapter(type: Class<*>, adapter: Any) {
         builder.registerTypeAdapter(type, adapter)
@@ -58,17 +59,17 @@ class GsonSerializer: JsonSerializer {
         return deserialize(serialized, T::class.java)
     }
 
-    override fun <T> deserializeList(serialized: String?): List<T> {
-        val listType = object: TypeToken<ArrayList<T>>(){}.type
+    override fun <T> deserializeList(serialized: String?, type: Class<T>): List<T> {
+        val listType = TypeToken.getParameterized(ArrayList::class.java, type).type
         return deserialize(serialized, listType)
     }
 
-    override fun <T> deserializeSet(serialized: String?): Set<T> {
-        return deserializeList<T>(serialized).toSet()
+    override fun <T> deserializeSet(serialized: String?, type: Class<T>): Set<T> {
+        return deserializeList(serialized, type).toSet()
     }
 
-    override fun <K, V> deserializeMap(serialized: String?): Map<K, V> {
-        val mapType = object: TypeToken<Map<K, V>>(){}.type
+    override fun <K, V> deserializeMap(serialized: String?, kType: Class<K>, vType: Class<V>): Map<K, V> {
+        val mapType = TypeToken.getParameterized(Map::class.java, kType, vType).type
         return deserialize(serialized, mapType)
     }
 }

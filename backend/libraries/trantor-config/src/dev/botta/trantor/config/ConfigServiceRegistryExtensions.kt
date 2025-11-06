@@ -1,5 +1,6 @@
 package dev.botta.trantor.config
 
+import dev.botta.trantor.config.serviceProvider.ConfigServiceValueResolver
 import dev.botta.trantor.core.serialization.JsonSerializer
 import dev.botta.trantor.serviceProvider.*
 
@@ -18,4 +19,8 @@ fun <TService: Any> ServiceRegistry.addConfig(serviceType: Class<TService>, conf
 
 inline fun <reified TService: Any> ServiceRegistry.addConfig(configSection: String, key: String? = null) = apply {
     addConfig(TService::class.java, configSection, key)
+}
+
+fun ServiceRegistry.addConfigServiceValueResolver() = apply {
+    addSingleton<ServiceValueResolver, ConfigServiceValueResolver>()
 }
