@@ -18,10 +18,10 @@ class InProcessEventBus: EventBus() {
     }
 
     private fun doPublish(event: Event) {
-        logger.info("Publish event ${event.javaClass.shortName()}")
+        logger.info("Publish event $event")
 
         handlers.filter { it.canHandle(event) }.forEach {
-            logger.info("Invoking event handler ${it.javaClass.simpleName}")
+            logger.info("Invoking event handler ${it::class.java.shortName()}")
             it.on(event)
         }
     }
