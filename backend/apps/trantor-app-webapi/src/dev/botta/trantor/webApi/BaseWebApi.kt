@@ -18,7 +18,6 @@ abstract class BaseWebApi(val services: ServiceProvider): RouteRegistrant {
 
     init {
         addKnownExceptions()
-        addRegisteredInterceptors()
     }
 
     private fun addKnownExceptions() {
@@ -30,14 +29,6 @@ abstract class BaseWebApi(val services: ServiceProvider): RouteRegistrant {
         addBadRequestError<JsonParseError>()
         addBadRequestError<JsonParseException>()
         addInternalError<Exception>()
-    }
-
-    private fun addRegisteredInterceptors() {
-        services.getAll<HttpRequestInterceptor>().forEach { addInterceptor(it) }
-    }
-
-    fun addInterceptor(interceptor: HttpRequestInterceptor) {
-        httpServer.addInterceptor(interceptor)
     }
 
     fun <T: Exception> addErrorHandler(handler: BaseJsonErrorHandler<T>) {
@@ -53,10 +44,19 @@ abstract class BaseWebApi(val services: ServiceProvider): RouteRegistrant {
     }
 
     fun start() {
+        onBeforeStart()
         httpServer.start()
+        onStart()
     }
 
     fun stop() {
+        onBeforeStop()
         httpServer.stop()
+        onStop()
     }
+
+    protected open fun onBeforeStart() {}
+    protected open fun onStart() {}
+    protected open fun onBeforeStop() {}
+    protected open fun onStop() {}
 }

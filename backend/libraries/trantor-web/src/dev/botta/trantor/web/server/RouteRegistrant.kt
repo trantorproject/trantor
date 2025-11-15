@@ -1,37 +1,32 @@
 package dev.botta.trantor.web.server
 
-import io.javalin.http.Handler
+import io.ktor.server.routing.*
 
 interface RouteRegistrant {
     val routes: RouteRegister
 }
 
-fun RouteRegistrant.before(handler: Handler): RouteRegistrant {
-    routes.before(handler)
-    return this
-}
-
-fun RouteRegistrant.post(path: String, handler: Handler): RouteRegistrant {
+fun RouteRegistrant.post(path: String, handler: RoutingHandler): RouteRegistrant {
     routes.post(path, handler)
     return this
 }
 
-fun RouteRegistrant.get(path: String, handler: Handler): RouteRegistrant {
+fun RouteRegistrant.get(path: String, handler: RoutingHandler): RouteRegistrant {
     routes.get(path, handler)
     return this
 }
 
-fun RouteRegistrant.put(path: String, handler: Handler): RouteRegistrant {
+fun RouteRegistrant.put(path: String, handler: RoutingHandler): RouteRegistrant {
     routes.put(path, handler)
     return this
 }
 
-fun RouteRegistrant.patch(path: String, handler: Handler): RouteRegistrant {
+fun RouteRegistrant.patch(path: String, handler: RoutingHandler): RouteRegistrant {
     routes.patch(path, handler)
     return this
 }
 
-fun RouteRegistrant.delete(path: String, handler: Handler): RouteRegistrant {
+fun RouteRegistrant.delete(path: String, handler: RoutingHandler): RouteRegistrant {
     routes.delete(path, handler)
     return this
 }

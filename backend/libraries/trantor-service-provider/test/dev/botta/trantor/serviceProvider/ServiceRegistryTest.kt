@@ -99,6 +99,141 @@ class ServiceRegistryTest {
     }
 
     @Nested
+    inner class `add transient service if missing` {
+        @Test
+        fun `with factory and without key and no previous definition`() {
+            registry.addTransientIfMissing(MyService::class.java, { MyClass() })
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with factory and without key and previous definition`() {
+            registry.addTransient(MyService::class.java, { MyClass() })
+
+            registry.addTransientIfMissing(MyService::class.java, { MyClass2() })
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with factory and with key and no previous definition`() {
+            registry.addTransientIfMissing(MyService::class.java, { MyClass() }, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with factory and with key and previous definition`() {
+            registry.addTransient(MyService::class.java, { MyClass() }, "my key")
+
+            registry.addTransientIfMissing(MyService::class.java, { MyClass2() }, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and without key and no previous definition`() {
+            registry.addTransientIfMissing(MyService::class.java, MyClass::class.java)
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and without key and previous definition`() {
+            registry.addTransient(MyService::class.java, MyClass::class.java)
+
+            registry.addTransientIfMissing(MyService::class.java, MyClass2::class.java)
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and with key and no previous definition`() {
+            registry.addTransientIfMissing(MyService::class.java, MyClass::class.java, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and with key and previous definition`() {
+            registry.addTransient(MyService::class.java, MyClass::class.java, "my key")
+
+            registry.addTransientIfMissing(MyService::class.java, MyClass2::class.java, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with generic types and no previous definition`() {
+            registry.addTransientIfMissing<MyService, MyClass>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with generic types and previous definition`() {
+            registry.addTransient<MyService, MyClass>("my key")
+
+            registry.addTransientIfMissing<MyService, MyClass2>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with single generic type and no previous definition`() {
+            registry.addTransientIfMissing<MyClass>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyClass::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with single generic type and previous definition`() {
+            registry.addTransient<MyClass>("my key")
+
+            registry.addTransientIfMissing<MyClass>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyClass::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Transient)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+    }
+
+    @Nested
     inner class `add scoped service` {
         @Test
         fun `with factory and without key`() {
@@ -185,6 +320,142 @@ class ServiceRegistryTest {
             assertThat(registry[1].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
             assertThat(registry[2].key).isEqualTo("key1")
             assertThat(registry[2].implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+        }
+    }
+
+    @Nested
+    inner class `add scoped service if missing` {
+        @Test
+        fun `with factory and without key and no previous definition`() {
+            registry.addScopedIfMissing(MyService::class.java, { MyClass() })
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with factory and without key and previous definition`() {
+            registry.addScoped(MyService::class.java, { MyClass() })
+
+            registry.addScopedIfMissing(MyService::class.java, { MyClass2() })
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with factory and with key and no previous definition`() {
+            registry.addScopedIfMissing(MyService::class.java, { MyClass() }, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with factory and with key and previous definition`() {
+            registry.addScoped(MyService::class.java, { MyClass() }, "my key")
+
+            registry.addScopedIfMissing(MyService::class.java, { MyClass2() }, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and without key and no previous definition`() {
+            registry.addScopedIfMissing(MyService::class.java, MyClass::class.java)
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+
+        @Test
+        fun `with implementation type and without key and previous definition`() {
+            registry.addScoped(MyService::class.java, MyClass::class.java)
+
+            registry.addScopedIfMissing(MyService::class.java, MyClass2::class.java)
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and with key and no previous definition`() {
+            registry.addScopedIfMissing(MyService::class.java, MyClass::class.java, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and with key and previous definition`() {
+            registry.addScoped(MyService::class.java, MyClass::class.java, "my key")
+
+            registry.addScopedIfMissing(MyService::class.java, MyClass::class.java, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with generic types and no previous definition`() {
+            registry.addScopedIfMissing<MyService, MyClass>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with generic types and previous definition`() {
+            registry.addScoped<MyService, MyClass>("my key")
+
+            registry.addScopedIfMissing<MyService, MyClass2>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with single generic type and no previous definition`() {
+            registry.addScopedIfMissing<MyClass>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyClass::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with single generic type and previous definition`() {
+            registry.addScoped<MyClass>("my key")
+
+            registry.addScopedIfMissing<MyClass2>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyClass::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Scoped)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
         }
     }
 
@@ -303,6 +574,193 @@ class ServiceRegistryTest {
     }
 
     @Nested
+    inner class `add singleton service if missing` {
+        @Test
+        fun `with factory and without key and no previous definition`() {
+            registry.addSingletonIfMissing(MyService::class.java, { MyClass() })
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with factory and without key and previous definition`() {
+            registry.addSingleton(MyService::class.java, { MyClass() })
+
+            registry.addSingletonIfMissing(MyService::class.java, { MyClass2() })
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with factory and with key and no previous definition`() {
+            registry.addSingletonIfMissing(MyService::class.java, { MyClass() }, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with factory and with key and previous definition`() {
+            registry.addSingleton(MyService::class.java, { MyClass() }, "my key")
+
+            registry.addSingletonIfMissing(MyService::class.java, { MyClass2() }, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with instance and without key and no previous definition`() {
+            val obj = MyClass()
+            registry.addSingletonIfMissing<MyService>(obj)
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isEqualTo(obj)
+        }
+
+        @Test
+        fun `with instance and without key and previous definition`() {
+            val obj = MyClass()
+            val obj2 = MyClass()
+            registry.addSingleton<MyService>(obj)
+
+            registry.addSingletonIfMissing<MyService>(obj2)
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isEqualTo(obj)
+        }
+
+        @Test
+        fun `with instance and with key and no previous definition`() {
+            val obj = MyClass()
+            registry.addSingletonIfMissing<MyService>("my key", obj)
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isEqualTo(obj)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with instance and with key and previous definition`() {
+            val obj = MyClass()
+            val obj2 = MyClass()
+            registry.addSingleton<MyService>("my key", obj)
+
+            registry.addSingletonIfMissing<MyService>("my key", obj2)
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isEqualTo(obj)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and without key and no previous definition`() {
+            registry.addSingletonIfMissing(MyService::class.java, MyClass::class.java)
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and without key and previous definition`() {
+            registry.addSingleton(MyService::class.java, MyClass::class.java)
+
+            registry.addSingletonIfMissing(MyService::class.java, MyClass2::class.java)
+
+            assertThat(registry[0].key).isNull()
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and with key and no previous definition`() {
+            registry.addSingletonIfMissing(MyService::class.java, MyClass::class.java, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with implementation type and with key and previous definition`() {
+            registry.addSingleton(MyService::class.java, MyClass::class.java, "my key")
+
+            registry.addSingletonIfMissing(MyService::class.java, MyClass2::class.java, "my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with generic types and no previous definition`() {
+            registry.addSingletonIfMissing<MyService, MyClass>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with generic types and previous definition`() {
+            registry.addSingleton<MyService, MyClass>("my key")
+
+            registry.addSingletonIfMissing<MyService, MyClass2>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyService::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with single generic type and no previous definition`() {
+            registry.addSingletonIfMissing<MyClass>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyClass::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+
+        @Test
+        fun `with single generic type and previous definition`() {
+            registry.addSingleton<MyClass>("my key")
+
+            registry.addSingletonIfMissing<MyClass2>("my key")
+
+            assertThat(registry[0].key).isEqualTo("my key")
+            assertThat(registry[0].serviceType).isEqualTo(MyClass::class.java)
+            assertThat(registry[0].lifetime).isEqualTo(Singleton)
+            assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        }
+    }
+
+    @Nested
     inner class `service configurations` {
         @Test
         fun add() {
@@ -371,17 +829,6 @@ class ServiceRegistryTest {
         assertDoesNotThrow {
             registry.addTransient<ClassWithConstructorWithDefaults>()
         }
-    }
-
-    @Test
-    fun `ensureAdded only adds descriptor if not already declared`() {
-        registry.addSingleton<MyService, MyClass>()
-        registry.ensureAdded(ServiceDescriptor.singleton<MyService>({ MyClass2() }))
-
-        assertThat(registry.size).isEqualTo(1)
-        assertThat(registry[0].key).isNull()
-        assertThat(registry[0].lifetime).isEqualTo(Singleton)
-        assertThat(registry[0].implementationFactory(provider)).isInstanceOf(MyClass::class.java)
     }
 
     private val registry = ServiceRegistry()

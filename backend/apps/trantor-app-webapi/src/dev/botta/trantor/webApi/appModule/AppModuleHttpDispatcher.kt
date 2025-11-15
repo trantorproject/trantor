@@ -9,7 +9,10 @@ import dev.botta.trantor.appServices.auth.SystemIdentity
 import dev.botta.trantor.core.Event
 import dev.botta.trantor.core.serialization.JsonSerializer
 import dev.botta.trantor.webApi.appModule.transformers.*
-import io.javalin.http.Context
+import io.ktor.http.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlin.reflect.KClass
 
 class AppModuleHttpDispatcher(private val appModule: AppModule, private val serializer: JsonSerializer) {
@@ -19,32 +22,32 @@ class AppModuleHttpDispatcher(private val appModule: AppModule, private val seri
         SearchQueryRequestToJsonTransformer(),
     )
 
-    inline fun <reified T: Request<*>> execute(ctx: Context, statusCode: Int = 200) {
-        execute(T::class, ctx, statusCode)
+    suspend inline fun <reified T: Request<*>> execute(ctx: RoutingContext, status: HttpStatusCode = HttpStatusCode.OK) {
+        execute(T::class, ctx, status)
     }
 
-    fun notify(event: Event) {
+    suspend fun notify(event: Event) {
         appModule.notify(event)
     }
 
-    fun <T: Request<*>> execute(actionClass: KClass<T>, ctx: Context, statusCode: Int = 200) {
+    suspend fun <T: Request<*>> execute(actionClass: KClass<T>, ctx: RoutingContext, status: HttpStatusCode = HttpStatusCode.OK) {
         val action = ctx.deserializedBody(actionClass)
         val actionResponse = execute(action, ctx)
-        ctx.serialized(actionResponse, statusCode)
+        ctx.serialized(actionResponse, status)
     }
 
-    fun <T: Request<R>, R> executeWithoutReturning(actionClass: KClass<T>, ctx: Context, statusCode: Int = 200): R {
+    suspend fun <T: Request<R>, R> executeWithoutReturning(actionClass: KClass<T>, ctx: RoutingContext, status: HttpStatusCode = HttpStatusCode.OK): R {
         val action = ctx.deserializedBody(actionClass)
         return execute(action, ctx)
     }
 
-    fun <R> execute(action: Request<R>, ctx: Context, executionContext: ExecutionContext = ExecutionContext()) =
-        appModule.execute(action, executionContext.with("javalin_context", ctx))
+    suspend fun <R> execute(action: Request<R>, ctx: RoutingContext, executionContext: ExecutionContext = ExecutionContext()) =
+        appModule.execute(action, executionContext.with("routing_context", ctx))
 
-    fun <R> executeAsSystem(action: Request<R>, ctx: Context, executionContext: ExecutionContext = ExecutionContext()) =
-        appModule.execute(action, executionContext.withIdentity(SystemIdentity()).with("javalin_context", ctx))
+    suspend fun <R> executeAsSystem(action: Request<R>, ctx: RoutingContext, executionContext: ExecutionContext = ExecutionContext()) =
+        appModule.execute(action, executionContext.withIdentity(SystemIdentity()).with("routing_context", ctx))
 
-    fun <T: Any> Context.deserializedBody(type: KClass<T>): T {
+    suspend fun <T: Any> RoutingContext.deserializedBody(type: KClass<T>): T {
         val json = jsonWithRequestParameters(type)
         try {
             return serializer.deserialize(json, type.java)
@@ -53,8 +56,8 @@ class AppModuleHttpDispatcher(private val appModule: AppModule, private val seri
         }
     }
 
-    private fun Context.jsonWithRequestParameters(type: KClass<*>): String {
-        var body = body()
+    private suspend fun RoutingContext.jsonWithRequestParameters(type: KClass<*>): String {
+        var body = call.receiveText()
         if (body.isEmpty()) body = "{}"
         val json = Json.parse(body).asObject()
 
@@ -68,9 +71,8 @@ class AppModuleHttpDispatcher(private val appModule: AppModule, private val seri
         transformers.add(transformer)
     }
 
-    fun Context.serialized(obj: Any?, statusCode: Int = 200) {
-        contentType("application/json")
-        status(statusCode)
-        if (obj != null) result(serializer.serialize(obj))
+    suspend fun RoutingContext.serialized(obj: Any?, status: HttpStatusCode = HttpStatusCode.OK) {
+        val text = if (obj != null) serializer.serialize(obj) else ""
+        call.respondText(text, ContentType.Application.Json, status)
     }
 }

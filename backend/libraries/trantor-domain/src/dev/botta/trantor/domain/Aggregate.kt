@@ -2,7 +2,7 @@ package dev.botta.trantor.domain
 
 import dev.botta.trantor.domain.events.RecordedEvents
 
-abstract class Aggregate<T>(id: Id<T>) {
+abstract class Aggregate<ID: Id>(id: ID) {
     var id = id
         protected set
     val recordedEvents = RecordedEvents()

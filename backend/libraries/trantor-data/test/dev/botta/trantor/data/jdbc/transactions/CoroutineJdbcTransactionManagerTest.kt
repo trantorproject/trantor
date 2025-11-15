@@ -1,14 +1,16 @@
-package dev.botta.trantor.data.jdbc
+package dev.botta.trantor.data.jdbc.transactions
 
+import dev.botta.trantor.data.jdbc.ConnectionStub
+import dev.botta.trantor.data.jdbc.SavePoints
 import dev.botta.trantor.data.jdbc.transactions.TransactionAwareDataSource
-import dev.botta.trantor.data.jdbc.transactions.manager.ThreadLocalJdbcTransactionManager
+import dev.botta.trantor.data.jdbc.transactions.manager.CoroutineJdbcTransactionManager
 import dev.botta.trantor.tx.*
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
 import javax.sql.DataSource
 
-class ThreadLocalJdbcTransactionManagerTest {
+class CoroutineJdbcTransactionManagerTest {
     @Test
     fun `there's no active connection if there's no active transaction`() {
         assertThat(transactionManager.activeConnection).isNull()
@@ -229,5 +231,5 @@ class ThreadLocalJdbcTransactionManagerTest {
 
     private var savePoints = SavePoints()
     private val dataSource = mockk<DataSource>()
-    private val transactionManager = ThreadLocalJdbcTransactionManager(TransactionAwareDataSource(dataSource))
+    private val transactionManager = CoroutineJdbcTransactionManager(TransactionAwareDataSource(dataSource))
 }

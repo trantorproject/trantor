@@ -1,7 +1,7 @@
 package dev.botta.trantor.web.server
 
-import io.javalin.http.Context
+import io.ktor.server.routing.*
 
 interface HttpRequestInterceptor {
-    fun onRequest(ctx: Context)
+    fun onRequest(ctx: RoutingContext)
 }

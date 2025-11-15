@@ -8,6 +8,6 @@ fun ServiceRegistry.addGsonSerializer(config: ServiceConfiguration<GsonSerialize
 }
 
 fun ServiceRegistry.configureGsonSerializer(config: ServiceConfiguration<GsonSerializer> = {}) = apply {
-    ensureAdded(ServiceDescriptor.singleton<JsonSerializer>({ GsonSerializer() }))
+    addSingletonIfMissing<JsonSerializer> { GsonSerializer() }
     configure<JsonSerializer>{ (it as? GsonSerializer)?.apply(config) }
 }

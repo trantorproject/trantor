@@ -21,6 +21,7 @@ allprojects {
         api(kotlin("stdlib"))
         api(kotlin("reflect"))
         if (project.name != "trantor-test") testImplementation(project(":libraries:trantor-test"))
+        testImplementation("org.junit.platform:junit-platform-launcher")
     }
 
     kotlin {

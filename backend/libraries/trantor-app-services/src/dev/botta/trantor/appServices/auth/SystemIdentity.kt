@@ -1,6 +1,6 @@
 package dev.botta.trantor.appServices.auth
 
-import dev.botta.cqbus.ExecutionContext
+import dev.botta.cqbus.*
 import dev.botta.cqbus.identity.Identity
 import dev.botta.cqbus.requests.Request
 import dev.botta.trantor.appServices.AppModule
@@ -13,5 +13,8 @@ class SystemIdentity: Identity {
     override val roles = listOf("system")
 }
 
-fun <T: Request<R>, R> AppModule.executeAsSystem(request: T): R =
+suspend fun <T: Request<R>, R> AppModule.executeAsSystem(request: T): R =
+    execute(request, ExecutionContext().withIdentity(SystemIdentity()))
+
+suspend fun <T: Request<R>, R> CQBus.executeAsSystem(request: T): R =
     execute(request, ExecutionContext().withIdentity(SystemIdentity()))

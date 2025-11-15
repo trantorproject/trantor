@@ -10,11 +10,15 @@ abstract class AppModule(protected val services: ServiceProvider) {
     protected val cqBus = services.getOrDefault { CQBus() }
     protected val eventBus: EventBus = services.getOrDefault<EventBus> { InProcessEventBus() }
 
-    fun <T: Request<R>, R> execute(request: T, context: ExecutionContext): R {
+    open fun start() {}
+
+    open fun shutdown() {}
+
+    suspend fun <T: Request<R>, R> execute(request: T, context: ExecutionContext): R {
         return cqBus.execute(request, context)
     }
 
-    fun notify(event: Event) {
+    suspend fun notify(event: Event) {
         eventBus.publish(event)
     }
 

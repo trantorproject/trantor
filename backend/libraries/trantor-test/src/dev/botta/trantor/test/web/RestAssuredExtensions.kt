@@ -26,7 +26,7 @@ fun ValidatableResponse.failsWithForbidden(): ValidatableResponse = this.statusC
 
 fun ValidatableResponse.failsWithNotFound(): ValidatableResponse = this.statusCode(404)
 
-fun <T> ValidatableResponse.returningId(): Id<T> {
+fun <T> ValidatableResponse.returningId(): Id {
     val id = this.body("id", CoreMatchers.notNullValue()).extract().path<String>("id")
     return Id(id)
 }
