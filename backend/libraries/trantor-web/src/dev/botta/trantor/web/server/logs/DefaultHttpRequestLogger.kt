@@ -69,7 +69,9 @@ class DefaultHttpRequestLogger: HttpRequestLogger {
             val contentLength = request.headers["Content-Length"]?.toLongOrNull() ?: -1L
             val requestBody = if (contentType.startsWith("multipart/form-data")) {
                 "Multipart (${contentLength} bytes)"
-            } else if (contentLength > maxBodyLogSize || contentLength == -1L) {
+            } else if (contentLength == -1L) {
+                ""
+            } else if (contentLength > maxBodyLogSize) {
                 "$contentLength bytes"
             } else {
                 runBlocking { receiveText() }
