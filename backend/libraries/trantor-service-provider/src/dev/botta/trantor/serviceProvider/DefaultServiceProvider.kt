@@ -75,8 +75,10 @@ class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProv
             // Try using registered value resolver
             if (annotation != null) {
                 val resolver = valueResolvers[annotation.annotationClass]!!
-                val resolvedValue = resolver.resolve(annotation, paramType, this)
-                args[param] = resolvedValue
+                val resolvedValue = resolver.resolve(annotation, kType, param.isOptional, this)
+                if (resolvedValue is ResolvedValue.Value) {
+                    args[param] = resolvedValue.value
+                }
                 continue
             }
 

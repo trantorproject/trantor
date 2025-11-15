@@ -1,8 +1,8 @@
 package dev.botta.trantor.serviceProvider
 
-import kotlin.reflect.KClass
+import kotlin.reflect.*
 
 interface ServiceValueResolver {
     val annotationType: KClass<*>
-    fun resolve(annotation: Annotation, paramType: Class<*>, services: ServiceProvider): Any
+    fun resolve(annotation: Annotation, paramType: KType, isOptional: Boolean, services: ServiceProvider): ResolvedValue
 }
