@@ -11,7 +11,7 @@ abstract class BaseJsonErrorHandler<T: Throwable>: HttpErrorHandler<T> {
 
     override suspend fun handle(call: ApplicationCall, cause: T, logger: Logger) {
 //        ctx.status(status)
-        logger.info(cause.message, cause)
+        logger.warn(cause.message, cause)
         call.respondJsonError(cause, status = status)
     }
 }

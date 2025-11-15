@@ -1,8 +1,8 @@
 package dev.botta.trantor.web.server.logs
 
-import io.ktor.server.routing.*
+import io.ktor.server.application.*
 
 fun interface HttpRequestLogger {
     @Throws(Exception::class)
-    fun handle(ctx: RoutingContext, executionTimeMs: Float)
+    fun handle(call: ApplicationCall): String
 }

@@ -3,16 +3,15 @@ package dev.botta.trantor.web.server
 import dev.botta.trantor.core.getLogger
 import dev.botta.trantor.core.lang.shortName
 import dev.botta.trantor.web.server.controllers.Controller
-import dev.botta.trantor.web.server.logs.HttpRequestLogger
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.bodylimit.*
 import io.ktor.server.plugins.calllogging.*
+import io.ktor.server.plugins.doublereceive.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.routing.*
-import io.ktor.server.websocket.WebSockets
-import io.ktor.server.websocket.timeout
+import io.ktor.server.websocket.*
 import org.eclipse.jetty.util.thread.QueuedThreadPool
 import java.util.*
 import kotlin.time.Duration.Companion.milliseconds
@@ -21,10 +20,8 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
     private val logger = getLogger()
     private var ktorServer: EmbeddedServer<*, *>? = null
     private val routeRegister = RouteRegister()
-//    private val threadPool = QueuedThreadPool(config.maxThreads, config.minThreads, config.idleTimeout)
     private var managementThreadPool: QueuedThreadPool? = null
 //    private val statisticsHandler = StatisticsHandler()
-    private val requestLogger: HttpRequestLogger = config.requestLoggerFactory(logger)
     val id = UUID.randomUUID().toString()
 //    val stats: HttpServerStats
 //        get() = statisticsHandler.getStats(threadPool, managementThreadPool)
@@ -67,13 +64,8 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
 //        }
 //    }
 
-//    private fun logRequest(call: ApplicationCall, executionTimeMs: Float) {
-//        requestLogger.handle(ctx, executionTimeMs)
-//    }
-
     fun start() {
         logger.info("Starting with id $id")
-//        logger.info("ThreadPool configured with min: ${threadPool.minThreads} max: ${threadPool.maxThreads} idleTimeout: ${threadPool.idleTimeout}ms")
         ktorServer = embeddedServer(Netty, configure = {
             connectors.add(EngineConnectorBuilder().apply {
                 host = "0.0.0.0"
@@ -90,10 +82,8 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
                 bodyLimit { config.maxRequestSizeInMb * 1024 * 1024 }
             }
             install(StatusPages) { statusPagesConfigurations.forEach { it(this) } }
-            install(CallLogging) {
-                // TODO
-//                format { call -> }
-            }
+            install(DoubleReceive)
+            install(CallLogging) { format { config.requestLogger.handle(it) } }
             install(WebSockets) {
                 timeout = config.wsIdleTimeout.milliseconds
             }

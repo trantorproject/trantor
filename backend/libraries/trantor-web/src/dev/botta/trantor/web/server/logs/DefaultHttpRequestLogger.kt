@@ -1,30 +1,84 @@
 package dev.botta.trantor.web.server.logs
 
-import io.ktor.server.routing.RoutingContext
-import org.slf4j.Logger
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.plugins.calllogging.*
+import io.ktor.server.request.*
+import kotlinx.coroutines.runBlocking
+import org.fusesource.jansi.*
 
-class DefaultHttpRequestLogger(private val logger: Logger): HttpRequestLogger {
-    override fun handle(ctx: RoutingContext, executionTimeMs: Float) {
-//        val sb = StringBuilder()
-//        sb.append(ctx.req().method)
-//        sb.append(" " + ctx.fullUrl())
-//        sb.append(" Response: " + ctx.res().status)
-//        sb.append(" - " + ctx.res().getHeader("content-type"))
-//        sb.append(" (" + executionTimeMs + "ms)")
-//        if (ctx.res().status >= 300 || ctx.res().status < 200) {
-//            sb.appendLine()
-//            if (ctx.req().contentType == "multipart/form-data") {
-//                sb.append("Request Body: Multipart ${ctx.req().contentLength} bytes")
-//            } else if (ctx.req().contentLength > 1_000_000) {
-//                sb.append("Request Body: ${ctx.req().contentLength} bytes")
-//            } else {
-//                sb.append("Request Body: " + ctx.body())
-//            }
-//            sb.appendLine()
-//            sb.append("Response Body: " + ctx.result())
-//            logger.error(sb.toString())
-//            return
-//        }
-//        logger.info(sb.toString())
+class DefaultHttpRequestLogger: HttpRequestLogger {
+    var isColorsEnabled = true
+    var maxBodyLogSize: Long = 50_000
+
+    init {
+        try {
+            if (isColorsEnabled && !AnsiConsole.isInstalled()) AnsiConsole.systemInstall()
+        } catch (cause: Throwable) {
+            isColorsEnabled = false // ignore colors if console was not installed
+        }
+    }
+
+    override fun handle(call: ApplicationCall): String {
+        val status = call.response.status() ?: "Unhandled"
+        return when (status) {
+            HttpStatusCode.Found -> "${coloredStatus(status as HttpStatusCode)}: " +
+                    "${call.toShortLogString()} -> ${call.response.headers[HttpHeaders.Location]}"
+
+            "Unhandled" -> "${colored(status, Ansi.Color.RED)}: ${call.toLogString()}"
+            else -> "${coloredStatus(status as HttpStatusCode)}: ${call.toLogString()}"
+        }
+    }
+
+    private fun coloredStatus(status: HttpStatusCode): String {
+        return when (status) {
+            HttpStatusCode.Found,
+            HttpStatusCode.OK,
+            HttpStatusCode.Accepted,
+            HttpStatusCode.Created -> colored(status, Ansi.Color.GREEN)
+
+            HttpStatusCode.Continue,
+            HttpStatusCode.Processing,
+            HttpStatusCode.PartialContent,
+            HttpStatusCode.NotModified,
+            HttpStatusCode.UseProxy,
+            HttpStatusCode.UpgradeRequired,
+            HttpStatusCode.NoContent -> colored(status, Ansi.Color.YELLOW)
+
+            else -> colored(status, Ansi.Color.RED)
+        }
+    }
+
+    private fun colored(value: Any, color: Ansi.Color): String {
+        if (!isColorsEnabled) return value.toString()
+        return Ansi.ansi().fg(color).a(value).reset().toString()
+    }
+
+    private fun ApplicationCall.toShortLogString(): String =
+        "${colored(request.httpMethod.value, Ansi.Color.CYAN)} - ${request.path()} in ${processingTimeMillis()}ms"
+
+    private fun ApplicationCall.toLogString(): String {
+        val sb = StringBuilder()
+        sb.append(colored(request.httpMethod.value, Ansi.Color.CYAN))
+        sb.append(" - ")
+        sb.append(request.path())
+        sb.append(" in ${processingTimeMillis()}ms")
+        val statusCode = response.status()?.value ?: 0
+        if (statusCode >= 300 || statusCode < 200) {
+            val contentType = request.contentType().toString()
+            val contentLength = request.headers["Content-Length"]?.toLongOrNull() ?: -1L
+            val requestBody = if (contentType.startsWith("multipart/form-data")) {
+                "Multipart (${contentLength} bytes)"
+            } else if (contentLength > maxBodyLogSize || contentLength == -1L) {
+                "$contentLength bytes"
+            } else {
+                runBlocking { receiveText() }
+            }
+            if (requestBody.isNotEmpty()) {
+                sb.appendLine()
+                sb.append("Request Body: $requestBody")
+            }
+        }
+        return sb.toString()
     }
 }

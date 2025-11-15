@@ -1,7 +1,6 @@
 package dev.botta.trantor.web.server
 
 import dev.botta.trantor.web.server.logs.*
-import org.slf4j.Logger
 
 data class HttpServerConfig(
     var port: Int = 80,
@@ -14,5 +13,5 @@ data class HttpServerConfig(
     var maxMultipartFileSizeInMb: Long = 100L,
     var maxMultipartInMemoryFileSizeInMb: Int = 10,
     val maxMultipartRequestSizeInMb: Long = 500L,
-    var requestLoggerFactory: (logger: Logger) -> HttpRequestLogger = { DefaultHttpRequestLogger(it) },
+    var requestLogger: HttpRequestLogger = DefaultHttpRequestLogger(),
 )
