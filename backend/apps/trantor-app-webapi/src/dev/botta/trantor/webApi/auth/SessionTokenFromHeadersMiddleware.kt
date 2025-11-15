@@ -3,6 +3,7 @@ package dev.botta.trantor.webApi.auth
 import dev.botta.cqbus.*
 import dev.botta.cqbus.requests.Request
 import dev.botta.trantor.appServices.AppModule
+import io.ktor.server.request.*
 import io.ktor.server.routing.*
 
 class SessionTokenFromHeadersMiddleware: Middleware {
@@ -20,7 +21,7 @@ class SessionTokenFromHeadersMiddleware: Middleware {
     }
 
     private fun getAuthorizationHeader(context: ExecutionContext) =
-        (context["routing_context"] as? RoutingContext)?.call?.request?.headers?.get("Authorization")
+        (context["routing_context"] as? RoutingContext)?.call?.request?.header("Authorization")
 }
 
 fun AppModule.addSessionTokenFromHeaders() {

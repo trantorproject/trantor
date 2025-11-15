@@ -171,7 +171,7 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
     }
 
     fun <TService: Any> addSingletonIfMissing(serviceType: Class<TService>, factory: ImplementationFactory<TService>, key: String? = null) = apply {
-        addService(serviceType, factory, Singleton, key)
+        addServiceIfMissing(serviceType, factory, Singleton, key)
     }
 
     private fun <TService: Any> addService(
