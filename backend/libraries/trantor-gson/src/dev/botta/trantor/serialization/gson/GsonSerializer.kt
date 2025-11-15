@@ -17,6 +17,7 @@ class GsonSerializer: JsonSerializer {
     init {
         builder.registerTypeAdapterFactory(KotlinReflectiveTypeAdapterFactory.create())
         builder.registerTypeAdapterFactory(MaybeTypeAdapterFactory())
+        builder.registerTypeAdapterFactory(IdTypeAdapterFactory())
         builder.registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeSerializer())
         builder.registerTypeAdapter(LocalDate::class.java, LocalDateSerializer())
         builder.registerTypeAdapter(LocalTime::class.java, LocalTimeSerializer())
@@ -24,7 +25,6 @@ class GsonSerializer: JsonSerializer {
             { yearMonthParser.parseISO8601(it) },
             { it.formatAsISO8601() }
         ))
-        builder.registerTypeAdapter(Id::class.java, IdValueSerializer())
         builder.registerTypeAdapter(Money::class.java, StringValueSerializer({ Money(it) }, { it.plainString() }))
         builder.registerTypeAdapter(Email::class.java, StringValueSerializer({ Email(it) }))
     }

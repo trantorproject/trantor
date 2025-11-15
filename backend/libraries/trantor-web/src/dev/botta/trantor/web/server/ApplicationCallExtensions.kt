@@ -6,7 +6,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 
-suspend fun ApplicationCall.respondJsonValue(json: JsonValue = JsonObject(), status: HttpStatusCode = HttpStatusCode.OK) {
+suspend fun ApplicationCall.respondJsonValue(json: JsonValue = JsonObject(), status: HttpStatusCode? = null) {
     respondText(json.toString(), ContentType.Application.Json, status)
 }
 
