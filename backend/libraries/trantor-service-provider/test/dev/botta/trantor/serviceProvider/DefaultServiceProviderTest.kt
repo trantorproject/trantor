@@ -4,6 +4,7 @@ package dev.botta.trantor.serviceProvider
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
+import kotlin.reflect.KType
 
 class DefaultServiceProviderTest {
     @Test
@@ -408,8 +409,8 @@ class DefaultServiceProviderTest {
     class ConfigServiceValueResolver: ServiceValueResolver {
         override val annotationType = ConfigValue::class
 
-        override fun resolve(annotation: Annotation, paramType: Class<*>, services: ServiceProvider): Any {
-            return (annotation as ConfigValue).key
+        override fun resolve(annotation: Annotation, paramType:KType, isOptional: Boolean, services: ServiceProvider): ResolvedValue {
+            return ResolvedValue.Value((annotation as ConfigValue).key)
         }
     }
 }
