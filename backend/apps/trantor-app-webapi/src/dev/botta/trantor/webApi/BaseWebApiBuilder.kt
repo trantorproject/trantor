@@ -8,15 +8,13 @@ import dev.botta.trantor.web.server.*
 
 abstract class BaseWebApiBuilder<T: BaseWebApi>(appName: String? = null, environmentName: String? = null) {
     val config = ConfigManager()
-    val services = ServiceRegistry()
+    val services = ServiceRegistry(config)
     val environment: AppEnvironment
 
     init {
         if (environmentName != null) config.addMemoryCollection("environment" to environmentName)
         environment = createAppEnvironment(appName)
         services.addSingleton<AppEnvironment>(environment)
-        services.addSingleton<Config>(config)
-        services.addConfigServiceValueResolver()
 
         config.addJsonResource("settings.json")
         config.addJsonResource("settings.${environment.environmentName.lowercase()}.json")

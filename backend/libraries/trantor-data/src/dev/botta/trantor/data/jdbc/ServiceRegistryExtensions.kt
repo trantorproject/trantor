@@ -1,7 +1,6 @@
 package dev.botta.trantor.data.jdbc
 
 import com.zaxxer.hikari.*
-import dev.botta.trantor.config.addConfig
 import dev.botta.trantor.data.coroutines.addDbDispatcherProvider
 import dev.botta.trantor.data.jdbc.transactions.TransactionAwareDataSource
 import dev.botta.trantor.data.jdbc.transactions.manager.*

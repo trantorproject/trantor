@@ -1,15 +1,21 @@
 package dev.botta.trantor.serviceProvider
 
 import dev.botta.trantor.serviceProvider.ServiceLifetimes.*
+import dev.botta.trantor.serviceProvider.config.ConfigServiceValueResolver
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.jvmErasure
 
-class DefaultServiceProvider(private val registry: ServiceRegistry): ServiceProvider() {
+class DefaultServiceProvider(registry: ServiceRegistry): ServiceProvider(registry) {
     private val singletonCache: MutableMap<String, Any> = mutableMapOf()
     private var inScope: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
     private val scopeCache: ThreadLocal<MutableMap<String, Any>> = ThreadLocal.withInitial { mutableMapOf() }
-    private val valueResolvers by lazy { getAll<ServiceValueResolver>().associateBy { it.annotationType } }
+    private val valueResolvers by lazy {
+        listOf(
+            ConfigServiceValueResolver(),
+            *getAll<ServiceValueResolver>().toTypedArray(),
+        ).associateBy { it.annotationType }
+    }
 
     override fun <T: Any> getOrDefault(type: Class<T>, key: String?, default: () -> T) = tryGet(type, key) ?: default()
 

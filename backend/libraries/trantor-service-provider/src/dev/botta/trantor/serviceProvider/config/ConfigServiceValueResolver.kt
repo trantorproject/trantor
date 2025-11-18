@@ -1,6 +1,5 @@
-package dev.botta.trantor.config.serviceProvider
+package dev.botta.trantor.serviceProvider.config
 
-import dev.botta.trantor.config.Config
 import dev.botta.trantor.serviceProvider.*
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.jvmErasure
@@ -10,7 +9,7 @@ class ConfigServiceValueResolver: ServiceValueResolver {
 
     override fun resolve(annotation: Annotation, paramType: KType, isOptional: Boolean, services: ServiceProvider): ResolvedValue {
         val path = (annotation as ConfigValue).path
-        val config = services.get<Config>()
+        val config = services.config
         val value = if (isOptional) config[path] else config.required(path)
         if (value == null) return ResolvedValue.Skip
         val targetClass = paramType.jvmErasure.java

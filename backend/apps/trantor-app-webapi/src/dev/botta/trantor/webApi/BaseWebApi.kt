@@ -3,7 +3,6 @@ package dev.botta.trantor.webApi
 import com.google.gson.JsonParseException
 import dev.botta.json.parser.JsonParseError
 import dev.botta.trantor.appServices.auth.*
-import dev.botta.trantor.config.config
 import dev.botta.trantor.domain.errors.*
 import dev.botta.trantor.serviceProvider.ServiceProvider
 import dev.botta.trantor.web.server.*

@@ -2,7 +2,9 @@ package dev.botta.trantor.serviceProvider
 
 import kotlin.reflect.KClass
 
-abstract class ServiceProvider {
+abstract class ServiceProvider(protected val registry: ServiceRegistry) {
+    val config = registry.config
+
     abstract fun <T: Any> getOrDefault(type: Class<T>, key: String? = null, default: () -> T): T
 
     abstract fun <T: Any> getOrDefault(type: Class<T>, default: () -> T): T

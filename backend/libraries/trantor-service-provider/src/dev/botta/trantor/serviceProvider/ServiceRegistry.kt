@@ -1,10 +1,16 @@
 package dev.botta.trantor.serviceProvider
 
+import dev.botta.trantor.config.Config
+import dev.botta.trantor.core.serialization.JsonSerializer
 import dev.botta.trantor.serviceProvider.ServiceLifetimes.*
 
 @Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
-class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
+class ServiceRegistry(val config: Config): MutableList<ServiceDescriptor<*>> by mutableListOf() {
     private val configurations: MutableList<ServiceConfigurationItem<*>> = mutableListOf()
+
+    init {
+        addSingleton<Config>(config)
+    }
 
     inline fun <reified TService: Any, reified TImplementation: TService> addTransient(key: String? = null) = apply {
         addTransient(TService::class.java, TImplementation::class.java, key)
@@ -212,6 +218,23 @@ class ServiceRegistry: MutableList<ServiceDescriptor<*>> by mutableListOf() {
 
     inline fun <reified TService: Any> configure(noinline configuration: ServiceConfiguration<TService>) {
         configure(TService::class.java, configuration)
+    }
+
+    fun <TService: Any> addConfig(serviceType: Class<TService>, configSection: String, key: String? = null) = apply {
+        addSingleton(
+            serviceType,
+            {
+                val jsonSerializer = it.get<JsonSerializer>()
+                if (!it.config.hasSection(configSection)) return@addSingleton jsonSerializer.deserialize("{}", serviceType)
+                val section = it.config.getSection(configSection)
+                jsonSerializer.deserialize(section.toJson().toString(), serviceType)
+            },
+            key,
+        )
+    }
+
+    inline fun <reified TService: Any> addConfig(configSection: String, key: String? = null) = apply {
+        addConfig(TService::class.java, configSection, key)
     }
 
     @Suppress("UNCHECKED_CAST")
