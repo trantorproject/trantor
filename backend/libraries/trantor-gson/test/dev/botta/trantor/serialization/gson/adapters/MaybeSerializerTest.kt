@@ -111,7 +111,8 @@ class MaybeSerializerTest {
         val json = Json.parse(result)
 
         assertThat(json.isObject).isTrue
-        assertThat(json.asObject()?.containsKey("dataNullableInt")).isFalse
+        assertThat(json.asObject()?.containsKey("dataNullableInt")).isTrue
+        assertThat(json.asObject()?.get("dataNullableInt")?.isNull).isTrue
     }
 
     @BeforeEach

@@ -4,7 +4,7 @@ import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import com.google.gson.stream.*
 import dev.botta.trantor.core.lang.Maybe
-import java.lang.reflect.*
+import java.lang.reflect.ParameterizedType
 
 class MaybeTypeAdapterFactory : TypeAdapterFactory {
     override fun <T> create(gson: Gson, type: TypeToken<T>): TypeAdapter<T>? {
@@ -16,9 +16,23 @@ class MaybeTypeAdapterFactory : TypeAdapterFactory {
         @Suppress("UNCHECKED_CAST")
         return object : TypeAdapter<Maybe<Any?>>() {
             override fun write(out: JsonWriter, value: Maybe<Any?>?) {
-                when (value) {
-                    null, is Maybe.None -> out.nullValue()
-                    is Maybe.Value -> valueAdapter.write(out, value.value)
+                val serializeNulls = out.serializeNulls
+                try {
+                    when (value) {
+                        null -> {
+                            valueAdapter.write(out, null)
+                        }
+                        is Maybe.None -> {
+                            out.serializeNulls = false
+                            valueAdapter.write(out, null)
+                        }
+                        is Maybe.Value -> {
+                            out.serializeNulls = true
+                            valueAdapter.write(out, value.value)
+                        }
+                    }
+                } finally {
+                    out.serializeNulls = serializeNulls
                 }
             }
 

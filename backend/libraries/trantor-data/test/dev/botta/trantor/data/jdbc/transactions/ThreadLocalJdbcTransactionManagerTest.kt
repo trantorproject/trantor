@@ -93,7 +93,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    fun `there's an active connection only inside a transactional scope`() {
+    suspend fun `there's an active connection only inside a transactional scope`() {
         transactionManager.transactional {
             assertThat(transactionManager.activeConnection).isNotNull
         }
@@ -101,7 +101,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    fun `the connection is committed when it leaves the transactional scope`() {
+    suspend fun `the connection is committed when it leaves the transactional scope`() {
         val connection = ConnectionStub(savePoints)
         every { dataSource.connection } returns connection
 
@@ -111,7 +111,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    fun `the connection is rollbacked when an exception occurs inside the transactional scope`() {
+    suspend fun `the connection is rollbacked when an exception occurs inside the transactional scope`() {
         val connection = ConnectionStub(savePoints)
         every { dataSource.connection } returns connection
 
@@ -122,7 +122,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    fun `a transaction can be commited inside a transactional scope`() {
+    suspend fun `a transaction can be commited inside a transactional scope`() {
         val connection = ConnectionStub(savePoints)
         every { dataSource.connection } returns connection
 
@@ -134,7 +134,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    fun `a transaction can be rollbacked inside a transactional scope`() {
+    suspend fun `a transaction can be rollbacked inside a transactional scope`() {
         val connection = ConnectionStub(savePoints)
         every { dataSource.connection } returns connection
 
@@ -205,7 +205,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    fun `nested begin a transaction in a transactional scope doesn't start another transaction`() {
+    suspend fun `nested begin a transaction in a transactional scope doesn't start another transaction`() {
         transactionManager.transactional { transaction1 ->
 
             val transaction2 = transactionManager.beginTransaction()
