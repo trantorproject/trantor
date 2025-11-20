@@ -1,13 +1,11 @@
 package dev.botta.trantor.data.coroutines
 
-import dev.botta.trantor.core.getLogger
 import kotlinx.coroutines.*
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
 
 // Threads size must be similar to max db connections
 class DefaultDbDispatcherProvider(threads: Int = 10): DbDispatcherProvider {
-    private val logger = getLogger()
     private val executor: ExecutorService by lazy {
         val executor = Executors.newFixedThreadPool(
             threads,

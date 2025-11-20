@@ -3,7 +3,7 @@ package dev.botta.trantor.data.jdbc
 import com.zaxxer.hikari.*
 import dev.botta.trantor.data.coroutines.addDbDispatcherProvider
 import dev.botta.trantor.data.jdbc.transactions.TransactionAwareDataSource
-import dev.botta.trantor.data.jdbc.transactions.manager.*
+import dev.botta.trantor.data.jdbc.transactions.manager.SimpleJdbcTransactionManager
 import dev.botta.trantor.serviceProvider.*
 import dev.botta.trantor.tx.TransactionManager
 import javax.sql.DataSource
@@ -47,7 +47,8 @@ fun ServiceRegistry.addJdbcTransactionManager(key: String? = null) = apply {
     addSingleton<TransactionManager>(key) {
         val dataSource = it.get<DataSource>()
         if (dataSource !is TransactionAwareDataSource) throw Exception("DataSource must implement TransactionAwareDataSource to use transactions")
-        CoroutineJdbcTransactionManager(dataSource)
+//        ThreadLocalJdbcTransactionManager(dataSource)
+        SimpleJdbcTransactionManager(dataSource) // Best for coroutines
     }
 }
 
@@ -62,7 +63,7 @@ fun ServiceRegistry.addSimpleJdbcTransactionManager(key: String? = null) = apply
 }
 
 fun ServiceRegistry.addJdbc(key: String? = null) = apply {
-    addDbDispatcherProvider()
+    addDbDispatcherProvider(key)
 
     if (!has<JdbcConfig>(key)) addJdbcConfig(key)
     if (!has<DataSource>(key)) addHikariCP(key)
