@@ -2,7 +2,7 @@ package dev.botta.trantor.appServices.useCases.search
 
 import dev.botta.cqbus.requests.Query
 import dev.botta.trantor.appServices.useCases.search.SearchQueryBase.SearchResults
-import java.time.LocalDateTime
+import java.util.*
 
 abstract class SearchQueryBase<T, R: SearchResults<T>>(
     val pagination: Pagination? = null,
@@ -13,7 +13,7 @@ abstract class SearchQueryBase<T, R: SearchResults<T>>(
         val page: Int
         val pageSize: Int
         val totalItems: Long?
-        val lastCreationDate: LocalDateTime?
+        val lastId: UUID?
     }
 }
 
@@ -22,7 +22,7 @@ data class SearchResultsDto<T>(
     override val page: Int,
     override val pageSize: Int,
     override val totalItems: Long? = null,
-    override val lastCreationDate: LocalDateTime? = null
+    override val lastId: UUID? = null
 ): SearchResults<T>
 
 typealias SearchQuery<T> = SearchQueryBase<T, SearchResults<T>>

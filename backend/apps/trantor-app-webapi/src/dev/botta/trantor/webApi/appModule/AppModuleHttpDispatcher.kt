@@ -6,7 +6,6 @@ import dev.botta.cqbus.requests.Request
 import dev.botta.json.Json
 import dev.botta.trantor.appServices.AppModule
 import dev.botta.trantor.appServices.auth.SystemIdentity
-import dev.botta.trantor.core.Event
 import dev.botta.trantor.core.serialization.JsonSerializer
 import dev.botta.trantor.webApi.appModule.transformers.*
 import io.ktor.http.*
@@ -24,10 +23,6 @@ class AppModuleHttpDispatcher(private val appModule: AppModule, private val seri
 
     suspend inline fun <reified T: Request<*>> execute(ctx: RoutingContext, status: HttpStatusCode = HttpStatusCode.OK) {
         execute(T::class, ctx, status)
-    }
-
-    suspend fun notify(event: Event) {
-        appModule.notify(event)
     }
 
     suspend fun <T: Request<*>> execute(actionClass: KClass<T>, ctx: RoutingContext, status: HttpStatusCode = HttpStatusCode.OK) {

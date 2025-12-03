@@ -4,7 +4,7 @@ import dev.botta.trantor.core.*
 import dev.botta.trantor.core.lang.shortName
 import kotlinx.coroutines.*
 
-class InProcessEventBus: EventBus() {
+class InProcessEventBus: EventBus {
     private val logger = getLogger()
     private val handlers = mutableListOf<EventHandler>()
 
@@ -33,6 +33,10 @@ class InProcessEventBus: EventBus() {
     override fun subscribe(handler: EventHandler) {
         handlers.add(handler)
     }
+
+    override fun start() {}
+
+    override fun stop() {}
 
     private fun EventHandler.canHandle(event: Event) = eventTypes.any { it.isInstance(event) }
 

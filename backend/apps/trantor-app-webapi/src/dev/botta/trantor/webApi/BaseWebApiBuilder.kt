@@ -1,6 +1,6 @@
 package dev.botta.trantor.webApi
 
-import dev.botta.trantor.config.*
+import dev.botta.trantor.config.ConfigManager
 import dev.botta.trantor.config.providers.*
 import dev.botta.trantor.serialization.gson.addGsonSerializer
 import dev.botta.trantor.serviceProvider.ServiceRegistry

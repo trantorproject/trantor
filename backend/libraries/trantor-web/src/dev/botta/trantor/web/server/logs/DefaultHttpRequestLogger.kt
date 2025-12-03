@@ -5,19 +5,10 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.request.*
 import kotlinx.coroutines.runBlocking
-import org.fusesource.jansi.*
+import org.fusesource.jansi.Ansi
 
 class DefaultHttpRequestLogger: HttpRequestLogger {
-    var isColorsEnabled = true
     var maxBodyLogSize: Long = 50_000
-
-    init {
-        try {
-            if (isColorsEnabled && !AnsiConsole.isInstalled()) AnsiConsole.systemInstall()
-        } catch (cause: Throwable) {
-            isColorsEnabled = false // ignore colors if console was not installed
-        }
-    }
 
     override fun handle(call: ApplicationCall): String {
         val status = call.response.status() ?: "Unhandled"
@@ -50,7 +41,6 @@ class DefaultHttpRequestLogger: HttpRequestLogger {
     }
 
     private fun colored(value: Any, color: Ansi.Color): String {
-        if (!isColorsEnabled) return value.toString()
         return Ansi.ansi().fg(color).a(value).reset().toString()
     }
 
