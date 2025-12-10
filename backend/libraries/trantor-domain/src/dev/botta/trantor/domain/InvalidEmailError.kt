@@ -2,4 +2,4 @@ package dev.botta.trantor.domain
 
 import dev.botta.trantor.domain.errors.DomainError
 
-class InvalidEmailError(value: String): DomainError("Email '$value' is invalid")
+class InvalidEmailError(value: String, cause: Throwable? = null): DomainError("Email '$value' is invalid", cause)
