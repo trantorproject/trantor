@@ -1,6 +1,7 @@
-package dev.botta.trantor.serviceProvider.config
+package dev.botta.trantor.serviceProvider.valueresolvers.config
 
 import dev.botta.trantor.serviceProvider.*
+import dev.botta.trantor.serviceProvider.valueresolvers.ServiceValueResolver
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.jvmErasure
 

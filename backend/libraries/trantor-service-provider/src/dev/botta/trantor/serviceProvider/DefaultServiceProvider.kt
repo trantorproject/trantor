@@ -1,7 +1,9 @@
 package dev.botta.trantor.serviceProvider
 
 import dev.botta.trantor.serviceProvider.ServiceLifetimes.*
-import dev.botta.trantor.serviceProvider.config.ConfigServiceValueResolver
+import dev.botta.trantor.serviceProvider.valueresolvers.ServiceValueResolver
+import dev.botta.trantor.serviceProvider.valueresolvers.config.ConfigServiceValueResolver
+import dev.botta.trantor.serviceProvider.valueresolvers.servicename.ServiceKeyValueResolver
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.jvmErasure
@@ -13,6 +15,7 @@ class DefaultServiceProvider(registry: ServiceRegistry): ServiceProvider(registr
     private val valueResolvers by lazy {
         listOf(
             ConfigServiceValueResolver(),
+            ServiceKeyValueResolver(),
             *getAll<ServiceValueResolver>().toTypedArray(),
         ).associateBy { it.annotationType }
     }

@@ -5,6 +5,7 @@ package dev.botta.trantor.serviceProvider
 import dev.botta.trantor.config.ConfigManager
 import dev.botta.trantor.config.providers.addMemoryCollection
 import dev.botta.trantor.serialization.gson.addGsonSerializer
+import dev.botta.trantor.serviceProvider.valueresolvers.ServiceValueResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
 import kotlin.reflect.KType
