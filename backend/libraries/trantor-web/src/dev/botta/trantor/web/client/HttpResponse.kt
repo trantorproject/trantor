@@ -5,7 +5,7 @@ import java.nio.charset.Charset
 class HttpResponse(
     val status: Int,
     val bodyBytes: ByteArray,
-    val mediaType: String,
+    val contentType: String? = null,
     val encoding: String? = null,
     val headers: Map<String, String> = mapOf(),
 ) {

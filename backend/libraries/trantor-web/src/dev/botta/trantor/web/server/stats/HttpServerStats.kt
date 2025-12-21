@@ -1,7 +1,5 @@
 package dev.botta.trantor.web.server.stats
 
-import org.eclipse.jetty.util.thread.QueuedThreadPool
-
 data class HttpServerStats(
     val statsGatheringStartMs: Long,
     val requests: RequestStats,
@@ -92,14 +90,14 @@ data class ThreadsStats(
 //    )
 //}
 
-private fun threadsStats(threadPool: QueuedThreadPool) = ThreadsStats(
-    state = threadPool.state,
-    isLowOnThreads = threadPool.isLowOnThreads,
-    minThreads = threadPool.minThreads,
-    threads = threadPool.threads,
-    maxThreads = threadPool.maxThreads,
-    idleThreads = threadPool.idleThreads,
-    reservedThreads = threadPool.reservedThreads,
-    busyThreads = threadPool.busyThreads,
-    queueSize = threadPool.queueSize
-)
+//private fun threadsStats(threadPool: QueuedThreadPool) = ThreadsStats(
+//    state = threadPool.state,
+//    isLowOnThreads = threadPool.isLowOnThreads,
+//    minThreads = threadPool.minThreads,
+//    threads = threadPool.threads,
+//    maxThreads = threadPool.maxThreads,
+//    idleThreads = threadPool.idleThreads,
+//    reservedThreads = threadPool.reservedThreads,
+//    busyThreads = threadPool.busyThreads,
+//    queueSize = threadPool.queueSize
+//)

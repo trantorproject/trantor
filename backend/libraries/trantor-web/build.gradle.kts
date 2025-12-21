@@ -1,6 +1,5 @@
 dependencies {
     api(project(":libraries:trantor-core"))
-    implementation("org.eclipse.jetty:jetty-client")
     api("io.ktor:ktor-server-core")
     implementation("io.ktor:ktor-server-netty")
     implementation("io.ktor:ktor-server-status-pages")
@@ -8,6 +7,7 @@ dependencies {
     implementation("io.ktor:ktor-server-body-limit")
     implementation("io.ktor:ktor-server-double-receive")
     implementation("io.ktor:ktor-server-websockets")
+    implementation("io.ktor:ktor-client-apache5")
     implementation("org.fusesource.jansi:jansi")
 }
 

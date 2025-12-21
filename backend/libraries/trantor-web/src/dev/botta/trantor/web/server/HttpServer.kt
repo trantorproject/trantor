@@ -12,7 +12,6 @@ import io.ktor.server.plugins.doublereceive.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import org.eclipse.jetty.util.thread.QueuedThreadPool
 import java.util.*
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -20,7 +19,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
     private val logger = getLogger()
     private var ktorServer: EmbeddedServer<*, *>? = null
     private val routeRegister = RouteRegister()
-    private var managementThreadPool: QueuedThreadPool? = null
+//    private var managementThreadPool: QueuedThreadPool? = null
 //    private val statisticsHandler = StatisticsHandler()
     val id = UUID.randomUUID().toString()
 //    val stats: HttpServerStats
