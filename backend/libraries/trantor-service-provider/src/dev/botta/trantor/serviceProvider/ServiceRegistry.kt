@@ -227,7 +227,9 @@ class ServiceRegistry(val config: Config): MutableList<ServiceDescriptor<*>> by 
                 val jsonSerializer = it.get<JsonSerializer>()
                 if (!it.config.hasSection(configSection)) return@addSingleton jsonSerializer.deserialize("{}", serviceType)
                 val section = it.config.getSection(configSection)
-                jsonSerializer.deserialize(section.toJson().toString(), serviceType)
+                val json = section.toJson()
+                if (json.isNull) return@addSingleton jsonSerializer.deserialize("{}", serviceType)
+                jsonSerializer.deserialize(json.toString(), serviceType)
             },
             key,
         )

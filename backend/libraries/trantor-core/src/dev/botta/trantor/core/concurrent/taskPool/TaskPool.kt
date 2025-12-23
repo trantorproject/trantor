@@ -1,6 +1,6 @@
 package dev.botta.trantor.core.concurrent.taskPool
 
-import dev.botta.trantor.core.getLogger
+import dev.botta.trantor.core.logging.getLogger
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicLong
 

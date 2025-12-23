@@ -2,7 +2,7 @@ package dev.botta.trantor.appServices.middlewares
 
 import dev.botta.cqbus.*
 import dev.botta.cqbus.requests.Request
-import dev.botta.trantor.core.getLogger
+import dev.botta.trantor.core.logging.getLogger
 
 class LoggingMiddleware: Middleware {
     private val logger = getLogger()

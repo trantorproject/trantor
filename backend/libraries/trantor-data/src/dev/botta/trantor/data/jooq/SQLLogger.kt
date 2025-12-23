@@ -1,6 +1,6 @@
 package dev.botta.trantor.data.jooq
 
-import dev.botta.trantor.core.getLogger
+import dev.botta.trantor.core.logging.getLogger
 import org.jooq.*
 import org.jooq.conf.Settings
 import org.jooq.impl.DSL

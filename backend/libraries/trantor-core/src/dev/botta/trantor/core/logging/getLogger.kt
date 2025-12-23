@@ -1,4 +1,4 @@
-package dev.botta.trantor.core
+package dev.botta.trantor.core.logging
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

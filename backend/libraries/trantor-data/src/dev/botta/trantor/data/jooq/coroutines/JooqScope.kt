@@ -6,7 +6,7 @@ import org.jooq.DSLContext
 
 class JooqScope(val dsl: DSLContext, private val dispatcherProvider: DbDispatcherProvider) {
     suspend operator fun <T> invoke(block: suspend DSLContext.() -> T): T {
-        // Hack para reconstruir el stack trace
+        // Hack para reconstruir el stack trace (es caro a nivel Garbage Collector, no speed)
         val callSiteException = CallSiteException()
         return try {
             withContext(dispatcherProvider.get()) { dsl.block() }

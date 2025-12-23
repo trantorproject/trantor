@@ -1,12 +1,14 @@
 package dev.botta.trantor.web.server
 
-import dev.botta.trantor.core.getLogger
 import dev.botta.trantor.core.lang.shortName
+import dev.botta.trantor.core.logging.getLogger
 import dev.botta.trantor.web.server.controllers.Controller
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.bodylimit.*
+import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.doublereceive.*
 import io.ktor.server.plugins.statuspages.*
@@ -19,7 +21,6 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
     private val logger = getLogger()
     private var ktorServer: EmbeddedServer<*, *>? = null
     private val routeRegister = RouteRegister()
-//    private var managementThreadPool: QueuedThreadPool? = null
 //    private val statisticsHandler = StatisticsHandler()
     val id = UUID.randomUUID().toString()
 //    val stats: HttpServerStats
@@ -82,7 +83,16 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
             }
             install(StatusPages) { statusPagesConfigurations.forEach { it(this) } }
             install(DoubleReceive)
-            install(CallLogging) { format { config.requestLogger.handle(it) } }
+            install(CallId) {
+                retrieveFromHeader(HttpHeaders.XRequestId)
+                verify { callId -> callId.isNotEmpty() }
+                generate(10, "abcde1234567890")
+            }
+            install(CallLogging) {
+                callIdMdc("cid")
+                mdc("src") { "http" }
+                format { config.requestLogger.handle(it) }
+            }
             install(WebSockets) {
                 timeout = config.wsIdleTimeout.milliseconds
             }

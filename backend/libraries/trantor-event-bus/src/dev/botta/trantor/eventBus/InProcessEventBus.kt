@@ -2,6 +2,7 @@ package dev.botta.trantor.eventBus
 
 import dev.botta.trantor.core.*
 import dev.botta.trantor.core.lang.shortName
+import dev.botta.trantor.core.logging.getLogger
 import kotlinx.coroutines.*
 
 class InProcessEventBus: EventBus {

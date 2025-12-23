@@ -1,6 +1,6 @@
 package dev.botta.trantor.web.client.ktor
 
-import dev.botta.trantor.core.getLogger
+import dev.botta.trantor.core.logging.getLogger
 import dev.botta.trantor.web.client.*
 import dev.botta.trantor.web.client.HttpRequest
 import dev.botta.trantor.web.client.HttpResponse
