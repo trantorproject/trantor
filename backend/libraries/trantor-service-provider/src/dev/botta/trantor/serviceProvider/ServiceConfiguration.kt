@@ -1,3 +1,3 @@
 package dev.botta.trantor.serviceProvider
 
-typealias ServiceConfiguration<T> = (service: T) -> Unit
+typealias ServiceConfiguration<T> = (instance: T, services: ServiceProvider) -> Unit

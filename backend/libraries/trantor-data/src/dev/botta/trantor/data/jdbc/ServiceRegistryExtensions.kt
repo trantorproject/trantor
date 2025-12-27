@@ -4,6 +4,7 @@ import com.zaxxer.hikari.*
 import dev.botta.trantor.data.coroutines.addDbDispatcherProvider
 import dev.botta.trantor.data.jdbc.transactions.TransactionAwareDataSource
 import dev.botta.trantor.data.jdbc.transactions.manager.SimpleJdbcTransactionManager
+import dev.botta.trantor.data.jdbc.transactions.manager.ThreadLocalJdbcTransactionManager
 import dev.botta.trantor.serviceProvider.*
 import dev.botta.trantor.tx.TransactionManager
 import javax.sql.DataSource
@@ -13,13 +14,13 @@ fun ServiceRegistry.addJdbcConfig(key: String? = null) = apply {
     addConfig<JdbcConfig>(if (key != null) "jdbc.${key}" else "jdbc", key)
 }
 
-fun ServiceRegistry.addHikariCP(key: String? = null, config: ServiceConfiguration<HikariConfig> = {}) = apply {
+fun ServiceRegistry.addHikariCP(key: String? = null, config: ServiceConfiguration<HikariConfig> = { _, _ -> }) = apply {
     addJdbcConfig(key)
 
     addSingleton<DataSource>(key) {
         val hikariConfig = HikariConfig()
         hikariConfig.maximumPoolSize = 10
-        config(hikariConfig)
+        config(hikariConfig, it)
         val jdbcConfig = it.get<JdbcConfig>(key)
         hikariConfig.jdbcUrl = jdbcConfig.url
         hikariConfig.username = jdbcConfig.username
@@ -28,7 +29,7 @@ fun ServiceRegistry.addHikariCP(key: String? = null, config: ServiceConfiguratio
     }
 }
 
-fun ServiceRegistry.addHikariCP(config: ServiceConfiguration<HikariConfig> = {}) = apply {
+fun ServiceRegistry.addHikariCP(config: ServiceConfiguration<HikariConfig> = { _, _ -> }) = apply {
     addHikariCP(null, config)
 }
 
@@ -47,8 +48,8 @@ fun ServiceRegistry.addJdbcTransactionManager(key: String? = null) = apply {
     addSingleton<TransactionManager>(key) {
         val dataSource = it.get<DataSource>()
         if (dataSource !is TransactionAwareDataSource) throw Exception("DataSource must implement TransactionAwareDataSource to use transactions")
-//        ThreadLocalJdbcTransactionManager(dataSource)
-        SimpleJdbcTransactionManager(dataSource) // Best for coroutines
+        ThreadLocalJdbcTransactionManager(dataSource)
+//        SimpleJdbcTransactionManager(dataSource) // Best for coroutines
     }
 }
 

@@ -49,7 +49,7 @@ class DefaultServiceProviderTest {
         @Test
         fun `applies configuration for each instance`() {
             registry.addTransient<MyService, MyClass>()
-            registry.configure<MyService> { it.name = "new name" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name" }
 
             val obj1 = provider.get<MyService>()
             val obj2 = provider.get<MyService>()
@@ -61,8 +61,8 @@ class DefaultServiceProviderTest {
         @Test
         fun `applies all configurations for each instance`() {
             registry.addTransient<MyService, MyClass>()
-            registry.configure<MyService> { it.name = "new name 1" }
-            registry.configure<MyService> { it.name = "new name 2" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 1" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 2" }
 
             val obj1 = provider.get<MyService>()
             val obj2 = provider.get<MyService>()
@@ -75,9 +75,9 @@ class DefaultServiceProviderTest {
         fun `applies all configurations matching key for each instance`() {
             registry.addTransient<MyService, MyClass>()
             registry.addTransient<MyService, MyClass>("some key")
-            registry.configure<MyService>("some key") { it.name = "new name 1" }
-            registry.configure<MyService>("some key") { it.name = "new name 2" }
-            registry.configure<MyService> { it.name = "new name 3" }
+            registry.configure<MyService>("some key") { instance, _ -> instance.name = "new name 1" }
+            registry.configure<MyService>("some key") { instance, _ -> instance.name = "new name 2" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 3" }
 
             val obj1 = provider.get<MyService>("some key")
             val obj2 = provider.get<MyService>("some key")
@@ -129,7 +129,7 @@ class DefaultServiceProviderTest {
         @Test
         fun `applies configuration`() {
             registry.addSingleton<MyService, MyClass>()
-            registry.configure<MyService> { it.name = "new name" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name" }
 
             val obj = provider.get<MyService>()
 
@@ -139,8 +139,8 @@ class DefaultServiceProviderTest {
         @Test
         fun `applies all configurations`() {
             registry.addSingleton<MyService, MyClass>()
-            registry.configure<MyService> { it.name = "new name 1" }
-            registry.configure<MyService> { it.name = "new name 2" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 1" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 2" }
 
             val obj = provider.get<MyService>()
 
@@ -151,9 +151,9 @@ class DefaultServiceProviderTest {
         fun `applies all configurations matching key for each instance`() {
             registry.addSingleton<MyService, MyClass>()
             registry.addSingleton<MyService, MyClass>("some key")
-            registry.configure<MyService>("some key") { it.name = "new name 1" }
-            registry.configure<MyService>("some key") { it.name = "new name 2" }
-            registry.configure<MyService> { it.name = "new name 3" }
+            registry.configure<MyService>("some key") { instance, _ -> instance.name = "new name 1" }
+            registry.configure<MyService>("some key") { instance, _ -> instance.name = "new name 2" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 3" }
 
             val obj1 = provider.get<MyService>("some key")
             val obj2 = provider.get<MyService>()
@@ -212,7 +212,7 @@ class DefaultServiceProviderTest {
         @Test
         fun `applies configuration`() {
             registry.addScoped<MyService, MyClass>()
-            registry.configure<MyService> { it.name = "new name" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name" }
             provider.enterScope()
 
             val obj = provider.get<MyService>()
@@ -223,8 +223,8 @@ class DefaultServiceProviderTest {
         @Test
         fun `applies all configurations`() {
             registry.addScoped<MyService, MyClass>()
-            registry.configure<MyService> { it.name = "new name 1" }
-            registry.configure<MyService> { it.name = "new name 2" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 1" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 2" }
             provider.enterScope()
 
             val obj = provider.get<MyService>()
@@ -236,9 +236,9 @@ class DefaultServiceProviderTest {
         fun `applies all configurations matching key for each instance`() {
             registry.addScoped<MyService, MyClass>()
             registry.addScoped<MyService, MyClass>("some key")
-            registry.configure<MyService>("some key") { it.name = "new name 1" }
-            registry.configure<MyService>("some key") { it.name = "new name 2" }
-            registry.configure<MyService> { it.name = "new name 3" }
+            registry.configure<MyService>("some key") { instance, _ -> instance.name = "new name 1" }
+            registry.configure<MyService>("some key") { instance, _ -> instance.name = "new name 2" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 3" }
             provider.enterScope()
 
             val obj1 = provider.get<MyService>("some key")
@@ -292,8 +292,8 @@ class DefaultServiceProviderTest {
         fun `returns each with with all configurations applied`() {
             registry.addTransient<MyService, MyClass>()
             registry.addSingleton<MyService, MyClass2>()
-            registry.configure<MyService> { it.name = "new name 1" }
-            registry.configure<MyService> { it.name = "new name 2" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 1" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 2" }
 
             val services = provider.getAll<MyService>()
 
@@ -305,9 +305,9 @@ class DefaultServiceProviderTest {
         fun `returns each with with all configurations matching key applied`() {
             registry.addTransient<MyService, MyClass>("some key")
             registry.addSingleton<MyService, MyClass2>("some key")
-            registry.configure<MyService>("some key") { it.name = "new name 1" }
-            registry.configure<MyService>("some key") { it.name = "new name 2" }
-            registry.configure<MyService> { it.name = "new name 3" }
+            registry.configure<MyService>("some key") { instance, _ -> instance.name = "new name 1" }
+            registry.configure<MyService>("some key") { instance, _ -> instance.name = "new name 2" }
+            registry.configure<MyService> { instance, _ -> instance.name = "new name 3" }
 
             val services = provider.getAll<MyService>("some key")
 
@@ -409,7 +409,7 @@ class DefaultServiceProviderTest {
                 "MySettings.other" to "3",
             )
             registry.addConfig<MySettings>("MySettings")
-            registry.configure<MySettings> { it.key = "overridden" }
+            registry.configure<MySettings> { instance, _ -> instance.key = "overridden" }
 
             val settings = provider.get<MySettings>()
 

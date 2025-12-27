@@ -56,7 +56,7 @@ class DefaultServiceProvider(registry: ServiceRegistry): ServiceProvider(registr
 
     private fun <T: Any> ServiceDescriptor<T>.createInstance(): T {
         val instance = implementationFactory(this@DefaultServiceProvider)
-        registry.getConfigurations(serviceType, key).forEach { it(instance) }
+        registry.getConfigurations(serviceType, key).forEach { it(instance, this@DefaultServiceProvider) }
         return instance
     }
 

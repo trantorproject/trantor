@@ -730,7 +730,7 @@ class ServiceRegistryTest {
         @Test
         fun add() {
             registry.addSingleton<MyService, MyClass>()
-            val configuration: (MyService) -> Unit = { it.name = "new name" }
+            val configuration: (MyService, ServiceProvider) -> Unit = { instance, _ -> instance.name = "new name" }
             registry.configure<MyService>(configuration)
 
             assertThat(registry.getConfigurations<MyService>()).containsExactly(configuration)
@@ -739,9 +739,9 @@ class ServiceRegistryTest {
         @Test
         fun `add multiple`() {
             registry.addSingleton<MyService, MyClass>()
-            val configuration1: (MyService) -> Unit = { it.name = "new name" }
+            val configuration1: (MyService, ServiceProvider) -> Unit = { instance, _ -> instance.name = "new name" }
             registry.configure<MyService>(configuration1)
-            val configuration2: (MyService) -> Unit = { it.name = "other name" }
+            val configuration2: (MyService, ServiceProvider) -> Unit = { instance, _ -> instance.name = "other name" }
             registry.configure<MyService>(configuration2)
 
             assertThat(registry.getConfigurations<MyService>()).containsExactly(configuration1, configuration2)
@@ -750,7 +750,7 @@ class ServiceRegistryTest {
         @Test
         fun `add with key`() {
             registry.addSingleton<MyService, MyClass>("some key")
-            val configuration: (MyService) -> Unit = { it.name = "new name" }
+            val configuration: (MyService, ServiceProvider) -> Unit = { instance, _ -> instance.name = "new name" }
             registry.configure<MyService>("some key", configuration)
 
             assertThat(registry.getConfigurations<MyService>()).isEmpty()
@@ -760,11 +760,11 @@ class ServiceRegistryTest {
         @Test
         fun `add multiple with key`() {
             registry.addSingleton<MyService, MyClass>()
-            val configuration1: (MyService) -> Unit = { it.name = "new name 1" }
+            val configuration1: (MyService, ServiceProvider) -> Unit = { instance, _ -> instance.name = "new name 1" }
             registry.configure<MyService>("some key", configuration1)
-            val configuration2: (MyService) -> Unit = { it.name = "new name 2" }
+            val configuration2: (MyService, ServiceProvider) -> Unit = { instance, _ -> instance.name = "new name 2" }
             registry.configure<MyService>(configuration2)
-            val configuration3: (MyService) -> Unit = { it.name = "new name 3" }
+            val configuration3: (MyService, ServiceProvider) -> Unit = { instance, _ -> instance.name = "new name 3" }
             registry.configure<MyService>("some key", configuration3)
 
             assertThat(registry.getConfigurations<MyService>()).containsExactly(configuration2)

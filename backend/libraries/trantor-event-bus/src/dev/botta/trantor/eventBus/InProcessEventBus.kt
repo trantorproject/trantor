@@ -1,6 +1,6 @@
 package dev.botta.trantor.eventBus
 
-import dev.botta.trantor.core.*
+import dev.botta.trantor.core.Event
 import dev.botta.trantor.core.lang.shortName
 import dev.botta.trantor.core.logging.getLogger
 import kotlinx.coroutines.*
@@ -23,7 +23,11 @@ class InProcessEventBus: EventBus {
 
         handlers.filter { it.canHandle(event) }.forEach {
             logger.info("Invoking event handler ${it::class.java.shortName()}")
-            it.on(event)
+            try {
+                it.on(event)
+            } catch (e: Exception) {
+                logger.error("Event handler failed: ${e.message}", e)
+            }
         }
     }
 
@@ -42,10 +46,15 @@ class InProcessEventBus: EventBus {
     private fun EventHandler.canHandle(event: Event) = eventTypes.any { it.isInstance(event) }
 
     suspend fun <R> inRequest(block: suspend () -> R): R {
+        if (currentCoroutineContext()[RequestEventBuffer] != null) return block()
         val buffer = RequestEventBuffer()
         return withContext(buffer) {
             val result = block()
-            buffer.pending.forEach { doPublish(it) }
+            // Vamos drenando de a poco porque un doPublish puede agregar nuevos eventos a buffer.pending
+            while (buffer.pending.isNotEmpty()) {
+                val event = buffer.pending.removeAt(0)
+                doPublish(event)
+            }
             result
         }
     }

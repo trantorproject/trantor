@@ -20,16 +20,11 @@ class ThreadLocalJdbcTransactionManager(dataSource: TransactionAwareDataSource):
         override val key: CoroutineContext.Key<*>
             get() = Key
 
-        private var coroutineValue: T = threadLocal.get()
-
         override fun updateThreadContext(context: CoroutineContext): T {
-            val old = threadLocal.get()
-            threadLocal.set(coroutineValue)
-            return old
+            return threadLocal.get()
         }
 
         override fun restoreThreadContext(context: CoroutineContext, oldState: T) {
-            coroutineValue = threadLocal.get()
             threadLocal.set(oldState)
         }
     }
