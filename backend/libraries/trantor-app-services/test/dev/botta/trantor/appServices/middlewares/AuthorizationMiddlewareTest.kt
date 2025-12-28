@@ -8,7 +8,7 @@ import org.junit.jupiter.api.*
 
 class AuthorizationMiddlewareTest {
     @Test
-    suspend fun `fail if required role is not present in authentication info`() {
+    fun `fail if required role is not present in authentication info`() {
         executionContext.identity = SomeIdentity(roles = listOf("not-admin"))
 
         assertThrows<UnauthorizedAccessError> {
@@ -17,14 +17,14 @@ class AuthorizationMiddlewareTest {
     }
 
     @Test
-    suspend fun `fail if requires roles and is not authenticated`() {
+    fun `fail if requires roles and is not authenticated`() {
         assertThrows<UnauthorizedAccessError> {
             middleware.execute(SomeRestrictedToAdminCommand(), {}, executionContext)
         }
     }
 
     @Test
-    suspend fun `don't fail if not authentication is required`() {
+    fun `don't fail if not authentication is required`() {
         assertDoesNotThrow {
             middleware.execute(SomePublicCommand(), {}, executionContext)
         }

@@ -13,8 +13,8 @@ class SystemIdentity: Identity {
     override val roles = listOf("system")
 }
 
-suspend fun <T: Request<R>, R> AppModule.executeAsSystem(request: T): R =
+fun <T: Request<R>, R> AppModule.executeAsSystem(request: T): R =
     execute(request, ExecutionContext().withIdentity(SystemIdentity()))
 
-suspend fun <T: Request<R>, R> CQBus.executeAsSystem(request: T): R =
+fun <T: Request<R>, R> CQBus.executeAsSystem(request: T): R =
     execute(request, ExecutionContext().withIdentity(SystemIdentity()))

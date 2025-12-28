@@ -11,7 +11,7 @@ abstract class AppModule(protected val services: ServiceProvider) {
 
     open fun shutdown() {}
 
-    suspend fun <T: Request<R>, R> execute(request: T, context: ExecutionContext): R {
+    fun <T: Request<R>, R> execute(request: T, context: ExecutionContext): R {
         return cqBus.execute(request, context)
     }
 

@@ -1,7 +1,5 @@
-package dev.botta.trantor.data.jdbc.transactions
+package dev.botta.trantor.data.jdbc
 
-import dev.botta.trantor.data.jdbc.ConnectionStub
-import dev.botta.trantor.data.jdbc.SavePoints
 import dev.botta.trantor.data.jdbc.transactions.TransactionAwareDataSource
 import dev.botta.trantor.data.jdbc.transactions.manager.ThreadLocalJdbcTransactionManager
 import dev.botta.trantor.tx.*
@@ -93,7 +91,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    suspend fun `there's an active connection only inside a transactional scope`() {
+    fun `there's an active connection only inside a transactional scope`() {
         transactionManager.transactional {
             assertThat(transactionManager.activeConnection).isNotNull
         }
@@ -101,7 +99,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    suspend fun `the connection is committed when it leaves the transactional scope`() {
+    fun `the connection is committed when it leaves the transactional scope`() {
         val connection = ConnectionStub(savePoints)
         every { dataSource.connection } returns connection
 
@@ -111,7 +109,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    suspend fun `the connection is rollbacked when an exception occurs inside the transactional scope`() {
+    fun `the connection is rollbacked when an exception occurs inside the transactional scope`() {
         val connection = ConnectionStub(savePoints)
         every { dataSource.connection } returns connection
 
@@ -122,7 +120,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    suspend fun `a transaction can be commited inside a transactional scope`() {
+    fun `a transaction can be commited inside a transactional scope`() {
         val connection = ConnectionStub(savePoints)
         every { dataSource.connection } returns connection
 
@@ -134,7 +132,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    suspend fun `a transaction can be rollbacked inside a transactional scope`() {
+    fun `a transaction can be rollbacked inside a transactional scope`() {
         val connection = ConnectionStub(savePoints)
         every { dataSource.connection } returns connection
 
@@ -205,7 +203,7 @@ class ThreadLocalJdbcTransactionManagerTest {
     }
 
     @Test
-    suspend fun `nested begin a transaction in a transactional scope doesn't start another transaction`() {
+    fun `nested begin a transaction in a transactional scope doesn't start another transaction`() {
         transactionManager.transactional { transaction1 ->
 
             val transaction2 = transactionManager.beginTransaction()

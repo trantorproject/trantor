@@ -1,11 +1,10 @@
 package dev.botta.trantor.web.server
 
-import io.ktor.server.application.*
+import io.javalin.http.Context
 import org.slf4j.Logger
-import kotlin.reflect.KClass
 
-interface HttpErrorHandler<T: Throwable> {
-    val errorType: KClass<T>
+interface HttpErrorHandler<T: Exception> {
+    val errorType: Class<T>
 
-    suspend fun handle(call: ApplicationCall, cause: T, logger: Logger)
+    fun handle(error: T, ctx: Context, logger: Logger)
 }

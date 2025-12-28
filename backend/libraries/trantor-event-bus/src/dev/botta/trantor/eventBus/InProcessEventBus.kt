@@ -3,22 +3,22 @@ package dev.botta.trantor.eventBus
 import dev.botta.trantor.core.Event
 import dev.botta.trantor.core.lang.shortName
 import dev.botta.trantor.core.logging.getLogger
-import kotlinx.coroutines.*
 
 class InProcessEventBus: EventBus {
     private val logger = getLogger()
     private val handlers = mutableListOf<EventHandler>()
+    private var inRequest: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
+    private var pendingRequestEvents: ThreadLocal<MutableList<Event>> = ThreadLocal.withInitial { mutableListOf() }
 
-    override suspend fun publish(event: Event) {
-        val buffer = currentCoroutineContext()[RequestEventBuffer]
-        if (buffer != null) {
-            buffer.pending += event
+    override fun publish(event: Event) {
+        if (inRequest.get()) {
+            pendingRequestEvents.get().add(event)
             return
         }
         doPublish(event)
     }
 
-    private suspend fun doPublish(event: Event) {
+    private fun doPublish(event: Event) {
         logger.info("Publish event $event")
 
         handlers.filter { it.canHandle(event) }.forEach {
@@ -31,7 +31,7 @@ class InProcessEventBus: EventBus {
         }
     }
 
-    override suspend fun publish(events: List<Event>) {
+    override fun publish(events: List<Event>) {
         events.forEach { publish(it) }
     }
 
@@ -45,17 +45,23 @@ class InProcessEventBus: EventBus {
 
     private fun EventHandler.canHandle(event: Event) = eventTypes.any { it.isInstance(event) }
 
-    suspend fun <R> inRequest(block: suspend () -> R): R {
-        if (currentCoroutineContext()[RequestEventBuffer] != null) return block()
-        val buffer = RequestEventBuffer()
-        return withContext(buffer) {
-            val result = block()
-            // Vamos drenando de a poco porque un doPublish puede agregar nuevos eventos a buffer.pending
-            while (buffer.pending.isNotEmpty()) {
-                val event = buffer.pending.removeAt(0)
-                doPublish(event)
-            }
-            result
+    fun preRequest() {
+        inRequest.set(true)
+    }
+
+    fun postRequest() {
+        inRequest.set(false)
+        val pendingEvents = pendingRequestEvents.get()
+        pendingRequestEvents.set(mutableListOf())
+        pendingEvents.forEach { doPublish(it) }
+    }
+
+    fun <R> inRequest(block: () -> R): R {
+        preRequest()
+        return try {
+            block()
+        } finally {
+            postRequest()
         }
     }
 }

@@ -1,9 +1,9 @@
 package dev.botta.trantor.webApi.appModule
 
 import dev.botta.json.values.JsonObject
-import io.ktor.server.routing.*
+import io.javalin.http.Context
 import kotlin.reflect.KClass
 
 interface RequestToJsonTransformer {
-    fun transform(context: RoutingContext, json: JsonObject?, type: KClass<*>)
+    fun transform(context: Context, json: JsonObject?, type: KClass<*>)
 }

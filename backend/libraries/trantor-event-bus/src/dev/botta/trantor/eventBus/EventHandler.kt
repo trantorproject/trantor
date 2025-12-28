@@ -6,5 +6,5 @@ import kotlin.reflect.KClass
 interface EventHandler {
     val eventTypes: List<KClass<*>>
 
-    suspend fun on(event: Event)
+    fun on(event: Event)
 }

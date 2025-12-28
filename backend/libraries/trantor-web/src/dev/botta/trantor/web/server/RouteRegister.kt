@@ -1,43 +1,52 @@
 package dev.botta.trantor.web.server
 
-import io.ktor.http.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
+import io.javalin.Javalin
+import io.javalin.http.*
+import io.javalin.websocket.WsConfig
+import java.util.function.Consumer
 
-class RouteRegister {
-    private val configurations = mutableListOf<(Routing.() -> Unit)>()
-
-    fun get(path: String, handler: RoutingHandler) = apply {
-        registerRoute(HttpMethod.Get, path, handler)
+class RouteRegister(private val javalin: Javalin) {
+    fun before(handler: Handler) = apply {
+        javalin.before(handler)
     }
 
-    fun post(path: String, handler: RoutingHandler) = apply {
-        registerRoute(HttpMethod.Post, path, handler)
+    fun after(handler: Handler) = apply {
+        javalin.after(handler)
     }
 
-    fun put(path: String, handler: RoutingHandler) = apply {
-        registerRoute(HttpMethod.Put, path, handler)
+    fun post(path: String, handler: Handler) = apply {
+        registerRoute(HandlerType.POST, path, handler)
     }
 
-    fun patch(path: String, handler: RoutingHandler) = apply {
-        registerRoute(HttpMethod.Patch, path, handler)
+    fun get(path: String, handler: Handler) = apply {
+        registerRoute(HandlerType.GET, path, handler)
     }
 
-    fun delete(path: String, handler: RoutingHandler) = apply {
-        registerRoute(HttpMethod.Delete, path, handler)
+    fun put(path: String, handler: Handler) = apply {
+        registerRoute(HandlerType.PUT, path, handler)
     }
 
-    fun ws(path: String, handler: suspend DefaultWebSocketServerSession.() -> Unit) = apply {
-        configurations.add { webSocket { handler(this) }}
+    fun patch(path: String, handler: Handler) = apply {
+        registerRoute(HandlerType.PATCH, path, handler)
     }
 
-    private fun registerRoute(verb: HttpMethod, path: String, handler: RoutingHandler) {
-        configurations.add {
-            route(path, verb) { handle(handler) }
-        }
+    fun delete(path: String, handler: Handler) = apply {
+        registerRoute(HandlerType.DELETE, path, handler)
     }
 
-    fun configure(routing: Routing) {
-        configurations.forEach { it(routing) }
+    fun ws(path: String, consumer: Consumer<WsConfig>) = apply {
+        javalin.ws(path, consumer)
+    }
+
+    fun wsBefore(path: String, consumer: Consumer<WsConfig>) = apply {
+        javalin.wsBefore(path, consumer)
+    }
+
+    fun wsAfter(path: String, consumer: Consumer<WsConfig>) = apply {
+        javalin.wsAfter(path, consumer)
+    }
+
+    private fun registerRoute(verb: HandlerType, path: String, handler: Handler) {
+        javalin.addHttpHandler(verb, path, handler)
     }
 }

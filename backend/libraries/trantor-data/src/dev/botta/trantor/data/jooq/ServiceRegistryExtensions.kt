@@ -1,7 +1,6 @@
 package dev.botta.trantor.data.jooq
 
 import dev.botta.trantor.data.jdbc.*
-import dev.botta.trantor.data.jooq.coroutines.JooqScope
 import dev.botta.trantor.serviceProvider.ServiceRegistry
 import dev.botta.trantor.tx.TransactionManager
 import org.jooq.*
@@ -36,6 +35,4 @@ fun ServiceRegistry.addJooq(key: String? = null) = apply {
 
         jooqConfiguration.dsl()
     }
-
-    addSingletonIfMissing { JooqScope(it.get(), it.get()) }
 }

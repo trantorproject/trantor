@@ -1,8 +1,8 @@
 package dev.botta.trantor.web.server.logs
 
-import io.ktor.server.application.*
+import io.javalin.http.Context
 
 fun interface HttpRequestLogger {
     @Throws(Exception::class)
-    fun handle(call: ApplicationCall): String
+    fun handle(ctx: Context, executionTimeMs: Float)
 }

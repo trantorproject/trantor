@@ -1,7 +1,6 @@
 package dev.botta.trantor.eventBus
 
 import dev.botta.trantor.core.Event
-import kotlinx.coroutines.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.lang.Runnable
@@ -9,7 +8,7 @@ import kotlin.reflect.KClass
 
 class InProcessEventBusTest {
     @Test
-    suspend fun `publish notifies a handler subscribed to the event type`() {
+    fun `publish notifies a handler subscribed to the event type`() {
         var myEventHandlerCalled = false
         subscribe<MyEvent> { myEventHandlerCalled = true }
 
@@ -19,7 +18,7 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `publish notifies all handlers subscribed to the event type`() {
+    fun `publish notifies all handlers subscribed to the event type`() {
         var myEventHandler1Called = false
         var myEventHandler2Called = false
         subscribe<MyEvent> { myEventHandler1Called = true }
@@ -32,7 +31,7 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `publish doesn't notify handlers not subscribed to event type`() {
+    fun `publish doesn't notify handlers not subscribed to event type`() {
         var otherEventHandlerCalled = false
         subscribe<OtherEvent> { otherEventHandlerCalled = true }
 
@@ -42,7 +41,7 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `publishing many events of same type notifies all events to a handler subscribed to the event type`() {
+    fun `publishing many events of same type notifies all events to a handler subscribed to the event type`() {
         val handledEvents = mutableListOf<Event>()
         subscribe<MyEvent> { handledEvents.add(it) }
 
@@ -52,7 +51,7 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `publishing many events of different types notifies only subscribed events to handler`() {
+    fun `publishing many events of different types notifies only subscribed events to handler`() {
         val handledEvents = mutableListOf<Event>()
         subscribe<MyEvent> { handledEvents.add(it) }
 
@@ -62,7 +61,7 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `publishing many events notifies all handlers subscribed to each event types`() {
+    fun `publishing many events notifies all handlers subscribed to each event types`() {
         val myEventHandlerEvents = mutableListOf<Event>()
         val otherEventHandlerEvents = mutableListOf<Event>()
         subscribe<MyEvent> { myEventHandlerEvents.add(it) }
@@ -75,7 +74,7 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `publish notifies a handler subscribed to an event base type`() {
+    fun `publish notifies a handler subscribed to an event base type`() {
         var myEventHandlerCalled = false
         subscribe<MyEventBase> { myEventHandlerCalled = true }
 
@@ -85,7 +84,7 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `a handler can subscribe to multiple event types`() {
+    fun `a handler can subscribe to multiple event types`() {
         val handledEvents = mutableListOf<Event>()
         subscribe(listOf(MyEvent::class, OtherEvent::class)) { handledEvents.add(it) }
 
@@ -95,7 +94,7 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `don't publish immediately if running inside a request`() {
+    fun `don't publish immediately if running inside a request`() {
         var myEventHandlerCalled = false
         subscribe<MyEvent> { myEventHandlerCalled = true }
         eventBus.inRequest {
@@ -106,7 +105,7 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `publish events generated inside a request when it finishes`() {
+    fun `publish events generated inside a request when it finishes`() {
         var myEventHandlerCalled = false
         subscribe<MyEvent> { myEventHandlerCalled = true }
         eventBus.inRequest {
@@ -117,19 +116,32 @@ class InProcessEventBusTest {
     }
 
     @Test
-    suspend fun `events published inside a request are handled when the request finishes`() {
-        coroutineScope {
-            var myEventHandlerCalled = false
-            subscribe<MyEvent> { myEventHandlerCalled = true }
-            val job = launch {
-                eventBus.inRequest {
-                    eventBus.publish(MyEvent())
-                    assertThat(myEventHandlerCalled).isFalse
-                }
-            }
-            job.join()
-            assertThat(myEventHandlerCalled).isTrue
+    fun `don't publish events generated in another thread`() {
+        var myEventHandlerCalled = false
+        subscribe<MyEvent> { myEventHandlerCalled = true }
+        val otherThread = createThread {
+            eventBus.preRequest()
+            eventBus.publish(MyEvent())
         }
+        startAndWait(otherThread)
+
+        eventBus.postRequest()
+
+        assertThat(myEventHandlerCalled).isFalse
+    }
+
+    @Test
+    fun `request is started per thread`() {
+        var myEventHandlerCalled = false
+        subscribe<MyEvent> { myEventHandlerCalled = true }
+        val otherThread = createThread {
+            eventBus.preRequest()
+        }
+        startAndWait(otherThread)
+
+        eventBus.publish(MyEvent())
+
+        assertThat(myEventHandlerCalled).isTrue
     }
 
     private fun subscribe(eventTypes: List<KClass<*>>, onEventFunc: (event: Event) -> Unit) {
@@ -161,7 +173,7 @@ class InProcessEventBusTest {
     ): EventHandler {
         constructor(eventType: KClass<*>, onEventFunc: (event: Event) -> Unit): this(listOf(eventType), onEventFunc)
 
-        override suspend fun on(event: Event) {
+        override fun on(event: Event) {
             onEventFunc(event)
         }
     }
