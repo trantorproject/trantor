@@ -37,7 +37,7 @@ class DefaultHttpRequestLogger(private val logger: Logger): HttpRequestLogger {
         sb.append(" - " + ctx.fullUrl())
         sb.append(" in " + executionTimeMs + "ms")
         if (ctx.statusCode() < 200 || ctx.statusCode() >= 300) {
-            val contentType = ctx.req().contentType
+            val contentType = ctx.req().contentType ?: ""
             val contentLength = ctx.req().contentLength
             val requestBody = if (contentType.startsWith("multipart/form-data")) {
                 "Multipart (${contentLength} bytes)"

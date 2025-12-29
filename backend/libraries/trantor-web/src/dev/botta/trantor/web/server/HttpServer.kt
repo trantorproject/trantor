@@ -12,6 +12,7 @@ import org.apache.logging.log4j.core.config.Configurator
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.StatisticsHandler
 import org.eclipse.jetty.util.thread.QueuedThreadPool
+import org.slf4j.MDC
 import java.time.Duration
 import java.util.*
 
@@ -37,7 +38,23 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
             configureJetty(javalinConfig.jetty)
         }
         routeRegister = RouteRegister(javalin)
+        setupMdc()
     }
+
+    private fun setupMdc() {
+        javalin.before { ctx ->
+            val callId =
+                ctx.header("X-Request-Id")
+                    ?.takeIf { it.isNotBlank() }
+                    ?: generateCallId()
+            ctx.header("X-Request-Id", callId)
+
+            MDC.put("cid", callId)
+            MDC.put("src", "http")
+        }
+    }
+
+    private fun generateCallId(): String = UUID.randomUUID().toString().replace("-", "").take(10)
 
     private fun configureJetty(jettyConfig: JettyConfig) {
         Configurator.setLevel("org.eclipse.jetty", org.apache.logging.log4j.Level.WARN)
@@ -67,8 +84,8 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
     }
 
     private fun logRequest(ctx: Context, executionTimeMs: Float) {
-        // TODO: MDC
         requestLogger.handle(ctx, executionTimeMs)
+        MDC.clear()
     }
 
     fun start() {
