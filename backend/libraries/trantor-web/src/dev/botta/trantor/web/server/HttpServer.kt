@@ -1,6 +1,5 @@
 package dev.botta.trantor.web.server
 
-import dev.botta.trantor.core.lang.shortName
 import dev.botta.trantor.core.logging.getLogger
 import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.web.server.logs.HttpRequestLogger
@@ -35,6 +34,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
             javalinConfig.requestLogger.http(::logRequest)
             javalinConfig.http.maxRequestSize = config.maxRequestSizeInMb * SizeUnit.MB.multiplier
             javalinConfig.useVirtualThreads = true
+            javalinConfig.startupWatcherEnabled = false
             configureJetty(javalinConfig.jetty)
         }
         routeRegister = RouteRegister(javalin)
@@ -114,7 +114,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
 
     private fun registerController(controller: Controller) {
         controller.registerRoutes(routeRegister)
-        logger.info(controller.javaClass.shortName() + " registered")
+//        logger.info(controller.javaClass.shortName() + " registered")
         controller.getChildControllers().forEach { registerController(it) }
     }
 }

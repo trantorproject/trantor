@@ -23,6 +23,7 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): AutoCloseab
         dispatcherThread = Thread.ofVirtual().name("task-pool-dispatcher").start {
             dispatchLoop()
         }
+        logger.info("Started")
     }
 
     private fun dispatchLoop() {
@@ -103,7 +104,7 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): AutoCloseab
     }
 
     fun stop() {
-        logger.info("Shutting down TaskPool...")
+        logger.info("Stopping...")
         isRunning = false
         dispatcherThread?.interrupt() // Force interruption if its blocked
 
