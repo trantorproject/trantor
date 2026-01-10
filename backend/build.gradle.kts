@@ -1,7 +1,7 @@
 import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
-    kotlin("jvm") version "2.1.20"
+    kotlin("jvm") version "2.3.0"
     id("dev.botta.kotlin-conventions") version "0.4.2"
     id("com.vanniktech.maven.publish") version "0.32.0"
 }
@@ -25,7 +25,7 @@ allprojects {
     }
 
     kotlin {
-        jvmToolchain(23)
+        jvmToolchain(25)
     }
 
     tasks.named<Copy>("processResources") {

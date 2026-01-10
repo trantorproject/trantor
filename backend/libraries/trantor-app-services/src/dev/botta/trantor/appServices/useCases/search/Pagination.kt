@@ -1,7 +1,7 @@
 package dev.botta.trantor.appServices.useCases.search
 
-import java.lang.Integer.*
 import java.util.*
+import kotlin.math.*
 
 class Pagination(page: Int? = 1, pageSize: Int? = 20, val lastId: UUID? = null) {
     val page = max(1, page ?: 1)

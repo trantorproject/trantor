@@ -17,6 +17,7 @@ class ConfigServiceValueResolver: ServiceValueResolver {
         return ResolvedValue.Value(convertLiteral(targetClass, value))
     }
 
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     private fun convertLiteral(targetType: Class<*>, value: String): Any = when (targetType) {
         String::class.java -> value
         Int::class.java, Integer::class.java -> value.toInt()
