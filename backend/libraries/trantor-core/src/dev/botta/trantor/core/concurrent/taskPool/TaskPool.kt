@@ -13,7 +13,10 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): AutoCloseab
     private val taskQueue = LinkedBlockingQueue<Runnable>(settings.queueSize)
     private val semaphore = Semaphore(settings.maxConcurrentTasks)
     private var dispatcherThread: Thread? = null
-    private val executor = Executors.newVirtualThreadPerTaskExecutor()
+    private val executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
+        .name("task-pool-worker-", 0)
+        .factory()
+    )
 
     @Volatile private var isRunning = false
 
