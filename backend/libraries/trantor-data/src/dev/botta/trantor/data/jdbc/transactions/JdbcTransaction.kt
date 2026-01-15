@@ -4,7 +4,7 @@ import dev.botta.trantor.tx.Transaction
 import java.sql.*
 import java.util.*
 
-class JdbcTransaction(val connection: Connection, private val onClose: () -> Unit): Transaction {
+class JdbcTransaction(val connection: Connection, private val onClose: (result: TransactionResults) -> Unit): Transaction {
     private var savepoints = ArrayDeque<Savepoint>()
     override var isClosed = false
         private set
@@ -28,7 +28,7 @@ class JdbcTransaction(val connection: Connection, private val onClose: () -> Uni
 
         connection.commit()
         connection.autoCommit = true
-        setClosed()
+        setClosed(TransactionResults.Commit)
     }
 
     private fun commitNested() {
@@ -48,7 +48,7 @@ class JdbcTransaction(val connection: Connection, private val onClose: () -> Uni
 
         connection.rollback()
         connection.autoCommit = true
-        setClosed()
+        setClosed(TransactionResults.Rollback)
     }
 
     private fun rollbackNested() {
@@ -56,9 +56,9 @@ class JdbcTransaction(val connection: Connection, private val onClose: () -> Uni
         connection.rollback(savepoint)
     }
 
-    private fun setClosed() {
+    private fun setClosed(result: TransactionResults) {
         isClosed = true
-        onClose()
+        onClose(result)
     }
 
     override fun close() {

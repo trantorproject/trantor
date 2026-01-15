@@ -2,6 +2,13 @@ package dev.botta.trantor.tx
 
 interface TransactionManager {
     fun beginTransaction(): Transaction
+    fun hasActiveTransaction(): Boolean
+    fun registerActiveTransactionCallback(callback: TransactionCallback)
+}
+
+interface TransactionCallback {
+    fun onCommit()
+    fun onRollback()
 }
 
 inline fun <R> TransactionManager.transactional(runnable: (Transaction) -> R): R {

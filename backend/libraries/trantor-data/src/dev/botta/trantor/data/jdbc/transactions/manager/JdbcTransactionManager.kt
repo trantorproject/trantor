@@ -23,16 +23,19 @@ abstract class JdbcTransactionManager(private val dataSource: TransactionAwareDa
         return activeTransaction!!
     }
 
-    fun hasActiveTransaction() = activeTransaction != null
+    override fun hasActiveTransaction() = activeTransaction != null
 
     private fun createTransaction(): JdbcTransaction {
         val connection = dataSource.connection ?: throw Exception("Could not connect to datasource. Check your connection settings")
         return JdbcTransaction(connection, ::onClose)
     }
 
-    private fun onClose() {
+    protected open fun onActiveTransactionClose(result: TransactionResults) {}
+
+    private fun onClose(result: TransactionResults) {
         val connection = activeConnection
         activeTransaction = null
         connection?.close()
+        onActiveTransactionClose(result)
     }
 }
