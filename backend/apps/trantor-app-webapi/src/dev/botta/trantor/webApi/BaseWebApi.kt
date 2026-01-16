@@ -2,6 +2,7 @@ package dev.botta.trantor.webApi
 
 import com.google.gson.JsonParseException
 import dev.botta.json.parser.JsonParseError
+import dev.botta.trantor.appServices.AbstractApp
 import dev.botta.trantor.appServices.auth.*
 import dev.botta.trantor.domain.errors.*
 import dev.botta.trantor.serviceProvider.ServiceProvider
@@ -9,9 +10,7 @@ import dev.botta.trantor.web.server.*
 import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.webApi.errorHandlers.*
 
-abstract class BaseWebApi(val services: ServiceProvider): RouteRegistrant {
-    val config = services.config
-    val environment = services.get<AppEnvironment>()
+abstract class BaseWebApi(services: ServiceProvider): AbstractApp(services), RouteRegistrant {
     protected val httpServer = services.get<HttpServer>()
     override val routes get() = httpServer.routes
 

@@ -6,4 +6,5 @@ dependencies {
     api(project(":libraries:trantor-event-bus"))
     api(project(":libraries:trantor-service-provider"))
     api(project(":libraries:trantor-tx"))
+    api(project(":libraries:trantor-gson"))
 }

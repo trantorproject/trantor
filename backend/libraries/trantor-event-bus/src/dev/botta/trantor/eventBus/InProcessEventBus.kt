@@ -1,6 +1,8 @@
 package dev.botta.trantor.eventBus
 
-import dev.botta.trantor.core.Event
+import dev.botta.trantor.core.events.Event
+import dev.botta.trantor.eventBus.EventBus
+import dev.botta.trantor.core.events.EventHandler
 import dev.botta.trantor.core.lang.shortName
 import dev.botta.trantor.core.logging.getLogger
 

@@ -1,4 +1,4 @@
-package dev.botta.trantor.webApi
+package dev.botta.trantor.appServices
 
 class AppEnvironment(environmentName: String, val appName: String) {
     val environmentName = environmentName.uppercase()

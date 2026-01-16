@@ -1,6 +1,5 @@
-package dev.botta.trantor.eventBus
+package dev.botta.trantor.core.events
 
-import dev.botta.trantor.core.Event
 import kotlin.reflect.KClass
 
 interface EventHandler {

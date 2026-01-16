@@ -1,8 +1,7 @@
 package dev.botta.trantor.webApi
 
 import dev.botta.lang.DetailsExt
-import dev.botta.trantor.serviceProvider.DefaultServiceProvider
-import dev.botta.trantor.serviceProvider.ServiceProvider
+import dev.botta.trantor.serviceProvider.*
 
 class WebApi(services: ServiceProvider): BaseWebApi(services) {
     companion object {

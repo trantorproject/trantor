@@ -1,11 +1,11 @@
-package dev.botta.trantor.console
+package dev.botta.trantor.appServices
 
 import dev.botta.trantor.config.ConfigManager
 import dev.botta.trantor.config.providers.*
 import dev.botta.trantor.serialization.gson.addGsonSerializer
 import dev.botta.trantor.serviceProvider.ServiceRegistry
 
-abstract class BaseConsoleAppBuilder<T: BaseConsoleApp>(appName: String? = null, environmentName: String? = null) {
+abstract class AbstractAppBuilder<T: AbstractApp>(appName: String? = null, environmentName: String? = null) {
     val config = ConfigManager()
     val services = ServiceRegistry(config)
     val environment: AppEnvironment
@@ -24,13 +24,17 @@ abstract class BaseConsoleAppBuilder<T: BaseConsoleApp>(appName: String? = null,
         addDefaultServices()
     }
 
+    protected open fun addServices() {}
+
     private fun createAppEnvironment(appName: String?): AppEnvironment {
         val environmentName = config["environment"] ?: "PRODUCTION"
         val resolvedAppName = config["appName"] ?: appName ?: "Unnamed App"
         return AppEnvironment(environmentName, resolvedAppName)
     }
 
-    private fun addDefaultServices() {
+    protected open fun addDefaultServices() {
+        addServices()
+
         services.addGsonSerializer()
     }
 

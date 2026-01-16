@@ -6,7 +6,7 @@ import dev.botta.cqbus.requests.Request
 import dev.botta.json.Json
 import dev.botta.trantor.appServices.AppModule
 import dev.botta.trantor.appServices.auth.SystemIdentity
-import dev.botta.trantor.core.Event
+import dev.botta.trantor.core.events.Event
 import dev.botta.trantor.core.serialization.JsonSerializer
 import dev.botta.trantor.webApi.appModule.transformers.*
 import io.javalin.http.Context

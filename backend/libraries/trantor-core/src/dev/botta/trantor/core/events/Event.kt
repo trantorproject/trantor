@@ -1,7 +1,7 @@
-package dev.botta.trantor.core
+package dev.botta.trantor.core.events
 
 import dev.botta.time.Clock
-import java.util.*
+import java.util.UUID
 
 abstract class Event(open val id: UUID = UUID.randomUUID()) {
     var occurredOn = Clock.now()

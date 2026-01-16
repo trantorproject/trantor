@@ -33,9 +33,9 @@ abstract class JdbcTransactionManager(private val dataSource: TransactionAwareDa
     protected open fun onActiveTransactionClose(result: TransactionResults) {}
 
     private fun onClose(result: TransactionResults) {
+        onActiveTransactionClose(result)
         val connection = activeConnection
         activeTransaction = null
         connection?.close()
-        onActiveTransactionClose(result)
     }
 }

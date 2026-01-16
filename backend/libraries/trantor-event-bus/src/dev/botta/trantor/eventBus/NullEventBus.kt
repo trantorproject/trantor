@@ -1,8 +1,10 @@
 package dev.botta.trantor.eventBus
 
-import dev.botta.trantor.core.Event
+import dev.botta.trantor.core.events.Event
+import dev.botta.trantor.eventBus.EventBus
+import dev.botta.trantor.core.events.EventHandler
 
-class NullEventBus: EventBus{
+class NullEventBus: EventBus {
     override fun publish(event: Event) {
     }
 

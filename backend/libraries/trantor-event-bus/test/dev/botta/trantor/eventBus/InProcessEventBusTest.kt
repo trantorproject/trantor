@@ -1,6 +1,7 @@
 package dev.botta.trantor.eventBus
 
-import dev.botta.trantor.core.Event
+import dev.botta.trantor.core.events.Event
+import dev.botta.trantor.core.events.EventHandler
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.lang.Runnable
