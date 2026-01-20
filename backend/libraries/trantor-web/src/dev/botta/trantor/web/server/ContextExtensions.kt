@@ -15,3 +15,12 @@ fun Context.jsonObj(vararg pairs: Pair<String, Any?>) {
 }
 
 fun Context.jsonBody() = Json.parse(body().ifEmpty { "{}" }).asObject() ?: throw BadRequestResponse("Empty body")
+
+fun Context.jsonError(e: Exception, message: String = e.message ?: "") {
+    jsonError(e.javaClass.simpleName, message)
+}
+
+fun Context.jsonError(type: String, message: String) {
+    contentType("application/json")
+    jsonObj("type" to type, "message" to message)
+}

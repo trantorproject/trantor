@@ -1,6 +1,7 @@
 package dev.botta.trantor.web.server
 
 import dev.botta.trantor.core.logging.getLogger
+import dev.botta.trantor.hosting.HostedService
 import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.web.server.logs.HttpRequestLogger
 import dev.botta.trantor.web.server.stats.*
@@ -15,7 +16,7 @@ import org.slf4j.MDC
 import java.time.Duration
 import java.util.*
 
-class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
+class HttpServer(private val config: HttpServerConfig): RouteRegistrant, HostedService {
     private val logger = getLogger()
     private val javalin: Javalin
     private val routeRegister: RouteRegister
@@ -88,13 +89,14 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant {
         MDC.clear()
     }
 
-    fun start() {
+    override fun start() {
         logger.info("Starting with id $id")
         logger.info("ThreadPool configured with min: ${threadPool.minThreads} max: ${threadPool.maxThreads} idleTimeout: ${threadPool.idleTimeout}ms")
         javalin.start(config.port)
     }
 
-    fun stop() {
+    override fun stop(timeoutSeconds: Int) {
+        javalin.jettyServer().server().stopTimeout = timeoutSeconds * 1_000L
         javalin.stop()
     }
 

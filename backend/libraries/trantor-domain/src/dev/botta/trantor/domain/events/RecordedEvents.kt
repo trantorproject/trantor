@@ -1,5 +1,7 @@
 package dev.botta.trantor.domain.events
 
+import dev.botta.trantor.events.DomainEvent
+
 class RecordedEvents: List<DomainEvent> {
     private val events = mutableListOf<DomainEvent>()
 

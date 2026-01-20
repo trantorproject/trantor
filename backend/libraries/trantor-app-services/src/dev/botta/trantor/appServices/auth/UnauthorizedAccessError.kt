@@ -1,5 +1,5 @@
 package dev.botta.trantor.appServices.auth
 
-import dev.botta.trantor.appServices.AppServiceError
+import dev.botta.trantor.appServices.AppError
 
-class UnauthorizedAccessError(message: String = "Unauthorized access"): AppServiceError(message)
+class UnauthorizedAccessError(message: String = "Unauthorized access"): AppError(message)
