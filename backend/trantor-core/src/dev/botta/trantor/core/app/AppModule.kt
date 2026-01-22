@@ -3,13 +3,14 @@ package dev.botta.trantor.core.app
 import dev.botta.cqbus.*
 import dev.botta.cqbus.requests.Request
 import dev.botta.trantor.di.ServiceProvider
+import dev.botta.trantor.hosting.HostedService
 
-abstract class AppModule(protected val services: ServiceProvider) {
+abstract class AppModule(protected val services: ServiceProvider): HostedService {
     protected val cqBus = services.getOrDefault { CQBus() }
 
-    open fun start() {}
+    override fun start() {}
 
-    open fun shutdown() {}
+    override fun stop(timeoutSeconds: Int) {}
 
     fun <T: Request<R>, R> execute(request: T, context: ExecutionContext): R {
         return cqBus.execute(request, context)

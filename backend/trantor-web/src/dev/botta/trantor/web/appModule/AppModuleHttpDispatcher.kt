@@ -4,8 +4,8 @@ import com.google.gson.JsonParseException
 import dev.botta.cqbus.ExecutionContext
 import dev.botta.cqbus.requests.Request
 import dev.botta.json.Json
-import dev.botta.trantor.core.auth.SystemIdentity
 import dev.botta.trantor.core.app.AppModule
+import dev.botta.trantor.core.auth.SystemIdentity
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.web.appModule.transformers.*
 import io.javalin.http.Context
@@ -15,7 +15,6 @@ class AppModuleHttpDispatcher(private val appModule: AppModule, private val seri
     private val transformers = mutableListOf(
         QuerystringRequestToJsonTransformer(),
         PathParamRequestToJsonTransformer(),
-        SearchQueryRequestToJsonTransformer(),
     )
 
     inline fun <reified T: Request<*>> execute(ctx: Context, statusCode: Int = 200) {

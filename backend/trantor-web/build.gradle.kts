@@ -1,5 +1,4 @@
 dependencies {
-    api(project(":trantor-app"))
     api(project(":trantor-core"))
     api(project(":trantor-gson"))
     api("io.javalin:javalin")
