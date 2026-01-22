@@ -17,10 +17,10 @@ allprojects {
     repositories { mavenCentral() }
 
     dependencies {
-        api(platform(project(":core:trantor-bom")))
+        api(platform(project(":trantor-bom")))
         api(kotlin("stdlib"))
         api(kotlin("reflect"))
-        if (project.name != "trantor-test") testImplementation(project(":libraries:trantor-test"))
+        if (project.name != "trantor-test") testImplementation(project(":trantor-test"))
         testImplementation("org.junit.platform:junit-platform-launcher")
     }
 
