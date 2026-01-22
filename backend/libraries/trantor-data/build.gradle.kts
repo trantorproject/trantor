@@ -1,11 +1,10 @@
 dependencies {
-    api(project(":libraries:trantor-tx"))
-    api(project(":libraries:trantor-core"))
+    api(project(":core:trantor-core"))
     api("org.jooq:jooq")
     implementation("dev.botta:cqbus")
     implementation("com.zaxxer:HikariCP")
-    implementation(project(":libraries:trantor-service-provider"))
-    implementation(project(":libraries:trantor-config"))
+    implementation(project(":core:trantor-di"))
+    implementation(project(":core:trantor-config"))
 }
 
 extra.set("POM_NAME", "Trantor Data")

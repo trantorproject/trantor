@@ -1,7 +1,7 @@
 package dev.botta.trantor.serialization.gson
 
 import dev.botta.trantor.core.serialization.JsonSerializer
-import dev.botta.trantor.serviceProvider.*
+import dev.botta.trantor.di.*
 
 fun ServiceRegistry.addGsonSerializer(config: ServiceConfiguration<GsonSerializer> = { _, _ -> }) = apply {
     configureGsonSerializer(config)

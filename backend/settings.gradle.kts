@@ -1,19 +1,22 @@
 rootProject.name = "backend"
 
-include("libraries:trantor-app-services")
-include("libraries:trantor-bom")
-include("libraries:trantor-config")
-include("libraries:trantor-core")
+
+
+include("core:trantor-bom")
+include("core:trantor-config")
+include("core:trantor-core")
+include("core:trantor-di")
+include("core:trantor-hosting")
+
+include("libraries:trantor-app")
 include("libraries:trantor-data")
 include("libraries:trantor-domain")
-include("libraries:trantor-events")
+include("libraries:trantor-eventbus")
 include("libraries:trantor-gson")
-include("libraries:trantor-hosting")
-include("libraries:trantor-service-provider")
+include("libraries:trantor-taskpool")
 include("libraries:trantor-test")
-include("libraries:trantor-tx")
-include("libraries:trantor-web")
 include("libraries:trantor-web-client")
+include("libraries:trantor-webapp")
 
 //pluginManagement {
 //    val trantorPluginDir = file("../../trantor-gradle-plugin")

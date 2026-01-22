@@ -1,7 +1,8 @@
 package dev.botta.trantor.data.jdbc.transactions.manager
 
+import dev.botta.trantor.core.tx.Transaction
+import dev.botta.trantor.core.tx.TransactionManager
 import dev.botta.trantor.data.jdbc.transactions.*
-import dev.botta.trantor.tx.*
 import java.sql.Connection
 
 abstract class JdbcTransactionManager(private val dataSource: TransactionAwareDataSource): TransactionManager {

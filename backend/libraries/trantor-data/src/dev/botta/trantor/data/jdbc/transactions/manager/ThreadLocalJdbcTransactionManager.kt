@@ -2,7 +2,7 @@ package dev.botta.trantor.data.jdbc.transactions.manager
 
 import dev.botta.trantor.core.logging.getLogger
 import dev.botta.trantor.data.jdbc.transactions.*
-import dev.botta.trantor.tx.TransactionCallback
+import dev.botta.trantor.core.tx.TransactionCallback
 
 class ThreadLocalJdbcTransactionManager(dataSource: TransactionAwareDataSource): JdbcTransactionManager(dataSource) {
     private val logger = getLogger()

@@ -4,8 +4,8 @@ import com.zaxxer.hikari.*
 import dev.botta.trantor.data.jdbc.transactions.TransactionAwareDataSource
 import dev.botta.trantor.data.jdbc.transactions.manager.SimpleJdbcTransactionManager
 import dev.botta.trantor.data.jdbc.transactions.manager.ThreadLocalJdbcTransactionManager
-import dev.botta.trantor.serviceProvider.*
-import dev.botta.trantor.tx.TransactionManager
+import dev.botta.trantor.di.*
+import dev.botta.trantor.core.tx.TransactionManager
 import javax.sql.DataSource
 
 fun ServiceRegistry.addJdbcConfig(key: String? = null) = apply {

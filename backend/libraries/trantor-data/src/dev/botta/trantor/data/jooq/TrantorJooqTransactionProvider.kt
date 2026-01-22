@@ -1,6 +1,6 @@
 package dev.botta.trantor.data.jooq
 
-import dev.botta.trantor.tx.TransactionManager
+import dev.botta.trantor.core.tx.TransactionManager
 import org.jooq.*
 
 class TrantorJooqTransactionProvider(private val transactionManager: TransactionManager): TransactionProvider {

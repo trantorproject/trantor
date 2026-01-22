@@ -17,7 +17,7 @@ allprojects {
     repositories { mavenCentral() }
 
     dependencies {
-        api(platform(project(":libraries:trantor-bom")))
+        api(platform(project(":core:trantor-bom")))
         api(kotlin("stdlib"))
         api(kotlin("reflect"))
         if (project.name != "trantor-test") testImplementation(project(":libraries:trantor-test"))

@@ -1,8 +1,9 @@
 package dev.botta.trantor.data.jdbc
 
+import dev.botta.trantor.core.tx.Transaction
+import dev.botta.trantor.core.tx.transactional
 import dev.botta.trantor.data.jdbc.transactions.TransactionAwareDataSource
 import dev.botta.trantor.data.jdbc.transactions.manager.ThreadLocalJdbcTransactionManager
-import dev.botta.trantor.tx.*
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*

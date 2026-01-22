@@ -1,8 +1,8 @@
 package dev.botta.trantor.data.jooq
 
 import dev.botta.trantor.data.jdbc.*
-import dev.botta.trantor.serviceProvider.ServiceRegistry
-import dev.botta.trantor.tx.TransactionManager
+import dev.botta.trantor.di.ServiceRegistry
+import dev.botta.trantor.core.tx.TransactionManager
 import org.jooq.*
 import org.jooq.impl.*
 import org.jooq.tools.jdbc.JDBCUtils

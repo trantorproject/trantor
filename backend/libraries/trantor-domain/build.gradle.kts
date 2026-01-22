@@ -1,6 +1,5 @@
 dependencies {
-    api(project(":libraries:trantor-core"))
-    api(project(":libraries:trantor-events"))
+    api(project(":core:trantor-core"))
 }
 
 extra.set("POM_NAME", "Trantor Domain")

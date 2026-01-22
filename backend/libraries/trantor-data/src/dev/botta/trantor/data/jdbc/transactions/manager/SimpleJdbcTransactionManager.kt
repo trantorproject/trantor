@@ -1,7 +1,7 @@
 package dev.botta.trantor.data.jdbc.transactions.manager
 
 import dev.botta.trantor.data.jdbc.transactions.*
-import dev.botta.trantor.tx.TransactionCallback
+import dev.botta.trantor.core.tx.TransactionCallback
 
 class SimpleJdbcTransactionManager(dataSource: TransactionAwareDataSource): JdbcTransactionManager(dataSource) {
     private var activeTransactionCallbacks: MutableList<TransactionCallback> = mutableListOf()
