@@ -1,5 +1,6 @@
 dependencies {
     api(project(":trantor-primitives"))
+    api(project(":trantor-di"))
     api(project(":trantor-hosting"))
 }
 

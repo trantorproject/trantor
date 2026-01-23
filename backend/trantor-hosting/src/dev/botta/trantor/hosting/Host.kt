@@ -2,8 +2,8 @@ package dev.botta.trantor.hosting
 
 import dev.botta.lang.DetailsExt
 import dev.botta.trantor.config.Config
-import dev.botta.trantor.hosting.defaults.DefaultHostBuilder
 import dev.botta.trantor.di.ServiceProvider
+import dev.botta.trantor.hosting.defaults.DefaultHostBuilder
 import java.util.concurrent.CountDownLatch
 
 interface Host {
@@ -23,6 +23,12 @@ interface Host {
         lifetime.onStopping { latch.countDown() }
         latch.await()
 
+        stop()
+    }
+
+    fun run(runnable: () -> Unit) {
+        start()
+        runnable()
         stop()
     }
 

@@ -4,7 +4,7 @@ import dev.botta.trantor.core.tx.*
 import dev.botta.trantor.primitives.events.Event
 
 class TransactionAwareEventPublisher(
-    private val publisher: EventPublisher,
+    private val eventBus: EventBus,
     private val transactionManager: TransactionManager,
 ): EventPublisher {
     override fun publish(events: List<Event>) {
@@ -13,13 +13,13 @@ class TransactionAwareEventPublisher(
 
     override fun publish(event: Event) {
         if (!transactionManager.hasActiveTransaction()) {
-            publisher.publish(event)
+            eventBus.publish(event)
             return
         }
 
         transactionManager.registerActiveTransactionCallback(object: TransactionCallback {
             override fun onCommit() {
-                publisher.publish(event)
+                eventBus.publish(event)
             }
 
             override fun onRollback() {
