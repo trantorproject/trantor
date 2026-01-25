@@ -1,5 +1,5 @@
 package dev.botta.trantor.core.auth
 
-import dev.botta.trantor.core.app.AppError
+import dev.botta.trantor.core.application.ApplicationError
 
-class NotAuthenticatedError: AppError("Not Authenticated")
+class NotAuthenticatedError: ApplicationError("Not Authenticated")

@@ -1,5 +1,6 @@
-package dev.botta.trantor.core
+package dev.botta.trantor.core.application
 
+import dev.botta.cqbus.CQBus
 import dev.botta.trantor.core.events.*
 import dev.botta.trantor.core.tx.*
 import dev.botta.trantor.hosting.*
@@ -13,6 +14,7 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
             environmentName = builderConfig.environmentName,
             appName = builderConfig.appName,
             config = builderConfig.config,
+            initializeModules = false,
         )
     )
     override val config get() = hostBuilder.config
@@ -21,16 +23,23 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
 
     private fun addDefaultServices() {
         services.addGsonSerializer()
+        services.addSingletonIfMissing { CQBus() }
         services.addSingletonIfMissing<TransactionManager> { NullTransactionManager() }
         services.addSingletonIfMissing<EventBus> { InProcessEventBus() }
         services.addSingletonIfMissing<EventPublisher> { it.create<TransactionAwareEventPublisher>() }
+        services.addSingletonIfMissing<ApplicationExecutor> { it.create<DefaultApplicationExecutor>() }
     }
 
     fun build(): Application {
         addDefaultServices()
         val host = hostBuilder.build()
-        val application = Application(host)
+        val executor = host.services.get<ApplicationExecutor>()
+        val application = Application(host, executor)
         services.addSingleton<Host> { application }
+        services.addSingleton<Application> { application }
+        if (builderConfig.initializeModules) {
+            host.services.getAll<Module>().forEach { it.initialize(host.services, config) }
+        }
         return application
     }
 }

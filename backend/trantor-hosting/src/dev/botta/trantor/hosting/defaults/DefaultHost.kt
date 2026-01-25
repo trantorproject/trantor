@@ -1,9 +1,9 @@
 package dev.botta.trantor.hosting.defaults
 
 import dev.botta.trantor.config.Config
-import dev.botta.trantor.primitives.logging.getLogger
-import dev.botta.trantor.hosting.*
 import dev.botta.trantor.di.ServiceProvider
+import dev.botta.trantor.hosting.*
+import dev.botta.trantor.primitives.logging.getLogger
 import java.util.concurrent.atomic.AtomicBoolean
 
 class DefaultHost(
@@ -25,7 +25,6 @@ class DefaultHost(
     override fun start() {
         if (!started.compareAndSet(false, true)) return
         logger.info("Starting host [${environment.appName}] in ${environment.environmentName}")
-
         hostedServices = services.getAll<HostedService>()
         for (service in hostedServices) {
             logger.info("Starting service ${service.javaClass.simpleName}")

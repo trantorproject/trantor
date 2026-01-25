@@ -1,8 +1,8 @@
-package dev.botta.trantor.core.app
+package dev.botta.trantor.core.application
 
 import java.util.jar.Manifest
 
-class AppVersion {
+class ApplicationVersion {
     private val version: String by lazy { findVersion() }
 
     private fun findVersion() = try {

@@ -1,9 +1,10 @@
-package dev.botta.trantor.core.app.middlewares
+package dev.botta.trantor.core.application.middlewares
 
 import dev.botta.cqbus.ExecutionContext
 import dev.botta.cqbus.identity.Identity
 import dev.botta.cqbus.requests.PureCommand
 import dev.botta.trantor.core.auth.*
+import dev.botta.trantor.core.auth.middlewares.RolesAuthorizationMiddleware
 import org.junit.jupiter.api.*
 
 class AuthorizationMiddlewareTest {

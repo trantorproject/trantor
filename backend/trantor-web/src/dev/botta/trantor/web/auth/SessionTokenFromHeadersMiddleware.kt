@@ -2,7 +2,7 @@ package dev.botta.trantor.web.auth
 
 import dev.botta.cqbus.*
 import dev.botta.cqbus.requests.Request
-import dev.botta.trantor.core.app.AppModule
+import dev.botta.trantor.web.application.WebApplication
 import io.javalin.http.Context
 
 class SessionTokenFromHeadersMiddleware: Middleware {
@@ -22,6 +22,6 @@ class SessionTokenFromHeadersMiddleware: Middleware {
     private fun getAuthorizationHeader(context: ExecutionContext) = (context["javalin_context"] as? Context)?.header("Authorization")
 }
 
-fun AppModule.addSessionTokenFromHeaders() {
+fun WebApplication.addSessionTokenFromHeaders() {
     registerMiddleware(SessionTokenFromHeadersMiddleware())
 }

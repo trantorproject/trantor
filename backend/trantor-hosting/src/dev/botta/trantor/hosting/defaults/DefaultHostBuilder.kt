@@ -1,16 +1,9 @@
 package dev.botta.trantor.hosting.defaults
 
 import dev.botta.trantor.config.ConfigManager
-import dev.botta.trantor.config.providers.addEnvironmentVariables
-import dev.botta.trantor.config.providers.addJsonResource
-import dev.botta.trantor.config.providers.addMemoryCollection
-import dev.botta.trantor.hosting.Host
-import dev.botta.trantor.hosting.HostBuilder
-import dev.botta.trantor.hosting.HostBuilderConfig
-import dev.botta.trantor.hosting.HostEnvironment
-import dev.botta.trantor.hosting.HostLifetime
-import dev.botta.trantor.di.DefaultServiceProvider
-import dev.botta.trantor.di.ServiceRegistry
+import dev.botta.trantor.config.providers.*
+import dev.botta.trantor.di.*
+import dev.botta.trantor.hosting.*
 
 class DefaultHostBuilder(private val builderConfig: HostBuilderConfig): HostBuilder {
     override val config = builderConfig.config ?: ConfigManager()
@@ -62,6 +55,9 @@ class DefaultHostBuilder(private val builderConfig: HostBuilderConfig): HostBuil
         val lifetime = serviceProvider.get<HostLifetime>() as? DefaultHostLifetime ?: error("HostLifeTime must be DefaultHostLifetime")
         val host = DefaultHost(serviceProvider, config, environment, lifetime)
         services.addSingleton<Host> { host }
+        if (builderConfig.initializeModules) {
+            serviceProvider.getAll<Module>().forEach { it.initialize(serviceProvider, config) }
+        }
         return host
     }
 }

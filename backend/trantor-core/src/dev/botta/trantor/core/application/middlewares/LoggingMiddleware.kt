@@ -1,4 +1,4 @@
-package dev.botta.trantor.core.app.middlewares
+package dev.botta.trantor.core.application.middlewares
 
 import dev.botta.cqbus.*
 import dev.botta.cqbus.requests.Request

@@ -1,6 +1,6 @@
 package dev.botta.trantor.web.errorHandlers
 
-import dev.botta.trantor.web.WebApplication
+import dev.botta.trantor.web.application.WebApplication
 import kotlin.reflect.KClass
 
 class ForbiddenErrorHandler<T: Exception>(override val errorType: Class<T>): BaseJsonErrorHandler<T>() {

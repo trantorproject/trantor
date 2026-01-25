@@ -1,8 +1,10 @@
-package dev.botta.trantor.core.app.middlewares
+package dev.botta.trantor.core.auth.middlewares
 
-import dev.botta.cqbus.*
+import dev.botta.cqbus.ExecutionContext
+import dev.botta.cqbus.Middleware
 import dev.botta.cqbus.requests.Request
-import dev.botta.trantor.core.auth.*
+import dev.botta.trantor.core.auth.UnauthorizedAccessError
+import dev.botta.trantor.core.auth.requiredAuthorizationRoles
 
 class RolesAuthorizationMiddleware: Middleware {
     override fun <T: Request<R>, R> execute(request: T, next: (T) -> R, context: ExecutionContext): R {

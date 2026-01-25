@@ -1,7 +1,7 @@
 package dev.botta.trantor.web.server
 
-import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.hosting.HostedService
+import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.web.server.logs.HttpRequestLogger
 import dev.botta.trantor.web.server.stats.*
@@ -38,7 +38,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant, HostedS
             javalinConfig.startupWatcherEnabled = false
             configureJetty(javalinConfig.jetty)
         }
-        routeRegister = RouteRegister(javalin)
+        routeRegister = JavalinRouteRegister(javalin)
         setupMdc()
     }
 
@@ -110,13 +110,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant, HostedS
         javalin.before { interceptor.onRequest(it) }
     }
 
-    fun addControllers(vararg controllers: Controller) {
-        controllers.forEach { registerController(it) }
-    }
-
-    private fun registerController(controller: Controller) {
+    fun addController(controller: Controller) {
         controller.registerRoutes(routeRegister)
-//        logger.info(controller.javaClass.shortName() + " registered")
-        controller.getChildControllers().forEach { registerController(it) }
     }
 }

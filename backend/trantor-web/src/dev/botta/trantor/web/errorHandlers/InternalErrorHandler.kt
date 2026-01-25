@@ -1,6 +1,6 @@
 package dev.botta.trantor.web.errorHandlers
 
-import dev.botta.trantor.web.WebApplication
+import dev.botta.trantor.web.application.WebApplication
 import dev.botta.trantor.web.server.jsonError
 import io.javalin.http.Context
 import org.slf4j.Logger

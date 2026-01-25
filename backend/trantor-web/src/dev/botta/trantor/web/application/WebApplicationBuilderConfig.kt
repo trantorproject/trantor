@@ -1,19 +1,21 @@
-package dev.botta.trantor.core
+package dev.botta.trantor.web.application
 
 import dev.botta.trantor.config.ConfigManager
 
-data class ApplicationBuilderConfig(
+data class WebApplicationBuilderConfig(
     var args: Array<String> = arrayOf(),
     var environmentName: String? = null,
     var appName: String? = null,
     var config: ConfigManager? = null,
+    var initializeModules: Boolean = true,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ApplicationBuilderConfig
+        other as WebApplicationBuilderConfig
 
+        if (initializeModules != other.initializeModules) return false
         if (!args.contentEquals(other.args)) return false
         if (environmentName != other.environmentName) return false
         if (appName != other.appName) return false
@@ -23,7 +25,8 @@ data class ApplicationBuilderConfig(
     }
 
     override fun hashCode(): Int {
-        var result = args.contentHashCode()
+        var result = initializeModules.hashCode()
+        result = 31 * result + args.contentHashCode()
         result = 31 * result + (environmentName?.hashCode() ?: 0)
         result = 31 * result + (appName?.hashCode() ?: 0)
         result = 31 * result + (config?.hashCode() ?: 0)

@@ -1,11 +1,12 @@
 package dev.botta.trantor.di
 
 import dev.botta.trantor.config.Config
+import dev.botta.trantor.config.ConfigManager
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.di.ServiceLifetimes.*
 
 @Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
-class ServiceRegistry(val config: Config): MutableList<ServiceDescriptor<*>> by mutableListOf() {
+class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<*>> by mutableListOf() {
     private val configurations: MutableList<ServiceConfigurationItem<*>> = mutableListOf()
 
     init {

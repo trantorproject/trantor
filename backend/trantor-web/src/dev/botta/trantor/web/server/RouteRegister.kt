@@ -1,52 +1,31 @@
 package dev.botta.trantor.web.server
 
-import io.javalin.Javalin
-import io.javalin.http.*
+import io.javalin.http.Handler
 import io.javalin.websocket.WsConfig
 import java.util.function.Consumer
 
-class RouteRegister(private val javalin: Javalin) {
-    fun before(handler: Handler) = apply {
-        javalin.before(handler)
-    }
+interface RouteRegister {
+    fun before(handler: Handler): RouteRegister
 
-    fun after(handler: Handler) = apply {
-        javalin.after(handler)
-    }
+    fun beforeMatched(handler: Handler): RouteRegister
 
-    fun post(path: String, handler: Handler) = apply {
-        registerRoute(HandlerType.POST, path, handler)
-    }
+    fun after(handler: Handler): RouteRegister
 
-    fun get(path: String, handler: Handler) = apply {
-        registerRoute(HandlerType.GET, path, handler)
-    }
+    fun afterMatched(handler: Handler): RouteRegister
 
-    fun put(path: String, handler: Handler) = apply {
-        registerRoute(HandlerType.PUT, path, handler)
-    }
+    fun post(path: String, handler: Handler): RouteRegister
 
-    fun patch(path: String, handler: Handler) = apply {
-        registerRoute(HandlerType.PATCH, path, handler)
-    }
+    fun get(path: String, handler: Handler): RouteRegister
 
-    fun delete(path: String, handler: Handler) = apply {
-        registerRoute(HandlerType.DELETE, path, handler)
-    }
+    fun put(path: String, handler: Handler): RouteRegister
 
-    fun ws(path: String, consumer: Consumer<WsConfig>) = apply {
-        javalin.ws(path, consumer)
-    }
+    fun patch(path: String, handler: Handler): RouteRegister
 
-    fun wsBefore(path: String, consumer: Consumer<WsConfig>) = apply {
-        javalin.wsBefore(path, consumer)
-    }
+    fun delete(path: String, handler: Handler): RouteRegister
 
-    fun wsAfter(path: String, consumer: Consumer<WsConfig>) = apply {
-        javalin.wsAfter(path, consumer)
-    }
+    fun ws(path: String, consumer: Consumer<WsConfig>): RouteRegister
 
-    private fun registerRoute(verb: HandlerType, path: String, handler: Handler) {
-        javalin.addHttpHandler(verb, path, handler)
-    }
+    fun wsBefore(consumer: Consumer<WsConfig>): RouteRegister
+
+    fun wsAfter(consumer: Consumer<WsConfig>): RouteRegister
 }

@@ -1,9 +1,6 @@
 package dev.botta.trantor.core.auth
 
-import dev.botta.cqbus.*
 import dev.botta.cqbus.identity.Identity
-import dev.botta.cqbus.requests.Request
-import dev.botta.trantor.core.app.AppModule
 
 class SystemIdentity: Identity {
     override val authenticationType: String? = null
@@ -12,9 +9,3 @@ class SystemIdentity: Identity {
     override val properties = mapOf<String, Any>()
     override val roles = listOf("system")
 }
-
-fun <T: Request<R>, R> AppModule.executeAsSystem(request: T): R =
-    execute(request, ExecutionContext().withIdentity(SystemIdentity()))
-
-fun <T: Request<R>, R> CQBus.executeAsSystem(request: T): R =
-    execute(request, ExecutionContext().withIdentity(SystemIdentity()))
