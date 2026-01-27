@@ -29,18 +29,6 @@ class WebApplication(private val application: Application, private val requestMa
     val httpServer = services.get<HttpServer>()
     override val routes get() = ApplicationRouteRegister(httpServer.routes, requestMapper, this)
 
-    override fun <T: Request<R>, R> execute(request: T, context: ExecutionContext): R {
-        return application.execute(request, context)
-    }
-
-    override fun <T: Request<R>, R> execute(request: T, context: Context, executionContext: ExecutionContext): R {
-        return execute(request, executionContext.with("javalin_context", context))
-    }
-
-    override fun registerMiddleware(middleware: Middleware, priority: MiddlewarePriorities) {
-        return application.registerMiddleware(middleware, priority)
-    }
-
     init {
         addKnownExceptions()
         routes.before { services.enterScope() }
@@ -58,6 +46,18 @@ class WebApplication(private val application: Application, private val requestMa
         addBadRequestError<JsonParseError>()
         addBadRequestError<JsonParseException>()
         addInternalError<Exception>()
+    }
+
+    override fun <T: Request<R>, R> execute(request: T, context: ExecutionContext): R {
+        return application.execute(request, context)
+    }
+
+    override fun <T: Request<R>, R> execute(request: T, context: Context, executionContext: ExecutionContext): R {
+        return execute(request, executionContext.with("javalin_context", context))
+    }
+
+    override fun registerMiddleware(middleware: Middleware, priority: MiddlewarePriorities) {
+        return application.registerMiddleware(middleware, priority)
     }
 
     fun <T: Exception> addErrorHandler(handler: BaseJsonErrorHandler<T>) {
