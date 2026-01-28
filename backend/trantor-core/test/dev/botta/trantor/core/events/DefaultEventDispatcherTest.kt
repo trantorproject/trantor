@@ -1,5 +1,6 @@
 package dev.botta.trantor.core.events
 
+import dev.botta.trantor.core.tx.NullTransactionManager
 import dev.botta.trantor.primitives.events.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -73,6 +74,48 @@ class DefaultEventDispatcherTest {
         assert(handledEvent == event)
     }
 
+    @Test
+    fun `don't publish immediately if running inside a defer block`() {
+        var myEventHandlerCalled = false
+        subscribe<MyEvent> { myEventHandlerCalled = true }
+        dispatcher.defer {
+            dispatcher.publish(MyEvent())
+            assertThat(myEventHandlerCalled).isFalse
+        }
+    }
+
+    @Test
+    fun `publish events generated inside a defer block when it finishes`() {
+        var myEventHandlerCalled = false
+        subscribe<MyEvent> { myEventHandlerCalled = true }
+
+        dispatcher.defer {
+            dispatcher.publish(MyEvent())
+        }
+
+        assertThat(myEventHandlerCalled).isTrue
+    }
+
+    @Test
+    fun `defer is thread local - events in another thread are published immediately`() {
+        var handlerCalledInOtherThread = false
+        subscribe<MyEvent> {
+            if (Thread.currentThread().name == "OtherThread") {
+                handlerCalledInOtherThread = true
+            }
+        }
+
+        dispatcher.defer {
+            val otherThread = createThread {
+                dispatcher.publish(MyEvent())
+            }
+
+            startAndWait(otherThread)
+
+            assertThat(handlerCalledInOtherThread).isTrue
+        }
+    }
+
     private fun subscribe(eventTypes: List<KClass<*>>, onEventFunc: (event: Event) -> Unit) {
         dispatcher.subscribe(SimpleEventHandler(eventTypes, onEventFunc))
     }
@@ -81,7 +124,16 @@ class DefaultEventDispatcherTest {
         dispatcher.subscribe(SimpleEventHandler(T::class, onEventFunc))
     }
 
-    private val dispatcher = DefaultEventDispatcher()
+    private fun createThread(name: String = "OtherThread", runnable: Runnable): Thread {
+        return Thread(runnable, name)
+    }
+
+    private fun startAndWait(otherThread: Thread) {
+        otherThread.start()
+        otherThread.join()
+    }
+
+    private val dispatcher = DefaultEventDispatcher(NullTransactionManager())
 
     abstract class MyEventBase: Event()
     class MyEvent: MyEventBase()

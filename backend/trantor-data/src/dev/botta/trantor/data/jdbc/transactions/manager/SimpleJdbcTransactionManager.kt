@@ -1,29 +1,10 @@
 package dev.botta.trantor.data.jdbc.transactions.manager
 
-import dev.botta.trantor.core.tx.TransactionCallback
 import dev.botta.trantor.data.jdbc.transactions.*
 
 class SimpleJdbcTransactionManager(dataSource: TransactionAwareDataSource): JdbcTransactionManager(dataSource) {
-    private var activeTransactionCallbacks: MutableList<TransactionCallback> = mutableListOf()
-
-    override var activeTransaction: JdbcTransaction? = null
+    override var jdbcActiveTransaction: JdbcTransaction? = null
         set(value) {
             field = value
-            activeTransactionCallbacks = mutableListOf()
         }
-
-    override fun registerActiveTransactionCallback(callback: TransactionCallback) {
-        if (!hasActiveTransaction()) return
-        activeTransactionCallbacks.add(callback)
-    }
-
-    override fun onActiveTransactionClose(result: TransactionResults) {
-        for (callback in activeTransactionCallbacks) {
-            when (result) {
-                TransactionResults.Commit -> callback.onCommit()
-                TransactionResults.Rollback -> callback.onRollback()
-            }
-        }
-        activeTransactionCallbacks = mutableListOf()
-    }
 }

@@ -5,6 +5,7 @@ import dev.botta.trantor.core.events.*
 import dev.botta.trantor.core.tx.*
 import dev.botta.trantor.hosting.*
 import dev.botta.trantor.hosting.defaults.DefaultHostBuilder
+import dev.botta.trantor.primitives.events.EventDispatcher
 import dev.botta.trantor.serialization.gson.addGsonSerializer
 
 class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): HostBuilder {
@@ -26,7 +27,7 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
         services.addSingletonIfMissing { CQBus() }
         services.addSingletonIfMissing<TransactionManager> { NullTransactionManager() }
         services.addSingletonIfMissing<EventBus> { InProcessEventBus() }
-        services.addSingletonIfMissing<EventPublisher> { it.create<TransactionAwareEventPublisher>() }
+        services.addSingletonIfMissing<EventDispatcher> { it.create<DefaultEventDispatcher>() }
         services.addSingletonIfMissing<ApplicationExecutor> { it.create<DefaultApplicationExecutor>() }
     }
 

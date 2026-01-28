@@ -1,12 +1,13 @@
 package dev.botta.trantor.core.events
 
+import dev.botta.trantor.core.tx.TransactionManager
 import dev.botta.trantor.primitives.events.*
 import dev.botta.trantor.primitives.lang.shortName
 import dev.botta.trantor.primitives.logging.getLogger
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.reflect.KClass
 
-class DefaultEventDispatcher: EventDispatcher {
+class DefaultEventDispatcher(private val transactionManager: TransactionManager): EventDispatcher {
     private val logger = getLogger()
     private val handlers = CopyOnWriteArrayList<EventHandler>()
     private val isDeferring = ThreadLocal.withInitial { false }
@@ -25,14 +26,29 @@ class DefaultEventDispatcher: EventDispatcher {
 
         handlers
             .filter { it.canHandle(event) }
-            .forEach {
-                logger.info("Invoking event handler ${it::class.java.shortName()}")
-                try {
-                    it.on(event)
-                } catch (e: Exception) {
-                    logger.error("Event handler failed: ${e.message}", e)
-                }
-            }
+            .forEach { dispatchToHandler(event, it) }
+    }
+
+    private fun dispatchToHandler(event: Event, handler: EventHandler) {
+        if (transactionManager.activeTransaction == null ||
+            handler.afterCommit == null ||
+            handler.afterCommit == false
+        ) {
+            invokeEventHandler(event, handler)
+            return
+        }
+        transactionManager.activeTransaction!!.afterCommit {
+            invokeEventHandler(event, handler)
+        }
+    }
+
+    private fun invokeEventHandler(event: Event, handler: EventHandler) {
+        logger.info("Invoking event handler ${handler::class.java.shortName()}")
+        try {
+            handler.on(event)
+        } catch (e: Exception) {
+            logger.error("Event handler failed: ${e.message}", e)
+        }
     }
 
     override fun defer(block: () -> Unit) {
@@ -53,7 +69,6 @@ class DefaultEventDispatcher: EventDispatcher {
             events.forEach { dispatch(it) }
         }
     }
-
 
     override fun subscribe(handler: EventHandler) {
         handlers.add(handler)

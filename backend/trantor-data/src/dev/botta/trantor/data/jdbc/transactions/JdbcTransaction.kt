@@ -4,7 +4,9 @@ import dev.botta.trantor.core.tx.Transaction
 import java.sql.*
 import java.util.*
 
-class JdbcTransaction(val connection: Connection, private val onClose: (result: TransactionResults) -> Unit): Transaction {
+class JdbcTransaction(val connection: Connection, private val onClose: () -> Unit): Transaction {
+    private val afterCommitActions = mutableListOf<() -> Unit>()
+    private val afterRollbackActions = mutableListOf<() -> Unit>()
     private var savepoints = ArrayDeque<Savepoint>()
     override var isClosed = false
         private set
@@ -28,7 +30,8 @@ class JdbcTransaction(val connection: Connection, private val onClose: (result: 
 
         connection.commit()
         connection.autoCommit = true
-        setClosed(TransactionResults.Commit)
+        setClosed()
+        afterCommitActions.forEach { it() }
     }
 
     private fun commitNested() {
@@ -45,10 +48,20 @@ class JdbcTransaction(val connection: Connection, private val onClose: (result: 
             rollbackNested()
             return
         }
-
         connection.rollback()
         connection.autoCommit = true
-        setClosed(TransactionResults.Rollback)
+        setClosed()
+        afterRollbackActions.forEach { it() }
+    }
+
+    override fun afterCommit(action: () -> Unit) {
+        if (isClosed) error("Cannot add callback to a closed transaction")
+        afterCommitActions.add(action)
+    }
+
+    override fun afterRollback(action: () -> Unit) {
+        if (isClosed) error("Cannot add callback to a closed transaction")
+        afterRollbackActions.add(action)
     }
 
     private fun rollbackNested() {
@@ -56,9 +69,9 @@ class JdbcTransaction(val connection: Connection, private val onClose: (result: 
         connection.rollback(savepoint)
     }
 
-    private fun setClosed(result: TransactionResults) {
+    private fun setClosed() {
         isClosed = true
-        onClose(result)
+        onClose()
     }
 
     override fun close() {

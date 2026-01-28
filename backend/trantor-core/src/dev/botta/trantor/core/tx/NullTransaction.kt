@@ -9,6 +9,12 @@ class NullTransaction: Transaction {
     override fun rollback() {
     }
 
+    override fun afterCommit(action: () -> Unit) {
+    }
+
+    override fun afterRollback(action: () -> Unit) {
+    }
+
     override fun close() {
         isClosed = true
     }

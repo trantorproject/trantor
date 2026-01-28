@@ -1,9 +1,8 @@
 package dev.botta.trantor.core.tx
 
 interface TransactionManager {
+    val activeTransaction: Transaction?
     fun beginTransaction(): Transaction
-    fun hasActiveTransaction(): Boolean
-    fun registerActiveTransactionCallback(callback: TransactionCallback)
 }
 
 interface TransactionCallback {

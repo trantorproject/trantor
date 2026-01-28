@@ -5,37 +5,36 @@ import dev.botta.trantor.data.jdbc.transactions.*
 import java.sql.Connection
 
 abstract class JdbcTransactionManager(private val dataSource: TransactionAwareDataSource): TransactionManager {
-    protected abstract var activeTransaction: JdbcTransaction?
+    override val activeTransaction: Transaction?
+        get() = jdbcActiveTransaction
+    protected abstract var jdbcActiveTransaction: JdbcTransaction?
 
     init {
         dataSource.transactionManager = this
     }
 
     val activeConnection: Connection?
-        get() = activeTransaction?.connection
+        get() = jdbcActiveTransaction?.connection
 
     override fun beginTransaction(): Transaction {
         if (hasActiveTransaction()) {
-            activeTransaction!!.beginNested()
+            jdbcActiveTransaction!!.beginNested()
         } else {
-            activeTransaction = createTransaction()
+            jdbcActiveTransaction = createTransaction()
         }
-        return activeTransaction!!
+        return jdbcActiveTransaction!!
     }
 
-    override fun hasActiveTransaction() = activeTransaction != null
+    fun hasActiveTransaction() = jdbcActiveTransaction != null
 
     private fun createTransaction(): JdbcTransaction {
         val connection = dataSource.connection ?: throw Exception("Could not connect to datasource. Check your connection settings")
         return JdbcTransaction(connection, ::onClose)
     }
 
-    protected open fun onActiveTransactionClose(result: TransactionResults) {}
-
-    private fun onClose(result: TransactionResults) {
-        onActiveTransactionClose(result)
+    private fun onClose() {
         val connection = activeConnection
-        activeTransaction = null
+        jdbcActiveTransaction = null
         connection?.close()
     }
 }
