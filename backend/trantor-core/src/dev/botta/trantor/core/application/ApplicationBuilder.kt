@@ -1,12 +1,11 @@
 package dev.botta.trantor.core.application
 
 import dev.botta.cqbus.CQBus
-import dev.botta.trantor.core.events.*
-import dev.botta.trantor.core.queues.QueueManager
-import dev.botta.trantor.core.tx.*
+import dev.botta.trantor.core.events.EventsModule
+import dev.botta.trantor.core.queues.QueuesModule
+import dev.botta.trantor.core.tx.TransactionsModule
 import dev.botta.trantor.hosting.*
 import dev.botta.trantor.hosting.defaults.DefaultHostBuilder
-import dev.botta.trantor.primitives.events.EventDispatcher
 import dev.botta.trantor.serialization.gson.addGsonSerializer
 
 class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): HostBuilder {
@@ -26,12 +25,10 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
     private fun addDefaultServices() {
         services.addGsonSerializer()
         services.addSingletonIfMissing { CQBus() }
-        services.addSingletonIfMissing<TransactionManager> { NullTransactionManager() }
-        services.addSingletonIfMissing<EventBus> { InProcessEventBus() }
-        services.addSingletonIfMissing<EventDispatcher> { it.create<DefaultEventDispatcher>() }
         services.addSingletonIfMissing<ApplicationExecutor> { it.create<DefaultApplicationExecutor>() }
-        services.addSingletonIfMissing<QueueManager> { it.create<QueueManager>() }
-        services.addHostedService { it.get<QueueManager>() }
+        services.addModule<TransactionsModule>()
+        services.addModule<EventsModule>()
+        services.addModule<QueuesModule>()
     }
 
     fun build(): Application {
