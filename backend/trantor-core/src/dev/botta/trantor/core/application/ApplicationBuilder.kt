@@ -2,6 +2,7 @@ package dev.botta.trantor.core.application
 
 import dev.botta.cqbus.CQBus
 import dev.botta.trantor.core.events.*
+import dev.botta.trantor.core.queues.QueueManager
 import dev.botta.trantor.core.tx.*
 import dev.botta.trantor.hosting.*
 import dev.botta.trantor.hosting.defaults.DefaultHostBuilder
@@ -29,6 +30,8 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
         services.addSingletonIfMissing<EventBus> { InProcessEventBus() }
         services.addSingletonIfMissing<EventDispatcher> { it.create<DefaultEventDispatcher>() }
         services.addSingletonIfMissing<ApplicationExecutor> { it.create<DefaultApplicationExecutor>() }
+        services.addSingletonIfMissing<QueueManager> { it.create<QueueManager>() }
+        services.addHostedService { it.get<QueueManager>() }
     }
 
     fun build(): Application {

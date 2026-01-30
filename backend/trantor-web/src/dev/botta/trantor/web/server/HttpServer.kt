@@ -16,14 +16,14 @@ import org.slf4j.MDC
 import java.time.Duration
 import java.util.*
 
-class HttpServer(private val config: HttpServerConfig): RouteRegistrant, HostedService {
+class HttpServer(private val settings: HttpServerSettings): RouteRegistrant, HostedService {
     private val logger = getLogger()
     private val javalin: Javalin
     private val routeRegister: RouteRegister
-    private val threadPool = QueuedThreadPool(config.maxThreads, config.minThreads, config.idleTimeout)
+    private val threadPool = QueuedThreadPool(settings.maxThreads, settings.minThreads, settings.idleTimeout)
     private var managementThreadPool: QueuedThreadPool? = null
     private val statisticsHandler = StatisticsHandler()
-    private val requestLogger: HttpRequestLogger = config.requestLoggerFactory(logger)
+    private val requestLogger: HttpRequestLogger = settings.requestLoggerFactory(logger)
     val id = UUID.randomUUID().toString()
     val stats: HttpServerStats
         get() = statisticsHandler.getStats(threadPool, managementThreadPool)
@@ -33,7 +33,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant, HostedS
         javalin = Javalin.create { javalinConfig ->
             javalinConfig.showJavalinBanner = false
             javalinConfig.requestLogger.http(::logRequest)
-            javalinConfig.http.maxRequestSize = config.maxRequestSizeInMb * SizeUnit.MB.multiplier
+            javalinConfig.http.maxRequestSize = settings.maxRequestSizeInMb * SizeUnit.MB.multiplier
             javalinConfig.useVirtualThreads = true
             javalinConfig.startupWatcherEnabled = false
             configureJetty(javalinConfig.jetty)
@@ -60,27 +60,27 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant, HostedS
     private fun configureJetty(jettyConfig: JettyConfig) {
         Configurator.setLevel("org.eclipse.jetty", org.apache.logging.log4j.Level.WARN)
         jettyConfig.threadPool = threadPool
-        if (config.uploadsTempDirectory != null) {
-            jettyConfig.multipartConfig.cacheDirectory(config.uploadsTempDirectory!!)
+        if (settings.uploadsTempDirectory != null) {
+            jettyConfig.multipartConfig.cacheDirectory(settings.uploadsTempDirectory!!)
         }
-        jettyConfig.multipartConfig.maxFileSize(config.maxMultipartFileSizeInMb, SizeUnit.MB)
-        jettyConfig.multipartConfig.maxInMemoryFileSize(config.maxMultipartInMemoryFileSizeInMb, SizeUnit.MB)
-        jettyConfig.multipartConfig.maxTotalRequestSize(config.maxMultipartRequestSizeInMb, SizeUnit.MB)
+        jettyConfig.multipartConfig.maxFileSize(settings.maxMultipartFileSizeInMb, SizeUnit.MB)
+        jettyConfig.multipartConfig.maxInMemoryFileSize(settings.maxMultipartInMemoryFileSizeInMb, SizeUnit.MB)
+        jettyConfig.multipartConfig.maxTotalRequestSize(settings.maxMultipartRequestSizeInMb, SizeUnit.MB)
 
-        if (config.isMetricsEnabled) {
+        if (settings.isMetricsEnabled) {
             jettyConfig.modifyServer { it.insertHandler(statisticsHandler) }
         }
-        if (config.managementPort > 0) {
+        if (settings.managementPort > 0) {
             jettyConfig.addConnector { server, _ ->
-                managementThreadPool = QueuedThreadPool(4, 2, config.idleTimeout)
+                managementThreadPool = QueuedThreadPool(4, 2, settings.idleTimeout)
                 val managementConnector = ServerConnector(server, managementThreadPool, null, null, 1, 1, HttpConnectionFactory())
-                managementConnector.port = config.managementPort
+                managementConnector.port = settings.managementPort
                 managementConnector
             }
         }
 
         jettyConfig.modifyWebSocketServletFactory {
-            it.idleTimeout = Duration.ofMillis(config.wsIdleTimeout.toLong())
+            it.idleTimeout = Duration.ofMillis(settings.wsIdleTimeout.toLong())
         }
     }
 
@@ -92,7 +92,7 @@ class HttpServer(private val config: HttpServerConfig): RouteRegistrant, HostedS
     override fun start() {
         logger.info("Starting with id $id")
         logger.info("ThreadPool configured with min: ${threadPool.minThreads} max: ${threadPool.maxThreads} idleTimeout: ${threadPool.idleTimeout}ms")
-        javalin.start(config.port)
+        javalin.start(settings.port)
     }
 
     override fun stop(timeoutSeconds: Int) {

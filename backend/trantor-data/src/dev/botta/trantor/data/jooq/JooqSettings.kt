@@ -1,6 +1,6 @@
 package dev.botta.trantor.data.jooq
 
-data class JooqConfig(
+data class JooqSettings(
     var logSql: Boolean = false,
     var dialect: String? = null,
 )

@@ -23,6 +23,8 @@ abstract class ServiceProvider(protected val registry: ServiceRegistry) {
 
     abstract fun <T : Any> create(type: KClass<T>): T
 
+    abstract fun <T : Any> create(type: Class<T>): T
+
     inline fun <reified T: Any> get(key: String? = null) = get(T::class.java, key)
 
     inline fun <reified T: Any> getOrDefault(key: String? = null, noinline default: () -> T) = getOrDefault(T::class.java, key, default)

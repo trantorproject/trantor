@@ -1,48 +1,35 @@
 package dev.botta.trantor.di
 
-import dev.botta.trantor.di.ServiceLifetimes.*
+import dev.botta.trantor.di.ServiceLifetimes.Singleton
 
-data class ServiceDescriptor<T: Any>(
+data class ServiceDescriptor<T: Any, TImplementation: T>(
     val serviceType: Class<T>,
-    val implementationFactory: ImplementationFactory<T>,
+    val implementationFactory: ImplementationFactory<T>? = null,
+    val implementationType: Class<TImplementation>? = null,
+    val instance: T? = null,
     val lifetime: ServiceLifetimes = Singleton,
     val key: String? = null,
 ) {
     val serviceId = serviceId(serviceType, key)
+    val implementationId = buildImplementationId()
+
+    private fun buildImplementationId(): String {
+        val base = when {
+            implementationType != null -> "type:${implementationType.name}"
+
+            instance != null -> "instance:${System.identityHashCode(instance)}"
+
+            implementationFactory != null -> "factory:${System.identityHashCode(implementationFactory)}"
+
+            else -> error("Invalid ServiceDescriptor: no implementation defined for $serviceType")
+        }
+
+        return if (key == null) base else "$base@$key"
+    }
 
     companion object {
         fun serviceId(serviceType: Class<*>, key: String? = null): String {
-            return if (key === null) serviceType.name else serviceType.name + "." + key
-        }
-
-        fun <T: Any> singleton(
-            serviceType: Class<T>,
-            implementationFactory: ImplementationFactory<T>,
-            key: String? = null,
-        ): ServiceDescriptor<T> {
-            return ServiceDescriptor(serviceType, implementationFactory, Singleton, key)
-        }
-
-        inline fun <reified T: Any> singleton(
-            noinline implementationFactory: ImplementationFactory<T>,
-            key: String? = null,
-        ): ServiceDescriptor<T> {
-            return singleton(T::class.java, implementationFactory, key)
-        }
-
-        fun <T: Any> scoped(
-            serviceType: Class<T>,
-            implementationFactory: ImplementationFactory<T>,
-            key: String? = null,
-        ): ServiceDescriptor<T> {
-            return ServiceDescriptor(serviceType, implementationFactory, Scoped, key)
-        }
-
-        inline fun <reified T: Any> scoped(
-            noinline implementationFactory: ImplementationFactory<T>,
-            key: String? = null,
-        ): ServiceDescriptor<T> {
-            return scoped(T::class.java, implementationFactory, key)
+            return if (key == null) serviceType.name else serviceType.name + "@" + key
         }
     }
 }

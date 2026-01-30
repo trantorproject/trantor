@@ -22,7 +22,7 @@ class WebApplicationBuilder(private val builderConfig: WebApplicationBuilderConf
 
     init {
         services.addHttpServer()
-        services.addSingleton<ApplicationRequestMapper>()
+        services.addSingleton { it.create<ApplicationRequestMapper>() }
     }
 
     fun build(): WebApplication {

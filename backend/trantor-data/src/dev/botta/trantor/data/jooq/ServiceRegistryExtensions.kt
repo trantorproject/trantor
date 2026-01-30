@@ -13,21 +13,21 @@ fun ServiceRegistry.addJooq(key: String? = null) = apply {
 
     addJdbc(key)
 
-    addConfig<JooqConfig>("jooqConfig")
+    addConfig<JooqSettings>("jooq")
 
     addSingleton<DSLContext>(key) {
-        val jdbcConfig = it.tryGet<JdbcConfig>(key)
-        val jooqConfig = it.getOrDefault<JooqConfig>(key) { JooqConfig() }
+        val jdbcSettings = it.tryGet<JdbcSettings>(key)
+        val jooqSettings = it.getOrDefault<JooqSettings>(key) { JooqSettings() }
         val jooqConfiguration = DefaultConfiguration()
         System.getProperties().setProperty("org.jooq.no-logo", "true")
         System.getProperties().setProperty("org.jooq.no-tips", "true")
         jooqConfiguration.setDataSource(it.get<DataSource>(key))
-        if (jooqConfig.dialect != null) {
-            jooqConfiguration.setSQLDialect(SQLDialect.valueOf(jooqConfig.dialect!!.uppercase()))
-        } else if (jdbcConfig != null) {
-            jooqConfiguration.setSQLDialect(JDBCUtils.dialect(jdbcConfig.url))
+        if (jooqSettings.dialect != null) {
+            jooqConfiguration.setSQLDialect(SQLDialect.valueOf(jooqSettings.dialect!!.uppercase()))
+        } else if (jdbcSettings != null) {
+            jooqConfiguration.setSQLDialect(JDBCUtils.dialect(jdbcSettings.url))
         }
-        if (jooqConfig.logSql) {
+        if (jooqSettings.logSql) {
             jooqConfiguration.set(DefaultExecuteListenerProvider(SQLLogger()))
         }
         val transactionManager = it.get<TransactionManager>(key)

@@ -18,7 +18,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -28,7 +28,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -38,7 +38,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -48,7 +48,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -58,7 +58,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -68,7 +68,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -78,9 +78,9 @@ class ServiceRegistryTest {
 
             assertThat(registry.size).isGreaterThanOrEqualTo(2)
             assertThat(registry.secondLast().key).isNull()
-            assertThat(registry.secondLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.secondLast().implementationType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().key).isNull()
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass2::class.java)
         }
 
         @Test
@@ -91,11 +91,11 @@ class ServiceRegistryTest {
 
             assertThat(registry.size).isGreaterThanOrEqualTo(3)
             assertThat(registry.thirdLast().key).isEqualTo("key1")
-            assertThat(registry.thirdLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.thirdLast().implementationType).isEqualTo(MyClass::class.java)
             assertThat(registry.secondLast().key).isEqualTo("key2")
-            assertThat(registry.secondLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.secondLast().implementationType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().key).isEqualTo("key1")
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass2::class.java)
         }
     }
 
@@ -108,7 +108,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -120,7 +120,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -130,7 +130,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -142,7 +142,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -152,7 +152,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -164,7 +164,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -174,7 +174,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -186,7 +186,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -196,7 +196,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -208,7 +208,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -218,7 +218,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Transient)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
     }
 
@@ -231,7 +231,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -241,7 +241,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -251,7 +251,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -261,7 +261,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -271,7 +271,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -281,7 +281,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -291,9 +291,9 @@ class ServiceRegistryTest {
 
             assertThat(registry.size).isGreaterThanOrEqualTo(2)
             assertThat(registry.secondLast().key).isNull()
-            assertThat(registry.secondLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.secondLast().implementationType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().key).isNull()
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass2::class.java)
         }
 
         @Test
@@ -304,11 +304,11 @@ class ServiceRegistryTest {
 
             assertThat(registry.size).isGreaterThanOrEqualTo(3)
             assertThat(registry.thirdLast().key).isEqualTo("key1")
-            assertThat(registry.thirdLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.thirdLast().implementationType).isEqualTo(MyClass::class.java)
             assertThat(registry.secondLast().key).isEqualTo("key2")
-            assertThat(registry.secondLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.secondLast().implementationType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().key).isEqualTo("key1")
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass2::class.java)
         }
     }
 
@@ -321,7 +321,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -333,7 +333,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -343,7 +343,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -355,7 +355,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -365,7 +365,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
 
@@ -378,7 +378,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -388,7 +388,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -400,7 +400,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -410,7 +410,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -422,7 +422,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -432,7 +432,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Scoped)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
     }
 
@@ -445,7 +445,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -455,7 +455,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -466,7 +466,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isEqualTo(obj)
+            assertThat(registry.last().instance).isEqualTo(obj)
         }
 
         @Test
@@ -477,8 +477,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isEqualTo(obj)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().instance).isEqualTo(obj)
         }
 
         @Test
@@ -488,7 +487,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -498,7 +497,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -508,7 +507,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -518,7 +517,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
 
@@ -529,9 +528,9 @@ class ServiceRegistryTest {
 
             assertThat(registry.size).isGreaterThanOrEqualTo(2)
             assertThat(registry.secondLast().key).isNull()
-            assertThat(registry.secondLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.secondLast().implementationType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().key).isNull()
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass2::class.java)
         }
 
         @Test
@@ -542,11 +541,11 @@ class ServiceRegistryTest {
 
             assertThat(registry.size).isGreaterThanOrEqualTo(3)
             assertThat(registry.thirdLast().key).isEqualTo("key1")
-            assertThat(registry.thirdLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.thirdLast().implementationType).isEqualTo(MyClass::class.java)
             assertThat(registry.secondLast().key).isEqualTo("key2")
-            assertThat(registry.secondLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.secondLast().implementationType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().key).isEqualTo("key1")
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass2::class.java)
         }
     }
 
@@ -559,7 +558,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -571,7 +570,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -581,7 +580,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -593,7 +592,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationFactory?.invoke(provider)).isInstanceOf(MyClass::class.java)
         }
 
         @Test
@@ -604,7 +603,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isEqualTo(obj)
+            assertThat(registry.last().instance).isEqualTo(obj)
         }
 
         @Test
@@ -618,7 +617,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isEqualTo(obj)
+            assertThat(registry.last().instance).isEqualTo(obj)
         }
 
         @Test
@@ -629,8 +628,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isEqualTo(obj)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().instance).isEqualTo(obj)
         }
 
         @Test
@@ -644,8 +642,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isEqualTo(obj)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().instance).isEqualTo(obj)
         }
 
         @Test
@@ -655,7 +652,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -667,7 +664,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isNull()
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -677,7 +674,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -689,7 +686,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -699,7 +696,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -711,7 +708,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyService::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
 
         @Test
@@ -721,7 +718,7 @@ class ServiceRegistryTest {
             assertThat(registry.last().key).isEqualTo("my key")
             assertThat(registry.last().serviceType).isEqualTo(MyClass::class.java)
             assertThat(registry.last().lifetime).isEqualTo(Singleton)
-            assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+            assertThat(registry.last().implementationType).isEqualTo(MyClass::class.java)
         }
     }
 
@@ -784,10 +781,10 @@ class ServiceRegistryTest {
 
         assertThat(registry.secondLast().key).isNull()
         assertThat(registry.secondLast().lifetime).isEqualTo(Transient)
-        assertThat(registry.secondLast().implementationFactory(provider)).isInstanceOf(MyClass::class.java)
+        assertThat(registry.secondLast().implementationType).isEqualTo(MyClass::class.java)
         assertThat(registry.last().key).isNull()
         assertThat(registry.last().lifetime).isEqualTo(Singleton)
-        assertThat(registry.last().implementationFactory(provider)).isInstanceOf(MyClass2::class.java)
+        assertThat(registry.last().implementationType).isEqualTo(MyClass2::class.java)
     }
 
     @Test
@@ -817,12 +814,6 @@ class ServiceRegistryTest {
     }
 
     class MyClass2: MyService {
-        override var name: String = ""
-
-        override fun sum(a: Int, b: Int) = a + b
-    }
-
-    class ClassWithoutEmptyConstructor(val param: String): MyService {
         override var name: String = ""
 
         override fun sum(a: Int, b: Int) = a + b

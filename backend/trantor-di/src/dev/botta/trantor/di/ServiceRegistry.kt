@@ -1,12 +1,12 @@
 package dev.botta.trantor.di
 
-import dev.botta.trantor.config.Config
-import dev.botta.trantor.config.ConfigManager
-import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.config.*
 import dev.botta.trantor.di.ServiceLifetimes.*
+import dev.botta.trantor.primitives.serialization.JsonSerializer
 
+// TODO: Que el createTypeFactory use el ServiceProvider.create()
 @Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
-class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<*>> by mutableListOf() {
+class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<*, *>> by mutableListOf() {
     private val configurations: MutableList<ServiceConfigurationItem<*>> = mutableListOf()
 
     init {
@@ -30,7 +30,7 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
     }
 
     fun <TService: Any, TImplementation: TService> addTransient(serviceType: Class<TService>, implementationType: Class<TImplementation>, key: String? = null) = apply {
-        addTransient(serviceType, createTypeFactory(implementationType), key)
+        addService(serviceType, implementationType, Transient, key)
     }
 
     fun <TService: Any> addTransient(serviceType: Class<TService>, factory: ImplementationFactory<TService>) = apply {
@@ -58,7 +58,7 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
     }
 
     fun <TService: Any, TImplementation: TService> addTransientIfMissing(serviceType: Class<TService>, implementationType: Class<TImplementation>, key: String? = null) = apply {
-        addTransientIfMissing(serviceType, createTypeFactory(implementationType), key)
+        addServiceIfMissing(serviceType, implementationType, Transient, key)
     }
 
     fun <TService: Any> addTransientIfMissing(serviceType: Class<TService>, factory: ImplementationFactory<TService>) = apply {
@@ -86,7 +86,7 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
     }
 
     fun <TService: Any, TImplementation: TService> addScoped(serviceType: Class<TService>, implementationType: Class<TImplementation>, key: String? = null) = apply {
-        addScoped(serviceType, createTypeFactory(implementationType), key)
+        addService(serviceType, implementationType, Scoped, key)
     }
 
     fun <TService: Any> addScoped(serviceType: Class<TService>, factory: ImplementationFactory<TService>, key: String? = null) = apply {
@@ -110,7 +110,7 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
     }
 
     fun <TService: Any, TImplementation: TService> addScopedIfMissing(serviceType: Class<TService>, implementationType: Class<TImplementation>, key: String? = null) = apply {
-        addScopedIfMissing(serviceType, createTypeFactory(implementationType), key)
+        addServiceIfMissing(serviceType, implementationType, Scoped, key)
     }
 
     fun <TService: Any> addScopedIfMissing(serviceType: Class<TService>, factory: ImplementationFactory<TService>, key: String? = null) = apply {
@@ -125,24 +125,28 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
         addSingleton(TService::class.java, implementationType, key)
     }
 
-    inline fun <reified TService: Any> addSingleton(implementation: TService, key: String? = null) = apply {
-        addSingleton(TService::class.java, { implementation }, key)
+    inline fun <reified TService: Any> addSingleton(instance: TService, key: String? = null) = apply {
+        addSingleton(TService::class.java, instance, key)
     }
 
     inline fun <reified TService: Any> addSingleton(noinline factory: ImplementationFactory<TService>) = apply {
         addSingleton(TService::class.java, factory, null)
     }
 
-    inline fun <reified TService: Any> addSingleton(key: String, implementation: TService) = apply {
-        addSingleton(TService::class.java, { implementation }, key)
+    inline fun <reified TService: Any> addSingleton(key: String, instance: TService) = apply {
+        addSingleton(TService::class.java, instance, key)
     }
 
     inline fun <reified TService: Any> addSingleton(key: String?, noinline factory: ImplementationFactory<TService>) = apply {
         addSingleton(TService::class.java, factory, key)
     }
 
+    fun <TService: Any> addSingleton(serviceType: Class<TService>, instance: TService, key: String? = null) = apply {
+        addService(serviceType, instance, key)
+    }
+
     fun <TService: Any, TImplementation: TService> addSingleton(serviceType: Class<TService>, implementationType: Class<TImplementation>, key: String? = null) = apply {
-        addSingleton(serviceType, createTypeFactory(implementationType), key)
+        addService(serviceType, implementationType, Singleton, key)
     }
 
     fun <TService: Any> addSingleton(serviceType: Class<TService>, factory: ImplementationFactory<TService>, key: String? = null) = apply {
@@ -157,24 +161,28 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
         addSingletonIfMissing(TService::class.java, implementationType, key)
     }
 
-    inline fun <reified TService: Any> addSingletonIfMissing(implementation: TService, key: String? = null) = apply {
-        addSingletonIfMissing(TService::class.java, { implementation }, key)
+    inline fun <reified TService: Any> addSingletonIfMissing(instance: TService, key: String? = null) = apply {
+        addSingletonIfMissing(TService::class.java, instance, key)
     }
 
     inline fun <reified TService: Any> addSingletonIfMissing(noinline factory: ImplementationFactory<TService>) = apply {
         addSingletonIfMissing(TService::class.java, factory, null)
     }
 
-    inline fun <reified TService: Any> addSingletonIfMissing(key: String, implementation: TService) = apply {
-        addSingletonIfMissing(TService::class.java, { implementation }, key)
+    inline fun <reified TService: Any> addSingletonIfMissing(key: String, instance: TService) = apply {
+        addSingletonIfMissing(TService::class.java, instance, key)
     }
 
     inline fun <reified TService: Any> addSingletonIfMissing(key: String?, noinline factory: ImplementationFactory<TService>) = apply {
         addSingletonIfMissing(TService::class.java, factory, key)
     }
 
+    fun <TService: Any> addSingletonIfMissing(serviceType: Class<TService>, instance: TService, key: String? = null) = apply {
+        addServiceIfMissing(serviceType, instance, key)
+    }
+
     fun <TService: Any, TImplementation: TService> addSingletonIfMissing(serviceType: Class<TService>, implementationType: Class<TImplementation>, key: String? = null) = apply {
-        addSingletonIfMissing(serviceType, createTypeFactory(implementationType), key)
+        addServiceIfMissing(serviceType, implementationType, Singleton, key)
     }
 
     fun <TService: Any> addSingletonIfMissing(serviceType: Class<TService>, factory: ImplementationFactory<TService>, key: String? = null) = apply {
@@ -187,7 +195,24 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
         lifetime: ServiceLifetimes,
         key: String? = null
     ) = apply {
-        add(ServiceDescriptor(serviceType, factory, lifetime, key))
+        add(ServiceDescriptor(serviceType, implementationFactory = factory, lifetime = lifetime, key = key))
+    }
+
+    private fun <TService: Any, TImplementation: TService> addService(
+        serviceType: Class<TService>,
+        implementationType: Class<TImplementation>,
+        lifetime: ServiceLifetimes,
+        key: String? = null
+    ) = apply {
+        add(ServiceDescriptor(serviceType, implementationType = implementationType, lifetime = lifetime, key = key))
+    }
+
+    private fun <TService: Any> addService(
+        serviceType: Class<TService>,
+        instance: TService,
+        key: String? = null
+    ) = apply {
+        add(ServiceDescriptor(serviceType, instance = instance, lifetime = Singleton, key = key))
     }
 
     private fun <TService: Any> addServiceIfMissing(
@@ -197,7 +222,26 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
         key: String? = null
     ) = apply {
         if (has(serviceType, key)) return@apply
-        add(ServiceDescriptor(serviceType, factory, lifetime, key))
+        addService(serviceType, factory, lifetime, key)
+    }
+
+    private fun <TService: Any, TImplementation: TService> addServiceIfMissing(
+        serviceType: Class<TService>,
+        implementationType: Class<TImplementation>,
+        lifetime: ServiceLifetimes,
+        key: String? = null
+    ) = apply {
+        if (has(serviceType, key)) return@apply
+        addService(serviceType, implementationType, lifetime, key)
+    }
+
+    private fun <TService: Any> addServiceIfMissing(
+        serviceType: Class<TService>,
+        instance: TService,
+        key: String? = null
+    ) = apply {
+        if (has(serviceType, key)) return@apply
+        addService(serviceType, instance, key)
     }
 
     fun has(serviceType: Class<*>, key: String? = null) =

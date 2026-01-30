@@ -106,6 +106,22 @@ class ConfigManagerTest {
         }
 
         @Test
+        fun `has returns true if key exists`() {
+            config.addMemoryCollection("key" to "value")
+
+            assertThat(config.has("key")).isTrue
+            assertThat(config.has("KEY")).isTrue
+        }
+
+        @Test
+        fun `has returns true if key does not exists`() {
+            config.addMemoryCollection("key" to "value")
+
+            assertThat(config.has("key2")).isFalse
+            assertThat(config.has("KEY2")).isFalse
+        }
+
+        @Test
         fun `getChildren returns root sections`() {
             config.addMemoryCollection("key1" to "value1", "key2" to "value2")
 
@@ -202,6 +218,24 @@ class ConfigManagerTest {
             config.addMemoryCollection("key" to "value2")
 
             assertThat(config["other"]).isNull()
+        }
+
+        @Test
+        fun `has returns true if key exists`() {
+            config.addMemoryCollection("key2" to "value")
+            config.addMemoryCollection("key" to "value2")
+
+            assertThat(config.has("key")).isTrue
+            assertThat(config.has("KEY")).isTrue
+        }
+
+        @Test
+        fun `has returns true if key does not exists`() {
+            config.addMemoryCollection("key1" to "value")
+            config.addMemoryCollection("key2" to "value2")
+
+            assertThat(config.has("key3")).isFalse
+            assertThat(config.has("KEY3")).isFalse
         }
 
         @Test

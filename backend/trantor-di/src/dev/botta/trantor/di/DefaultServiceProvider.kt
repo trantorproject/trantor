@@ -37,13 +37,13 @@ class DefaultServiceProvider(registry: ServiceRegistry): ServiceProvider(registr
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T: Any> getInstanceFor(descriptor: ServiceDescriptor<*>): T? {
+    private fun <T: Any> getInstanceFor(descriptor: ServiceDescriptor<*, *>): T? {
         return when (descriptor.lifetime) {
             Transient -> descriptor.createInstance()
-            Singleton -> singletonCache.getOrPut(descriptor.serviceId) { descriptor.createInstance() }
+            Singleton -> singletonCache.getOrPut(descriptor.implementationId) { descriptor.createInstance() }
             Scoped -> {
                 if (inScope.get() == false) return null
-                scopeCache.get().getOrPut(descriptor.serviceId) { descriptor.createInstance() }
+                scopeCache.get().getOrPut(descriptor.implementationId) { descriptor.createInstance() }
             }
         } as T
     }
@@ -54,10 +54,17 @@ class DefaultServiceProvider(registry: ServiceRegistry): ServiceProvider(registr
         return descriptors.mapNotNull { getInstanceFor(it) }
     }
 
-    private fun <T: Any> ServiceDescriptor<T>.createInstance(): T {
-        val instance = implementationFactory(this@DefaultServiceProvider)
-        registry.getConfigurations(serviceType, key).forEach { it(instance, this@DefaultServiceProvider) }
-        return instance
+    private fun Class<*>.isKotlinClass(): Boolean = this.getAnnotation(Metadata::class.java) != null
+
+    private fun <T: Any> ServiceDescriptor<T, *>.createInstance(): T {
+        val obj = when {
+            instance != null -> instance
+            implementationType != null -> create(implementationType)
+            implementationFactory != null -> implementationFactory(this@DefaultServiceProvider)
+            else -> error("Invalid descriptor")
+        }
+        registry.getConfigurations(serviceType, key).forEach { it(obj, this@DefaultServiceProvider) }
+        return obj
     }
 
     override fun enterScope() {
@@ -68,6 +75,16 @@ class DefaultServiceProvider(registry: ServiceRegistry): ServiceProvider(registr
     override fun leaveScope() {
         scopeCache.get().clear()
         inScope.set(false)
+    }
+
+    override fun <T: Any> create(type: Class<T>): T {
+        if (type.isKotlinClass()) return create(type.kotlin)
+        try {
+            val defaultConstructor = type.getDeclaredConstructor()
+            return defaultConstructor.newInstance()
+        } catch (e: NoSuchMethodException) {
+            throw MustHaveDefaultNoArgsConstructorError(type)
+        }
     }
 
     override fun <T: Any> create(type: KClass<T>): T {

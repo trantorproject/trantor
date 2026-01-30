@@ -3,10 +3,10 @@ package dev.botta.trantor.data.jdbc
 import java.sql.DriverManager
 import javax.sql.DataSource
 
-class SimpleDataSource(private val config: JdbcConfig) : DataSource {
-    override fun getConnection() = DriverManager.getConnection(config.url, config.username, config.password)
+class SimpleDataSource(private val settings: JdbcSettings) : DataSource {
+    override fun getConnection() = DriverManager.getConnection(settings.url, settings.username, settings.password)
 
-    override fun getConnection(username: String, password: String) = DriverManager.getConnection(config.url, username, password)
+    override fun getConnection(username: String, password: String) = DriverManager.getConnection(settings.url, username, password)
 
     override fun getLogWriter() = throw UnsupportedOperationException()
 

@@ -1,5 +1,6 @@
 rootProject.name = "backend"
 
+include("trantor-aws")
 include("trantor-bom")
 include("trantor-core")
 include("trantor-config")
@@ -9,6 +10,7 @@ include("trantor-domain")
 include("trantor-gson")
 include("trantor-hosting")
 include("trantor-primitives")
+include("trantor-queues-sqs")
 include("trantor-taskpool")
 include("trantor-test")
 include("trantor-web")

@@ -25,6 +25,8 @@ class ConfigRoot(providers: List<ConfigProvider> = listOf()): Config {
         return null
     }
 
+    override fun has(path: String) = providers.any { it.has(path) }
+
     override fun required(path: String) = get(path) ?: throw RequiredConfigError(path)
 
     override fun hasSection(path: String) = providers.any { it.hasSection(path) }

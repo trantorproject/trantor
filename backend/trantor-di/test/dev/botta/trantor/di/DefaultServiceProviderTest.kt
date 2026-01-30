@@ -4,8 +4,8 @@ package dev.botta.trantor.di
 
 import dev.botta.trantor.config.ConfigManager
 import dev.botta.trantor.config.providers.addMemoryCollection
-import dev.botta.trantor.serialization.gson.addGsonSerializer
 import dev.botta.trantor.di.valueresolvers.ServiceValueResolver
+import dev.botta.trantor.serialization.gson.addGsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
 import kotlin.reflect.KType
@@ -251,6 +251,32 @@ class DefaultServiceProviderTest {
 
     @Nested
     inner class getAll {
+        @Test
+        fun `returns all registered instances for the service`() {
+            registry.addSingleton<MyService, MyClass>()
+            registry.addSingleton<MyService, MyClass2>()
+
+            val services = provider.getAll<MyService>()
+
+            assertThat(services.size).isEqualTo(2)
+            assertThat(services[0]).isInstanceOf(MyClass::class.java)
+            assertThat(services[1]).isInstanceOf(MyClass2::class.java)
+        }
+
+        @Test
+        fun `returns multiple singletons`() {
+            val obj1 = MyClass()
+            val obj2 = MyClass()
+            registry.addSingleton(obj1)
+            registry.addSingleton(obj2)
+
+            val services = provider.getAll<MyClass>()
+
+            assertThat(services.size).isEqualTo(2)
+            assertThat(services[0]).isEqualTo(obj1)
+            assertThat(services[1]).isEqualTo(obj2)
+        }
+
         @Test
         fun `returns a new instance for each declaration`() {
             registry.addTransient<MyService, MyClass>()

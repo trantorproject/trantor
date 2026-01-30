@@ -3,7 +3,7 @@ package dev.botta.trantor.web.server
 import dev.botta.trantor.web.server.logs.*
 import org.slf4j.Logger
 
-data class HttpServerConfig(
+data class HttpServerSettings(
     var port: Int = 80,
     var isMetricsEnabled: Boolean = false,
     var managementPort: Int = -1,

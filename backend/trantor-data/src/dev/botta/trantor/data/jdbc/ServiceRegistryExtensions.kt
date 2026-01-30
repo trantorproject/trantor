@@ -8,8 +8,8 @@ import dev.botta.trantor.di.*
 import javax.sql.DataSource
 
 fun ServiceRegistry.addJdbcConfig(key: String? = null) = apply {
-    if (has<JdbcConfig>(key)) return@apply
-    addConfig<JdbcConfig>(if (key != null) "jdbc.${key}" else "jdbc", key)
+    if (has<JdbcSettings>(key)) return@apply
+    addConfig<JdbcSettings>(if (key != null) "jdbc.${key}" else "jdbc", key)
 }
 
 fun ServiceRegistry.addHikariCP(key: String? = null, config: ServiceConfiguration<HikariConfig> = { _, _ -> }) = apply {
@@ -19,10 +19,10 @@ fun ServiceRegistry.addHikariCP(key: String? = null, config: ServiceConfiguratio
         val hikariConfig = HikariConfig()
         hikariConfig.maximumPoolSize = 10
         config(hikariConfig, it)
-        val jdbcConfig = it.get<JdbcConfig>(key)
-        hikariConfig.jdbcUrl = jdbcConfig.url
-        hikariConfig.username = jdbcConfig.username
-        hikariConfig.password = jdbcConfig.password
+        val jdbcSettings = it.get<JdbcSettings>(key)
+        hikariConfig.jdbcUrl = jdbcSettings.url
+        hikariConfig.username = jdbcSettings.username
+        hikariConfig.password = jdbcSettings.password
         TransactionAwareDataSource(HikariDataSource(hikariConfig))
     }
 }
@@ -35,8 +35,8 @@ fun ServiceRegistry.addSimpleDataSource(key: String? = null) = apply {
     addJdbcConfig(key)
 
     addSingleton<DataSource>(key) {
-        val jdbcConfig = it.get<JdbcConfig>(key)
-        TransactionAwareDataSource(SimpleDataSource(jdbcConfig))
+        val jdbcSettings = it.get<JdbcSettings>(key)
+        TransactionAwareDataSource(SimpleDataSource(jdbcSettings))
     }
 }
 
@@ -61,13 +61,13 @@ fun ServiceRegistry.addSimpleJdbcTransactionManager(key: String? = null) = apply
 }
 
 fun ServiceRegistry.addJdbc(key: String? = null) = apply {
-    if (!has<JdbcConfig>(key)) addJdbcConfig(key)
+    if (!has<JdbcSettings>(key)) addJdbcConfig(key)
     if (!has<DataSource>(key)) addHikariCP(key)
     if (!has<TransactionManager>(key)) addJdbcTransactionManager(key)
 }
 
 fun ServiceRegistry.addSimpleJdbc(key: String? = null) = apply {
-    if (!has<JdbcConfig>(key)) addJdbcConfig(key)
+    if (!has<JdbcSettings>(key)) addJdbcConfig(key)
     if (!has<DataSource>(key)) addSimpleDataSource(key)
     if (!has<TransactionManager>(key)) addSimpleJdbcTransactionManager(key)
 }
