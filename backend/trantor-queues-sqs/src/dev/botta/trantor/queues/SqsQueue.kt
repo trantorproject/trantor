@@ -1,8 +1,10 @@
 package dev.botta.trantor.queues
 
 import dev.botta.trantor.aws.AWSError
-import dev.botta.trantor.core.queues.*
 import dev.botta.trantor.core.queues.Message
+import dev.botta.trantor.core.queues.MessageQueue
+import dev.botta.trantor.core.queues.PushOptions
+import dev.botta.trantor.core.queues.ReceivedMessage
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.primitives.serialization.*
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -25,14 +27,18 @@ class SqsQueue(
     private val client = SqsClient.builder()
         .region(Region.of(settings.region))
         .credentialsProvider(credentialsProvider)
-        .endpointOverride(if (settings.endpointOverride.isNullOrEmpty()) null else URI(settings.endpointOverride))
+        .endpointOverride(if (settings.endpointOverride.isNullOrEmpty()) null else URI(settings.endpointOverride!!))
         .build()
 
     @Synchronized
     private fun ensureQueueUrl() {
         if (queueUrl != null) return
-        queueUrl = client.getQueueUrl { it.queueName(name) }.queueUrl()
-            ?: throw AWSError("Queue '$name' not found in SQS")
+        try {
+            queueUrl = client.getQueueUrl { it.queueName(name) }.queueUrl()
+                ?: throw AWSError("Queue '$name' not found in SQS")
+        } catch (e: QueueDoesNotExistException) {
+            throw AWSError("Queue '$name' not found in SQS", e)
+        }
     }
 
     override fun push(message: Message, options: PushOptions) {

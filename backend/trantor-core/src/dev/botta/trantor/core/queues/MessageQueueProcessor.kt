@@ -7,7 +7,7 @@ import org.slf4j.MDC
 import java.lang.Thread.sleep
 import java.util.concurrent.*
 
-class QueueProcessor(
+class MessageQueueProcessor(
     private val queue: MessageQueue,
     private val onMessage: (ReceivedMessage) -> Unit,
     private val maxConcurrentWorkers: Int = 4,

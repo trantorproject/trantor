@@ -56,7 +56,9 @@ class DefaultHostBuilder(private val builderConfig: HostBuilderConfig): HostBuil
         val host = DefaultHost(serviceProvider, config, environment, lifetime)
         services.addSingleton<Host> { host }
         if (builderConfig.initializeModules) {
-            serviceProvider.getAll<Module>().forEach { it.initialize(serviceProvider, config) }
+            serviceProvider.getAll<Module>()
+                .distinctBy { it::class.java }
+                .forEach { it.initialize(serviceProvider, config) }
         }
         return host
     }

@@ -46,7 +46,7 @@ class ApplicationRouteRegister(
     }
 
     fun <T: Request<*>> get(path: String, requestType: KClass<T>) = apply {
-        routes.post(path) { handleRequest(it, requestType) }
+        routes.get(path) { handleRequest(it, requestType) }
     }
 
     inline fun <reified T: Request<*>> get(path: String) = apply {

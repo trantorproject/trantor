@@ -2,6 +2,7 @@ package dev.botta.trantor.queues
 
 import dev.botta.trantor.config.Config
 import dev.botta.trantor.core.queues.*
+import dev.botta.trantor.core.queues.MessageQueue
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 

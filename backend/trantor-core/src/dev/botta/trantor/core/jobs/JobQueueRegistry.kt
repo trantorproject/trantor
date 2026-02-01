@@ -1,40 +1,35 @@
-package dev.botta.trantor.core.queues
+package dev.botta.trantor.core.jobs
 
 import dev.botta.trantor.config.Config
-import dev.botta.trantor.hosting.HostedService
+import dev.botta.trantor.core.queues.*
 
-class QueueManager(
-    private val config: Config,
-): HostedService {
+class JobQueueRegistry {
     private val drivers = mutableMapOf<String, QueueFactory>()
     private val queues = mutableMapOf<String, MessageQueue>()
     private var defaultQueue: String? = null
 
     @Synchronized
-    fun addDriver(name: String, factory: QueueFactory) {
+    fun addQueueDriver(name: String, factory: QueueFactory) {
         drivers[name.lowercase()] = factory
     }
 
     @Synchronized
     fun addQueue(name: String, queue: MessageQueue) {
+        if (defaultQueue == null) defaultQueue = name
         if (queues.contains(name.lowercase())) error("Queue $name already exists")
         queues[name.lowercase()] = queue
     }
 
     fun getQueue(name: String? = null): MessageQueue {
         if (queues.isEmpty()) error("There are no registered queues")
-        if (name == null) return queues[defaultQueue?.lowercase()] ?: error("Default queue does not exist")
-        return queues[name.lowercase()] ?: error("Queue $name does not exist")
+        val nameOrDefault = name ?: defaultQueue
+        return queues[nameOrDefault!!.lowercase()] ?: error("Queue $name does not exist")
     }
 
     fun getDefaultQueue() = getQueue()
 
-    override fun start() {
-        loadQueuesFromConfig()
-    }
-
-    private fun loadQueuesFromConfig() {
-        config.getSection("queues").getChildren().forEach {
+    fun loadFromConfig(config: Config, section: String = "jobs.queues") {
+        config.getSection(section).getChildren().forEach {
             if (it.key == "default") return@forEach
             val queueName = it.key
             val driverName = it["driver"] ?: error("Invalid configuration: missing driver for queue $queueName")
@@ -42,9 +37,6 @@ class QueueManager(
             val queue = factory.createFromConfig(queueName, config)
             addQueue(queueName, queue)
         }
-        defaultQueue = config["queues.default"] ?: queues.keys.firstOrNull()
-    }
-
-    override fun stop(timeoutSeconds: Int) {
+        defaultQueue = config["$section.default"] ?: queues.keys.firstOrNull()
     }
 }

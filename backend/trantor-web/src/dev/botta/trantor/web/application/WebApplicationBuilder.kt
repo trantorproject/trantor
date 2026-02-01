@@ -32,7 +32,9 @@ class WebApplicationBuilder(private val builderConfig: WebApplicationBuilderConf
         services.addSingleton<WebApplication> { webApplication }
         services.addSingleton<WebApplicationExecutor> { webApplication }
         if (builderConfig.initializeModules) {
-            application.services.getAll<Module>().forEach { it.initialize(application.services, config) }
+            application.services.getAll<Module>()
+                .distinctBy { it::class.java }
+                .forEach { it.initialize(application.services, config) }
         }
         return webApplication
     }

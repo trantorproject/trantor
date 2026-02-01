@@ -2,7 +2,7 @@ package dev.botta.trantor.core.application
 
 import dev.botta.cqbus.CQBus
 import dev.botta.trantor.core.events.EventsModule
-import dev.botta.trantor.core.queues.QueuesModule
+import dev.botta.trantor.core.jobs.JobsModule
 import dev.botta.trantor.core.tx.TransactionsModule
 import dev.botta.trantor.hosting.*
 import dev.botta.trantor.hosting.defaults.DefaultHostBuilder
@@ -28,7 +28,7 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
         services.addSingletonIfMissing<ApplicationExecutor> { it.create<DefaultApplicationExecutor>() }
         services.addModule<TransactionsModule>()
         services.addModule<EventsModule>()
-        services.addModule<QueuesModule>()
+        services.addModule<JobsModule>()
     }
 
     fun build(): Application {
@@ -39,7 +39,9 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
         services.addSingleton<Host> { application }
         services.addSingleton<Application> { application }
         if (builderConfig.initializeModules) {
-            host.services.getAll<Module>().forEach { it.initialize(host.services, config) }
+            host.services.getAll<Module>()
+                .distinctBy { it::class.java }
+                .forEach { it.initialize(host.services, config) }
         }
         return application
     }

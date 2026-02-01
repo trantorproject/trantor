@@ -12,7 +12,7 @@ interface Module {
 }
 
 fun ServiceRegistry.addModule(module: Module) {
-    addSingleton<Module> { module }
+    addSingleton<Module>(module)
     module.compose(this, this.config)
 }
 

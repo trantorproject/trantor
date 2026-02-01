@@ -7,7 +7,6 @@ import dev.botta.trantor.primitives.events.EventDispatcher
 
 class EventsModule: Module {
     override fun compose(services: ServiceRegistry, config: ConfigManager) {
-        services.addSingletonIfMissing<EventBus> { InProcessEventBus() }
         services.addSingletonIfMissing<EventDispatcher> { it.create<DefaultEventDispatcher>() }
     }
 
