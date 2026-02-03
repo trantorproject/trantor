@@ -1,9 +1,9 @@
 package dev.botta.trantor.core.jobs
 
-import dev.botta.trantor.core.queues.PushOptions
+import dev.botta.trantor.core.queues.EnqueueOptions
 
 interface JobDispatcher {
-    fun dispatch(job: Job, queueName: String? = null, options: PushOptions = PushOptions())
+    fun dispatch(job: Job, queueName: String? = null, options: EnqueueOptions = EnqueueOptions())
     fun <T: Job> registerHandler(jobType: Class<T>, handler: JobHandler<T>)
 }
 

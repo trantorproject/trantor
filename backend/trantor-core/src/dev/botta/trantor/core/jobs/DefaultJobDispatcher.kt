@@ -12,7 +12,7 @@ class DefaultJobDispatcher(
     private val transactionManager: TransactionManager,
     @ConfigValue("jobs.afterCommit") private val dispatchAfterCommit: Boolean = true,
 ): JobDispatcher {
-    override fun dispatch(job: Job, queueName: String?, options: PushOptions) {
+    override fun dispatch(job: Job, queueName: String?, options: EnqueueOptions) {
         val queue = queueRegistry.getQueue(queueName)
         val message = Message(job.javaClass.name, serializer.serialize(job))
         if (transactionManager.activeTransaction == null || !dispatchAfterCommit) {
@@ -24,8 +24,8 @@ class DefaultJobDispatcher(
         }
     }
 
-    private fun push(queue: MessageQueue, message: Message, options: PushOptions) {
-        queue.push(message, options)
+    private fun push(queue: MessageQueue, message: Message, options: EnqueueOptions) {
+        queue.enqueue(message, options)
     }
 
     @Synchronized

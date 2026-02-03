@@ -3,7 +3,7 @@ package dev.botta.trantor.queues
 import dev.botta.trantor.aws.AWSError
 import dev.botta.trantor.core.queues.Message
 import dev.botta.trantor.core.queues.MessageQueue
-import dev.botta.trantor.core.queues.PushOptions
+import dev.botta.trantor.core.queues.EnqueueOptions
 import dev.botta.trantor.core.queues.ReceivedMessage
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.primitives.serialization.*
@@ -41,7 +41,7 @@ class SqsQueue(
         }
     }
 
-    override fun push(message: Message, options: PushOptions) {
+    override fun enqueue(message: Message, options: EnqueueOptions) {
         ensureQueueUrl()
 
         client.sendMessage {

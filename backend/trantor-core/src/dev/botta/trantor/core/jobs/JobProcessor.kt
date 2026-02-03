@@ -23,9 +23,9 @@ class JobProcessor(
             logger.info("Executing job $job")
             handler.execute(job)
         } catch (e: JobClassNotFound) {
-            logger.error("Dropping job. type=${message.message.type}, id=${message.id}", e)
+            logger.error("Dropping job: ${e.message}. type=${message.message.type}, id=${message.id}", e)
         } catch (e: JsonParseException) {
-            logger.error("Dropping job. type=${message.message.type}, id=${message.id}", e)
+            logger.error("Dropping job: ${e.message}. type=${message.message.type}, id=${message.id}", e)
         }
     }
 

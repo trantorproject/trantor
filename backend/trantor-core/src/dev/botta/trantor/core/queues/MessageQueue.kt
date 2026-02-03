@@ -3,7 +3,7 @@ package dev.botta.trantor.core.queues
 interface MessageQueue {
     val name: String
 
-    fun push(message: Message, options: PushOptions = PushOptions())
+    fun enqueue(message: Message, options: EnqueueOptions = EnqueueOptions())
     fun poll(): List<ReceivedMessage>
     fun clear()
     fun size(): Int?
