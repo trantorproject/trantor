@@ -2,6 +2,7 @@ package dev.botta.trantor.core.events
 
 import dev.botta.trantor.core.tx.NullTransactionManager
 import dev.botta.trantor.primitives.events.*
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import kotlin.reflect.KClass
@@ -133,7 +134,7 @@ class DefaultEventDispatcherTest {
         otherThread.join()
     }
 
-    private val dispatcher = DefaultEventDispatcher(NullTransactionManager())
+    private val dispatcher = DefaultEventDispatcher(NullTransactionManager(), NullJobDispatcher(), GsonSerializer())
 
     abstract class MyEventBase: Event()
     class MyEvent: MyEventBase()
