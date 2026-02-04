@@ -9,11 +9,13 @@ import dev.botta.trantor.primitives.serialization.JsonSerializer
 class JobProcessor(
     private val handlerRegistry: JobHandlerRegistry,
     private val serializer: JsonSerializer,
-    queue: MessageQueue,
+    private val queue: MessageQueue,
     maxConcurrentWorkers: Int = 4,
 ): HostedService {
     private val logger = getLogger()
     private val messageProcessor = MessageQueueProcessor(queue, ::onMessage, maxConcurrentWorkers)
+
+    override val name: String get() = "JobProcessor(${queue.name})"
 
     private fun onMessage(message: ReceivedMessage) {
         try {

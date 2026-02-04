@@ -27,7 +27,7 @@ class DefaultHost(
         logger.info("Starting host [${environment.appName}] in ${environment.environmentName}")
         hostedServices = services.getAll<HostedService>()
         for (service in hostedServices) {
-            logger.info("Starting service ${service.javaClass.simpleName}")
+            logger.info("Starting service ${service.name}")
             service.start()
         }
         lifetime.notifyStarted()
@@ -38,10 +38,10 @@ class DefaultHost(
         lifetime.notifyStopping()
         for (service in hostedServices.reversed()) {
             try {
-                logger.info("Stopping service ${service.javaClass.simpleName}")
+                logger.info("Stopping service ${service.name}")
                 service.stop(timeoutSeconds)
             } catch (e: Exception) {
-                logger.error("Error stopping service ${service.javaClass.simpleName}", e)
+                logger.error("Error stopping service ${service.name}", e)
             }
         }
         lifetime.notifyStopped()

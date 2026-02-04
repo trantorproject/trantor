@@ -12,6 +12,8 @@ interface Module {
 }
 
 fun ServiceRegistry.addModule(module: Module) {
+    // Skip if module already registered
+    if (any { it.implementationType == module.javaClass || it.instance?.javaClass == module.javaClass }) return
     addSingleton<Module>(module)
     module.compose(this, this.config)
 }

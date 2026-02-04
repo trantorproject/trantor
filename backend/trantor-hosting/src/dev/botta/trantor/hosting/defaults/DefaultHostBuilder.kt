@@ -55,6 +55,10 @@ class DefaultHostBuilder(private val builderConfig: HostBuilderConfig): HostBuil
         val lifetime = serviceProvider.get<HostLifetime>() as? DefaultHostLifetime ?: error("HostLifeTime must be DefaultHostLifetime")
         val host = DefaultHost(serviceProvider, config, environment, lifetime)
         services.addSingleton<Host> { host }
+        if (services.any { it.serviceType == Module::class.java && it.implementationFactory != null}) {
+            error("Modules cannot be registered in the service registry with a factory")
+        }
+
         if (builderConfig.initializeModules) {
             serviceProvider.getAll<Module>()
                 .distinctBy { it::class.java }

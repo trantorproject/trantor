@@ -21,6 +21,8 @@ class MessageQueueProcessor(
     )
     private val permits = Semaphore(maxConcurrentWorkers)
 
+    override val name: String get() = "MessageQueueProcessor(${queue.name})"
+
     override fun start() {
         running = true
         pollerThread = Thread.ofVirtual()
