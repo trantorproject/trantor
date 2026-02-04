@@ -6,9 +6,9 @@ import dev.botta.trantor.hosting.Module
 
 class JobsModule: Module {
     override fun compose(services: ServiceRegistry, config: ConfigManager) {
-        services.addSingleton<JobQueueRegistry> { it.create<JobQueueRegistry>() }
-        services.addSingleton<JobHandlerRegistry> { it.create<JobHandlerRegistry>() }
-        services.addSingleton<JobDispatcher> { it.create<DefaultJobDispatcher>() }
+        services.addSingleton<JobQueueRegistry, JobQueueRegistry>()
+        services.addSingleton<JobHandlerRegistry, JobHandlerRegistry>()
+        services.addSingleton<JobDispatcher, DefaultJobDispatcher>()
     }
 
     override fun initialize(services: ServiceProvider, config: Config) {

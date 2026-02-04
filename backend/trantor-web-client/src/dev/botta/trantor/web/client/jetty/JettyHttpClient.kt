@@ -9,7 +9,7 @@ import org.eclipse.jetty.http.*
 import java.util.concurrent.*
 import org.eclipse.jetty.client.HttpClient as JettyHttp
 
-class JettyHttpClient(private val config: JettyHttpClientConfig = JettyHttpClientConfig()): HttpClient() {
+class JettyHttpClient(private val config: JettyHttpClientConfig = JettyHttpClientConfig()): HttpClient(), AutoCloseable {
     private val logger = getLogger()
     private val httpClient = JettyHttp()
     private var requestTimeout: Long = -1L
@@ -21,7 +21,6 @@ class JettyHttpClient(private val config: JettyHttpClientConfig = JettyHttpClien
         requestTimeout = config.requestTimeout.toLong()
         httpClient.start()
     }
-
 
     override fun get(request: HttpRequest): HttpResponse {
         return sendRequest(HttpMethod.GET, request)
@@ -132,5 +131,9 @@ class JettyHttpClient(private val config: JettyHttpClientConfig = JettyHttpClien
             if (name == "Content-Type") return@forEach
             jettyRequest.headers { it.put(name, value) }
         }
+    }
+
+    override fun close() {
+        httpClient.stop()
     }
 }

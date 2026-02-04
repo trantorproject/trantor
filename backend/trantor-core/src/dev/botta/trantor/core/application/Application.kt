@@ -14,6 +14,8 @@ class Application(private val host: Host, private val executor: ApplicationExecu
         get() = host.config
     override val environment: HostEnvironment
         get() = host.environment
+    override val lifetime: HostLifetime
+        get() = host.lifetime
 
     override fun start() {
         host.start()

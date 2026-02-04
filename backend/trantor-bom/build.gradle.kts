@@ -13,6 +13,7 @@ dependencies {
     api(platform("org.junit:junit-bom:6.0.2"))
     api(platform("org.assertj:assertj-bom:3.27.6"))
     api(platform("software.amazon.awssdk:bom:2.41.4"))
+    api(platform("com.squareup.okhttp3:okhttp-bom:5.3.0"))
 
     constraints {
         api("io.mockk:mockk:1.14.7")

@@ -10,7 +10,7 @@ class DefaultHost(
     override val services: ServiceProvider,
     override val config: Config,
     override val environment: HostEnvironment,
-    private val lifetime: DefaultHostLifetime,
+    override val lifetime: DefaultHostLifetime,
 ): Host {
     private val logger = getLogger()
     private val started = AtomicBoolean(false)

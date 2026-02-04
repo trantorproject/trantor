@@ -26,6 +26,8 @@ class WebApplication(private val application: Application, private val requestMa
         get() = application.config
     override val environment: HostEnvironment
         get() = application.environment
+    override val lifetime: HostLifetime
+        get() = application.lifetime
     val httpServer = services.get<HttpServer>()
     override val routes get() = ApplicationRouteRegister(httpServer.routes, requestMapper, this)
 

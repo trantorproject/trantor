@@ -1,6 +1,7 @@
 dependencies {
     api(project(":trantor-primitives"))
     implementation("org.eclipse.jetty:jetty-client")
+    implementation("com.squareup.okhttp3:okhttp")
 }
 
 extra.set("POM_NAME", "Trantor Http Client")

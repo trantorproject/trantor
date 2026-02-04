@@ -10,6 +10,7 @@ interface Host {
     val services: ServiceProvider
     val config: Config
     val environment: HostEnvironment
+    val lifetime: HostLifetime
 
     fun start()
 
@@ -19,7 +20,6 @@ interface Host {
         start()
 
         val latch = CountDownLatch(1)
-        val lifetime = services.get<HostLifetime>()
         lifetime.onStopping { latch.countDown() }
         latch.await()
 
@@ -30,6 +30,12 @@ interface Host {
         start()
         runnable()
         stop()
+        Thread.getAllStackTraces().keys
+            .filter { it.name.startsWith("pool-") }
+            .forEach { t ->
+                println("Thread: ${t.name}")
+                t.stackTrace.take(10).forEach { println("  at $it") }
+            }
     }
 
     companion object {
