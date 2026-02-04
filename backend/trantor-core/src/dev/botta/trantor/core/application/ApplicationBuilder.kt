@@ -1,6 +1,7 @@
 package dev.botta.trantor.core.application
 
 import dev.botta.cqbus.CQBus
+import dev.botta.trantor.core.cache.CacheModule
 import dev.botta.trantor.core.events.EventsModule
 import dev.botta.trantor.core.jobs.JobsModule
 import dev.botta.trantor.core.tx.TransactionsModule
@@ -28,6 +29,7 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
         services.addSingletonIfMissing<ApplicationExecutor> { it.create<DefaultApplicationExecutor>() }
         services.addModule<TransactionsModule>()
         services.addModule<EventsModule>()
+        services.addModule<CacheModule>()
         services.addModule<JobsModule>()
     }
 

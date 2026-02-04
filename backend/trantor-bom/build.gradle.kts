@@ -33,5 +33,6 @@ dependencies {
         api("com.zaxxer:HikariCP:7.0.2")
         api("org.jooq:jooq:3.20.10")
         api("com.github.f4b6a3:uuid-creator:6.1.1")
+        api("com.github.ben-manes.caffeine:caffeine:3.2.3")
     }
 }
