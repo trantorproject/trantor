@@ -4,6 +4,7 @@ dependencies {
     api(project(":trantor-gson"))
     api("dev.botta:cqbus")
     implementation("com.github.ben-manes.caffeine:caffeine")
+    implementation("com.github.kagkarlsson:db-scheduler")
 }
 
 extra.set("POM_NAME", "Trantor Core")

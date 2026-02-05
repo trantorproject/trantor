@@ -4,7 +4,7 @@ import kotlin.reflect.KClass
 
 interface EventHandler {
     val eventTypes: List<KClass<*>>
-    val afterCommit: Boolean? get() = false
+    val afterCommit: Boolean? get() = true
     val queued: QueuedEventConfig? get() = null
 
     fun on(event: Event)
