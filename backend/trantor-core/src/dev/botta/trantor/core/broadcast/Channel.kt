@@ -5,7 +5,7 @@ import dev.botta.cqbus.identity.Identity
 typealias ChannelParams = Map<String, String>
 
 abstract class Channel(val path: String) {
-    fun authorize(params: ChannelParams, identity: Identity): Boolean {
+    open fun authorize(params: ChannelParams, identity: Identity): Boolean {
         return true
     }
 
