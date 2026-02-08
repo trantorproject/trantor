@@ -5,6 +5,7 @@ import dev.botta.trantor.core.broadcast.Channel
 class ChannelRegistry {
     private val compiledChannels = mutableListOf<CompiledChannel>()
     private val PARAM_REGEX = Regex("\\{([a-zA-Z0-9_]+)}")
+    private val PARAM_VALUE_PATTERN = "([a-zA-Z0-9_\\-]+)"
 
     fun add(channel: Channel) {
         compiledChannels.add(compile(channel))
@@ -16,7 +17,7 @@ class ChannelRegistry {
         val pattern = PARAM_REGEX.replace(channel.path) { match ->
             val name = match.groupValues[1]
             paramNames += name
-            "([a-zA-Z0-9_]+)"
+            PARAM_VALUE_PATTERN
         }
 
         val regex = Regex("^$pattern$")
