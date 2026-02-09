@@ -1,6 +1,6 @@
 package dev.botta.trantor.web.broadcast
 
-import dev.botta.cqbus.identity.*
+import dev.botta.cqbus.identity.Identity
 import dev.botta.json.Json
 import dev.botta.trantor.core.broadcast.*
 import dev.botta.trantor.hosting.HostedService
@@ -9,13 +9,14 @@ import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.web.broadcast.ws.*
 import dev.botta.trantor.web.server.HttpServer
-import io.javalin.websocket.WsContext
+import io.javalin.websocket.WsConnectContext
 import java.util.concurrent.*
 
 class DefaultBroadcaster(
     wsPath: String = "/broadcaster",
     httpServer: HttpServer,
     private val serializer: JsonSerializer,
+    private val sessionFactory: WebSocketClientSessionFactory,
 ): Broadcaster, HostedService {
     private val logger = getLogger()
     private val sessionManager = SessionManager()
@@ -24,15 +25,15 @@ class DefaultBroadcaster(
         Thread(it, "ws-sweeper").apply { isDaemon = true }
     }
     private val wsHandler = WebSocketHandler(wsPath, object: WebSocketDelegate {
-        override fun authenticate(wsContext: WsContext): Identity {
-            return AnonymousIdentity()
+        override fun createSession(wsContext: WsConnectContext): WebSocketClientSession {
+            return sessionFactory.create(wsContext)
         }
 
-        override fun connect(session: DefaultClientSession) {
+        override fun connect(session: WebSocketClientSession) {
             sessionManager.add(session)
         }
 
-        override fun onClientMessage(message: String, session: DefaultClientSession) {
+        override fun onClientMessage(message: String, session: WebSocketClientSession) {
             try {
                 val messageJson = Json.parse(message).asObject()
                 if (messageJson == null) {
@@ -78,7 +79,7 @@ class DefaultBroadcaster(
             }
         }
 
-        override fun close(session: DefaultClientSession) {
+        override fun close(session: WebSocketClientSession) {
             sessionManager.remove(session)
         }
     })
@@ -91,15 +92,15 @@ class DefaultBroadcaster(
         val sessions = getSubscribers(channel)
         val message = serializer.serialize(WebSocketEventMessage(channel, event))
         sessions.forEach {
-            send(it as DefaultClientSession, message)
+            send(it as WebSocketClientSession, message)
         }
     }
 
-    private fun send(session: DefaultClientSession, message: WebSocketMessage) {
+    private fun send(session: WebSocketClientSession, message: WebSocketMessage) {
         send(session, serializer.serialize(message))
     }
 
-    private fun send(session: DefaultClientSession, message: String) {
+    private fun send(session: WebSocketClientSession, message: String) {
         try {
             session.send(message)
         } catch (e: Exception) {
@@ -146,13 +147,13 @@ class DefaultBroadcaster(
         }
     }
 
-    private fun requestJoin(channel: String, session: DefaultClientSession) {
+    private fun requestJoin(channel: String, session: WebSocketClientSession) {
         val match = channelRegistry.match(channel)
         if (match == null) {
             send(session, WebSocketErrorMessage("join-error", "Invalid channel: $channel", mapOf("channel" to channel)))
             return
         }
-        val isAuthorized = match.channel.authorize(match.params, session.identity)
+        val isAuthorized = match.channel.authorize(match.params, session)
         if (!isAuthorized) {
             send(session, WebSocketErrorMessage("join-forbidden", "Unauthorized", mapOf("channel" to channel)))
             return
@@ -162,7 +163,7 @@ class DefaultBroadcaster(
         send(session, WebSocketInternalMessage("joined", mapOf("channel" to channel)))
     }
 
-    private fun requestLeave(channel: String, session: DefaultClientSession) {
+    private fun requestLeave(channel: String, session: WebSocketClientSession) {
         val match = channelRegistry.match(channel)
         if (match == null) {
             send(session, WebSocketErrorMessage("leave-error", "Invalid channel: $channel", mapOf("channel" to channel)))

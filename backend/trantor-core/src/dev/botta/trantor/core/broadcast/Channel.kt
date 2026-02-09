@@ -1,11 +1,9 @@
 package dev.botta.trantor.core.broadcast
 
-import dev.botta.cqbus.identity.Identity
-
 typealias ChannelParams = Map<String, String>
 
 abstract class Channel(val path: String) {
-    open fun authorize(params: ChannelParams, identity: Identity): Boolean {
+    open fun authorize(params: ChannelParams, session: ClientSession): Boolean {
         return true
     }
 

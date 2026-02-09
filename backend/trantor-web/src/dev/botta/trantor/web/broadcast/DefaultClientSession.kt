@@ -3,19 +3,19 @@ package dev.botta.trantor.web.broadcast
 import com.github.f4b6a3.uuid.UuidCreator
 import dev.botta.cqbus.identity.Identity
 import dev.botta.time.Clock
-import dev.botta.trantor.core.broadcast.ClientSession
+import dev.botta.trantor.web.broadcast.ws.WebSocketClientSession
 import io.javalin.websocket.WsContext
 import java.time.LocalDateTime
 import java.util.*
 
 class DefaultClientSession(
     override val identity: Identity,
-    val wsContext: WsContext,
-): ClientSession {
+    override val wsContext: WsContext,
+): WebSocketClientSession {
     override val id: UUID = UuidCreator.getTimeOrderedEpoch()
     override val createdAt: LocalDateTime = Clock.now()
-    private var _channelSusbcriptions = mutableSetOf<String>()
-    override val channelSubscriptions: Set<String> get() = _channelSusbcriptions
+    private var _channelSubscriptions = mutableSetOf<String>()
+    override val channelSubscriptions: Set<String> get() = _channelSubscriptions
     @Volatile
     private var timeoutAt: LocalDateTime = createdAt.plusSeconds(SESSION_TIMEOUT_SECS)
 
@@ -25,21 +25,21 @@ class DefaultClientSession(
 
     override fun getAttributeKeys(): Set<String> = wsContext.attributeMap().keys
 
-    fun send(message: String) {
+    override fun send(message: String) {
         wsContext.send(message)
     }
 
-    fun join(channel: String) {
-        _channelSusbcriptions.add(channel)
+    override fun join(channel: String) {
+        _channelSubscriptions.add(channel)
     }
 
-    fun leave(channel: String) {
-        _channelSusbcriptions.remove(channel)
+    override fun leave(channel: String) {
+        _channelSubscriptions.remove(channel)
     }
 
-    fun touch() {
+    override fun touch() {
         timeoutAt = Clock.now().plusSeconds(SESSION_TIMEOUT_SECS)
     }
 
-    fun isExpired() = Clock.now().isAfter(timeoutAt)
+    override fun isExpired() = Clock.now().isAfter(timeoutAt)
 }

@@ -20,11 +20,10 @@ class WebSocketHandler(private val path: String, private val delegate: WebSocket
 
     private fun onClientConnect(ctx: WsConnectContext) {
         try {
-            val identity = delegate.authenticate(ctx)
-            val session = DefaultClientSession(identity, ctx)
+            val session = delegate.createSession(ctx)
             ctx.attribute("session", session)
             delegate.connect(session)
-            logger.info("Client connected ${session.id} with identity ${identity.name}")
+            logger.info("Client connected ${session.id} with identity ${session.identity.name}")
         } catch (e: ForbiddenError) {
             logger.info("Client connection rejected because unauthorized: ${e.message}")
             ctx.session.close(POLICY_VIOLATION_CODE, "unauthorized")
