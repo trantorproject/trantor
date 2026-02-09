@@ -5,8 +5,6 @@ import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.web.broadcast.*
 import dev.botta.trantor.web.server.*
 import io.javalin.websocket.*
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 class WebSocketHandler(private val path: String, private val delegate: WebSocketDelegate) {
     private val logger = getLogger()

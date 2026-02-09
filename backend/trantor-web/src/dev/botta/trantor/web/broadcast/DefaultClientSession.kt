@@ -27,7 +27,6 @@ class DefaultClientSession(
 
     fun send(message: String) {
         wsContext.send(message)
-        wsContext.closeSession()
     }
 
     fun join(channel: String) {

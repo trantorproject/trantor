@@ -3,7 +3,6 @@ package dev.botta.trantor.web.broadcast
 import dev.botta.cqbus.identity.*
 import dev.botta.json.Json
 import dev.botta.trantor.core.broadcast.*
-import dev.botta.trantor.domain.errors.ForbiddenError
 import dev.botta.trantor.hosting.HostedService
 import dev.botta.trantor.primitives.events.Event
 import dev.botta.trantor.primitives.logging.getLogger
@@ -34,23 +33,48 @@ class DefaultBroadcaster(
         }
 
         override fun onClientMessage(message: String, session: DefaultClientSession) {
-            val messageJson = Json.parse(message).asObject() ?: error("Message must be json object: $message")
-            val type = messageJson["type"]?.asString() ?: error("Message must have type property: $message")
-            when (type) {
-                "join" -> {
-                    val channel = messageJson["channel"]?.asString()
-                        ?: error("Message must have channel property: $message")
-                    requestJoin(channel, session)
+            try {
+                val messageJson = Json.parse(message).asObject()
+                if (messageJson == null) {
+                    send(session, WebSocketErrorMessage("invalid-message", "Message must be json object: $message"))
+                    return
                 }
-
-                "leave" -> {
-                    val channel = messageJson["channel"]?.asString()
-                        ?: error("Message must have channel property: $message")
-                    requestLeave(channel, session)
+                val type = messageJson["type"]?.asString()
+                if (type == null) {
+                    send(session, WebSocketErrorMessage("invalid-message", "Message must have type property: $message"))
+                    return
                 }
+                when (type) {
+                    "join" -> {
+                        val channel = messageJson["channel"]?.asString()
+                        if (channel == null) {
+                            send(
+                                session,
+                                WebSocketErrorMessage("join-error", "Message must have channel property: $message")
+                            )
+                            return
+                        }
+                        requestJoin(channel, session)
+                    }
 
-                "ping" -> {}
-                else -> send(session, WebSocketErrorMessage("Unsupported message type '$type'"))
+                    "leave" -> {
+                        val channel = messageJson["channel"]?.asString()
+                        if (channel == null) {
+                            send(
+                                session,
+                                WebSocketErrorMessage("leave-error", "Message must have channel property: $message")
+                            )
+                            return
+                        }
+                        requestLeave(channel, session)
+                    }
+
+                    "ping" -> {}
+                    else -> send(session, WebSocketErrorMessage("invalid-message", "Unsupported message type '$type'"))
+                }
+            } catch (e: Exception) {
+                logger.error(e.message, e)
+                send(session, WebSocketErrorMessage("internal-error", "Internal error processing message: $message"))
             }
         }
 
@@ -123,17 +147,30 @@ class DefaultBroadcaster(
     }
 
     private fun requestJoin(channel: String, session: DefaultClientSession) {
-        val match = channelRegistry.match(channel) ?: error("Invalid channel")
+        val match = channelRegistry.match(channel)
+        if (match == null) {
+            send(session, WebSocketErrorMessage("join-error", "Invalid channel: $channel", mapOf("channel" to channel)))
+            return
+        }
         val isAuthorized = match.channel.authorize(match.params, session.identity)
-        if (!isAuthorized) throw ForbiddenError()
+        if (!isAuthorized) {
+            send(session, WebSocketErrorMessage("join-forbidden", "Unauthorized", mapOf("channel" to channel)))
+            return
+        }
         session.join(channel)
         match.channel.onJoin(match.params, session)
+        send(session, WebSocketInternalMessage("joined", mapOf("channel" to channel)))
     }
 
     private fun requestLeave(channel: String, session: DefaultClientSession) {
-        val match = channelRegistry.match(channel) ?: error("Invalid channel")
+        val match = channelRegistry.match(channel)
+        if (match == null) {
+            send(session, WebSocketErrorMessage("leave-error", "Invalid channel: $channel", mapOf("channel" to channel)))
+            return
+        }
         if (!session.channelSubscriptions.contains(channel)) return
         session.leave(channel)
         match.channel.onLeave(match.params, session)
+        send(session, WebSocketInternalMessage("leaved", mapOf("channel" to channel)))
     }
 }
