@@ -9,6 +9,9 @@ class NullTransaction: Transaction {
     override fun rollback() {
     }
 
+    override fun afterComplete(action: () -> Unit) {
+    }
+
     override fun afterCommit(action: () -> Unit) {
     }
 

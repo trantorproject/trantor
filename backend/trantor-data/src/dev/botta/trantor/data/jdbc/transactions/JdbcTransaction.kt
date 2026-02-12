@@ -28,10 +28,13 @@ class JdbcTransaction(val connection: Connection, private val onClose: () -> Uni
             return
         }
 
-        connection.commit()
-        connection.autoCommit = true
-        setClosed()
-        afterCommitActions.forEach { it() }
+        try {
+            connection.commit()
+            afterCommitActions.forEach { it() }
+        } finally {
+            connection.autoCommit = true
+            setClosed()
+        }
     }
 
     private fun commitNested() {
@@ -48,10 +51,18 @@ class JdbcTransaction(val connection: Connection, private val onClose: () -> Uni
             rollbackNested()
             return
         }
-        connection.rollback()
-        connection.autoCommit = true
-        setClosed()
-        afterRollbackActions.forEach { it() }
+        try {
+            connection.rollback()
+            afterRollbackActions.forEach { it() }
+        } finally {
+            connection.autoCommit = true
+            setClosed()
+        }
+    }
+
+    override fun afterComplete(action: () -> Unit) {
+        afterCommit(action)
+        afterRollback(action)
     }
 
     override fun afterCommit(action: () -> Unit) {
