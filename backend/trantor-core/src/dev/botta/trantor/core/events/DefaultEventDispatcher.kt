@@ -119,8 +119,10 @@ class DefaultEventDispatcher(
             invokeEventHandler(event, handler)
         } catch (e: EventClassNotFound) {
             logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message}", e)
+        } catch (e: IllegalArgumentException) {
+            logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message} - ${job.eventBody}", e)
         } catch (e: JsonParseException) {
-            logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message}", e)
+            logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message} - ${job.eventBody}", e)
         }
     }
 
