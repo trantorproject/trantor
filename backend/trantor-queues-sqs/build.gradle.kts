@@ -5,4 +5,4 @@ dependencies {
 }
 
 extra.set("POM_NAME", "Trantor SQS Queue")
-extra.set("POM_DESCRIPTION", "")
+extra.set("POM_DESCRIPTION", "SQS message queue implementation for Trantor Framework")

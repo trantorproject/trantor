@@ -1,7 +1,7 @@
 import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.3.10"
     id("dev.botta.kotlin-conventions") version "0.4.2"
     id("com.vanniktech.maven.publish") version "0.32.0"
 }
@@ -50,8 +50,6 @@ subprojects {
         pom {
             name.set(project.findProperty("POM_NAME") as? String ?: project.name)
             description.set(project.findProperty("POM_DESCRIPTION") as? String ?: "Part of Trantor framework")
-//            name.set("Kotlin Conventions Gradle Plugin")
-//            description.set("A plugin that applies Kotlin conventions")
             inceptionYear.set("2025")
             url.set("https://github.com/trantorproject/trantor")
 
