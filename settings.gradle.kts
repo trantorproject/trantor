@@ -1,4 +1,4 @@
-rootProject.name = "backend"
+rootProject.name = "trantor"
 
 include("trantor-aws")
 include("trantor-bom")

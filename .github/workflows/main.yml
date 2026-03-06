@@ -7,16 +7,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up JDK 23
+    - name: Set up JDK 25
       uses: actions/setup-java@v2
       with:
-        java-version: '23'
+        java-version: '25'
         distribution: 'adopt'
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v3
     - name: Build with Gradle
       run: |
-        cd backend
         ./gradlew build
 
   publish:
@@ -30,14 +29,13 @@ jobs:
       ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_INMEMORYPASSWORD }}
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 23
+      - name: Set up JDK 25
         uses: actions/setup-java@v2
         with:
-          java-version: '23'
+          java-version: '25'
           distribution: 'adopt'
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v3
       - name: Publish to Maven Central
         run: |
-          cd backend
           ./gradlew publishAllToMavenCentral
