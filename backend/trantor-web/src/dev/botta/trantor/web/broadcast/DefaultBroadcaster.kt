@@ -47,27 +47,17 @@ class DefaultBroadcaster(
                 }
                 when (type) {
                     "join" -> {
-                        val channel = messageJson["channel"]?.asString()
-                        if (channel == null) {
-                            send(
-                                session,
-                                WebSocketErrorMessage("join-error", "Message must have channel property: $message")
-                            )
-                            return
+                        messageJson["channels"]?.asArray()?.map {
+                            val channel = it.asString() ?: return@map
+                            requestJoin(channel, session)
                         }
-                        requestJoin(channel, session)
                     }
 
                     "leave" -> {
-                        val channel = messageJson["channel"]?.asString()
-                        if (channel == null) {
-                            send(
-                                session,
-                                WebSocketErrorMessage("leave-error", "Message must have channel property: $message")
-                            )
-                            return
+                        messageJson["channels"]?.asArray()?.map {
+                            val channel = it.asString() ?: return@map
+                            requestLeave(channel, session)
                         }
-                        requestLeave(channel, session)
                     }
 
                     "ping" -> {}
@@ -89,8 +79,15 @@ class DefaultBroadcaster(
     }
 
     override fun send(channel: String, event: Event) {
-        val sessions = getSubscribers(channel)
-        val message = serializer.serialize(WebSocketEventMessage(channel, event))
+        send(listOf(channel), event)
+    }
+
+    override fun send(channels: List<String>, event: Event) {
+        val sessions = mutableSetOf<ClientSession>()
+        for (channel in channels) {
+            sessions.addAll(getSubscribers(channel))
+        }
+        val message = serializer.serialize(WebSocketEventMessage(channels, event))
         sessions.forEach {
             send(it as WebSocketClientSession, message)
         }

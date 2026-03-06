@@ -7,6 +7,9 @@ class NullBroadcaster: Broadcaster {
     override fun send(channel: String, event: Event) {
     }
 
+    override fun send(channels: List<String>, event: Event) {
+    }
+
     override fun register(channel: Channel) {
     }
 
