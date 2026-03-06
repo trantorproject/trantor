@@ -8,6 +8,7 @@ javaPlatform {
 
 extra.set("POM_NAME", "Trantor BOM (Bill of Materials)")
 extra.set("POM_DESCRIPTION", "This Bill of Materials POM can be used to ease dependency management when using Trantor Framework")
+val version = rootProject.file("VERSION").readText().trim()
 
 dependencies {
     api(platform("org.junit:junit-bom:6.0.2"))
@@ -35,5 +36,20 @@ dependencies {
         api("com.github.f4b6a3:uuid-creator:6.1.1")
         api("com.github.ben-manes.caffeine:caffeine:3.2.3")
         api("com.github.kagkarlsson:db-scheduler:16.7.0")
+
+        api("dev.botta.trantor:trantor-aws:$version")
+        api("dev.botta.trantor:trantor-config:$version")
+        api("dev.botta.trantor:trantor-core:$version")
+        api("dev.botta.trantor:trantor-data:$version")
+        api("dev.botta.trantor:trantor-di:$version")
+        api("dev.botta.trantor:trantor-domain:$version")
+        api("dev.botta.trantor:trantor-gson:$version")
+        api("dev.botta.trantor:trantor-hosting:$version")
+        api("dev.botta.trantor:trantor-primitives:$version")
+        api("dev.botta.trantor:trantor-queues-sqs:$version")
+        api("dev.botta.trantor:trantor-taskpool:$version")
+        api("dev.botta.trantor:trantor-test:$version")
+        api("dev.botta.trantor:trantor-web:$version")
+        api("dev.botta.trantor:trantor-web-client:$version")
     }
 }
