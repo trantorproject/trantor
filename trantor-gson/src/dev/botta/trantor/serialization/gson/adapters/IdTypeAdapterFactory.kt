@@ -17,7 +17,7 @@ class IdTypeAdapterFactory : TypeAdapterFactory {
         val idClass = raw as Class<out Id>
 
         return object : TypeAdapter<T>() {
-            override fun write(out: JsonWriter, value: T) {
+            override fun write(out: JsonWriter, value: T?) {
                 if (value == null) {
                     out.nullValue()
                     return
@@ -27,7 +27,11 @@ class IdTypeAdapterFactory : TypeAdapterFactory {
             }
 
             @Suppress("UNCHECKED_CAST")
-            override fun read(`in`: JsonReader): T {
+            override fun read(`in`: JsonReader): T? {
+                if (`in`.peek() == JsonToken.NULL) {
+                    `in`.nextNull()
+                    return null
+                }
                 val str = `in`.nextString()
                 val ctor = idClass.getConstructor(UUID::class.java)
                 return ctor.newInstance(UUID.fromString(str)) as T

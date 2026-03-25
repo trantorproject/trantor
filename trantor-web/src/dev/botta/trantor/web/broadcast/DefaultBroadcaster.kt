@@ -150,6 +150,7 @@ class DefaultBroadcaster(
             send(session, WebSocketErrorMessage("join-error", "Invalid channel: $channel", mapOf("channel" to channel)))
             return
         }
+        if (session.channelSubscriptions.contains(channel)) return
         val isAuthorized = match.channel.authorize(match.params, session)
         if (!isAuthorized) {
             send(session, WebSocketErrorMessage("join-forbidden", "Unauthorized", mapOf("channel" to channel)))
@@ -169,6 +170,6 @@ class DefaultBroadcaster(
         if (!session.channelSubscriptions.contains(channel)) return
         session.leave(channel)
         match.channel.onLeave(match.params, session)
-        send(session, WebSocketInternalMessage("leaved", mapOf("channel" to channel)))
+        send(session, WebSocketInternalMessage("left", mapOf("channel" to channel)))
     }
 }
