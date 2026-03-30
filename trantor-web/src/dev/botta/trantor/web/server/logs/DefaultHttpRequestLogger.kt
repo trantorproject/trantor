@@ -16,6 +16,8 @@ class DefaultHttpRequestLogger(private val logger: Logger): HttpRequestLogger {
             HttpStatus.FOUND,
             HttpStatus.OK,
             HttpStatus.ACCEPTED,
+            HttpStatus.PERMANENT_REDIRECT,
+            HttpStatus.TEMPORARY_REDIRECT,
             HttpStatus.CREATED -> colored(ctx.status(), Ansi.Color.GREEN)
 
             HttpStatus.CONTINUE,
@@ -36,7 +38,7 @@ class DefaultHttpRequestLogger(private val logger: Logger): HttpRequestLogger {
         sb.append(colored(ctx.req().method, Ansi.Color.CYAN))
         sb.append(" - " + ctx.fullUrl())
         sb.append(" in " + executionTimeMs + "ms")
-        if (ctx.statusCode() < 200 || ctx.statusCode() >= 300) {
+        if (ctx.statusCode() < 200 || ctx.statusCode() >= 400) {
             val contentType = ctx.req().contentType ?: ""
             val contentLength = ctx.req().contentLength
             val requestBody = if (contentType.startsWith("multipart/form-data")) {
