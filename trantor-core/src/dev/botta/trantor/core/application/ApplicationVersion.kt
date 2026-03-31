@@ -8,7 +8,7 @@ class ApplicationVersion {
     private fun findVersion() = try {
         val manifest = Manifest(javaClass.classLoader.getResourceAsStream("META-INF/MANIFEST.MF"))
         manifest.mainAttributes.getValue("VERSION") ?: "DEVELOPMENT"
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         "DEVELOPMENT"
     }
 

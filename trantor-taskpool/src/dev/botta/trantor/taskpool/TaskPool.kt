@@ -48,7 +48,7 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): HostedServi
                 logger.info("Dispatcher interrupted, stopping...")
                 Thread.currentThread().interrupt()
                 break
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.error("Error in dispatch loop", e)
             }
         }
@@ -69,7 +69,7 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): HostedServi
                 val execute = applyMiddlewares(task)
                 val result = execute()
                 future.complete(result)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.error(e.message, e)
                 future.completeExceptionally(e)
             }

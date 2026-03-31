@@ -77,7 +77,7 @@ class SqsQueue(
                     attributes[MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT]?.toIntOrNull() ?: 0,
                     it.receiptHandle(),
                 )
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.error("Queue '$name' error deserializing message id=${it.messageId()} body=${it.body()}", e)
                 null
             }

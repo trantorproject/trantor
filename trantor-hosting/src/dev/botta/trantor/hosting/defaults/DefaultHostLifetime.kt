@@ -46,7 +46,7 @@ class DefaultHostLifetime: HostLifetime {
         for (handler in handlers) {
             try {
                 handler()
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.error(e.message, e)
             }
         }

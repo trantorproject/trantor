@@ -40,7 +40,7 @@ class DefaultHost(
             try {
                 logger.info("Stopping service ${service.name}")
                 service.stop(timeoutSeconds)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.error("Error stopping service ${service.name}", e)
             }
         }

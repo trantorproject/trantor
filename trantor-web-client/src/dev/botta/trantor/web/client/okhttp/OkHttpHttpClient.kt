@@ -70,7 +70,7 @@ class OkHttpHttpClient(
                     headers = headers
                 )
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.error("$method ${request.url}", e)
             throw HttpClientError(e.message, e)
         }

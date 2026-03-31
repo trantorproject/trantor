@@ -82,7 +82,7 @@ class MessageQueueProcessor(
             } catch (e: MessageQueueError) {
                 logger.error("Queue '${queue.name}' failed polling messages: ${e.message}", e)
                 sleep(1_000)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.error("Queue '${queue.name}' fatal error: ${e.message}", e)
                 break
             }
@@ -93,7 +93,7 @@ class MessageQueueProcessor(
         try {
             onMessage(message)
             queue.delete(message)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.error("Queue '${queue.name}' error processing message id=${message.id} type=${message.message.type}", e)
             // Don't delete, automatic retry
         }

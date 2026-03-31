@@ -68,7 +68,7 @@ class DefaultEventDispatcher(
         logger.info("Invoking event handler ${handler::class.java.shortName()}")
         try {
             handler.on(event)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.error("Event handler failed: ${e.message}", e)
         }
     }

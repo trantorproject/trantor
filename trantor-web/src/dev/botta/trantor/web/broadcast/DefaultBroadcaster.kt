@@ -63,7 +63,7 @@ class DefaultBroadcaster(
                     "ping" -> {}
                     else -> send(session, WebSocketErrorMessage("invalid-message", "Unsupported message type '$type'"))
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.error(e.message, e)
                 send(session, WebSocketErrorMessage("internal-error", "Internal error processing message: $message"))
             }
@@ -100,7 +100,7 @@ class DefaultBroadcaster(
     private fun send(session: WebSocketClientSession, message: String) {
         try {
             session.send(message)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.error("send failed: ${e.message}", e)
         }
     }
@@ -139,7 +139,7 @@ class DefaultBroadcaster(
     private fun sweepIdleSessions() {
         try {
             sessionManager.all.filter { it.isExpired() }.forEach { sessionManager.remove(it) }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.error("sweepIdleSessions error: ${e.message}", e)
         }
     }

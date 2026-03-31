@@ -35,7 +35,7 @@ class WebSocketHandler(private val path: String, private val delegate: WebSocket
         session.touch()
         try {
             delegate.onClientMessage(ctx.message(), session)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.error("Websocket error: ${e.message}", e)
             removeAndClose(session, "process message", PROTOCOL_ERROR_CODE)
         }
