@@ -36,6 +36,7 @@ class HttpServer(private val settings: HttpServerSettings): RouteRegistrant, Hos
             javalinConfig.http.maxRequestSize = settings.maxRequestSizeInMb * SizeUnit.MB.multiplier
             javalinConfig.useVirtualThreads = true
             javalinConfig.startupWatcherEnabled = false
+            settings.configureJavalin(javalinConfig)
             configureJetty(javalinConfig.jetty)
         }
         routeRegister = JavalinRouteRegister(javalin)
