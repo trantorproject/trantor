@@ -1,17 +1,17 @@
 package dev.botta.trantor.queues
 
 import dev.botta.trantor.aws.AWSError
+import dev.botta.trantor.core.queues.*
 import dev.botta.trantor.core.queues.Message
-import dev.botta.trantor.core.queues.MessageQueue
-import dev.botta.trantor.core.queues.EnqueueOptions
-import dev.botta.trantor.core.queues.ReceivedMessage
+import dev.botta.trantor.core.queues.errors.QueueConnectionError
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.primitives.serialization.*
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.*
-import java.net.URI
+import java.net.*
 import java.util.*
 
 class SqsQueue(
@@ -58,29 +58,34 @@ class SqsQueue(
     }
 
     override fun poll(): List<ReceivedMessage> {
-        ensureQueueUrl()
-        val response = client.receiveMessage {
-            it.queueUrl(queueUrl)
-            it.maxNumberOfMessages(settings.pollMaxMessages)
-            it.waitTimeSeconds(settings.pollWaitTimeSeconds)
-            it.visibilityTimeout(settings.pollVisibilityTimeout)
-            it.messageSystemAttributeNames(MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT)
-        }
-        val messages = response.messages() ?: emptyList()
-        return messages.mapNotNull {
-            try {
-                val message = serializer.deserialize<Message>(it.body())
-                val attributes = it.attributes()
-                SqsReceivedMessage(
-                    it.messageId(),
-                    message,
-                    attributes[MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT]?.toIntOrNull() ?: 0,
-                    it.receiptHandle(),
-                )
-            } catch (e: Throwable) {
-                logger.error("Queue '$name' error deserializing message id=${it.messageId()} body=${it.body()}", e)
-                null
+        try {
+            ensureQueueUrl()
+            val response = client.receiveMessage {
+                it.queueUrl(queueUrl)
+                it.maxNumberOfMessages(settings.pollMaxMessages)
+                it.waitTimeSeconds(settings.pollWaitTimeSeconds)
+                it.visibilityTimeout(settings.pollVisibilityTimeout)
+                it.messageSystemAttributeNames(MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT)
             }
+            val messages = response.messages() ?: emptyList()
+            return messages.mapNotNull {
+                try {
+                    val message = serializer.deserialize<Message>(it.body())
+                    val attributes = it.attributes()
+                    SqsReceivedMessage(
+                        it.messageId(),
+                        message,
+                        attributes[MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT]?.toIntOrNull() ?: 0,
+                        it.receiptHandle(),
+                    )
+                } catch (e: Throwable) {
+                    logger.error("Queue '$name' error deserializing message id=${it.messageId()} body=${it.body()}", e)
+                    null
+                }
+            }
+        } catch (e: SdkClientException) {
+            if (e.cause is ConnectException) throw QueueConnectionError(e.message ?: "Couldn't connect to queue", e)
+            throw e
         }
     }
 

@@ -84,7 +84,7 @@ class MessageQueueProcessor(
                 sleep(1_000)
             } catch (e: Throwable) {
                 logger.error("Queue '${queue.name}' fatal error: ${e.message}", e)
-                break
+                sleep(30_000)
             }
         }
     }
