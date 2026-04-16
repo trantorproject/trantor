@@ -5,6 +5,7 @@ import dev.botta.trantor.web.server.RouteRegistrant
 import io.javalin.http.Handler
 import io.javalin.websocket.WsConfig
 import java.util.function.Consumer
+import kotlin.apply
 import kotlin.reflect.KClass
 
 interface ApplicationRouteRegistrant: RouteRegistrant {
@@ -35,12 +36,20 @@ fun <T: Request<R>, R> ApplicationRouteRegistrant.post(path: String, requestType
     routes.post(path, requestType, statusCode)
 }
 
+inline fun <reified T: Request<*>> ApplicationRouteRegistrant.post(path: String, statusCode: Int = 200) = apply {
+    routes.post(path, T::class, statusCode)
+}
+
 fun ApplicationRouteRegistrant.get(path: String, handler: Handler) = apply {
     routes.get(path, handler)
 }
 
 fun <T: Request<R>, R> ApplicationRouteRegistrant.get(path: String, requestType: KClass<T>) = apply {
     routes.get(path, requestType)
+}
+
+inline fun <reified T: Request<*>> ApplicationRouteRegistrant.get(path: String) = apply {
+    routes.get(path, T::class)
 }
 
 fun ApplicationRouteRegistrant.put(path: String, handler: Handler) = apply {
@@ -51,6 +60,10 @@ fun <T: Request<R>, R> ApplicationRouteRegistrant.put(path: String, requestType:
     routes.put(path, requestType, statusCode)
 }
 
+inline fun <reified T: Request<*>> ApplicationRouteRegistrant.put(path: String, statusCode: Int = 200) = apply {
+    routes.put(path, T::class, statusCode)
+}
+
 fun ApplicationRouteRegistrant.patch(path: String, handler: Handler) = apply {
     routes.patch(path, handler)
 }
@@ -59,12 +72,20 @@ fun <T: Request<R>, R> ApplicationRouteRegistrant.patch(path: String, requestTyp
     routes.patch(path, requestType, statusCode)
 }
 
+inline fun <reified T: Request<*>> ApplicationRouteRegistrant.patch(path: String, statusCode: Int = 200) = apply {
+    routes.patch(path, T::class, statusCode)
+}
+
 fun ApplicationRouteRegistrant.delete(path: String, handler: Handler) = apply {
     routes.delete(path, handler)
 }
 
 fun <T: Request<R>, R> ApplicationRouteRegistrant.delete(path: String, requestType: KClass<T>, statusCode: Int = 200) = apply {
     routes.delete(path, requestType, statusCode)
+}
+
+inline fun <reified T: Request<*>> ApplicationRouteRegistrant.delete(path: String, statusCode: Int = 200) = apply {
+    routes.delete(path, T::class, statusCode)
 }
 
 fun ApplicationRouteRegistrant.ws(path: String, consumer: Consumer<WsConfig>) = apply {
