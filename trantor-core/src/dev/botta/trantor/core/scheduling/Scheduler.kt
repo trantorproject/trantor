@@ -22,6 +22,7 @@ class Scheduler(private val dataSource: DataSource, private val jsonSerializer: 
             try {
                 logger.info("Executing recurring job ${job.name}")
                 job.execute()
+                logger.info("Successfully executed recurring job $job")
             } finally {
                 MDC.remove("src")
             }

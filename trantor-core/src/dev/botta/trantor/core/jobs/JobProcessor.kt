@@ -24,6 +24,7 @@ class JobProcessor(
             val handler = handlerRegistry.getHandler(jobClass)
             logger.info("Executing job $job")
             handler.execute(job)
+            logger.info("Successfully executed job $job")
         } catch (e: JobClassNotFound) {
             logger.error("Dropping job: ${e.message}. type=${message.message.type}, id=${message.id}", e)
         } catch (e: JsonParseException) {

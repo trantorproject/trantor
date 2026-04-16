@@ -9,6 +9,8 @@ class LoggingMiddleware: Middleware {
 
     override fun <T: Request<R>, R> execute(request: T, next: (T) -> R, context: ExecutionContext): R {
         logger.info("Executing use case $request" )
-        return next(request)
+        val response = next(request)
+        logger.info("Successfully executed use case $request")
+        return response
     }
 }
