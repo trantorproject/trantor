@@ -2,9 +2,11 @@ package dev.botta.trantor.core.queues
 
 import dev.botta.trantor.core.queues.errors.*
 import dev.botta.trantor.hosting.HostedService
+import dev.botta.trantor.primitives.CorrelationIdGenerator
 import dev.botta.trantor.primitives.logging.getLogger
 import org.slf4j.MDC
 import java.lang.Thread.sleep
+import java.util.*
 import java.util.concurrent.*
 
 class MessageQueueProcessor(
@@ -62,7 +64,7 @@ class MessageQueueProcessor(
                     permits.acquire()
                     workerExecutor.submit {
                         try {
-                            MDC.put("cid", message.id)
+                            MDC.put("cid", message.message.cid ?: CorrelationIdGenerator.new())
                             MDC.put("src", "queue:${queue.name}")
                             processMessage(message)
                         } finally {

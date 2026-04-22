@@ -2,6 +2,7 @@ package dev.botta.trantor.taskpool
 
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.hosting.HostedService
+import dev.botta.trantor.primitives.MdcPropagation
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicLong
 
@@ -61,14 +62,18 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): HostedServi
     fun <T> schedule(taskId: String? = null, task: () -> T): CompletableFuture<T> {
         if (!isRunning) error("Task pool is not started")
 
+        val contextMap = MdcPropagation.capture()
+
         totalSubmitted.incrementAndGet()
         val future = CompletableFuture<T>()
 
         val wrappedTask = Runnable {
             try {
-                val execute = applyMiddlewares(task)
-                val result = execute()
-                future.complete(result)
+                MdcPropagation.runWithContext(contextMap) {
+                    val execute = applyMiddlewares(task)
+                    val result = execute()
+                    future.complete(result)
+                }
             } catch (e: Throwable) {
                 logger.error(e.message, e)
                 future.completeExceptionally(e)

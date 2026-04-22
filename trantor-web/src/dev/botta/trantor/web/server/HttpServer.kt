@@ -1,6 +1,7 @@
 package dev.botta.trantor.web.server
 
 import dev.botta.trantor.hosting.HostedService
+import dev.botta.trantor.primitives.CorrelationIdGenerator
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.web.server.logs.HttpRequestLogger
@@ -45,18 +46,18 @@ class HttpServer(private val settings: HttpServerSettings): RouteRegistrant, Hos
 
     private fun setupMdc() {
         javalin.before { ctx ->
-            val callId =
+            val correlationId =
                 ctx.header("X-Request-Id")
                     ?.takeIf { it.isNotBlank() }
-                    ?: generateCallId()
-            ctx.header("X-Request-Id", callId)
+                    ?: generateCorrelationId()
+            ctx.header("X-Request-Id", correlationId)
 
-            MDC.put("cid", callId)
+            MDC.put("cid", correlationId)
             MDC.put("src", "http")
         }
     }
 
-    private fun generateCallId(): String = UUID.randomUUID().toString().replace("-", "").take(10)
+    private fun generateCorrelationId(): String = CorrelationIdGenerator.new()
 
     private fun configureJetty(jettyConfig: JettyConfig) {
         Configurator.setLevel("org.eclipse.jetty", org.apache.logging.log4j.Level.WARN)

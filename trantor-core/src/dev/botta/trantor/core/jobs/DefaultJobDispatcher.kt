@@ -4,6 +4,7 @@ import dev.botta.trantor.core.queues.*
 import dev.botta.trantor.core.tx.TransactionManager
 import dev.botta.trantor.di.valueresolvers.config.ConfigValue
 import dev.botta.trantor.primitives.serialization.JsonSerializer
+import org.slf4j.MDC
 
 class DefaultJobDispatcher(
     private val queueRegistry: JobQueueRegistry,
@@ -14,7 +15,7 @@ class DefaultJobDispatcher(
 ): JobDispatcher {
     override fun dispatch(job: Job, queueName: String?, options: EnqueueOptions) {
         val queue = queueRegistry.getQueue(queueName)
-        val message = Message(job.javaClass.name, serializer.serialize(job))
+        val message = Message(job.javaClass.name, serializer.serialize(job), MDC.get("cid"))
         if (transactionManager.activeTransaction == null || !dispatchAfterCommit) {
             push(queue, message, options)
             return

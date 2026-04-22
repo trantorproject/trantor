@@ -4,6 +4,6 @@ import dev.botta.trantor.di.ServiceRegistry
 import dev.botta.trantor.hosting.addHostedService
 
 fun ServiceRegistry.addScheduler() {
-    addSingleton<Scheduler>()
+    addSingleton<Scheduler, DefaultScheduler>()
     addHostedService { it.get<Scheduler>() }
 }

@@ -13,6 +13,8 @@ sealed class Maybe<out T> {
 
     fun hasValue() = this is Value
 
+    fun resolveValue() = if (this.hasValue()) (this as Value).value else null
+
     companion object {
         fun <T> of(value: T): Maybe<T> = Value(value)
     }
