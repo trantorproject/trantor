@@ -31,11 +31,11 @@ class JobQueueRegistry {
     fun loadFromConfig(config: Config, section: String = "jobs.queues") {
         config.getSection(section).getChildren().forEach {
             if (it.key == "default") return@forEach
-            val queueName = it.key
-            val driverName = it["driver"] ?: error("Invalid configuration: missing driver for queue $queueName")
+            val queueName = it["name"] ?: it.key
+            val driverName = it["driver"] ?: error("Invalid configuration: missing driver for queue ${it.key}")
             val factory = drivers[driverName.lowercase()] ?: error("Queue driver $driverName not registered")
             val queue = factory.createFromConfig(queueName, config)
-            addQueue(queueName, queue)
+            addQueue(it.key, queue)
         }
         defaultQueue = config["$section.default"] ?: queues.keys.firstOrNull()
     }
