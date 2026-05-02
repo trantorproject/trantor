@@ -1,6 +1,7 @@
 package dev.botta.trantor.core.jobs
 
 import dev.botta.time.Clock
+import dev.botta.trantor.primitives.lang.describe
 import java.util.*
 
 abstract class Job(open val id: UUID = UUID.randomUUID()) {
@@ -10,5 +11,5 @@ abstract class Job(open val id: UUID = UUID.randomUUID()) {
 
     override fun hashCode() = id.hashCode()
 
-    override fun toString() = "${javaClass.name}('$id', createdAt=$createdAt)"
+    override fun toString() = describe("id=$id", "createdAt=$createdAt")
 }

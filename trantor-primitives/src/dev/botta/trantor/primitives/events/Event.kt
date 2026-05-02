@@ -1,6 +1,7 @@
 package dev.botta.trantor.primitives.events
 
 import dev.botta.time.Clock
+import dev.botta.trantor.primitives.lang.describe
 import java.util.*
 
 abstract class Event(open val id: UUID = UUID.randomUUID()) {
@@ -11,5 +12,5 @@ abstract class Event(open val id: UUID = UUID.randomUUID()) {
 
     override fun hashCode() = id.hashCode()
 
-    override fun toString() = "${javaClass.name}('$id', occurredAt=$occurredAt)"
+    override fun toString() = describe("id=$id", "occurredAt=$occurredAt")
 }

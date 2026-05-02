@@ -1,5 +1,7 @@
 package dev.botta.trantor.web.client
 
+import dev.botta.trantor.primitives.lang.describe
+
 class HttpRequest(val url: String, var body: Any? = null, headers: Map<String, String> = mutableMapOf()) {
     val headers = headers.toMutableMap()
 
@@ -7,7 +9,7 @@ class HttpRequest(val url: String, var body: Any? = null, headers: Map<String, S
         headers[header] = value
     }
 
-    override fun toString() = "HttpRequest(url=$url, body=$body, headers=$headers)"
+    override fun toString() = describe("url=$url", "body=$body", "headers=$headers")
 
     override fun equals(other: Any?) =
         other is HttpRequest &&
