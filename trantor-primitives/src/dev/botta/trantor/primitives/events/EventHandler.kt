@@ -3,7 +3,7 @@ package dev.botta.trantor.primitives.events
 import kotlin.reflect.KClass
 
 interface EventHandler {
-    val eventTypes: List<KClass<*>>
+    val eventTypes: List<KClass<out Event>>
     val afterCommit: Boolean? get() = true
     val queued: QueuedEventConfig? get() = null
 

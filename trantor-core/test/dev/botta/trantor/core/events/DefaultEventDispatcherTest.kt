@@ -1,5 +1,6 @@
 package dev.botta.trantor.core.events
 
+import dev.botta.trantor.core.events.serialization.DefaultEventSerializer
 import dev.botta.trantor.core.tx.NullTransactionManager
 import dev.botta.trantor.primitives.events.*
 import dev.botta.trantor.serialization.gson.GsonSerializer
@@ -117,11 +118,11 @@ class DefaultEventDispatcherTest {
         }
     }
 
-    private fun subscribe(eventTypes: List<KClass<*>>, onEventFunc: (event: Event) -> Unit) {
+    private fun subscribe(eventTypes: List<KClass<out Event>>, onEventFunc: (event: Event) -> Unit) {
         dispatcher.subscribe(SimpleEventHandler(eventTypes, onEventFunc))
     }
 
-    private inline fun <reified T> subscribe(noinline onEventFunc: (event: Event) -> Unit) {
+    private inline fun <reified T: Event> subscribe(noinline onEventFunc: (event: Event) -> Unit) {
         dispatcher.subscribe(SimpleEventHandler(T::class, onEventFunc))
     }
 
@@ -134,17 +135,21 @@ class DefaultEventDispatcherTest {
         otherThread.join()
     }
 
-    private val dispatcher = DefaultEventDispatcher(NullTransactionManager(), NullJobDispatcher(), GsonSerializer())
+    private val dispatcher = DefaultEventDispatcher(
+        NullTransactionManager(),
+        NullJobDispatcher(),
+        DefaultEventSerializer(GsonSerializer()),
+    )
 
     abstract class MyEventBase: Event()
     class MyEvent: MyEventBase()
     class OtherEvent: Event()
 
     class SimpleEventHandler(
-        override val eventTypes: List<KClass<*>>,
+        override val eventTypes: List<KClass<out Event>>,
         private val onEventFunc: (event: Event) -> Unit,
     ): EventHandler {
-        constructor(eventType: KClass<*>, onEventFunc: (event: Event) -> Unit): this(listOf(eventType), onEventFunc)
+        constructor(eventType: KClass<out Event>, onEventFunc: (event: Event) -> Unit): this(listOf(eventType), onEventFunc)
 
         override fun on(event: Event) {
             onEventFunc(event)

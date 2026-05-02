@@ -5,16 +5,16 @@ import dev.botta.trantor.core.jobs.*
 import dev.botta.trantor.core.queues.EnqueueOptions
 import dev.botta.trantor.core.tx.TransactionManager
 import dev.botta.trantor.primitives.events.*
+import dev.botta.trantor.primitives.events.serialization.*
 import dev.botta.trantor.primitives.lang.shortName
 import dev.botta.trantor.primitives.logging.getLogger
-import dev.botta.trantor.primitives.serialization.JsonSerializer
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.reflect.KClass
 
 class DefaultEventDispatcher(
     private val transactionManager: TransactionManager,
     private val jobDispatcher: JobDispatcher,
-    private val serializer: JsonSerializer,
+    private val serializer: EventSerializer,
 ): EventDispatcher {
     private val logger = getLogger()
     private val handlers = CopyOnWriteArrayList<EventHandler>()
@@ -57,7 +57,8 @@ class DefaultEventDispatcher(
     private fun invokeOrQueueEventHandler(event: Event, handler: EventHandler) {
         val queued = handler.queued
         if (queued != null) {
-            val job = ProcessEventHandlerJob(handler.javaClass.name, event.javaClass.name, serializer.serialize(event))
+            val serialized = serializer.serialize(event)
+            val job = ProcessEventHandlerJob(handler.javaClass.name, serialized.type, serialized.body)
             jobDispatcher.dispatch(job, queued.queueName, EnqueueOptions(delaySeconds = queued.delaySeconds))
             return
         }
@@ -96,6 +97,7 @@ class DefaultEventDispatcher(
         if (handler.queued != null && getQueuedHandler(handler.javaClass.name) != null) {
             error("Cannot subscribe more than one queued handler with the same class")
         }
+        handler.eventTypes.forEach { serializer.register(it) }
         handlers.add(handler)
     }
 
@@ -105,8 +107,7 @@ class DefaultEventDispatcher(
 
     private fun processQueuedEventHandlerJob(job: ProcessEventHandlerJob) {
         try {
-            val eventClass = getEventClass(job.eventType)
-            val event = serializer.deserialize(job.eventBody, eventClass)
+            val event = serializer.deserialize(job.eventType, job.eventBody)
             val handler = getQueuedHandler(job.handlerType)
             if (handler == null) {
                 logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: handler not registered")
@@ -119,24 +120,16 @@ class DefaultEventDispatcher(
             invokeEventHandler(event, handler)
         } catch (e: EventClassNotFound) {
             logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message}", e)
-        } catch (e: IllegalArgumentException) {
-            logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message} - ${job.eventBody}", e)
         } catch (e: JsonParseException) {
-            logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message} - ${job.eventBody}", e)
+            logger.error(
+                "Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message} - ${job.eventBody}",
+                e
+            )
         }
     }
 
     private fun getQueuedHandler(handlerType: String) =
         handlers.singleOrNull { it.queued != null && it.javaClass.name == handlerType }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun getEventClass(eventType: String): Class<Event> {
-        return try {
-            Class.forName(eventType) as Class<Event>
-        } catch (e: ClassNotFoundException) {
-            throw EventClassNotFound("Event class not found: $eventType", e)
-        }
-    }
 
     private fun EventHandler.canHandle(event: Event) = eventTypes.any { it.isInstance(event) }
 }

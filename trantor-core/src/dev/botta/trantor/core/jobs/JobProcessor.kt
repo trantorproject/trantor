@@ -1,14 +1,15 @@
 package dev.botta.trantor.core.jobs
 
 import com.google.gson.JsonParseException
+import dev.botta.trantor.core.jobs.serialization.*
 import dev.botta.trantor.core.queues.*
 import dev.botta.trantor.hosting.HostedService
 import dev.botta.trantor.primitives.logging.getLogger
-import dev.botta.trantor.primitives.serialization.JsonSerializer
+import kotlin.reflect.KClass
 
 class JobProcessor(
     private val handlerRegistry: JobHandlerRegistry,
-    private val serializer: JsonSerializer,
+    private val serializer: JobSerializer,
     private val queue: MessageQueue,
     maxConcurrentWorkers: Int = 4,
 ): HostedService {
@@ -18,27 +19,28 @@ class JobProcessor(
     override val name: String get() = "JobProcessor(${queue.name})"
 
     private fun onMessage(message: ReceivedMessage) {
-        try {
-            val jobClass = getJobClass(message.message)
-            val job = serializer.deserialize(message.message.body, jobClass)
-            val handler = handlerRegistry.getHandler(jobClass)
-            logger.info("Executing job $job")
-            handler.execute(job)
-            logger.info("Successfully executed job $job")
+        val job = try {
+            serializer.deserialize(message.message.type, message.message.body)
         } catch (e: JobClassNotFound) {
             logger.error("Dropping job: ${e.message}. type=${message.message.type}, id=${message.id}", e)
+            return
         } catch (e: JsonParseException) {
-            logger.error("Dropping job: ${e.message}. type=${message.message.type}, id=${message.id}, body=${message.message.body}", e)
+            logger.error(
+                "Dropping job: ${e.message}. type=${message.message.type}, id=${message.id}, body=${message.message.body}",
+                e
+            )
+            return
         }
+
+        executeJob(job)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun getJobClass(message: Message): Class<Job> {
-        return try {
-            Class.forName(message.type) as Class<Job>
-        } catch (e: ClassNotFoundException) {
-            throw JobClassNotFound("Job class not found: ${message.type}", e)
-        }
+    private fun <T: Job> executeJob(job: T) {
+        @Suppress("UNCHECKED_CAST")
+        val handler = handlerRegistry.getHandler(job::class as KClass<T>)
+        logger.info("Executing job $job")
+        handler.execute(job)
+        logger.info("Successfully executed job $job")
     }
 
     override fun start() {
