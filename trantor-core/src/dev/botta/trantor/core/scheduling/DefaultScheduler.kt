@@ -19,7 +19,7 @@ class DefaultScheduler(private val dataSource: DataSource, private val jsonSeria
         tasks.add(Tasks.recurring(job.name, job.schedule).execute { instance, context ->
             MDC.put("src", "scheduler")
             try {
-                logger.info("Executing recurring job ${job.name}")
+                logger.info("Executing recurring job $job")
                 job.execute()
                 logger.info("Successfully executed recurring job $job")
             } finally {

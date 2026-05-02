@@ -58,7 +58,7 @@ class DefaultEventDispatcher(
         val queued = handler.queued
         if (queued != null) {
             val serialized = serializer.serialize(event)
-            val job = ProcessEventHandlerJob(handler.javaClass.name, serialized.type, serialized.body)
+            val job = ProcessEventHandlerJob(handler.handlerType, serialized.type, serialized.body)
             jobDispatcher.dispatch(job, queued.queueName, EnqueueOptions(delaySeconds = queued.delaySeconds))
             return
         }
@@ -66,7 +66,7 @@ class DefaultEventDispatcher(
     }
 
     private fun invokeEventHandler(event: Event, handler: EventHandler) {
-        logger.info("Invoking event handler ${handler::class.java.shortName()}")
+        logger.info("Invoking event handler ${handler.handlerType}")
         try {
             handler.on(event)
         } catch (e: Throwable) {
@@ -94,8 +94,8 @@ class DefaultEventDispatcher(
     }
 
     override fun subscribe(handler: EventHandler) {
-        if (handler.queued != null && getQueuedHandler(handler.javaClass.name) != null) {
-            error("Cannot subscribe more than one queued handler with the same class")
+        if (handler.queued != null && getQueuedHandler(handler.handlerType) != null) {
+            error("Cannot subscribe more than one queued handler with handlerType '${handler.handlerType}'")
         }
         handler.eventTypes.forEach { serializer.register(it) }
         handlers.add(handler)
@@ -129,7 +129,7 @@ class DefaultEventDispatcher(
     }
 
     private fun getQueuedHandler(handlerType: String) =
-        handlers.singleOrNull { it.queued != null && it.javaClass.name == handlerType }
+        handlers.singleOrNull { it.queued != null && it.handlerType == handlerType }
 
     private fun EventHandler.canHandle(event: Event) = eventTypes.any { it.isInstance(event) }
 }
