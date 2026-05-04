@@ -8,6 +8,7 @@ import dev.botta.lang.DetailsExt
 import dev.botta.trantor.config.Config
 import dev.botta.trantor.core.application.Application
 import dev.botta.trantor.core.auth.*
+import dev.botta.trantor.core.validation.ValidationError
 import dev.botta.trantor.di.ServiceProvider
 import dev.botta.trantor.domain.errors.*
 import dev.botta.trantor.hosting.*
@@ -45,6 +46,7 @@ class WebApplication(private val application: Application, private val requestMa
         addForbiddenError<ForbiddenError>()
         addNotFoundError<NotFoundError>()
         addBadRequestError<DomainError>()
+        addBadRequestError<ValidationError>()
         addBadRequestError<JsonParseError>()
         addBadRequestError<JsonParseException>()
         addInternalError<Exception>()

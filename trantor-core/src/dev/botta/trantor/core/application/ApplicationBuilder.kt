@@ -5,6 +5,7 @@ import dev.botta.trantor.core.cache.CacheModule
 import dev.botta.trantor.core.events.EventsModule
 import dev.botta.trantor.core.jobs.JobsModule
 import dev.botta.trantor.core.tx.TransactionsModule
+import dev.botta.trantor.core.validation.ValidationModule
 import dev.botta.trantor.hosting.*
 import dev.botta.trantor.hosting.defaults.DefaultHostBuilder
 import dev.botta.trantor.serialization.gson.addGsonSerializer
@@ -31,6 +32,7 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
         services.addModule<EventsModule>()
         services.addModule<CacheModule>()
         services.addModule<JobsModule>()
+        services.addModule<ValidationModule>()
     }
 
     fun build(): Application {

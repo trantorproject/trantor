@@ -5,6 +5,7 @@ dependencies {
     api("dev.botta:cqbus")
     implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("com.github.kagkarlsson:db-scheduler")
+    implementation("org.hibernate.validator:hibernate-validator")
 }
 
 extra.set("POM_NAME", "Trantor Core")

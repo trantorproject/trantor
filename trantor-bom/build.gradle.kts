@@ -36,6 +36,8 @@ dependencies {
         api("com.github.f4b6a3:uuid-creator:6.1.1")
         api("com.github.ben-manes.caffeine:caffeine:3.2.3")
         api("com.github.kagkarlsson:db-scheduler:16.7.0")
+        api("org.hibernate.validator:hibernate-validator:9.1.0.Final")
+        api("jakarta.validation:jakarta.validation-api:3.1.1")
 
         api("dev.botta.trantor:trantor-aws:$version")
         api("dev.botta.trantor:trantor-config:$version")
