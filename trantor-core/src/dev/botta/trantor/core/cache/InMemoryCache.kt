@@ -94,6 +94,17 @@ class InMemoryCache<K: Any, V: Any>(
         l2.invalidate(key)
     }
 
+    fun invalidateIf(predicate: (V) -> Boolean) {
+        if (transactionManager.activeTransaction != null) {
+            l1.get().values.removeIf(predicate)
+            transactionManager.activeTransaction!!.afterCommit {
+                l2.asMap().values.removeIf(predicate)
+            }
+            return
+        }
+        l2.asMap().values.removeIf(predicate)
+    }
+
     fun invalidateAll() {
         l1.remove()
         l2.invalidateAll()
