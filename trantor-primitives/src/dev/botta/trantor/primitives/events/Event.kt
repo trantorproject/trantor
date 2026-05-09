@@ -11,7 +11,7 @@ import kotlin.reflect.full.findAnnotation
 private val eventTypeCache = ConcurrentHashMap<KClass<*>, String>()
 
 abstract class Event(val id: UUID = UuidCreator.getTimeOrderedEpoch()) {
-    val eventType get() = this::class.eventType()
+    val eventType = this::class.eventType()
     var occurredAt = Clock.now()
         protected set
 
