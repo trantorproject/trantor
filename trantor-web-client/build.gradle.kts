@@ -6,3 +6,7 @@ dependencies {
 
 extra.set("POM_NAME", "Trantor Http Client")
 extra.set("POM_DESCRIPTION", "HttpClient abstraction with implementation based on Jetty")
+
+dependencies {
+    testImplementation("com.squareup.okhttp3:mockwebserver3")
+}

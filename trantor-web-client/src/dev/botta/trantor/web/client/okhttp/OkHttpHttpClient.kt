@@ -18,12 +18,13 @@ class OkHttpHttpClient(
     private val client: OkHttpClient = OkHttpClient.Builder()
         .followRedirects(config.followRedirects)
         .connectTimeout(config.connectTimeout.toLong(), TimeUnit.MILLISECONDS)
-        .readTimeout(config.requestTimeout.toLong(), TimeUnit.MILLISECONDS)
+        .readTimeout(config.idleTimeout.toLong(), TimeUnit.MILLISECONDS)
+        .writeTimeout(config.idleTimeout.toLong(), TimeUnit.MILLISECONDS)
         .callTimeout(config.requestTimeout.toLong(), TimeUnit.MILLISECONDS)
         .connectionPool(
             ConnectionPool(
                 config.maxConnectionsPerDestination,
-                config.idleTimeout.toLong(),
+                config.keepAliveTimeout.toLong(),
                 TimeUnit.MILLISECONDS
             )
         )
@@ -38,6 +39,29 @@ class OkHttpHttpClient(
     override fun patch(request: HttpRequest) = sendRequest("PATCH", request)
 
     override fun delete(request: HttpRequest) = sendRequest("DELETE", request)
+
+    override fun stream(method: HttpMethods, request: HttpRequest, options: StreamOptions): HttpStreamResponse {
+        val okRequest = buildRequest(method.value, request)
+        val call = streamClient(options).newCall(okRequest)
+
+        try {
+            val response = call.execute()
+
+            logger.info("${method.value} ${request.url} Response: ${response.code} (stream)")
+
+            return OkHttpHttpStreamResponse(call, response)
+        } catch (e: Throwable) {
+            logger.error("${method.value} ${request.url}", e)
+            call.cancel()
+            throw HttpClientError(e.message, e)
+        }
+    }
+
+    // A stream is not bounded by the request timeout: it ends when the server goes silent for longer than the read timeout
+    private fun streamClient(options: StreamOptions) = client.newBuilder()
+        .readTimeout((options.readTimeout ?: config.idleTimeout).toLong(), TimeUnit.MILLISECONDS)
+        .callTimeout((options.totalTimeout ?: 0).toLong(), TimeUnit.MILLISECONDS)
+        .build()
 
     private fun sendRequest(method: String, request: HttpRequest): HttpResponse {
         val startTime = System.nanoTime()

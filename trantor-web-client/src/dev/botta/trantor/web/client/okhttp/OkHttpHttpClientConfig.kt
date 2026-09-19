@@ -9,5 +9,7 @@ data class OkHttpHttpClientConfig(
     var connectTimeout: Int = 10_000,
     // Specifies a time period (in milliseconds) required to process an HTTP call: from sending a request to receiving a response. 0 to disable.
     var requestTimeout: Int = 60_000,
+    // Specifies a maximum time (in milliseconds) an unused connection is kept in the pool to be reused.
+    var keepAliveTimeout: Int = 300_000,
     var maxConnectionsPerDestination: Int = 1200,
 )

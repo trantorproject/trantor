@@ -11,4 +11,7 @@ abstract class HttpClient {
     fun delete(url: String, body: String? = null, headers: Map<String, String> = mapOf()) = delete(HttpRequest(url, body, headers))
     abstract fun get(request: HttpRequest): HttpResponse
     fun get(url: String, headers: Map<String, String> = mapOf()) = get(HttpRequest(url, null, headers))
+
+    open fun stream(method: HttpMethods, request: HttpRequest, options: StreamOptions = StreamOptions()): HttpStreamResponse =
+        throw UnsupportedOperationException("${this::class.simpleName} does not support streaming responses")
 }
