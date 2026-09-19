@@ -39,6 +39,7 @@ dependencies {
         api("org.hibernate.validator:hibernate-validator:9.1.0.Final")
         api("jakarta.validation:jakarta.validation-api:3.1.1")
 
+        api("dev.botta.trantor:trantor-ai:$version")
         api("dev.botta.trantor:trantor-aws:$version")
         api("dev.botta.trantor:trantor-config:$version")
         api("dev.botta.trantor:trantor-core:$version")

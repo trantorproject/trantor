@@ -1,5 +1,6 @@
 rootProject.name = "trantor"
 
+include("trantor-ai")
 include("trantor-aws")
 include("trantor-bom")
 include("trantor-core")
