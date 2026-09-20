@@ -31,14 +31,27 @@ internal class OpenAIRequestMapper(
     private val catalog: ModelCatalog = ModelCatalog().addOpenAIModels(),
 ) {
     fun map(modelId: String, request: ChatRequest, stream: Boolean = false) =
-        Mapping(catalog.find(OPENAI_PROVIDER, modelId)?.capabilities, modelId).map(modelId, request, stream)
+        Mapping(catalog.find(OPENAI_PROVIDER, modelId), modelId).map(modelId, request, stream)
 
-    /** [model] is null for a model nobody wrote down, and then nothing here holds anything back. */
-    private inner class Mapping(private val model: ModelCapabilities?, private val modelId: String) {
+    /** [spec] is null when the provider registered no default either, and then nothing here holds anything back. */
+    private inner class Mapping(private val spec: ModelSpec?, private val modelId: String) {
         private val warnings = mutableListOf<ModelWarning>()
+        private val model: ModelCapabilities? = spec?.capabilities
 
-        private val takesSamplingSettings get() = model == null || model.temperature != null
         private val takesReasoning get() = model == null || model.reasoningEfforts.isNotEmpty()
+        private val reasons get() = model != null && model.reasoningEfforts.isNotEmpty()
+
+        /**
+         * A reasoning model refuses every sampling setting **while it is reasoning**, which is the one capability
+         * that is not a property of the model but of how two settings meet. The GPT-5.x families can be told to
+         * stop reasoning and then they take them again; GPT-6 and the o-series cannot be told that at all.
+         */
+        private fun takesSamplingSettings(reasoning: Reasoning?) = when {
+            model == null -> true
+            model.temperature == null -> false
+            !reasons -> true
+            else -> reasoning == Reasoning.Off && ModelFeatures.ReasoningOff in model
+        }
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
             val body = Json.obj(
@@ -62,7 +75,7 @@ internal class OpenAIRequestMapper(
                 seed?.let { unsupportedSetting("seed") }
 
                 // A reasoning model answers 400 to any temperature but its own, and so does top_p
-                if (takesSamplingSettings) {
+                if (takesSamplingSettings(reasoning)) {
                     temperature?.let { body["temperature"] = coerced(it, "temperature", model?.temperature) }
                     topP?.let { body["top_p"] = coerced(it, "topP", model?.topP) }
                 } else {
@@ -77,7 +90,7 @@ internal class OpenAIRequestMapper(
                     reasoning?.let { toReasoning(it) }?.let {
                         body["reasoning"] = it
                         // Without this the reasoning of this turn cannot be sent back on the next one
-                        body["include"] = Json.array(ENCRYPTED_REASONING)
+                        if (it["effort"]?.asString() != NO_EFFORT) body["include"] = Json.array(ENCRYPTED_REASONING)
                     }
                 }
             }
@@ -164,14 +177,27 @@ internal class OpenAIRequestMapper(
         }
 
         private fun droppedByTheModel(setting: String) {
-            warnings.add(ModelWarning("$modelId does not take $setting, so it was not sent", setting))
+            warnings.add(ModelWarning("$modelId does not take $setting, so it was not sent$becauseItIsAGuess", setting))
         }
+
+        /**
+         * A decision taken from a guess says so. The catalog is standing in the newest model it knows for one
+         * nobody described, which is right far more often than not and wrong in a way a written entry never is.
+         */
+        private val becauseItIsAGuess
+            get() = if (spec?.isGuess != true) "" else
+                ". That is what the newest model in the catalog takes; add $modelId to it if it takes more"
 
         /** Null when there is nothing to ask for, so that [Reasoning.Off] and no reasoning at all mean the same. */
         private fun toReasoning(reasoning: Reasoning): JsonObject? {
             if (reasoning.budgetTokens != null) unsupportedSetting("reasoning.budgetTokens")
 
-            val effort = reasoning.effort?.name?.lowercase()
+            // Off is a level of its own here, and asking for it out loud is what lets a temperature through
+            if (reasoning == Reasoning.Off && model != null && ModelFeatures.ReasoningOff in model) {
+                return Json.obj("effort" to NO_EFFORT)
+            }
+
+            val effort = reasoning.effort?.let { nearest(it) }?.name?.lowercase()
             val summary = when (reasoning.summary) {
                 ReasoningSummaries.None -> null
                 ReasoningSummaries.Auto -> "auto"
@@ -184,6 +210,25 @@ internal class OpenAIRequestMapper(
                 effort?.let { this["effort"] = it }
                 summary?.let { this["summary"] = it }
             }
+        }
+
+        /**
+         * The closest level the model does have, which is the one below what was asked before the one above it:
+         * thinking a little less than the caller wanted is cheaper than thinking a lot more. `minimal` is the one
+         * that moves — only the first GPT-5 family has it.
+         */
+        private fun nearest(asked: ReasoningEfforts): ReasoningEfforts? {
+            val available = model?.reasoningEfforts?.takeIf { it.isNotEmpty() } ?: return asked
+
+            if (asked in available) return asked
+
+            val sent = available.filter { it < asked }.maxOrNull() ?: available.minOrNull()
+
+            sent?.let {
+                warnings.add(ModelWarning("$modelId has no $asked effort, so it was asked for as $it", "reasoning"))
+            }
+
+            return sent
         }
 
         private fun toOutputFormat(output: OutputSpec) = when (output) {
@@ -327,3 +372,5 @@ internal class OpenAIRequestMapper(
 internal data class MappedRequest(val body: JsonObject, val warnings: List<ModelWarning>)
 
 private const val ENCRYPTED_REASONING = "reasoning.encrypted_content"
+
+private const val NO_EFFORT = "none"

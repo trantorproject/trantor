@@ -7,10 +7,17 @@ package dev.botta.trantor.ai.models.catalog
  * and goes as it came. *"What does this model take?"* is this, and an adapter asks it before it fills the body of
  * a request, so that a setting the model would refuse comes back as a warning instead of a failed call.
  *
- * **A model that is not here is not protected.** [find] answers null and the adapter sends what it was given,
- * exactly as it would with no catalog at all: if the provider refuses it, the call fails with the provider's own
- * message. Guessing the capabilities of an id nobody wrote down would mean dropping, in silence, something the
- * model did accept, which is worse than a 400 that says what happened. Adding the model is a few lines.
+ * **A model nobody described stands in for the newest one of its provider**, which is what [addDefault] names. A
+ * model that comes out is almost always the one before it with something taken away — providers drop a sampling
+ * setting, swap a budget for a level — so the newest entry is the closest thing to the truth, and the call goes
+ * out working instead of failing on a parameter that generation stopped taking.
+ *
+ * A spec that came from there is marked [ModelSpec.isGuess], and every decision an adapter makes out of one says
+ * so in its warning. That is the price: a guess can drop something the model did accept, which a written entry
+ * cannot. Saying it out loud is what keeps it from being silent, and writing the model down is a line.
+ *
+ * With no default registered, [find] answers null and the adapter sends what it was given, exactly as it would
+ * with no catalog at all.
  *
  * ### Keeping it up to date
  *
@@ -43,6 +50,7 @@ package dev.botta.trantor.ai.models.catalog
 class ModelCatalog {
     private val specs = LinkedHashMap<String, ModelSpec>()
     private val described = LinkedHashMap<String, Described>()
+    private val defaults = mutableMapOf<String, String>()
 
     @Synchronized
     fun add(spec: ModelSpec) = apply {
@@ -65,7 +73,15 @@ class ModelCatalog {
         described[reference] = Described(like, change)
     }
 
-    /** Null when nobody wrote this model down, which is what tells an adapter to send what it was given. */
+    /**
+     * What a model of this provider is when nobody described it: the newest one the catalog knows, which is the
+     * closest guess there is. Naming it rather than repeating its capabilities means moving one line when the
+     * next generation arrives.
+     */
+    @Synchronized
+    fun addDefault(provider: String, like: String) = apply { defaults[provider] = like }
+
+    /** Null when nobody wrote this model down and its provider registered no default. */
     fun find(provider: String, modelId: String) = find("$provider/$modelId")
 
     @Synchronized
@@ -73,15 +89,31 @@ class ModelCatalog {
 
     @Synchronized
     fun all(provider: String? = null) = (specs.keys + described.keys)
-        .mapNotNull { resolve(it, mutableSetOf()) }
+        .mapNotNull { resolve(it, mutableSetOf(), standInForTheNewest = false) }
         .filter { provider == null || it.provider == provider }
 
-    private fun resolve(reference: String, seen: MutableSet<String>): ModelSpec? {
+    /**
+     * [standInForTheNewest] is off while a `like` is being followed, so naming a model that does not exist is an
+     * error and not the default quietly answering in its place. A typo has to be a typo.
+     */
+    private fun resolve(
+        reference: String,
+        seen: MutableSet<String>,
+        standInForTheNewest: Boolean = true,
+    ): ModelSpec? {
         exactly(reference, seen)?.let { return it }
 
-        val snapshotOf = (specs.keys + described.keys).lastOrNull { isSnapshotOf(reference, it) } ?: return null
+        val modelId = reference.substringAfter("/")
 
-        return exactly(snapshotOf, seen)?.copy(modelId = reference.substringAfter("/"))
+        (specs.keys + described.keys).lastOrNull { isSnapshotOf(reference, it) }?.let {
+            return exactly(it, seen)?.copy(modelId = modelId)
+        }
+
+        if (!standInForTheNewest) return null
+
+        val default = defaults[reference.substringBefore("/")] ?: return null
+
+        return exactly(default, seen)?.copy(modelId = modelId, isGuess = true)
     }
 
     private fun exactly(reference: String, seen: MutableSet<String>): ModelSpec? {
@@ -93,7 +125,7 @@ class ModelCatalog {
             error("The catalog goes in circles describing $reference: ${seen.joinToString(" -> ")}")
         }
 
-        val like = resolve(description.like, seen)
+        val like = resolve(description.like, seen, standInForTheNewest = false)
             ?: error("$reference is described as ${description.like}, which is not in the catalog")
 
         return specOf(reference, description.change(like.capabilities))

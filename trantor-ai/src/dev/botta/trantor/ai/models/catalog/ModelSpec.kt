@@ -17,6 +17,11 @@ data class ModelSpec(
     val contextWindow: Int? = null,
     /** Filled by whoever wants costs. Nothing in the call path reads it. */
     val pricing: ModelPricing? = null,
+    /**
+     * True when nobody described this model and it is standing in for the newest one the catalog knows.
+     * Whatever an adapter decides from a guess says so, because it can be wrong in a way a written entry is not.
+     */
+    val isGuess: Boolean = false,
 ) {
     val reference get() = "$provider/$modelId"
 }

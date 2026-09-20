@@ -32,11 +32,12 @@ internal class AnthropicRequestMapper(
     private val catalog: ModelCatalog = ModelCatalog().addAnthropicModels(),
 ) {
     fun map(modelId: String, request: ChatRequest, stream: Boolean = false) =
-        Mapping(catalog.find(ANTHROPIC_PROVIDER, modelId)?.capabilities, modelId).map(modelId, request, stream)
+        Mapping(catalog.find(ANTHROPIC_PROVIDER, modelId), modelId).map(modelId, request, stream)
 
-    /** [model] is null for a model nobody wrote down, and then nothing here holds anything back. */
-    private inner class Mapping(private val model: ModelCapabilities?, private val modelId: String) {
+    /** [spec] is null when the provider registered no default either, and then nothing here holds anything back. */
+    private inner class Mapping(private val spec: ModelSpec?, private val modelId: String) {
         private val warnings = mutableListOf<ModelWarning>()
+        private val model: ModelCapabilities? = spec?.capabilities
 
         private val takesSamplingSettings get() = model == null || model.temperature != null
         private val takesEffort get() = model == null || model.reasoningEfforts.isNotEmpty()
@@ -428,8 +429,16 @@ internal class AnthropicRequestMapper(
         }
 
         private fun droppedByTheModel(setting: String) {
-            warnings.add(ModelWarning("$modelId does not take $setting, so it was not sent", setting))
+            warnings.add(ModelWarning("$modelId does not take $setting, so it was not sent$becauseItIsAGuess", setting))
         }
+
+        /**
+         * A decision taken from a guess says so. The catalog is standing in the newest model it knows for one
+         * nobody described, which is right far more often than not and wrong in a way a written entry never is.
+         */
+        private val becauseItIsAGuess
+            get() = if (spec?.isGuess != true) "" else
+                ". That is what the newest model in the catalog takes; add $modelId to it if it takes more"
     }
 }
 

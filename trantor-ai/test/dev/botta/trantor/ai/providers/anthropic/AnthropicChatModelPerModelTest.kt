@@ -179,29 +179,22 @@ class AnthropicChatModelPerModelTest {
     }
 
     @Nested
-    inner class `a model the table does not know` {
+    inner class `a model nobody described` {
         @Test
-        fun `is assumed to be newer than everything in it, because that is what a new Claude is`() {
+        fun `stands in the newest one, because that is what a model that just came out is`() {
             generate("claude-sonnet-9", ChatSettings(reasoning = Reasoning.effort(ReasoningEfforts.High)))
 
             assertThat(sentBody().path("output_config.effort")?.asString()).isEqualTo("high")
+            assertThat(sentBody()["max_tokens"]?.asInt()).isEqualTo(128_000)
         }
 
         @Test
-        fun `and what it was asked for is not shrunk by a ceiling we guessed`() {
-            val response = generate("claude-sonnet-9", ChatSettings(maxOutputTokens = 500_000))
+        fun `and what it decides out of that says it was a guess`() {
+            val response = generate("claude-sonnet-9", ChatSettings(temperature = 0.2))
 
-            assertThat(sentBody()["max_tokens"]?.asInt()).isEqualTo(500_000)
-            assertThat(response.warnings).isEmpty()
-        }
-
-        @Test
-        fun `while something that is not Claude at all gets the careful guess`() {
-            // An Anthropic compatible server: a field it never heard of is a failed call, one less is a plainer answer
-            generate("llama-3-70b", ChatSettings(temperature = 0.2))
-
-            assertThat(sentBody()["temperature"]?.asDouble()).isEqualTo(0.2)
-            assertThat(sentBody()["max_tokens"]?.asInt()).isEqualTo(4_096)
+            assertThat(sentBody().containsKey("temperature")).isFalse()
+            assertThat(response.warnings.single().message)
+                .contains("add claude-sonnet-9 to it if it takes more")
         }
     }
 

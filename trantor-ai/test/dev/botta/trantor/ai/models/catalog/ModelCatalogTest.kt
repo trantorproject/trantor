@@ -54,9 +54,27 @@ class ModelCatalogTest {
         }
 
         @Test
-        fun `and a model of a generation nobody described is simply unknown`() {
-            assertThat(catalog.find("anthropic", "claude-sonnet-9")).isNull()
-            assertThat(catalog.find("openai", "gpt-7")).isNull()
+        fun `and a model nobody described stands in the newest one of its provider`() {
+            // A model that comes out is the one before it with something taken away, far more often than not,
+            // so the newest entry is the closest guess there is and the call goes out working
+            val guess = catalog.find("anthropic", "claude-sonnet-9")
+
+            assertThat(guess?.capabilities).isEqualTo(catalog.find("anthropic", "claude-opus-5")?.capabilities)
+            assertThat(guess?.modelId).isEqualTo("claude-sonnet-9")
+            assertThat(guess?.isGuess).isTrue()
+        }
+
+        @Test
+        fun `and a written model is never a guess`() {
+            assertThat(catalog.find("anthropic", "claude-sonnet-4-5")?.isGuess).isFalse()
+            assertThat(catalog.find("anthropic", "claude-sonnet-4-5-20250929")?.isGuess).isFalse()
+        }
+
+        @Test
+        fun `with no default registered there is nothing to stand in, and the model stays unknown`() {
+            val bare = ModelCatalog().add("x/a", capabilities = ModelCapabilities.Modern)
+
+            assertThat(bare.find("x", "b")).isNull()
         }
     }
 
@@ -98,6 +116,7 @@ class ModelCatalogTest {
 
         @Test
         fun `and describing it as something nobody knows says so, instead of answering a wrong spec`() {
+            // The default does not answer a like: a typo has to stay a typo, or nothing would ever be wrong
             catalog.add("anthropic/claude-6", like = "anthropic/claude-nowhere")
 
             assertThatThrownBy { catalog.find("anthropic", "claude-6") }

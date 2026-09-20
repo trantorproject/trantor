@@ -40,7 +40,19 @@ data class ModelCapabilities(
     }
 }
 
-enum class ModelFeatures { Tools, StructuredOutput, Images, Audio, PromptCaching }
+enum class ModelFeatures {
+    Tools,
+    StructuredOutput,
+    Images,
+    Audio,
+    PromptCaching,
+    /**
+     * The model can be told not to reason at all, and only then does it take the sampling settings again.
+     * It is what tells a model that reasons by default from one that reasons because it was asked to: the GPT-5.x
+     * families take a `temperature` alongside an effort of none, and GPT-6 refuses both.
+     */
+    ReasoningOff,
+}
 
 /** A closed range of a numeric setting, with the two that come up written down. */
 data class ValueRange(val min: Double, val max: Double) {
