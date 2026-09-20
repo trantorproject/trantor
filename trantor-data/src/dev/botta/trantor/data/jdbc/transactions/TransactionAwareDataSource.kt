@@ -37,7 +37,7 @@ class TransactionAwareDataSource(private val innerDataSource: DataSource): DataS
     override fun getConnection(): Connection? {
         if (existsActiveTransaction()) return transactionManager?.activeConnection!!
         val connection = innerDataSource.connection ?: return null
-        return ManagedDataSourceConnection(connection, ::release)
+        return ManagedDataSourceConnection(connection, ::isNotTheTransactionsOwn)
     }
 
     private fun existsActiveTransaction() = transactionManager?.hasActiveTransaction() ?: false
@@ -46,11 +46,10 @@ class TransactionAwareDataSource(private val innerDataSource: DataSource): DataS
         return innerDataSource.getConnection(username, password)
     }
 
-    private fun release(connection: Connection) {
-        if (connectionManagedByTransactionManager(connection)) return
-        connection.close()
-    }
-
-    private fun connectionManagedByTransactionManager(connection: Connection) =
-        transactionManager?.activeConnection == connection
+    /**
+     * Identity and not equality: the transaction holds the very wrapper it was handed, and asking again
+     * inside the transaction gives back that same object, so the two sides compare the same reference.
+     */
+    private fun isNotTheTransactionsOwn(connection: Connection) =
+        transactionManager?.activeConnection !== connection
 }

@@ -4,9 +4,20 @@ import java.sql.*
 import java.util.*
 import java.util.concurrent.Executor
 
-class ManagedDataSourceConnection(private val connection: Connection, private val onClose: (connection: Connection) -> Unit): Connection {
+/**
+ * A connection that delegates everything except [close], which it only performs when [shouldClose] says
+ * so. That is how a connection handed out inside a transaction survives a caller that closes it: the
+ * transaction manager stays the only one who can really end it.
+ *
+ * [shouldClose] is asked about **this wrapper**, not about the connection underneath, so whoever answers
+ * can compare it by identity with the one it handed the transaction.
+ */
+class ManagedDataSourceConnection(
+    private val connection: Connection,
+    private val shouldClose: (Connection) -> Boolean,
+): Connection {
     override fun close() {
-        onClose(connection)
+        if (shouldClose(this)) connection.close()
     }
 
     override fun <T: Any?> unwrap(p0: Class<T>?): T {
@@ -219,17 +230,5 @@ class ManagedDataSourceConnection(private val connection: Connection, private va
 
     override fun getNetworkTimeout(): Int {
         return connection.networkTimeout
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other is ManagedDataSourceConnection) {
-            return connection == other.connection
-        }
-        return connection == other
-    }
-
-    override fun hashCode(): Int {
-        return connection.hashCode()
     }
 }

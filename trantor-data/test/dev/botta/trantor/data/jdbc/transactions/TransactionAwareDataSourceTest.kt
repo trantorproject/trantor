@@ -70,27 +70,21 @@ class TransactionAwareDataSourceTest {
 
             verify(exactly = 0) { pooled.close() }
         }
-
-        @Test
-        fun `which works because a wrapper answers equal to the connection it wraps`() {
-            val transactionConnection = openTransaction()
-
-            // Load bearing, and easy to lose: close() reports the connection underneath, while the guard
-            // that decides whether to really close it holds the wrapper. Only this equals makes them meet
-            assertThat(transactionConnection).isEqualTo(pooled)
-        }
     }
 
     @Nested
     inner class `a connection taken before the transaction started` {
         @Test
-        fun `is left alone when it turns out to be the one the transaction is using`() {
-            val connection = dataSource.connection!!
+        fun `is its own, so closing it closes it even while a transaction is open`() {
+            val taken = dataSource.connection!!
+            // A pool never hands out the same connection twice while the first one is open, so the
+            // transaction below gets a different one
+            every { inner.connection } returns mockk<Connection>(relaxed = true)
             openTransaction()
 
-            connection.close()
+            taken.close()
 
-            verify(exactly = 0) { pooled.close() }
+            verify { pooled.close() }
         }
     }
 
