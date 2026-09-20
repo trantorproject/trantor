@@ -7,7 +7,7 @@ package dev.botta.trantor.ai.models.catalog
  * and goes as it came. *"What does this model take?"* is this, and an adapter asks it before it fills the body of
  * a request, so that a setting the model would refuse comes back as a warning instead of a failed call.
  *
- * **A model nobody described stands in for the newest one of its provider**, which is what [addDefault] names. A
+ * **A model nobody described stands in for the newest one of its provider**, which is what [setLatest] names. A
  * model that comes out is almost always the one before it with something taken away — providers drop a sampling
  * setting, swap a budget for a level — so the newest entry is the closest thing to the truth, and the call goes
  * out working instead of failing on a parameter that generation stopped taking.
@@ -16,7 +16,7 @@ package dev.botta.trantor.ai.models.catalog
  * so in its warning. That is the price: a guess can drop something the model did accept, which a written entry
  * cannot. Saying it out loud is what keeps it from being silent, and writing the model down is a line.
  *
- * With no default registered, [find] answers null and the adapter sends what it was given, exactly as it would
+ * With no latest set for the provider, [find] answers null and the adapter sends what it was given, exactly as it would
  * with no catalog at all.
  *
  * ### Keeping it up to date
@@ -50,7 +50,7 @@ package dev.botta.trantor.ai.models.catalog
 class ModelCatalog {
     private val specs = LinkedHashMap<String, ModelSpec>()
     private val described = LinkedHashMap<String, Described>()
-    private val defaults = mutableMapOf<String, String>()
+    private val latest = mutableMapOf<String, String>()
 
     @Synchronized
     fun add(spec: ModelSpec) = apply {
@@ -74,14 +74,14 @@ class ModelCatalog {
     }
 
     /**
-     * What a model of this provider is when nobody described it: the newest one the catalog knows, which is the
-     * closest guess there is. Naming it rather than repeating its capabilities means moving one line when the
-     * next generation arrives.
+     * The latest model of a provider, which is what a model of that provider nobody described is taken to be: the
+     * closest guess there is. It is one slot per provider, so setting it again replaces it, and naming the model
+     * rather than repeating its capabilities means moving one line when the next generation arrives.
      */
     @Synchronized
-    fun addDefault(provider: String, like: String) = apply { defaults[provider] = like }
+    fun setLatest(provider: String, reference: String) = apply { latest[provider] = reference }
 
-    /** Null when nobody wrote this model down and its provider registered no default. */
+    /** Null when nobody wrote this model down and its provider has no latest set. */
     fun find(provider: String, modelId: String) = find("$provider/$modelId")
 
     @Synchronized
@@ -94,7 +94,7 @@ class ModelCatalog {
 
     /**
      * [standInForTheNewest] is off while a `like` is being followed, so naming a model that does not exist is an
-     * error and not the default quietly answering in its place. A typo has to be a typo.
+     * error and not the latest model quietly answering in its place. A typo has to be a typo.
      */
     private fun resolve(
         reference: String,
@@ -111,9 +111,9 @@ class ModelCatalog {
 
         if (!standInForTheNewest) return null
 
-        val default = defaults[reference.substringBefore("/")] ?: return null
+        val latest = latest[reference.substringBefore("/")] ?: return null
 
-        return exactly(default, seen)?.copy(modelId = modelId, isGuess = true)
+        return exactly(latest, seen)?.copy(modelId = modelId, isGuess = true)
     }
 
     private fun exactly(reference: String, seen: MutableSet<String>): ModelSpec? {

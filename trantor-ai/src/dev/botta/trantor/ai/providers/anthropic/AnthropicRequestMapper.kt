@@ -20,9 +20,9 @@ import dev.botta.trantor.ai.schemas.StrictSchema
  * thinking budget, the json schema. Sending them blindly would make the plain api work on some models and fail on
  * others, which is the opposite of what it is for.
  *
- * What each model takes comes from the [ModelCatalog], and a model that is not in it is **not protected**: the
- * request goes as it was written and the provider is the one who answers. [AnthropicOptions] is the way out for
- * somebody who wants to send something regardless of what the catalog says.
+ * What each model takes comes from the [ModelCatalog]. A model nobody described is taken to be the latest one
+ * of the provider, and whatever is decided out of that guess says so in its warning. [AnthropicOptions] is the
+ * way out for somebody who wants to send something regardless of what the catalog says.
  *
  * The mapper has no state of its own: what a mapping collects on the way, like the warnings, belongs to that
  * mapping. A model is shared by everyone who asks the registry for it, and calls run on several threads.
@@ -34,7 +34,7 @@ internal class AnthropicRequestMapper(
     fun map(modelId: String, request: ChatRequest, stream: Boolean = false) =
         Mapping(catalog.find(ANTHROPIC_PROVIDER, modelId), modelId).map(modelId, request, stream)
 
-    /** [spec] is null when the provider registered no default either, and then nothing here holds anything back. */
+    /** [spec] is null when the provider has no latest set either, and then nothing here holds anything back. */
     private inner class Mapping(private val spec: ModelSpec?, private val modelId: String) {
         private val warnings = mutableListOf<ModelWarning>()
         private val model: ModelCapabilities? = spec?.capabilities

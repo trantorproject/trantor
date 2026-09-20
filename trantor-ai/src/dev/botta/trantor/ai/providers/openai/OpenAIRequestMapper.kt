@@ -20,8 +20,8 @@ import dev.botta.trantor.ai.tools.*
  * **A setting the model does not take is dropped with a warning, never sent.** The split that matters here cuts
  * both ways: a reasoning model refuses a temperature that is not its own — *"Unsupported value: 'temperature' does
  * not support 0.2 with this model"* — and a model that does not reason refuses `reasoning`. What each one takes
- * comes from the [ModelCatalog], and a model that is not in it is not protected: the request goes as it was
- * written and OpenAI is the one who answers.
+ * comes from the [ModelCatalog]. A model nobody described is taken to be the latest one of the provider, and
+ * whatever is decided out of that guess says so in its warning.
  *
  * The mapper has no state of its own: what a mapping collects on the way, like the warnings, belongs to that
  * mapping. A model is shared by everyone who asks the registry for it, and calls run on several threads.
@@ -33,7 +33,7 @@ internal class OpenAIRequestMapper(
     fun map(modelId: String, request: ChatRequest, stream: Boolean = false) =
         Mapping(catalog.find(OPENAI_PROVIDER, modelId), modelId).map(modelId, request, stream)
 
-    /** [spec] is null when the provider registered no default either, and then nothing here holds anything back. */
+    /** [spec] is null when the provider has no latest set either, and then nothing here holds anything back. */
     private inner class Mapping(private val spec: ModelSpec?, private val modelId: String) {
         private val warnings = mutableListOf<ModelWarning>()
         private val model: ModelCapabilities? = spec?.capabilities

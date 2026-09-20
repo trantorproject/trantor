@@ -57,7 +57,7 @@ internal fun ModelCatalog.addOpenAIModels() = apply {
     )
 
     // A model that came out today is the newest one with something taken away, far more often than not
-    addDefault("openai", like = "openai/gpt-6-astra")
+    setLatest("openai", "openai/gpt-6-astra")
 }
 
 /** Reasons on every call and refuses every sampling setting while it does, with no way of turning it off. */

@@ -71,7 +71,7 @@ class ModelCatalogTest {
         }
 
         @Test
-        fun `with no default registered there is nothing to stand in, and the model stays unknown`() {
+        fun `with no latest set there is nothing to stand in, and the model stays unknown`() {
             val bare = ModelCatalog().add("x/a", capabilities = ModelCapabilities.Modern)
 
             assertThat(bare.find("x", "b")).isNull()
@@ -116,7 +116,7 @@ class ModelCatalogTest {
 
         @Test
         fun `and describing it as something nobody knows says so, instead of answering a wrong spec`() {
-            // The default does not answer a like: a typo has to stay a typo, or nothing would ever be wrong
+            // The latest model does not answer a like: a typo has to stay a typo, or nothing would ever be wrong
             catalog.add("anthropic/claude-6", like = "anthropic/claude-nowhere")
 
             assertThatThrownBy { catalog.find("anthropic", "claude-6") }

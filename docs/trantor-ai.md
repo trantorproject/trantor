@@ -309,7 +309,7 @@ services.addModelCatalog { catalog, _ ->
 `like` means *"the same capabilities as that model, then apply this change"*. It is resolved **when the
 catalog is read, not when the line runs**, so it can name a model whose provider has not registered yet
 and the order of the calls does not matter — the same rule the registry follows. A `like` that names no
-model is an error; the default below never answers in its place, so a typo stays a typo.
+model is an error; the latest model below never answers in its place, so a typo stays a typo.
 
 **In code and not in the configuration.** Aliases live in `ai.models` because an alias is a string
 pointing at another string and there is nothing to check. A capability is a level, a range or a feature,
@@ -332,11 +332,14 @@ The two halves are not the same kind of fact:
 
 ### A model nobody described
 
-It **stands in for the newest model of its provider**, which is what `addDefault` names:
+It **is taken to be the latest model of its provider**, which is what `setLatest` names:
 
 ```kotlin
-addDefault("anthropic", like = "anthropic/claude-opus-5")
+setLatest("anthropic", "anthropic/claude-opus-5")
 ```
+
+One slot per provider, so setting it again replaces it. When the next generation comes out, that line is what
+moves.
 
 A model that comes out is almost always the one before it with something taken away, so the newest entry
 is the closest guess there is, and the call goes out working instead of failing on a parameter that
