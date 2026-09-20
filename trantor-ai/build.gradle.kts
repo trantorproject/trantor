@@ -6,6 +6,7 @@ dependencies {
     api(project(":trantor-primitives"))
     api(project(":trantor-domain"))
     api(project(":trantor-web-client"))
+    api(project(":trantor-di"))
     api("org.jetbrains.kotlinx:kotlinx-serialization-json")
     api("org.jetbrains.kotlinx:kotlinx-schema-generator-json")
 }

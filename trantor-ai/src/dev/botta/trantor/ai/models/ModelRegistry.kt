@@ -2,6 +2,8 @@ package dev.botta.trantor.ai.models
 
 import dev.botta.trantor.ai.errors.ModelNotFoundError
 import dev.botta.trantor.ai.models.chat.ChatModel
+import dev.botta.trantor.ai.models.middleware.ChatModelMiddleware
+import dev.botta.trantor.ai.models.middleware.with
 import dev.botta.trantor.ai.providers.AIProvider
 import java.util.concurrent.ConcurrentHashMap
 
@@ -13,8 +15,14 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * Nothing here validates the model id: the registry builds the model and sends it. Whether that model exists is
  * something the provider answers, which is what lets a model that came out today work without a release.
+ *
+ * Every model it hands out comes wrapped in [middlewares], built once per model and not per call.
  */
-class ModelRegistry(providers: List<AIProvider>, private val aliases: Map<String, String> = emptyMap()) {
+class ModelRegistry(
+    providers: List<AIProvider>,
+    private val aliases: Map<String, String> = emptyMap(),
+    private val middlewares: List<ChatModelMiddleware> = emptyList(),
+) {
     private val providers = providers.associateBy { it.name }
     private val chatModels = ConcurrentHashMap<String, ChatModel>()
 
@@ -24,7 +32,9 @@ class ModelRegistry(providers: List<AIProvider>, private val aliases: Map<String
     fun chat(reference: String): ChatModel {
         val resolved = resolve(reference)
 
-        return chatModels.computeIfAbsent(resolved) { providerOf(it, reference).chatModel(it.substringAfter("/")) }
+        return chatModels.computeIfAbsent(resolved) {
+            providerOf(it, reference).chatModel(it.substringAfter("/")).with(middlewares)
+        }
     }
 
     private fun providerOf(resolved: String, reference: String): AIProvider {

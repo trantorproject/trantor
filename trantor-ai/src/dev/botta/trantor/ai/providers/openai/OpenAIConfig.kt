@@ -4,7 +4,7 @@ import dev.botta.env.Env
 
 data class OpenAIConfig(
     val apiKey: String = Env.getOrThrow("OPENAI_API_KEY"),
-    val baseUrl: String = "https://api.openai.com/v1",
+    val baseUrl: String = DEFAULT_BASE_URL,
     val organization: String? = null,
     val project: String? = null,
     /**
@@ -13,4 +13,8 @@ data class OpenAIConfig(
      * nothing here beyond being able to look a call up later.
      */
     val store: Boolean? = null,
-)
+) {
+    companion object {
+        const val DEFAULT_BASE_URL = "https://api.openai.com/v1"
+    }
+}
