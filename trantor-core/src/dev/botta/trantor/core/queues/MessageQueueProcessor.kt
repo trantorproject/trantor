@@ -59,6 +59,8 @@ class MessageQueueProcessor(
         while (running && !Thread.currentThread().isInterrupted) {
             try {
                 val messages = queue.poll()
+                // Straight back to polling, with no pause: MessageQueue asks its implementations to
+                // block while they have nothing, so that the waiting happens where the queue is
                 if (messages.isEmpty()) continue
                 for (message in messages) {
                     permits.acquire()
