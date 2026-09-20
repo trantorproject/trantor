@@ -1,0 +1,71 @@
+package dev.botta.trantor.ai.providers.openai
+
+import dev.botta.json.Json
+import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.web.client.*
+import kotlin.time.TimeSource
+
+/**
+ * Chat model on top of the OpenAI Responses API.
+ *
+ * Calls go through [HttpClient.stream] even when the whole answer is read at once: it is the entry point that takes
+ * the timeout of the call and gives a handle to cancel it while it runs.
+ */
+class OpenAIResponsesModel(
+    override val modelId: String,
+    private val config: OpenAIConfig,
+    private val httpClient: HttpClient,
+): ChatModel {
+    override val provider = PROVIDER
+
+    private val errorMapper = OpenAIErrorMapper()
+    private val responseMapper = OpenAIResponseMapper()
+
+    override fun generate(request: ChatRequest, options: CallOptions): ChatResponse {
+        options.cancellation?.throwIfCancelled()
+
+        val mapped = OpenAIRequestMapper().map(modelId, request)
+        val startedAt = TimeSource.Monotonic.markNow()
+
+        try {
+            call(mapped.body.toString(), options).use { response ->
+                val body = response.body()
+
+                if (response.status != 200) throw errorMapper.toError(response, body)
+
+                val json = Json.parse(body).asObject() ?: throw errorMapper.toError(response, body)
+
+                return responseMapper.map(json, modelId, startedAt.elapsedNow(), mapped.warnings)
+            }
+        } catch (e: Throwable) {
+            throw errorMapper.toError(e)
+        }
+    }
+
+    override fun stream(request: ChatRequest, options: CallOptions): ChatStream {
+        throw UnsupportedOperationException("Streaming is not implemented yet")
+    }
+
+    private fun call(body: String, options: CallOptions): HttpStreamResponse {
+        val httpRequest = HttpRequest("${config.baseUrl}/responses", body, headers(options))
+        val streamOptions = StreamOptions(totalTimeout = options.timeout?.inWholeMilliseconds?.toInt())
+        val response = httpClient.stream(HttpMethods.Post, httpRequest, streamOptions)
+
+        options.cancellation?.onCancel { response.cancel() }
+
+        return response
+    }
+
+    private fun headers(options: CallOptions) = buildMap {
+        put("Content-Type", "application/json")
+        put("Authorization", "Bearer ${config.apiKey}")
+        config.organization?.let { put("OpenAI-Organization", it) }
+        config.project?.let { put("OpenAI-Project", it) }
+        putAll(options.headers)
+    }
+
+    companion object {
+        const val PROVIDER = "openai"
+    }
+}
