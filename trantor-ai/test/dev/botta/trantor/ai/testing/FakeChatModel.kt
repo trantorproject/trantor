@@ -6,9 +6,11 @@ import dev.botta.trantor.ai.models.chat.*
 import kotlin.time.Duration.Companion.milliseconds
 
 /** Chat model that answers with what it was given and records the request. */
-class FakeChatModel(var parts: List<StreamPart> = emptyList()): ChatModel {
-    override val provider = "fake"
-    override val modelId = "fake-model"
+class FakeChatModel(
+    var parts: List<StreamPart> = emptyList(),
+    override val modelId: String = "fake-model",
+    override val provider: String = "fake",
+): ChatModel {
 
     var request: ChatRequest? = null
     var options: CallOptions? = null
