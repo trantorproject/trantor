@@ -7,6 +7,7 @@ import dev.botta.trantor.web.broadcast.ws.WebSocketClientSession
 import io.javalin.websocket.WsContext
 import java.time.LocalDateTime
 import java.util.*
+import java.util.concurrent.CopyOnWriteArraySet
 
 class DefaultClientSession(
     override val identity: Identity,
@@ -14,7 +15,10 @@ class DefaultClientSession(
 ): WebSocketClientSession {
     override val id: UUID = UuidCreator.getTimeOrderedEpoch()
     override val createdAt: LocalDateTime = Clock.now()
-    private var _channelSubscriptions = mutableSetOf<String>()
+    // Copy on write and not a plain set: the broadcaster iterates the subscriptions of a session while
+    // the websocket thread of that same session joins or leaves. Its iterator is a snapshot, so reading
+    // and writing at once is neither a ConcurrentModificationException nor a corrupted set
+    private val _channelSubscriptions = CopyOnWriteArraySet<String>()
     override val channelSubscriptions: Set<String> get() = _channelSubscriptions
     @Volatile
     private var timeoutAt: LocalDateTime = createdAt.plusSeconds(SESSION_TIMEOUT_SECS)

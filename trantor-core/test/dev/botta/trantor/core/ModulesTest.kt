@@ -20,7 +20,6 @@ import dev.botta.trantor.core.tx.NullTransactionManager
 import dev.botta.trantor.core.tx.TransactionManager
 import dev.botta.trantor.core.tx.TransactionsModule
 import dev.botta.trantor.di.DefaultServiceProvider
-import dev.botta.trantor.di.ServiceNotRegisteredError
 import dev.botta.trantor.di.ServiceRegistry
 import dev.botta.trantor.hosting.addModule
 import dev.botta.trantor.primitives.events.Event
@@ -31,7 +30,6 @@ import dev.botta.trantor.primitives.events.serialization.EventSerializer
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
@@ -47,14 +45,15 @@ class ModulesTest {
         }
 
         @Test
-        fun `the dispatcher does not work with only its own module`() {
-            // Unlike an addX() extension, a Module does not pull in what it depends on: DefaultEventDispatcher
-            // needs the TransactionManager and the JobDispatcher that two other modules bring. Resolution is
-            // lazy, so registration order does not matter, but registering only this one does not hold up
+        fun `holds up on its own, because it composes what it depends on`() {
+            // Like an addX() extension: DefaultEventDispatcher needs the TransactionManager and the
+            // JobDispatcher that two other modules bring, so this one composes them rather than leaving
+            // an application that wanted events alone with a failure at the first resolution
             registry.addModule(EventsModule())
 
-            assertThatThrownBy { provider().get<EventDispatcher>() }
-                .isInstanceOf(ServiceNotRegisteredError::class.java)
+            assertThat(provider().get<EventDispatcher>()).isInstanceOf(DefaultEventDispatcher::class.java)
+            assertThat(provider().get<TransactionManager>()).isNotNull()
+            assertThat(provider().get<JobDispatcher>()).isNotNull()
         }
 
         @Test
@@ -115,7 +114,6 @@ class ModulesTest {
     inner class `cache` {
         @Test
         fun `brings a factory that builds caches around the transaction manager`() {
-            registry.addModule(TransactionsModule())
             registry.addModule(CacheModule())
 
             val factory = provider().get<InMemoryCacheFactory>()
@@ -142,7 +140,7 @@ class ModulesTest {
 
     private fun provider() = DefaultServiceProvider(registry)
 
-    /** What ApplicationBuilder registers, in its order. They only resolve as a set. */
+    /** What ApplicationBuilder registers, in its order. Each one is idempotent and self sufficient. */
     private fun ServiceRegistry.addTheModulesAnApplicationGets() {
         addModule(TransactionsModule())
         addModule(EventsModule())

@@ -149,7 +149,20 @@ class InMemoryCacheTest {
         }
 
         @Test
-        fun `and a rollback leaves the shared cache as it was`() {
+        fun `the transaction that invalidated stops seeing the old value`() {
+            val transactions = FakeTransactionManager()
+            val cache = cacheWith(transactions)
+            cache.put("order-7", "placed")
+            transactions.begin()
+
+            cache.invalidate("order-7")
+
+            // Dropping it from L1 alone would not be enough: the read falls back to L2 and finds it there
+            assertThat(cache.tryGet("order-7")).isNull()
+        }
+
+        @Test
+        fun `and a rollback costs a reload, since invalidating reached the shared cache already`() {
             val transactions = FakeTransactionManager()
             val cache = cacheWith(transactions)
             cache.put("order-7", "placed")
@@ -158,7 +171,8 @@ class InMemoryCacheTest {
             cache.invalidate("order-7")
             transactions.rollback()
 
-            assertThat(cache.tryGet("order-7")).isEqualTo("placed")
+            // A miss and not a wrong answer: the price of the transaction above seeing what it did
+            assertThat(cache.tryGet("order-7")).isNull()
         }
 
         @Test

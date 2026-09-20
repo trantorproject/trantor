@@ -30,12 +30,6 @@ interface Host {
         start()
         runnable()
         stop()
-        Thread.getAllStackTraces().keys
-            .filter { it.name.startsWith("pool-") }
-            .forEach { t ->
-                println("Thread: ${t.name}")
-                t.stackTrace.take(10).forEach { println("  at $it") }
-            }
     }
 
     companion object {

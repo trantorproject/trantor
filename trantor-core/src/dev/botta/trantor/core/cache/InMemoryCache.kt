@@ -17,6 +17,10 @@ import kotlin.time.toJavaDuration
  *
  * A read that misses L1 falls back to L2 and keeps what it found in L1.
  *
+ * An [invalidate] inside a transaction drops the key from L2 straight away as well, so the transaction
+ * that invalidated does not keep reading the old value through the fallback. A rollback therefore
+ * costs one reload, which is a miss and never a wrong answer.
+ *
  * Choosing between [put] and [invalidate] after a change is a trade-off between safety and cost:
  * `put` races with the `afterCommit` of other threads and can leave a stale value behind, while
  * `invalidate` is safe but lets a burst of requests through to the database.
@@ -89,6 +93,12 @@ class InMemoryCache<K: Any, V: Any>(
     fun invalidate(key: K) {
         if (transactionManager.activeTransaction != null) {
             invalidateL1(key)
+            // Now and not only after the commit: dropping the key from L1 alone means "no opinion", so the
+            // next read inside this transaction falls back to L2 and gets the value this transaction just
+            // replaced. Dropping an entry is never wrong, only a miss, so a rollback costs one reload
+            l2.invalidate(key)
+            // Still needed: another transaction can read the database and repopulate L2 with the old value
+            // between here and the commit, since until then the change is not visible to it
             transactionManager.activeTransaction!!.afterCommit {
                 l2.invalidate(key)
             }
@@ -100,6 +110,7 @@ class InMemoryCache<K: Any, V: Any>(
     fun invalidateIf(predicate: (V) -> Boolean) {
         if (transactionManager.activeTransaction != null) {
             l1.get().values.removeIf(predicate)
+            l2.asMap().values.removeIf(predicate)
             transactionManager.activeTransaction!!.afterCommit {
                 l2.asMap().values.removeIf(predicate)
             }
