@@ -132,6 +132,8 @@ class OpenAIChatModelOptionsTest {
 
         @Test
         fun `add to a list the adapter wrote`() {
+            // A reasoning model, because that is the one the adapter writes an include for
+            val model = OpenAIChatModel("o4-mini", OpenAIConfig(apiKey = "sk-test"), httpClient)
             val request = ChatRequest(
                 messages = listOf(Message.user("Hola")),
                 settings = ChatSettings(reasoning = Reasoning.effort(ReasoningEfforts.Low)),

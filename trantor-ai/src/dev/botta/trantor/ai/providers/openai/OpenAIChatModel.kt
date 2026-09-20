@@ -4,6 +4,7 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.AuthenticationError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.CancellationLink
+import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.web.client.*
 import dev.botta.trantor.web.client.okhttp.OkHttpHttpClient
@@ -20,12 +21,13 @@ class OpenAIChatModel(
     override val modelId: String,
     private val config: OpenAIConfig = OpenAIConfig(),
     private val httpClient: HttpClient = defaultHttpClient,
+    catalog: ModelCatalog = ModelCatalog().addOpenAIModels(),
 ): ChatModel {
     constructor(modelId: String, apiKey: String): this(modelId, OpenAIConfig(apiKey))
 
     override val provider = OPENAI_PROVIDER
 
-    private val requestMapper = OpenAIRequestMapper(config)
+    private val requestMapper = OpenAIRequestMapper(config, catalog)
     private val errorMapper = OpenAIErrorMapper()
     private val responseMapper = OpenAIResponseMapper()
 

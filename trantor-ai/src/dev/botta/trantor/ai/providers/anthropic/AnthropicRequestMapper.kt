@@ -6,6 +6,7 @@ import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.errors.InvalidProviderOptionError
 import dev.botta.trantor.ai.errors.UnsupportedRequestError
 import dev.botta.trantor.ai.models.ModelWarning
+import dev.botta.trantor.ai.models.catalog.*
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.providers.RawOptions
@@ -17,18 +18,30 @@ import dev.botta.trantor.ai.schemas.StrictSchema
  * **A setting the model does not take is dropped with a warning, never sent.** Anthropic answers 400 to a field a
  * model stopped accepting, and the ones that moved between generations are the everyday ones: `temperature`, the
  * thinking budget, the json schema. Sending them blindly would make the plain api work on some models and fail on
- * others, which is the opposite of what it is for. [ModelCapabilities] is what says which is which, and
- * [AnthropicOptions] is the way out for somebody who wants to send something regardless.
+ * others, which is the opposite of what it is for.
+ *
+ * What each model takes comes from the [ModelCatalog], and a model that is not in it is **not protected**: the
+ * request goes as it was written and the provider is the one who answers. [AnthropicOptions] is the way out for
+ * somebody who wants to send something regardless of what the catalog says.
  *
  * The mapper has no state of its own: what a mapping collects on the way, like the warnings, belongs to that
  * mapping. A model is shared by everyone who asks the registry for it, and calls run on several threads.
  */
-internal class AnthropicRequestMapper(private val config: AnthropicConfig = AnthropicConfig(apiKey = "")) {
+internal class AnthropicRequestMapper(
+    private val config: AnthropicConfig = AnthropicConfig(apiKey = ""),
+    private val catalog: ModelCatalog = ModelCatalog().addAnthropicModels(),
+) {
     fun map(modelId: String, request: ChatRequest, stream: Boolean = false) =
-        Mapping(ModelCapabilities.of(modelId)).map(modelId, request, stream)
+        Mapping(catalog.find(ANTHROPIC_PROVIDER, modelId)?.capabilities, modelId).map(modelId, request, stream)
 
-    private inner class Mapping(private val model: ModelCapabilities) {
+    /** [model] is null for a model nobody wrote down, and then nothing here holds anything back. */
+    private inner class Mapping(private val model: ModelCapabilities?, private val modelId: String) {
         private val warnings = mutableListOf<ModelWarning>()
+
+        private val takesSamplingSettings get() = model == null || model.temperature != null
+        private val takesEffort get() = model == null || model.reasoningEfforts.isNotEmpty()
+        private val takesBudget get() = model == null || model.reasoningBudget != null
+        private val takesStructuredOutput get() = model == null || ModelFeatures.StructuredOutput in model
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
             val options = anthropicOptionsOf(request.providerOptions)
@@ -68,25 +81,33 @@ internal class AnthropicRequestMapper(private val config: AnthropicConfig = Anth
             if (temperature == null && topP == null) return
 
             // Deprecated from Claude Opus 4.6 on: the models after it answer 400 to anything but the default
-            if (!model.takesSamplingSettings) {
+            if (!takesSamplingSettings) {
                 temperature?.let { droppedByTheModel("temperature") }
                 topP?.let { droppedByTheModel("topP") }
                 return
             }
 
             // Anthropic tops out at 1, where OpenAI goes to 2, so the same setting means a failed call here
-            temperature?.let { body["temperature"] = it.coerceIn(0.0, 1.0).also { capped -> reportCap(it, capped) } }
-            topP?.let { body["top_p"] = it }
+            temperature?.let { body["temperature"] = coerced(it, "temperature", model?.temperature) }
+            topP?.let { body["top_p"] = coerced(it, "topP", model?.topP) }
 
             return
         }
 
-        private fun reportCap(asked: Double, sent: Double) {
-            if (asked == sent) return
+        private fun coerced(asked: Double, setting: String, range: ValueRange?): Double {
+            val sent = range?.coerce(asked) ?: asked
 
-            warnings.add(
-                ModelWarning("Anthropic takes a temperature between 0 and 1, so $asked was sent as $sent", "temperature")
-            )
+            if (sent != asked) {
+                warnings.add(
+                    ModelWarning(
+                        "$modelId takes a $setting between ${range!!.min} and ${range.max}, " +
+                            "so $asked was sent as $sent",
+                        setting,
+                    )
+                )
+            }
+
+            return sent
         }
 
         /**
@@ -98,25 +119,37 @@ internal class AnthropicRequestMapper(private val config: AnthropicConfig = Anth
          * Whatever is asked for above what the model can give is a 400, so it is brought back down to the ceiling.
          */
         private fun maxTokensFor(settings: ChatSettings, thinking: JsonObject?): Int {
-            val asked = settings.maxOutputTokens ?: config.defaultMaxTokens ?: return model.maxOutputTokens
+            val ceiling = model?.maxOutputTokens
+            val asked = settings.maxOutputTokens ?: config.defaultMaxTokens ?: return ceiling ?: guessedCeiling()
             val budget = thinking?.get("budget_tokens")?.asInt() ?: 0
             val total = asked + budget
 
-            if (total <= model.maxOutputTokens) return total
+            if (ceiling == null || total <= ceiling) return total
 
-            if (model.isKnown) {
-                warnings.add(
-                    ModelWarning(
-                        "$total output tokens is more than the ${model.maxOutputTokens} this model gives, " +
-                            "so the call asks for ${model.maxOutputTokens}",
-                        "maxOutputTokens",
-                    )
+            warnings.add(
+                ModelWarning(
+                    "$total output tokens is more than the $ceiling $modelId gives, so the call asks for $ceiling",
+                    "maxOutputTokens",
                 )
-                return model.maxOutputTokens
-            }
+            )
 
-            // The ceiling of an unknown model is a guess of ours, and a guess is no reason to shrink what was asked
-            return total
+            return ceiling
+        }
+
+        /**
+         * The one place a value is invented for a model nobody described: the api demands `max_tokens` and there
+         * is nothing to derive it from. It is small on purpose, and it is said out loud.
+         */
+        private fun guessedCeiling(): Int {
+            warnings.add(
+                ModelWarning(
+                    "$modelId is not in the model catalog, so the call asks for $FALLBACK_MAX_TOKENS output tokens. " +
+                        "Add it to the catalog, or set maxOutputTokens.",
+                    "maxOutputTokens",
+                )
+            )
+
+            return FALLBACK_MAX_TOKENS
         }
 
         /**
@@ -130,15 +163,15 @@ internal class AnthropicRequestMapper(private val config: AnthropicConfig = Anth
             if (reasoning == Reasoning.Off) return Json.obj("type" to "disabled")
 
             reasoning.budgetTokens?.let {
-                if (model.takesThinkingBudget) return budgetThinking(it, reasoning.summary)
+                if (takesBudget) return budgetThinking(it, reasoning.summary)
 
                 droppedByTheModel("reasoning.budgetTokens")
                 return null
             }
 
             if (reasoning.effort == null) return null
-            if (model.takesEffort) return adaptiveThinking(reasoning.summary)
-            if (model.takesThinkingBudget) return budgetThinking(budgetFor(reasoning.effort), reasoning.summary)
+            if (takesEffort) return adaptiveThinking(reasoning.summary)
+            if (takesBudget) return budgetThinking(budgetFor(reasoning.effort), reasoning.summary)
 
             droppedByTheModel("reasoning")
 
@@ -160,11 +193,15 @@ internal class AnthropicRequestMapper(private val config: AnthropicConfig = Anth
         private fun budgetThinking(tokens: Int, summary: ReasoningSummaries) =
             budgetThinking(tokens, summary != ReasoningSummaries.None)
 
-        private fun budgetThinking(tokens: Int, summary: Boolean) = Json.obj(
-            "type" to "enabled",
-            // The api rejects anything under a thousand, and a budget over the ceiling leaves no room to answer
-            "budget_tokens" to tokens.coerceIn(MIN_THINKING_BUDGET, model.maxOutputTokens),
-        ).also { if (!summary) it["display"] = displayFor(false) }
+        private fun budgetThinking(tokens: Int, summary: Boolean): JsonObject {
+            val range = model?.reasoningBudget
+
+            return Json.obj(
+                "type" to "enabled",
+                // The api refuses anything under a thousand, and a budget over the ceiling leaves no room to answer
+                "budget_tokens" to if (range == null) tokens else tokens.coerceIn(range.first, range.last),
+            ).also { if (!summary) it["display"] = displayFor(false) }
+        }
 
         /** Omitted still returns the signature, which is what carries the thinking to the next turn. */
         private fun displayFor(summary: Boolean) = if (summary) "summarized" else "omitted"
@@ -179,7 +216,7 @@ internal class AnthropicRequestMapper(private val config: AnthropicConfig = Anth
             ReasoningEfforts.Low -> 0.10
             ReasoningEfforts.Medium -> 0.30
             ReasoningEfforts.High -> 0.60
-        }.let { (model.maxOutputTokens * it).toInt() }
+        }.let { ((model?.maxOutputTokens ?: FALLBACK_MAX_TOKENS) * it).toInt() }
 
         /** Effort and the output format share one field, so they are filled together. */
         private fun applyOutputConfig(
@@ -188,31 +225,43 @@ internal class AnthropicRequestMapper(private val config: AnthropicConfig = Anth
             reasoning: Reasoning?,
             options: AnthropicOptions?,
         ) {
-            val config = Json.obj()
+            val outputConfig = Json.obj()
 
-            effortFor(reasoning, options)?.let { config["effort"] = it }
-            formatFor(output)?.let { config["format"] = it }
+            effortFor(reasoning, options)?.let { outputConfig["effort"] = it }
+            formatFor(output)?.let { outputConfig["format"] = it }
 
-            if (config.keys.isNotEmpty()) body["output_config"] = config
+            if (outputConfig.keys.isNotEmpty()) body["output_config"] = outputConfig
         }
 
         private fun effortFor(reasoning: Reasoning?, options: AnthropicOptions?): String? {
             options?.effort?.let { return it.wireName }
             if (options?.thinking != null) return null
 
-            val effort = reasoning?.effort?.takeIf { model.takesEffort } ?: return null
+            val asked = reasoning?.effort?.takeIf { takesEffort } ?: return null
+            val sent = nearest(asked) ?: return null
 
-            // Anthropic starts at low, so the level below it is asked for as low and the caller gets told
-            if (effort == ReasoningEfforts.Minimal) {
-                warnings.add(ModelWarning("Anthropic has no minimal effort, so it was asked for as low", "reasoning"))
+            if (sent != asked) {
+                warnings.add(ModelWarning("$modelId has no $asked effort, so it was asked for as $sent", "reasoning"))
             }
 
-            return if (effort == ReasoningEfforts.Minimal) "low" else effort.name.lowercase()
+            return sent.name.lowercase()
+        }
+
+        /**
+         * The closest level the model does have, which is the one below what was asked before the one above it:
+         * thinking a little less than the caller wanted is cheaper than thinking a lot more.
+         */
+        private fun nearest(asked: ReasoningEfforts): ReasoningEfforts? {
+            val available = model?.reasoningEfforts ?: return asked
+
+            if (asked in available) return asked
+
+            return available.filter { it < asked }.maxOrNull() ?: available.minOrNull()
         }
 
         private fun formatFor(output: OutputSpec) = when (output) {
             is OutputSpec.Text -> null
-            is OutputSpec.Json -> if (model.takesStructuredOutput) {
+            is OutputSpec.Json -> if (takesStructuredOutput) {
                 // Anthropic names no schema and takes no strict flag: closing the schema is the whole of it
                 Json.obj("type" to "json_schema", "schema" to StrictSchema.of(output.schema))
             } else {
@@ -379,14 +428,15 @@ internal class AnthropicRequestMapper(private val config: AnthropicConfig = Anth
         }
 
         private fun droppedByTheModel(setting: String) {
-            warnings.add(ModelWarning("This model does not take $setting, so it was not sent", setting))
+            warnings.add(ModelWarning("$modelId does not take $setting, so it was not sent", setting))
         }
     }
 }
 
 internal data class MappedRequest(val body: JsonObject, val warnings: List<ModelWarning>)
 
-private const val MIN_THINKING_BUDGET = 1_024
+/** Only reached by a model nobody described, where there is nothing to derive a ceiling from. */
+private const val FALLBACK_MAX_TOKENS = 4_096
 
 private val AnthropicEfforts.wireName get() = name.lowercase()
 

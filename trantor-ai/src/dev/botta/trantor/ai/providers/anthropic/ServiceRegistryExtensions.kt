@@ -1,7 +1,9 @@
 package dev.botta.trantor.ai.providers.anthropic
 
+import dev.botta.trantor.ai.addModelCatalog
 import dev.botta.trantor.ai.addModelRegistry
 import dev.botta.trantor.ai.models.ModelRegistry
+import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceRegistry
 
@@ -21,7 +23,8 @@ fun ServiceRegistry.addAnthropic(configuration: ServiceConfiguration<AnthropicCo
     if (has<AnthropicProvider>()) return@apply
 
     addModelRegistry()
-    addSingleton { AnthropicProvider(it.get<AnthropicConfig>()) }
+    addModelCatalog { catalog, _ -> catalog.addAnthropicModels() }
+    addSingleton { AnthropicProvider(it.get<AnthropicConfig>(), it.get<ModelCatalog>()) }
     configure<ModelRegistry> { models, services -> models.addProvider(services.get<AnthropicProvider>()) }
 }
 

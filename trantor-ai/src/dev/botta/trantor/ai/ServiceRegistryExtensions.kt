@@ -1,6 +1,7 @@
 package dev.botta.trantor.ai
 
 import dev.botta.trantor.ai.models.ModelRegistry
+import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.providers.anthropic.addAnthropic
 import dev.botta.trantor.ai.providers.openai.addOpenAI
 import dev.botta.trantor.di.ServiceConfiguration
@@ -37,4 +38,21 @@ fun ServiceRegistry.addModelRegistry() = apply {
     if (has<ModelRegistry>()) return@apply
 
     addSingleton { ModelRegistry().loadFromConfig(it.config) }
+}
+
+/**
+ * The catalog of what each model takes, which is what lets an adapter drop a setting the model would refuse
+ * instead of losing the call. Each provider adds its own models; an application adds or replaces whatever it
+ * wants, so a model that came out today works without a release:
+ *
+ * ```kotlin
+ * services.addModelCatalog { catalog, _ ->
+ *     catalog.add("anthropic/claude-6", like = "anthropic/claude-opus-5") { copy(maxOutputTokens = 256_000) }
+ * }
+ * ```
+ */
+fun ServiceRegistry.addModelCatalog(configuration: ServiceConfiguration<ModelCatalog> = { _, _ -> }) = apply {
+    if (!has<ModelCatalog>()) addSingleton { ModelCatalog().loadFromConfig(it.config) }
+
+    configure(configuration)
 }

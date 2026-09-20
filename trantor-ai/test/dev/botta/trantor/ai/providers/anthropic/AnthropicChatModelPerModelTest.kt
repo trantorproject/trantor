@@ -169,7 +169,7 @@ class AnthropicChatModelPerModelTest {
         @Test
         fun `and is dropped with a warning on a model that does not have one`() {
             val response = generateWith(
-                "claude-3-5-sonnet-20241022",
+                "claude-sonnet-4",
                 ChatRequest(listOf(Message.user("Hola")), output = jsonOutput()),
             )
 

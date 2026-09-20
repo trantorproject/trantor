@@ -1,7 +1,9 @@
 package dev.botta.trantor.ai.providers.openai
 
+import dev.botta.trantor.ai.addModelCatalog
 import dev.botta.trantor.ai.addModelRegistry
 import dev.botta.trantor.ai.models.ModelRegistry
+import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceRegistry
 
@@ -21,7 +23,8 @@ fun ServiceRegistry.addOpenAI(configuration: ServiceConfiguration<OpenAIConfig> 
     if (has<OpenAIProvider>()) return@apply
 
     addModelRegistry()
-    addSingleton { OpenAIProvider(it.get<OpenAIConfig>()) }
+    addModelCatalog { catalog, _ -> catalog.addOpenAIModels() }
+    addSingleton { OpenAIProvider(it.get<OpenAIConfig>(), it.get<ModelCatalog>()) }
     configure<ModelRegistry> { models, services -> models.addProvider(services.get<OpenAIProvider>()) }
 }
 

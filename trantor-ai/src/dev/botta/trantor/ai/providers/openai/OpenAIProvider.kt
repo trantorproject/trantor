@@ -2,6 +2,7 @@ package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
 import dev.botta.trantor.ai.models.chat.Part
+import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.ProviderMetadata
 import dev.botta.trantor.web.client.HttpClient
@@ -24,10 +25,14 @@ internal val Part.wasInsideAMessage get() = metadata[OPENAI_PROVIDER]?.get("inMe
 /** Builds OpenAI models for the registry. Every model it builds shares this config and this http client. */
 class OpenAIProvider(
     private val config: OpenAIConfig = OpenAIConfig(),
+    private val catalog: ModelCatalog = ModelCatalog().addOpenAIModels(),
     private val httpClient: HttpClient? = null,
 ): AIProvider {
     override val name = OPENAI_PROVIDER
 
-    override fun chatModel(modelId: String) =
-        if (httpClient == null) OpenAIChatModel(modelId, config) else OpenAIChatModel(modelId, config, httpClient)
+    override fun chatModel(modelId: String) = if (httpClient == null) {
+        OpenAIChatModel(modelId, config, catalog = catalog)
+    } else {
+        OpenAIChatModel(modelId, config, httpClient, catalog)
+    }
 }

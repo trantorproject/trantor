@@ -4,6 +4,7 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.AuthenticationError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.CancellationLink
+import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.web.client.*
 import dev.botta.trantor.web.client.okhttp.OkHttpHttpClient
@@ -20,12 +21,13 @@ class AnthropicChatModel(
     override val modelId: String,
     private val config: AnthropicConfig = AnthropicConfig(),
     private val httpClient: HttpClient = defaultHttpClient,
+    catalog: ModelCatalog = ModelCatalog().addAnthropicModels(),
 ): ChatModel {
     constructor(modelId: String, apiKey: String): this(modelId, AnthropicConfig(apiKey))
 
     override val provider = ANTHROPIC_PROVIDER
 
-    private val requestMapper = AnthropicRequestMapper(config)
+    private val requestMapper = AnthropicRequestMapper(config, catalog)
     private val errorMapper = AnthropicErrorMapper()
     private val responseMapper = AnthropicResponseMapper()
 

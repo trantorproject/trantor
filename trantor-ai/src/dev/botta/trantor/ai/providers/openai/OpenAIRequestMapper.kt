@@ -7,6 +7,7 @@ import dev.botta.json.values.JsonValue
 import dev.botta.trantor.ai.errors.InvalidProviderOptionError
 import dev.botta.trantor.ai.errors.UnsupportedRequestError
 import dev.botta.trantor.ai.models.ModelWarning
+import dev.botta.trantor.ai.models.catalog.*
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.providers.RawOptions
@@ -16,14 +17,28 @@ import dev.botta.trantor.ai.tools.*
 /**
  * Turns a [ChatRequest] into the body of a call to the OpenAI Responses API.
  *
+ * **A setting the model does not take is dropped with a warning, never sent.** The split that matters here cuts
+ * both ways: a reasoning model refuses a temperature that is not its own — *"Unsupported value: 'temperature' does
+ * not support 0.2 with this model"* — and a model that does not reason refuses `reasoning`. What each one takes
+ * comes from the [ModelCatalog], and a model that is not in it is not protected: the request goes as it was
+ * written and OpenAI is the one who answers.
+ *
  * The mapper has no state of its own: what a mapping collects on the way, like the warnings, belongs to that
  * mapping. A model is shared by everyone who asks the registry for it, and calls run on several threads.
  */
-internal class OpenAIRequestMapper(private val config: OpenAIConfig = OpenAIConfig(apiKey = "")) {
-    fun map(modelId: String, request: ChatRequest, stream: Boolean = false) = Mapping().map(modelId, request, stream)
+internal class OpenAIRequestMapper(
+    private val config: OpenAIConfig = OpenAIConfig(apiKey = ""),
+    private val catalog: ModelCatalog = ModelCatalog().addOpenAIModels(),
+) {
+    fun map(modelId: String, request: ChatRequest, stream: Boolean = false) =
+        Mapping(catalog.find(OPENAI_PROVIDER, modelId)?.capabilities, modelId).map(modelId, request, stream)
 
-    private inner class Mapping {
+    /** [model] is null for a model nobody wrote down, and then nothing here holds anything back. */
+    private inner class Mapping(private val model: ModelCapabilities?, private val modelId: String) {
         private val warnings = mutableListOf<ModelWarning>()
+
+        private val takesSamplingSettings get() = model == null || model.temperature != null
+        private val takesReasoning get() = model == null || model.reasoningEfforts.isNotEmpty()
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
             val body = Json.obj(
@@ -42,15 +57,28 @@ internal class OpenAIRequestMapper(private val config: OpenAIConfig = OpenAIConf
 
             with(request.settings) {
                 maxOutputTokens?.let { body["max_output_tokens"] = it }
-                temperature?.let { body["temperature"] = it }
-                topP?.let { body["top_p"] = it }
                 parallelToolCalls?.let { body["parallel_tool_calls"] = it }
                 stopSequences?.let { unsupportedSetting("stopSequences") }
                 seed?.let { unsupportedSetting("seed") }
-                reasoning?.let { toReasoning(it) }?.let {
-                    body["reasoning"] = it
-                    // Without this the reasoning of this turn cannot be sent back on the next one
-                    body["include"] = Json.array(ENCRYPTED_REASONING)
+
+                // A reasoning model answers 400 to any temperature but its own, and so does top_p
+                if (takesSamplingSettings) {
+                    temperature?.let { body["temperature"] = coerced(it, "temperature", model?.temperature) }
+                    topP?.let { body["top_p"] = coerced(it, "topP", model?.topP) }
+                } else {
+                    temperature?.let { droppedByTheModel("temperature") }
+                    topP?.let { droppedByTheModel("topP") }
+                }
+
+                // And the other half of the same split: a model that does not reason refuses being asked to
+                if (reasoning != null && !takesReasoning) {
+                    droppedByTheModel("reasoning")
+                } else {
+                    reasoning?.let { toReasoning(it) }?.let {
+                        body["reasoning"] = it
+                        // Without this the reasoning of this turn cannot be sent back on the next one
+                        body["include"] = Json.array(ENCRYPTED_REASONING)
+                    }
                 }
             }
 
@@ -117,6 +145,26 @@ internal class OpenAIRequestMapper(private val config: OpenAIConfig = OpenAIConf
                     )
                 }
             }
+        }
+
+        private fun coerced(asked: Double, setting: String, range: ValueRange?): Double {
+            val sent = range?.coerce(asked) ?: asked
+
+            if (sent != asked) {
+                warnings.add(
+                    ModelWarning(
+                        "$modelId takes a $setting between ${range!!.min} and ${range.max}, " +
+                            "so $asked was sent as $sent",
+                        setting,
+                    )
+                )
+            }
+
+            return sent
+        }
+
+        private fun droppedByTheModel(setting: String) {
+            warnings.add(ModelWarning("$modelId does not take $setting, so it was not sent", setting))
         }
 
         /** Null when there is nothing to ask for, so that [Reasoning.Off] and no reasoning at all mean the same. */
