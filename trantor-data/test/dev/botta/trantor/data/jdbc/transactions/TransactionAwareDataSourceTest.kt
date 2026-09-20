@@ -3,7 +3,7 @@
 package dev.botta.trantor.data.jdbc.transactions
 
 import dev.botta.trantor.data.jdbc.ManagedDataSourceConnection
-import dev.botta.trantor.data.jdbc.transactions.manager.JdbcTransactionManager
+import dev.botta.trantor.data.jdbc.transactions.manager.SimpleJdbcTransactionManager
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -47,25 +47,37 @@ class TransactionAwareDataSourceTest {
     inner class `with a transaction open` {
         @Test
         fun `hands out the connection of the transaction, so the work is in it`() {
-            openTransactionOn(pooled)
+            val transactionConnection = openTransaction()
 
-            assertThat(dataSource.connection).isSameAs(pooled)
+            assertThat(dataSource.connection).isSameAs(transactionConnection)
         }
 
         @Test
-        fun `does not go to the pool at all`() {
-            openTransactionOn(pooled)
+        fun `does not go to the pool again`() {
+            openTransaction()
 
             dataSource.connection
 
-            verify(exactly = 0) { inner.connection }
+            // Once, to open the transaction: asking again inside it hands back the same one
+            verify(exactly = 1) { inner.connection }
         }
 
         @Test
-        fun `hands it over raw, so closing it is the caller's business`() {
-            openTransactionOn(pooled)
+        fun `it is wrapped too, so closing it cannot end the transaction`() {
+            openTransaction()
 
-            assertThat(dataSource.connection).isNotInstanceOf(ManagedDataSourceConnection::class.java)
+            dataSource.connection!!.close()
+
+            verify(exactly = 0) { pooled.close() }
+        }
+
+        @Test
+        fun `which works because a wrapper answers equal to the connection it wraps`() {
+            val transactionConnection = openTransaction()
+
+            // Load bearing, and easy to lose: close() reports the connection underneath, while the guard
+            // that decides whether to really close it holds the wrapper. Only this equals makes them meet
+            assertThat(transactionConnection).isEqualTo(pooled)
         }
     }
 
@@ -74,7 +86,7 @@ class TransactionAwareDataSourceTest {
         @Test
         fun `is left alone when it turns out to be the one the transaction is using`() {
             val connection = dataSource.connection!!
-            openTransactionOn(pooled)
+            openTransaction()
 
             connection.close()
 
@@ -111,12 +123,16 @@ class TransactionAwareDataSourceTest {
 
     interface DriverSpecific
 
-    private fun openTransactionOn(connection: Connection) {
-        val manager = mockk<JdbcTransactionManager>(relaxed = true)
-        every { manager.hasActiveTransaction() } returns true
-        every { manager.activeConnection } returns connection
+    /**
+     * A real manager and not a mock: it takes its connection from this very data source, before there is a
+     * transaction to speak of, so what it ends up holding is a [ManagedDataSourceConnection]. A mock handed
+     * a raw connection sets up a state that never happens, and the tests above read false conclusions off it.
+     */
+    private fun openTransaction(): Connection {
+        val manager = SimpleJdbcTransactionManager(dataSource)
+        manager.beginTransaction()
 
-        dataSource.transactionManager = manager
+        return manager.activeConnection!!
     }
 
     private val pooled = mockk<Connection>(relaxed = true)
