@@ -1,6 +1,7 @@
 package dev.botta.trantor.ai
 
 import dev.botta.trantor.ai.models.ModelRegistry
+import dev.botta.trantor.ai.providers.anthropic.addAnthropic
 import dev.botta.trantor.ai.providers.openai.addOpenAI
 import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceRegistry
@@ -24,6 +25,7 @@ import dev.botta.trantor.di.ServiceRegistry
 fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = { _, _ -> }) = apply {
     addModelRegistry()
     addOpenAI()
+    addAnthropic()
     configure(configuration)
 }
 

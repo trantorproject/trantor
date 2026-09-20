@@ -58,13 +58,13 @@ data class ToolResultPart(
  * Something the adapter does not model yet. It is kept as it came and sent back to the same provider on the next
  * turn, so that nothing is lost while we catch up with what providers add.
  *
- * [isItem] says where it was: on its own, or inside the content of a message. It has to go back to the same place,
- * or the provider gets a message part where it expects an item.
+ * Where it was — on its own or inside the content of a message — is the provider's own business and travels in
+ * [metadata]. Only OpenAI has the two levels; for everyone else there is one, and a shared type has no reason to
+ * carry a distinction that belongs to a single wire format.
  */
 data class ProviderPart(
     val provider: String,
     val type: String,
     val raw: JsonObject,
-    val isItem: Boolean = true,
     override val metadata: ProviderMetadata = ProviderMetadata.None,
 ): Part

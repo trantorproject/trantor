@@ -73,7 +73,7 @@ internal class OpenAIResponseMapper {
                 "output_text" -> TextPart(part["text"]?.asString() ?: "", extrasOf(part))
                 "refusal" -> RefusalPart(part["refusal"]?.asString() ?: "")
                 // Content of a message, not an item of its own, and it has to go back inside a message
-                else -> ProviderPart(OPENAI_PROVIDER, part["type"]?.asString() ?: "unknown", part, isItem = false)
+                else -> ProviderPart(OPENAI_PROVIDER, part["type"]?.asString() ?: "unknown", part, insideAMessage)
             }
         }
 

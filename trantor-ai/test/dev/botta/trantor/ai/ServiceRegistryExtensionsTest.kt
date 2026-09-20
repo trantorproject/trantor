@@ -8,6 +8,8 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.models.middleware.ChatModelMiddleware
 import dev.botta.trantor.ai.providers.AIProvider
+import dev.botta.trantor.ai.providers.anthropic.AnthropicConfig
+import dev.botta.trantor.ai.providers.anthropic.addAnthropic
 import dev.botta.trantor.ai.providers.openai.OpenAIConfig
 import dev.botta.trantor.ai.providers.openai.addOpenAI
 import dev.botta.trantor.ai.testing.FakeChatModel
@@ -31,6 +33,7 @@ class ServiceRegistryExtensionsTest {
             registry.addAI()
 
             assertThat(models().chat("openai/gpt-4.1-mini").provider).isEqualTo("openai")
+            assertThat(models().chat("anthropic/claude-sonnet-4-5").provider).isEqualTo("anthropic")
         }
 
         @Test
@@ -159,12 +162,12 @@ class ServiceRegistryExtensionsTest {
 
         @Test
         fun `one pointing at a provider that was never registered says so`() {
-            config.addMemoryCollection("ai.models.default" to "anthropic/claude")
+            config.addMemoryCollection("ai.models.default" to "cohere/command")
             registry.addAI()
 
             assertThatThrownBy { models().chat() }
                 .isInstanceOf(ModelNotFoundError::class.java)
-                .hasMessageContaining("There is no provider called anthropic")
+                .hasMessageContaining("There is no provider called cohere")
         }
     }
 
@@ -222,6 +225,87 @@ class ServiceRegistryExtensionsTest {
 
             assertThat(models().chat("openai/gpt-4.1-mini").provider).isEqualTo("openai")
             assertThat(models().chat("fake/a-model").provider).isEqualTo("fake")
+        }
+    }
+
+    @Nested
+    inner class `the anthropic provider` {
+        @Test
+        fun `builds its models`() {
+            registry.addAnthropic()
+
+            val model = models().chat("anthropic/claude-sonnet-4-5")
+
+            assertThat(model.provider).isEqualTo("anthropic")
+            assertThat(model.modelId).isEqualTo("claude-sonnet-4-5")
+        }
+
+        @Test
+        fun `brings the registry along`() {
+            registry.addAnthropic()
+
+            assertThat(models()).isNotNull()
+        }
+
+        @Test
+        fun `reads its config from its section`() {
+            config.addMemoryCollection(
+                "ai.providers.anthropic.apiKey" to "sk-ant-from-config",
+                "ai.providers.anthropic.baseUrl" to "http://localhost:1234/v1",
+                "ai.providers.anthropic.defaultMaxTokens" to "1024",
+            )
+            registry.addAnthropic()
+
+            val anthropic = provider.get<AnthropicConfig>()
+
+            assertThat(anthropic.apiKey).isEqualTo("sk-ant-from-config")
+            assertThat(anthropic.baseUrl).isEqualTo("http://localhost:1234/v1")
+            assertThat(anthropic.defaultMaxTokens).isEqualTo(1024)
+        }
+
+        @Test
+        fun `keeps its defaults for what the config does not say`() {
+            config.addMemoryCollection("ai.providers.anthropic.apiKey" to "sk-ant-from-config")
+            registry.addAnthropic()
+
+            val anthropic = provider.get<AnthropicConfig>()
+
+            assertThat(anthropic.baseUrl).isEqualTo(AnthropicConfig.DEFAULT_BASE_URL)
+            assertThat(anthropic.version).isEqualTo(AnthropicConfig.DEFAULT_VERSION)
+            assertThat(anthropic.defaultMaxTokens).isNull()
+            assertThat(anthropic.betas).isEmpty()
+        }
+
+        @Test
+        fun `a configuration of the application is kept, whichever call comes first`() {
+            registry.addAnthropic { anthropic, _ -> anthropic.apiKey = "sk-ant-from-the-app" }
+            registry.addAI()
+
+            assertThat(provider.get<AnthropicConfig>().apiKey).isEqualTo("sk-ant-from-the-app")
+        }
+
+        @Test
+        fun `reads the betas it was given as a list`() {
+            // What a JSON array of settings.json flattens into, so a beta can be turned on without a release
+            config.addMemoryCollection(
+                "ai.providers.anthropic.betas.__config_type__" to "array",
+                "ai.providers.anthropic.betas.size" to "2",
+                "ai.providers.anthropic.betas.0" to "context-1m-2025-08-07",
+                "ai.providers.anthropic.betas.1" to "another-one",
+            )
+            registry.addAnthropic()
+
+            assertThat(provider.get<AnthropicConfig>().betas)
+                .containsExactly("context-1m-2025-08-07", "another-one")
+        }
+
+        @Test
+        fun `lives together with the openai one`() {
+            registry.addAnthropic()
+            registry.addOpenAI()
+
+            assertThat(models().chat("anthropic/claude-sonnet-4-5").provider).isEqualTo("anthropic")
+            assertThat(models().chat("openai/gpt-4.1-mini").provider).isEqualTo("openai")
         }
     }
 

@@ -10,6 +10,7 @@ import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.providers.RawOptions
+import dev.botta.trantor.ai.schemas.StrictSchema
 import dev.botta.trantor.ai.tools.*
 
 /**
@@ -149,7 +150,7 @@ internal class OpenAIRequestMapper(private val config: OpenAIConfig = OpenAIConf
 
         // In strict mode the schema has to follow rules a plain schema doesn't, so the adapter fixes it instead of
         // making everyone write it by hand
-        private fun schemaFor(schema: JsonObject, strict: Boolean) = if (strict) OpenAIStrictSchema.of(schema) else schema
+        private fun schemaFor(schema: JsonObject, strict: Boolean) = if (strict) StrictSchema.of(schema) else schema
 
         private fun toTool(tool: ToolSpec) = when (tool) {
             is FunctionToolSpec -> Json.obj(
@@ -196,7 +197,7 @@ internal class OpenAIRequestMapper(private val config: OpenAIConfig = OpenAIConf
                         it.add(toTextPart(role, part))
                     }
                     // Content of a message goes back inside a message; an item of its own goes back as an item
-                    is ProviderPart if !part.isItem -> contentOf(items, role, content).let {
+                    is ProviderPart if part.wasInsideAMessage -> contentOf(items, role, content).let {
                         content = it
                         if (part.provider == OPENAI_PROVIDER) it.add(part.raw) else unsupportedPart(part)
                     }

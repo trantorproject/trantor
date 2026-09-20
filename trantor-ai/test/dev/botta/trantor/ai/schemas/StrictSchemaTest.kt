@@ -1,6 +1,6 @@
 @file:Suppress("ClassName")
 
-package dev.botta.trantor.ai.providers.openai
+package dev.botta.trantor.ai.schemas
 
 import dev.botta.json.Json
 import dev.botta.trantor.ai.schemas.JsonSchemas
@@ -8,17 +8,17 @@ import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class OpenAIStrictSchemaTest {
+class StrictSchemaTest {
     @Test
     fun `every property becomes required`() {
-        val strict = OpenAIStrictSchema.of(JsonSchemas.of<Order>())
+        val strict = StrictSchema.of(JsonSchemas.of<Order>())
 
         assertThat(strict["required"]?.asArray()?.map { it.asString() }).containsExactly("customer", "note", "items")
     }
 
     @Test
     fun `every object is closed`() {
-        val strict = OpenAIStrictSchema.of(JsonSchemas.of<Order>())
+        val strict = StrictSchema.of(JsonSchemas.of<Order>())
 
         assertThat(strict["additionalProperties"]?.asBoolean()).isFalse()
         assertThat(strict.path($$"$defs.Item.additionalProperties")?.asBoolean()).isFalse()
@@ -26,14 +26,14 @@ class OpenAIStrictSchemaTest {
 
     @Test
     fun `definitions take their simple name`() {
-        val strict = OpenAIStrictSchema.of(JsonSchemas.of<Order>())
+        val strict = StrictSchema.of(JsonSchemas.of<Order>())
 
         assertThat(strict[$$"$defs"]?.asObject()?.keys).containsExactly("Item")
     }
 
     @Test
     fun `references point to the renamed definitions`() {
-        val strict = OpenAIStrictSchema.of(JsonSchemas.of<Order>())
+        val strict = StrictSchema.of(JsonSchemas.of<Order>())
 
         assertThat(strict.path("properties.items.items")?.asObject()?.get($$"$ref")?.asString())
             .isEqualTo($$"#/$defs/Item")
@@ -44,7 +44,7 @@ class OpenAIStrictSchemaTest {
         val schema = JsonSchemas.of<Order>()
         val before = schema.toString()
 
-        OpenAIStrictSchema.of(schema)
+        StrictSchema.of(schema)
 
         assertThat(schema.toString()).isEqualTo(before)
     }
@@ -53,7 +53,7 @@ class OpenAIStrictSchemaTest {
     fun `a schema without objects is left alone`() {
         val schema = Json.obj("type" to "string")
 
-        assertThat(OpenAIStrictSchema.of(schema)).isEqualTo(Json.obj("type" to "string"))
+        assertThat(StrictSchema.of(schema)).isEqualTo(Json.obj("type" to "string"))
     }
 
     @Serializable

@@ -1,0 +1,28 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfFGveUejYgEaWzh1M6hM",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "¿Por qué los pájaros no usan Facebook?\n\nPorque ya tienen Twitter 🐦"
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 15,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 28,
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  }
+}

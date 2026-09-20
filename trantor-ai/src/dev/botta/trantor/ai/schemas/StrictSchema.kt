@@ -1,19 +1,23 @@
-package dev.botta.trantor.ai.providers.openai
+package dev.botta.trantor.ai.schemas
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonArray
 import dev.botta.json.values.JsonObject
 
 /**
- * Adapts a JSON Schema to what OpenAI accepts in strict mode, without touching the original.
+ * Adapts a JSON Schema to what a provider accepts in strict mode, without touching the original.
  *
  * Strict mode asks for two things the schema of a Kotlin type does not have: every object closed with
  * additionalProperties and **every** property listed in required. A field with a default is optional in Kotlin but
  * has to be required here, which is why an optional field has to be nullable to work: the model answers it as null.
  *
  * Definitions are also renamed to their simple name, since kotlinx generates them with the whole package.
+ *
+ * Both OpenAI and Anthropic ask for the same two things, so the shape is shared rather than copied. Anthropic is
+ * the looser of the two: it only demands `additionalProperties: false`, and takes a listed default in place of a
+ * required field. Closing more than it asks for is still a schema it accepts.
  */
-internal object OpenAIStrictSchema {
+internal object StrictSchema {
     fun of(schema: JsonObject): JsonObject {
         val copy = Json.parse(schema.toString()).asObject() ?: return schema
 
