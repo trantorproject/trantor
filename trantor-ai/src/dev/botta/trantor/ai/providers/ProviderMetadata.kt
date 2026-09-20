@@ -1,4 +1,4 @@
-package dev.botta.trantor.ai.models
+package dev.botta.trantor.ai.providers
 
 import dev.botta.json.values.JsonObject
 

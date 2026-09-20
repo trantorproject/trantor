@@ -1,6 +1,6 @@
 @file:Suppress("ClassName")
 
-package dev.botta.trantor.ai.models
+package dev.botta.trantor.ai
 
 import dev.botta.trantor.ai.errors.CancelledError
 import org.assertj.core.api.Assertions.assertThat

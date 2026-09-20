@@ -6,7 +6,7 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.errors.*
 import dev.botta.trantor.ai.models.CallOptions
-import dev.botta.trantor.ai.models.Cancellation
+import dev.botta.trantor.ai.Cancellation
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpMethods

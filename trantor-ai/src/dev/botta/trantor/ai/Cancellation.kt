@@ -1,4 +1,4 @@
-package dev.botta.trantor.ai.models
+package dev.botta.trantor.ai
 
 import dev.botta.trantor.ai.errors.CancelledError
 import java.util.concurrent.CopyOnWriteArrayList

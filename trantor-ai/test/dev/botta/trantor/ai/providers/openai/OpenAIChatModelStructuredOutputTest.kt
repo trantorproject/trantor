@@ -33,7 +33,8 @@ class OpenAIChatModelStructuredOutputTest {
 
         val schema = sentBody().path("text.format.schema")?.asObject()!!
         assertThat(schema["additionalProperties"]?.asBoolean()).isFalse()
-        assertThat(schema["required"]?.asArray()?.map { it.asString() }).containsExactly("customer", "note", "items")
+        assertThat(schema["required"]?.asArray()?.map { it.asString() })
+            .containsExactly("customer", "items", "deliverBefore")
         assertThat(schema.path("properties.items.items")?.asObject()?.get($$"$ref")?.asString())
             .isEqualTo($$"#/$defs/Item")
     }
@@ -48,7 +49,7 @@ class OpenAIChatModelStructuredOutputTest {
         assertThat(sentBody().path("text.format.strict")?.asBoolean()).isFalse()
         // kotlinx leaves a property with a default out of required; strict mode is what puts it in
         assertThat(sentBody().path("text.format.schema.required")?.asArray()?.map { it.asString() })
-            .containsExactly("customer")
+            .containsExactly("customer", "items")
     }
 
     @Test
@@ -66,7 +67,9 @@ class OpenAIChatModelStructuredOutputTest {
 
         val order = model.generate(orderRequest()).objectAs<Order>()
 
-        assertThat(order).isEqualTo(Order(customer = "Nico", note = null, items = listOf(Item("ABC-1"))))
+        assertThat(order).isEqualTo(
+            Order("Nico Bottarini", listOf(Item("ABC-100", 3), Item("XYZ-7", 2)), deliverBefore = "2024-04-25")
+        )
     }
 
     @Test
@@ -108,8 +111,8 @@ class OpenAIChatModelStructuredOutputTest {
     private val model = OpenAIChatModel("gpt-4.1-mini", OpenAIConfig(apiKey = "sk-test"), httpClient)
 
     @Serializable
-    data class Order(val customer: String, val note: String? = null, val items: List<Item> = emptyList())
+    data class Order(val customer: String, val items: List<Item>, val deliverBefore: String? = null)
 
     @Serializable
-    data class Item(val sku: String)
+    data class Item(val sku: String, val quantity: Int)
 }

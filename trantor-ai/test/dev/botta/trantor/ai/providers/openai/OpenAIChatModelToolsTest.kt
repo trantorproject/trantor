@@ -99,7 +99,7 @@ class OpenAIChatModelToolsTest {
         val response = model.generate(requestWith(weatherTool))
 
         val call = response.toolCalls.single()
-        assertThat(call.callId).isEqualTo("call_abc123")
+        assertThat(call.callId).isEqualTo("call_Bh8ibYfKDf5kfsf1gsbUdqff")
         assertThat(call.toolName).isEqualTo("getWeather")
         assertThat(call.input).isEqualTo(Json.obj("city" to "Bariloche"))
         assertThat(response.finishReason).isEqualTo(FinishReasons.ToolCalls)
@@ -111,7 +111,7 @@ class OpenAIChatModelToolsTest {
 
         val call = model.generate(requestWith(weatherTool)).toolCalls.single()
 
-        assertThat(call.metadata["openai"]).isEqualTo(Json.obj("id" to "fc_tool_call_1"))
+        assertThat(call.metadata["openai"]).isEqualTo(Json.obj("id" to "fc_0fa3f5f108a19346006aaf410db8a887d2bf2f6e4749804c5b"))
     }
 
     @Test
@@ -127,17 +127,17 @@ class OpenAIChatModelToolsTest {
         )
 
         assertThat(sentBody()["input"]?.asArray()?.get(1).toString()).isEqualTo(
-            """{"type":"function_call","call_id":"call_abc123","name":"getWeather","arguments":"{\"city\":\"Bariloche\"}"}"""
+            """{"type":"function_call","call_id":"call_Bh8ibYfKDf5kfsf1gsbUdqff","name":"getWeather","arguments":"{\"city\":\"Bariloche\"}"}"""
         )
         assertThat(sentBody()["input"]?.asArray()?.get(2).toString()).isEqualTo(
-            """{"type":"function_call_output","call_id":"call_abc123","output":"{\"celsius\":7}"}"""
+            """{"type":"function_call_output","call_id":"call_Bh8ibYfKDf5kfsf1gsbUdqff","output":"{\"celsius\":7}"}"""
         )
     }
 
     @Test
     fun `sends a text result of a tool as it is`() {
         httpClient.body = fixture("tool-call")
-        val result = ToolResultPart("call_abc123", "getWeather", ToolOutput.Text("7 grados"))
+        val result = ToolResultPart("call_Bh8ibYfKDf5kfsf1gsbUdqff", "getWeather", ToolOutput.Text("7 grados"))
 
         model.generate(requestWith(weatherTool).copy(messages = listOf(Message.toolResult(result))))
 

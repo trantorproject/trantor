@@ -2,10 +2,10 @@ package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
-import dev.botta.trantor.ai.models.ProviderMetadata
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.models.Usage
+import dev.botta.trantor.ai.providers.ProviderMetadata
 import dev.botta.trantor.ai.models.chat.*
 import kotlin.time.Duration
 

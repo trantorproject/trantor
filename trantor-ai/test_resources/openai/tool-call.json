@@ -1,25 +1,96 @@
 {
-  "id": "resp_tool_call_1",
+  "id": "resp_0fa3f5f108a19346006aaf410d3f1487d2b0b7499d1a963493",
   "object": "response",
-  "created_at": 1789867200,
+  "created_at": 1789870349,
   "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1789870349,
   "error": null,
+  "frequency_penalty": 0.0,
   "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
   "model": "gpt-4.1-mini-2025-04-14",
+  "moderation": null,
   "output": [
     {
-      "id": "fc_tool_call_1",
+      "id": "fc_0fa3f5f108a19346006aaf410db8a887d2bf2f6e4749804c5b",
       "type": "function_call",
       "status": "completed",
       "arguments": "{\"city\":\"Bariloche\"}",
-      "call_id": "call_abc123",
+      "call_id": "call_Bh8ibYfKDf5kfsf1gsbUdqff",
       "name": "getWeather"
     }
   ],
   "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": null,
+    "effort": null,
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
   "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "El clima actual de una ciudad",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
   "usage": {
-    "input_tokens": 61,
+    "input_tokens": 46,
     "input_tokens_details": {
       "cache_write_tokens": 0,
       "cached_tokens": 0
@@ -28,6 +99,10 @@
     "output_tokens_details": {
       "reasoning_tokens": 0
     },
-    "total_tokens": 78
+    "total_tokens": 63
+  },
+  "user": null,
+  "metadata": {
+    
   }
 }

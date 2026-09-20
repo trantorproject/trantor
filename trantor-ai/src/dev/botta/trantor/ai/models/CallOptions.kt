@@ -1,5 +1,6 @@
 package dev.botta.trantor.ai.models
 
+import dev.botta.trantor.ai.Cancellation
 import kotlin.time.Duration
 
 /** Options of the call itself, shared by every model family. */

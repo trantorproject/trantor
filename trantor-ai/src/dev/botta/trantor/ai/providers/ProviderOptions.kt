@@ -1,4 +1,4 @@
-package dev.botta.trantor.ai.models
+package dev.botta.trantor.ai.providers
 
 /**
  * Provider specific options of a request. Each adapter reads only its own and ignores the rest with a warning.

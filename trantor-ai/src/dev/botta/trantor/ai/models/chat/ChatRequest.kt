@@ -1,6 +1,6 @@
 package dev.botta.trantor.ai.models.chat
 
-import dev.botta.trantor.ai.models.ProviderOptions
+import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.tools.ToolChoice
 import dev.botta.trantor.ai.tools.ToolSpec
 

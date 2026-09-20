@@ -1,6 +1,6 @@
 @file:Suppress("ClassName")
 
-package dev.botta.trantor.ai.models
+package dev.botta.trantor.ai.providers
 
 import dev.botta.json.Json
 import org.assertj.core.api.Assertions.assertThat

@@ -1,7 +1,7 @@
 package dev.botta.trantor.ai.models.chat
 
 import dev.botta.json.values.JsonObject
-import dev.botta.trantor.ai.models.ProviderMetadata
+import dev.botta.trantor.ai.providers.ProviderMetadata
 import dev.botta.trantor.ai.tools.ToolOutput
 
 sealed interface Part {
