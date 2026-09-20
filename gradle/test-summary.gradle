@@ -1,0 +1,19 @@
+// Prints how many tests actually ran. Test reports are turned off by the conventions plugin, so a passing
+// run is otherwise silent and a test that never ran looks exactly like a test that passed.
+//
+//   ./gradlew test -I gradle/test-summary.gradle
+//   ./gradlew :trantor-ai:test --rerun-tasks -I gradle/test-summary.gradle
+//
+// --rerun-tasks matters: an up-to-date task executes nothing and reports zero.
+
+allprojects {
+    tasks.withType(Test).configureEach { t ->
+        t.afterSuite { desc, result ->
+            if (desc.parent != null) return
+            if (result.testCount == 0) return
+
+            println(">>> ${t.project.name}:${t.name} - ${result.testCount} tests, " +
+                "${result.failedTestCount} failed, ${result.skippedTestCount} skipped")
+        }
+    }
+}
