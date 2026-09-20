@@ -21,7 +21,7 @@ class OpenAIChatModel(
 ): ChatModel {
     constructor(modelId: String, apiKey: String): this(modelId, OpenAIConfig(apiKey))
 
-    override val provider = PROVIDER
+    override val provider = OPENAI_PROVIDER
 
     private val errorMapper = OpenAIErrorMapper()
     private val responseMapper = OpenAIResponseMapper()
@@ -86,8 +86,6 @@ class OpenAIChatModel(
     }
 
     companion object {
-        const val PROVIDER = "openai"
-
         /**
          * Shared by every model built without one, so that several models don't end up with a connection pool each.
          * Its timeouts are the ones a generation needs: a model can take a while to answer, and a long answer is not

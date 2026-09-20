@@ -1,6 +1,8 @@
 package dev.botta.trantor.ai.providers.openai
 
+import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.models.ProviderMetadata
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.models.Usage
@@ -18,7 +20,7 @@ internal class OpenAIResponseMapper {
             info = ResponseInfo(
                 id = json["id"]?.asString(),
                 model = json["model"]?.asString() ?: modelId,
-                provider = OpenAIChatModel.PROVIDER,
+                provider = OPENAI_PROVIDER,
                 latency = latency,
             ),
             rawFinishReason = json.path("incomplete_details.reason")?.asString() ?: status,
@@ -31,23 +33,37 @@ internal class OpenAIResponseMapper {
         json["output"]?.asArray().orEmpty().mapNotNull { it.asObject() }.flatMap { toParts(it) }
 
     /** Parts of a single output item. */
-    fun toParts(item: JsonObject) = when (item["type"]?.asString()) {
+    fun toParts(item: JsonObject): List<Part> = when (item["type"]?.asString()) {
         "message" -> toMessageParts(item)
+        "function_call" -> listOf(toToolCall(item))
         // Anything we don't model yet is kept whole, to send it back on the next turn
-        else -> listOf(ProviderPart(OpenAIChatModel.PROVIDER, item["type"]?.asString() ?: "unknown", item))
+        else -> listOf(ProviderPart(OPENAI_PROVIDER, item["type"]?.asString() ?: "unknown", item))
     }
+
+    private fun toToolCall(item: JsonObject) = ToolCallPart(
+        callId = item["call_id"]?.asString() ?: "",
+        toolName = item["name"]?.asString() ?: "",
+        input = Json.parse(item["arguments"]?.asString() ?: "{}").asObject() ?: Json.obj(),
+        // The item id is what OpenAI needs to match the call when the conversation goes on
+        metadata = item["id"]?.asString()?.let { ProviderMetadata.of(OPENAI_PROVIDER, Json.obj("id" to it)) }
+            ?: ProviderMetadata.None,
+    )
 
     private fun toMessageParts(item: JsonObject) = item["content"]?.asArray().orEmpty().mapNotNull { it.asObject() }
         .map { part ->
             when (part["type"]?.asString()) {
                 "output_text" -> TextPart(part["text"]?.asString() ?: "")
                 "refusal" -> RefusalPart(part["refusal"]?.asString() ?: "")
-                else -> ProviderPart(OpenAIChatModel.PROVIDER, part["type"]?.asString() ?: "unknown", part)
+                else -> ProviderPart(OPENAI_PROVIDER, part["type"]?.asString() ?: "unknown", part)
             }
         }
 
     private fun toFinishReason(status: String?, json: JsonObject) = when (status) {
-        "completed" -> if (hasRefusal(json)) FinishReasons.Refusal else FinishReasons.Stop
+        "completed" -> when {
+            hasRefusal(json) -> FinishReasons.Refusal
+            hasToolCalls(json) -> FinishReasons.ToolCalls
+            else -> FinishReasons.Stop
+        }
         "incomplete" -> when (json.path("incomplete_details.reason")?.asString()) {
             "max_output_tokens" -> FinishReasons.Length
             "content_filter" -> FinishReasons.ContentFilter
@@ -58,6 +74,8 @@ internal class OpenAIResponseMapper {
     }
 
     private fun hasRefusal(json: JsonObject) = toContent(json).any { it is RefusalPart }
+
+    private fun hasToolCalls(json: JsonObject) = toContent(json).any { it is ToolCallPart }
 
     /**
      * OpenAI reports cached, written and reasoning tokens as details of input and output, which is the contract of

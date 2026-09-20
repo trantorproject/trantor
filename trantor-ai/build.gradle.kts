@@ -1,7 +1,13 @@
+plugins {
+    kotlin("plugin.serialization") version "2.3.10"
+}
+
 dependencies {
     api(project(":trantor-primitives"))
     api(project(":trantor-domain"))
     api(project(":trantor-web-client"))
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json")
+    api("org.jetbrains.kotlinx:kotlinx-schema-generator-json")
 }
 
 extra.set("POM_NAME", "Trantor AI")

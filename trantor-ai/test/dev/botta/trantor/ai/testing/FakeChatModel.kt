@@ -1,4 +1,4 @@
-package dev.botta.trantor.ai
+package dev.botta.trantor.ai.testing
 
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ResponseInfo

@@ -1,0 +1,33 @@
+{
+  "id": "resp_tool_call_1",
+  "object": "response",
+  "created_at": 1789867200,
+  "status": "completed",
+  "error": null,
+  "incomplete_details": null,
+  "model": "gpt-4.1-mini-2025-04-14",
+  "output": [
+    {
+      "id": "fc_tool_call_1",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche\"}",
+      "call_id": "call_abc123",
+      "name": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "tool_choice": "auto",
+  "usage": {
+    "input_tokens": 61,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 17,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 78
+  }
+}

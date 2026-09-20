@@ -24,6 +24,8 @@ dependencies {
         api("dev.botta:time:1.0.0")
         api("dev.botta:env:2.0.0")
         api("dev.botta:json:1.0.0")
+        api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+        api("org.jetbrains.kotlinx:kotlinx-schema-generator-json:0.5.0")
         api("com.google.code.gson:gson:2.13.2")
         api("io.javalin:javalin:6.7.0")
         api("org.eclipse.jetty:jetty-client:11.0.26")

@@ -3,7 +3,7 @@
 package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.FakeHttpClient
+import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.errors.AuthenticationError
 import dev.botta.trantor.ai.errors.ProviderError
 import dev.botta.trantor.ai.models.chat.*

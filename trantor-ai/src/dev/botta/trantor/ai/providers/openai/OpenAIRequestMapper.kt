@@ -3,8 +3,10 @@ package dev.botta.trantor.ai.providers.openai
 import dev.botta.json.Json
 import dev.botta.json.values.JsonArray
 import dev.botta.json.values.JsonObject
+import dev.botta.json.values.JsonValue
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.tools.*
 
 /** Turns a [ChatRequest] into the body of a call to the OpenAI Responses API. */
 internal class OpenAIRequestMapper {
@@ -18,10 +20,18 @@ internal class OpenAIRequestMapper {
 
         if (stream) body["stream"] = true
 
+        toOutputFormat(request.output)?.let { body["text"] = Json.obj("format" to it) }
+
+        if (request.tools.isNotEmpty()) {
+            body["tools"] = Json.array(request.tools.mapNotNull { toTool(it) })
+            body["tool_choice"] = toToolChoice(request.toolChoice)
+        }
+
         with(request.settings) {
             maxOutputTokens?.let { body["max_output_tokens"] = it }
             temperature?.let { body["temperature"] = it }
             topP?.let { body["top_p"] = it }
+            parallelToolCalls?.let { body["parallel_tool_calls"] = it }
             stopSequences?.let { unsupportedSetting("stopSequences") }
             seed?.let { unsupportedSetting("seed") }
         }
@@ -29,11 +39,48 @@ internal class OpenAIRequestMapper {
         return MappedRequest(body, warnings.toList())
     }
 
+    private fun toOutputFormat(output: OutputSpec) = when (output) {
+        is OutputSpec.Text -> null
+        is OutputSpec.Json -> Json.obj(
+            "type" to "json_schema",
+            "name" to output.name,
+            "strict" to output.strict,
+            "schema" to schemaFor(output.schema, output.strict),
+        )
+    }
+
+    // In strict mode the schema has to follow rules a plain schema doesn't, so the adapter fixes it instead of
+    // making everyone write it by hand
+    private fun schemaFor(schema: JsonObject, strict: Boolean) = if (strict) OpenAIStrictSchema.of(schema) else schema
+
+    private fun toTool(tool: ToolSpec) = when (tool) {
+        is FunctionToolSpec -> Json.obj(
+            "type" to "function",
+            "name" to tool.name,
+            "description" to tool.description,
+            "strict" to tool.strict,
+            "parameters" to schemaFor(tool.parameters, tool.strict),
+        )
+        is ProviderToolSpec -> if (tool.name.startsWith("$OPENAI_PROVIDER.")) {
+            tool.args.with("type", tool.name.removePrefix("$OPENAI_PROVIDER."))
+        } else {
+            warnings.add(ModelWarning("Tool ${tool.name} is not an OpenAI tool and was dropped"))
+            null
+        }
+    }
+
+    private fun toToolChoice(choice: ToolChoice): JsonValue = when (choice) {
+        is ToolChoice.Auto -> Json.value("auto")
+        is ToolChoice.None -> Json.value("none")
+        is ToolChoice.Required -> Json.value("required")
+        is ToolChoice.Named -> Json.obj("type" to "function", "name" to choice.name)
+    }
+
     private fun toItems(message: Message): List<JsonObject> = when (message) {
         is Message.System -> listOf(Json.obj("type" to "message", "role" to "system", "content" to message.text))
         is Message.User -> toMessageItems("user", message.parts)
         is Message.Assistant -> toMessageItems("assistant", message.parts)
-        is Message.Tool -> { message.results.forEach { unsupportedPart(it) }; emptyList() }
+        is Message.Tool -> message.results.map { toToolResultItem(it) }
     }
 
     /**
@@ -53,10 +100,18 @@ internal class OpenAIRequestMapper {
                     }
                     content.add(Json.obj("type" to textType(role), "text" to part.text))
                 }
+                is ToolCallPart -> {
+                    content = null
+                    items.add(toToolCallItem(part))
+                }
+                is ToolResultPart -> {
+                    content = null
+                    items.add(toToolResultItem(part))
+                }
                 // An item we didn't model when we received it goes back exactly as it came
                 is ProviderPart -> {
                     content = null
-                    if (part.provider == OpenAIChatModel.PROVIDER) items.add(part.raw) else unsupportedPart(part)
+                    if (part.provider == OPENAI_PROVIDER) items.add(part.raw) else unsupportedPart(part)
                 }
                 else -> unsupportedPart(part)
             }
@@ -66,6 +121,23 @@ internal class OpenAIRequestMapper {
     }
 
     private fun textType(role: String) = if (role == "assistant") "output_text" else "input_text"
+
+    // Arguments and output travel as strings, not as objects
+    private fun toToolCallItem(part: ToolCallPart) = Json.obj(
+        "type" to "function_call",
+        "call_id" to part.callId,
+        "name" to part.toolName,
+        "arguments" to part.input.toString(),
+    )
+
+    private fun toToolResultItem(part: ToolResultPart) = Json.obj(
+        "type" to "function_call_output",
+        "call_id" to part.callId,
+        "output" to when (val output = part.output) {
+            is ToolOutput.Text -> output.value
+            is ToolOutput.Json -> output.value.toString()
+        },
+    )
 
     private fun unsupportedPart(part: Part) {
         warnings.add(ModelWarning("${part::class.simpleName} is not sent to OpenAI yet and was dropped"))
