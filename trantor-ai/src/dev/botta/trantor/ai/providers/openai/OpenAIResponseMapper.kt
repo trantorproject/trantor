@@ -27,14 +27,15 @@ internal class OpenAIResponseMapper {
         )
     }
 
-    private fun toContent(json: JsonObject) = json["output"]?.asArray().orEmpty().mapNotNull { it.asObject() }
-        .flatMap { item ->
-            when (item["type"]?.asString()) {
-                "message" -> toMessageParts(item)
-                // Anything we don't model yet is kept whole, to send it back on the next turn
-                else -> listOf(ProviderPart(OpenAIResponsesModel.PROVIDER, item["type"]?.asString() ?: "unknown", item))
-            }
-        }
+    private fun toContent(json: JsonObject) =
+        json["output"]?.asArray().orEmpty().mapNotNull { it.asObject() }.flatMap { toParts(it) }
+
+    /** Parts of a single output item. */
+    fun toParts(item: JsonObject) = when (item["type"]?.asString()) {
+        "message" -> toMessageParts(item)
+        // Anything we don't model yet is kept whole, to send it back on the next turn
+        else -> listOf(ProviderPart(OpenAIResponsesModel.PROVIDER, item["type"]?.asString() ?: "unknown", item))
+    }
 
     private fun toMessageParts(item: JsonObject) = item["content"]?.asArray().orEmpty().mapNotNull { it.asObject() }
         .map { part ->

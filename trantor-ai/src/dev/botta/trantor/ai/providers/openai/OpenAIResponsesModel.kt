@@ -44,7 +44,23 @@ class OpenAIResponsesModel(
     }
 
     override fun stream(request: ChatRequest, options: CallOptions): ChatStream {
-        throw UnsupportedOperationException("Streaming is not implemented yet")
+        options.cancellation?.throwIfCancelled()
+
+        val mapped = OpenAIRequestMapper().map(modelId, request, stream = true)
+        val startedAt = TimeSource.Monotonic.markNow()
+
+        val response = try {
+            call(mapped.body.toString(), options)
+        } catch (e: Throwable) {
+            throw errorMapper.toError(e)
+        }
+
+        if (response.status != 200) {
+            val body = response.use { it.body() }
+            throw errorMapper.toError(response, body)
+        }
+
+        return OpenAIChatStream(modelId, response, startedAt, mapped.warnings, responseMapper)
     }
 
     private fun call(body: String, options: CallOptions): HttpStreamResponse {
