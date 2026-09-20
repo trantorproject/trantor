@@ -1,5 +1,6 @@
 dependencies {
     api(project(":trantor-primitives"))
+    api(project(":trantor-domain"))
     api(project(":trantor-web-client"))
 }
 
