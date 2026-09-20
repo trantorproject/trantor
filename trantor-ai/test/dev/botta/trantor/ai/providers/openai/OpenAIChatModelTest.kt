@@ -125,6 +125,20 @@ class OpenAIChatModelTest {
     }
 
     @Test
+    fun `says which parameter the provider complained about`() {
+        httpClient.status = 400
+        httpClient.body = fixture("error-400-unsupported-value")
+
+        assertThatThrownBy { model.generate(ChatRequest(Message.user("Hola"))) }
+            .isInstanceOfSatisfying(ProviderError::class.java) {
+                // The message names the value but not the setting, and 'low' is a valid reasoning effort too
+                assertThat(it.parameter).isEqualTo("text.verbosity")
+                assertThat(it.code).isEqualTo("unsupported_value")
+                assertThat(it.status).isEqualTo(400)
+            }
+    }
+
+    @Test
     fun `invalid credentials throw an authentication error`() {
         httpClient.status = 401
         httpClient.body = fixture("error-401")

@@ -4,8 +4,12 @@ import dev.botta.json.Json
 import dev.botta.json.values.JsonArray
 import dev.botta.json.values.JsonObject
 import dev.botta.json.values.JsonValue
+import dev.botta.trantor.ai.errors.InvalidProviderOptionError
+import dev.botta.trantor.ai.errors.UnsupportedRequestError
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.providers.ProviderOptions
+import dev.botta.trantor.ai.providers.RawOptions
 import dev.botta.trantor.ai.tools.*
 
 /** Turns a [ChatRequest] into the body of a call to the OpenAI Responses API. */
@@ -43,7 +47,58 @@ internal class OpenAIRequestMapper(private val config: OpenAIConfig = OpenAIConf
 
         config.store?.let { body["store"] = it }
 
+        applyOptions(body, request.providerOptions)
+
+        if (request.settings.failOnWarnings && warnings.isNotEmpty()) {
+            throw UnsupportedRequestError(OPENAI_PROVIDER, warnings.toList())
+        }
+
         return MappedRequest(body, warnings.toList())
+    }
+
+    private fun applyOptions(body: JsonObject, options: ProviderOptions) {
+        options.providers.filter { it != OPENAI_PROVIDER }.forEach {
+            warnings.add(ModelWarning("Options for $it are not OpenAI options and were dropped"))
+        }
+
+        val ours = options.forProvider(OPENAI_PROVIDER)
+
+        // Typed options first, so that what counts as a conflict for a raw one doesn't depend on the order they came in
+        ours.filterIsInstance<OpenAIOptions>().forEach { apply(body, it) }
+        ours.filterIsInstance<RawOptions>().forEach { merge(body, it.values) }
+        ours.filter { it !is OpenAIOptions && it !is RawOptions }.forEach {
+            warnings.add(ModelWarning("${it::class.simpleName} is not an option this adapter knows"))
+        }
+    }
+
+    private fun apply(body: JsonObject, options: OpenAIOptions) {
+        options.serviceTier?.let { body["service_tier"] = it.name.lowercase() }
+        options.store?.let { body["store"] = it }
+        options.promptCacheKey?.let { body["prompt_cache_key"] = it }
+        options.safetyIdentifier?.let { body["safety_identifier"] = it }
+        options.truncation?.let { body["truncation"] = it.name.lowercase() }
+        // Verbosity travels inside text, next to the output format
+        options.verbosity?.let { textOf(body)["verbosity"] = it.name.lowercase() }
+    }
+
+    private fun textOf(body: JsonObject) = body["text"]?.asObject() ?: Json.obj().also { body["text"] = it }
+
+    /**
+     * Raw options go in as they are, and a key the adapter already filled in is a conflict rather than an override:
+     * silently replacing the input, the tools or a setting would send something the caller did not write.
+     */
+    private fun merge(body: JsonObject, values: JsonObject) {
+        values.keys.forEach { key ->
+            if (body.containsKey(key)) {
+                throw InvalidProviderOptionError(
+                    OPENAI_PROVIDER,
+                    key,
+                    "Raw option $key is already set by the adapter. Use the setting that fills it instead.",
+                )
+            }
+
+            body[key] = values.getValue(key)
+        }
     }
 
     /** Null when there is nothing to ask for, so that [Reasoning.Off] and no reasoning at all mean the same. */

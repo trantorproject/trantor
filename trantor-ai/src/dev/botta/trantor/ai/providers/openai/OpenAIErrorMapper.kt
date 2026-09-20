@@ -12,6 +12,7 @@ internal class OpenAIErrorMapper {
         val error = runCatching { Json.parse(body).asObject()?.get("error")?.asObject() }.getOrNull()
         val message = error?.get("message")?.asString() ?: "OpenAI returned ${response.status}: $body"
         val code = error?.get("code")?.asString() ?: error?.get("type")?.asString()
+        val parameter = error?.get("param")?.asString()
         val provider = OPENAI_PROVIDER
 
         return when {
@@ -19,7 +20,7 @@ internal class OpenAIErrorMapper {
             response.status == 429 -> RateLimitError(provider, retryAfter(response), message, response.status, code)
             response.status == 400 && isContextLength(code, message) -> ContextLengthExceededError(provider, message, response.status, code)
             response.status >= 500 -> ProviderUnavailableError(provider, message, response.status, code)
-            else -> ProviderError(provider, message, response.status, code, retryable = false)
+            else -> ProviderError(provider, message, response.status, code, retryable = false, parameter = parameter)
         }
     }
 

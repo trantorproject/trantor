@@ -6,6 +6,9 @@ package dev.botta.trantor.ai.providers
 class ProviderOptions private constructor(private val options: List<ProviderOption>) {
     val isEmpty get() = options.isEmpty()
 
+    /** Which providers these options are for, so an adapter can warn about the ones that are not its own. */
+    val providers get() = options.map { it.provider }.toSet()
+
     fun forProvider(provider: String) = options.filter { it.provider == provider }
 
     override fun toString() = options.toString()
