@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test
 import java.io.InterruptedIOException
 import kotlin.time.Duration.Companion.seconds
 
-class OpenAIResponsesModelTest {
+class OpenAIChatModelTest {
     @Test
     fun `posts the request to the responses endpoint`() {
         httpClient.body = fixture("text-simple")
@@ -272,5 +272,5 @@ class OpenAIResponsesModelTest {
         javaClass.getResource("/openai/$name.json")?.readText() ?: error("Missing fixture $name")
 
     private val httpClient = FakeHttpClient()
-    private val model = OpenAIResponsesModel("gpt-4.1-mini", OpenAIConfig(apiKey = "sk-test"), httpClient)
+    private val model = OpenAIChatModel("gpt-4.1-mini", OpenAIConfig(apiKey = "sk-test"), httpClient)
 }

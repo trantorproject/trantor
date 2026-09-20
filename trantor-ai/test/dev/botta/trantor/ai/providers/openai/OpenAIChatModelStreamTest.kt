@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
-class OpenAIResponsesModelStreamTest {
+class OpenAIChatModelStreamTest {
     @Test
     fun `asks the provider to stream`() {
         httpClient.body = fixture("stream-text.txt")
@@ -149,5 +149,5 @@ class OpenAIResponsesModelStreamTest {
     }
 
     private val httpClient = FakeHttpClient()
-    private val model = OpenAIResponsesModel("gpt-4.1-mini", OpenAIConfig(apiKey = "sk-test"), httpClient)
+    private val model = OpenAIChatModel("gpt-4.1-mini", OpenAIConfig(apiKey = "sk-test"), httpClient)
 }

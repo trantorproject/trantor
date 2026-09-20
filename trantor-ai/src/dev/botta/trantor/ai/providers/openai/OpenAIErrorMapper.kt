@@ -12,7 +12,7 @@ internal class OpenAIErrorMapper {
         val error = runCatching { Json.parse(body).asObject()?.get("error")?.asObject() }.getOrNull()
         val message = error?.get("message")?.asString() ?: "OpenAI returned ${response.status}: $body"
         val code = error?.get("code")?.asString() ?: error?.get("type")?.asString()
-        val provider = OpenAIResponsesModel.PROVIDER
+        val provider = OpenAIChatModel.PROVIDER
 
         return when {
             response.status == 401 || response.status == 403 -> AuthenticationError(provider, message, response.status, code)
@@ -28,7 +28,7 @@ internal class OpenAIErrorMapper {
         if (hasCause<InterruptedIOException>(error)) return TimeoutError(error.message ?: "The call timed out", error)
 
         return ProviderUnavailableError(
-            OpenAIResponsesModel.PROVIDER,
+            OpenAIChatModel.PROVIDER,
             error.message ?: "Could not reach OpenAI",
             cause = error,
         )

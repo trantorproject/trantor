@@ -4,6 +4,8 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.web.client.*
+import dev.botta.trantor.web.client.okhttp.OkHttpHttpClient
+import dev.botta.trantor.web.client.okhttp.OkHttpHttpClientConfig
 import kotlin.time.TimeSource
 
 /**
@@ -12,11 +14,13 @@ import kotlin.time.TimeSource
  * Calls go through [HttpClient.stream] even when the whole answer is read at once: it is the entry point that takes
  * the timeout of the call and gives a handle to cancel it while it runs.
  */
-class OpenAIResponsesModel(
+class OpenAIChatModel(
     override val modelId: String,
-    private val config: OpenAIConfig,
-    private val httpClient: HttpClient,
+    private val config: OpenAIConfig = OpenAIConfig(),
+    private val httpClient: HttpClient = defaultHttpClient,
 ): ChatModel {
+    constructor(modelId: String, apiKey: String): this(modelId, OpenAIConfig(apiKey))
+
     override val provider = PROVIDER
 
     private val errorMapper = OpenAIErrorMapper()
@@ -83,5 +87,14 @@ class OpenAIResponsesModel(
 
     companion object {
         const val PROVIDER = "openai"
+
+        /**
+         * Shared by every model built without one, so that several models don't end up with a connection pool each.
+         * Its timeouts are the ones a generation needs: a model can take a while to answer, and a long answer is not
+         * a reason to cut the call as long as it keeps coming.
+         */
+        private val defaultHttpClient: HttpClient by lazy {
+            OkHttpHttpClient(OkHttpHttpClientConfig(idleTimeout = 120_000, requestTimeout = 0))
+        }
     }
 }

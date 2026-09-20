@@ -13,4 +13,6 @@ data class ChatRequest(
     val providerOptions: ProviderOptions = ProviderOptions.None,
 ) {
     constructor(vararg messages: Message): this(messages.toList())
+
+    constructor(prompt: String): this(listOf(Message.user(prompt)))
 }

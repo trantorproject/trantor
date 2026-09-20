@@ -71,7 +71,7 @@ internal class OpenAIChatStream(
             "response.output_item.done" -> itemDone(data)
             "response.completed", "response.incomplete", "response.failed" -> finalResponse = data["response"]?.asObject()
             "error" -> throw ProviderError(
-                OpenAIResponsesModel.PROVIDER,
+                OpenAIChatModel.PROVIDER,
                 data["message"]?.asString() ?: "The stream failed",
                 code = data["code"]?.asString(),
             )
@@ -99,7 +99,7 @@ internal class OpenAIChatStream(
     private fun partialResponse() = ChatResponse(
         content = received.ifEmpty { listOf(TextPart(text.toString())) },
         finishReason = FinishReasons.Other,
-        info = ResponseInfo(model = modelId, provider = OpenAIResponsesModel.PROVIDER, latency = startedAt.elapsedNow()),
+        info = ResponseInfo(model = modelId, provider = OpenAIChatModel.PROVIDER, latency = startedAt.elapsedNow()),
         rawFinishReason = "stream_ended_without_response",
         warnings = warnings + ModelWarning("The stream ended before the final response event"),
     )

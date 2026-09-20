@@ -56,7 +56,7 @@ internal class OpenAIRequestMapper {
                 // An item we didn't model when we received it goes back exactly as it came
                 is ProviderPart -> {
                     content = null
-                    if (part.provider == OpenAIResponsesModel.PROVIDER) items.add(part.raw) else unsupportedPart(part)
+                    if (part.provider == OpenAIChatModel.PROVIDER) items.add(part.raw) else unsupportedPart(part)
                 }
                 else -> unsupportedPart(part)
             }

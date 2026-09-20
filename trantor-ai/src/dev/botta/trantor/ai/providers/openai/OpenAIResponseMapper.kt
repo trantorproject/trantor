@@ -18,7 +18,7 @@ internal class OpenAIResponseMapper {
             info = ResponseInfo(
                 id = json["id"]?.asString(),
                 model = json["model"]?.asString() ?: modelId,
-                provider = OpenAIResponsesModel.PROVIDER,
+                provider = OpenAIChatModel.PROVIDER,
                 latency = latency,
             ),
             rawFinishReason = json.path("incomplete_details.reason")?.asString() ?: status,
@@ -34,7 +34,7 @@ internal class OpenAIResponseMapper {
     fun toParts(item: JsonObject) = when (item["type"]?.asString()) {
         "message" -> toMessageParts(item)
         // Anything we don't model yet is kept whole, to send it back on the next turn
-        else -> listOf(ProviderPart(OpenAIResponsesModel.PROVIDER, item["type"]?.asString() ?: "unknown", item))
+        else -> listOf(ProviderPart(OpenAIChatModel.PROVIDER, item["type"]?.asString() ?: "unknown", item))
     }
 
     private fun toMessageParts(item: JsonObject) = item["content"]?.asArray().orEmpty().mapNotNull { it.asObject() }
@@ -42,7 +42,7 @@ internal class OpenAIResponseMapper {
             when (part["type"]?.asString()) {
                 "output_text" -> TextPart(part["text"]?.asString() ?: "")
                 "refusal" -> RefusalPart(part["refusal"]?.asString() ?: "")
-                else -> ProviderPart(OpenAIResponsesModel.PROVIDER, part["type"]?.asString() ?: "unknown", part)
+                else -> ProviderPart(OpenAIChatModel.PROVIDER, part["type"]?.asString() ?: "unknown", part)
             }
         }
 
