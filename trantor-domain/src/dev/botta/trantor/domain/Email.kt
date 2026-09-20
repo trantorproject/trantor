@@ -13,7 +13,7 @@ class Email(private val value: String) {
 
     override fun equals(other: Any?) = other is Email && other.value.equals(value, ignoreCase = true)
 
-    override fun hashCode() = value.hashCode()
+    override fun hashCode() = value.lowercase().hashCode()
 
     override fun toString() = value
 }

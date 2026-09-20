@@ -15,15 +15,13 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): HostedServi
     private val taskQueue = LinkedBlockingQueue<Runnable>(settings.queueSize)
     private val semaphore = Semaphore(settings.maxConcurrentTasks)
     private var dispatcherThread: Thread? = null
-    private val executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
-        .name("task-pool-worker-", 0)
-        .factory()
-    )
+    private var executor = newExecutor()
 
     @Volatile private var isRunning = false
 
     override fun start() {
         if (dispatcherThread != null) error("Already started")
+        if (executor.isShutdown) executor = newExecutor()
         isRunning = true
         dispatcherThread = Thread.ofVirtual().name("task-pool-dispatcher").start {
             dispatchLoop()
@@ -100,6 +98,10 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): HostedServi
         }
         return newExecute
     }
+
+    private fun newExecutor(): ExecutorService = Executors.newThreadPerTaskExecutor(
+        Thread.ofVirtual().name("task-pool-worker-", 0).factory()
+    )
 
     fun getMetrics() = TaskPoolMetrics(
         runningTasks = settings.maxConcurrentTasks - semaphore.availablePermits(),

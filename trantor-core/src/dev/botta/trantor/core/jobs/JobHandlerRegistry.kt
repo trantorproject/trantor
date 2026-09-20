@@ -8,7 +8,7 @@ class JobHandlerRegistry {
 
     @Synchronized
     fun <T: Job> registerHandler(jobType: KClass<T>, handler: JobHandler<T>) {
-        if (handlers.contains(jobType)) error("Handler for $jobType already registered")
+        if (handlers.containsKey(jobType)) error("Handler for $jobType already registered")
         handlers[jobType] = handler
     }
 

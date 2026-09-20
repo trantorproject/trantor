@@ -17,10 +17,10 @@ class DefaultBroadcaster(
     httpServer: HttpServer,
     private val serializer: JsonSerializer,
     private val sessionFactory: WebSocketClientSessionFactory,
+    private val sessionManager: SessionManager = SessionManager(),
+    private val channelRegistry: ChannelRegistry = ChannelRegistry(),
 ): Broadcaster, HostedService {
     private val logger = getLogger()
-    private val sessionManager = SessionManager()
-    private val channelRegistry = ChannelRegistry()
     private val scheduler = Executors.newSingleThreadScheduledExecutor {
         Thread(it, "ws-sweeper").apply { isDaemon = true }
     }

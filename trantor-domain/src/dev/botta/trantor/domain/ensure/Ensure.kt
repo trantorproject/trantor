@@ -97,7 +97,7 @@ object Ensure {
     }
 
     fun notContains(value: String, substring: String, field: String = "value") = apply {
-        if (value.contains(substring)) fail("$field must contain '$substring'")
+        if (value.contains(substring)) fail("$field must not contain '$substring'")
     }
 
     inline fun notContains(value: String, substring: String, error: () -> DomainError) = apply {

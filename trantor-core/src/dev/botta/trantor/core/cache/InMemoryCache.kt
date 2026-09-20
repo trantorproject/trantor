@@ -5,20 +5,23 @@ import dev.botta.trantor.core.tx.TransactionManager
 import kotlin.time.toJavaDuration
 
 /**
- * Cache in-memory con dos niveles:
- *  - L1: por transacción (ThreadLocal) → visible solo dentro de la tx actual
- *  - L2: global (Caffeine)          → compartido entre todas las transacciones
+ * An in-memory cache with two levels:
  *
- * Este cache se encarga de ver varios problemas sutiles
- * - Si no hay una tx activa usa directo el cache L2 (Caffeine)
- * - Si hay una tx activa usa un cache L1 con thread local, ese cache se limpia cuando se cierra la tx
- * - El transaction manager garantiza que si hay una excepcion las tx se cierran siempre y el callback se ejecuta
- * - Si algo no esta en el L1 se lee del L2 y se guarda en el L1
- * - Cuando usar put y cuando usar invalidate depende de seguridad vs performance.
- *   Con put puede haber race conditions de los afterCommit en threads y guardar un valor viejo.
- *   Con invalidate el problema de performance es que puede haber una rafaga de hits a db.
+ *  - **L1**, per transaction (a `ThreadLocal`): only visible inside the transaction that wrote it.
+ *  - **L2**, global (Caffeine): shared by everyone.
  *
- * IMPORTANTE: SIEMPRE GUARDAR SNAPSHOTS Y NUNCA ENTIDADES MUTABLES!!
+ * Splitting them is what keeps a rolled back change out of the shared cache. With no transaction open,
+ * reads and writes go straight to L2. With one open, a write lands in L1 and only reaches L2 **after the
+ * commit**, so a concurrent request never sees a value that was never saved. The transaction manager
+ * guarantees the transaction is closed even on an exception, which is what clears L1.
+ *
+ * A read that misses L1 falls back to L2 and keeps what it found in L1.
+ *
+ * Choosing between [put] and [invalidate] after a change is a trade-off between safety and cost:
+ * `put` races with the `afterCommit` of other threads and can leave a stale value behind, while
+ * `invalidate` is safe but lets a burst of requests through to the database.
+ *
+ * **Always cache snapshots, never mutable entities**: every caller gets the same object back.
  */
 class InMemoryCache<K: Any, V: Any>(
     val settings: InMemoryCacheSettings = InMemoryCacheSettings(),

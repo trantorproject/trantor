@@ -4,6 +4,25 @@ import dev.botta.trantor.config.*
 import dev.botta.trantor.di.ServiceLifetimes.*
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 
+/**
+ * Everything the application registers, before anything is built. A [ServiceProvider] reads it and
+ * resolves from it.
+ *
+ * It is a list of [ServiceDescriptor], in registration order, which is what makes the two rules work:
+ * `get<T>()` returns the **last** registration of a type, and `getAll<T>()` returns them all in order.
+ *
+ * The four ways to put something in:
+ *
+ * - `addTransient` / `addSingleton` / `addScoped`, by implementation type, by factory or by instance.
+ *   Each has an `...IfMissing` twin, which is how an `addX()` extension stays idempotent.
+ * - [addConfig], for a settings class that comes from a configuration section.
+ * - [configure], to adjust an instance after it is created, or to let a component register itself
+ *   somewhere it does not own.
+ * - A `key`, to tell apart two registrations of the same type.
+ *
+ * Registration order between [configure] and the `add...` that creates the instance does not matter:
+ * configurations are collected and applied when the instance is built.
+ */
 // TODO: Que el createTypeFactory use el ServiceProvider.create()
 @Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
 class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<*, *>> by mutableListOf() {
@@ -340,9 +359,29 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
         addService(serviceType, instance, key)
     }
 
+    /** Whether something is already registered for that type and key. The guard of an idempotent `addX()`. */
     fun has(serviceType: Class<*>, key: String? = null) =
         any { it.serviceType == serviceType && it.key == key }
 
+    /**
+     * Runs [configuration] on the instance right after it is created, in registration order.
+     *
+     * Two uses. Adjusting what something was built with:
+     *
+     * ```
+     * configure<OpenAIConfig> { openAI, _ -> openAI.apiKey = "sk-..." }
+     * ```
+     *
+     * And letting a component add itself to a registry it does not own, which is how a provider becomes
+     * available without anyone collecting it with `getAll`:
+     *
+     * ```
+     * configure<ModelRegistry> { models, services -> models.addProvider(services.get<OpenAIProvider>()) }
+     * ```
+     *
+     * When it runs depends on the lifetime: once for a singleton, once per scope for a scoped service,
+     * and on every resolution for a transient one.
+     */
     fun <TService: Any> configure(serviceType: Class<TService>, configuration: ServiceConfiguration<TService>) {
         configure(serviceType, null, configuration)
     }
@@ -365,6 +404,21 @@ class ServiceRegistry(val config: ConfigManager): MutableList<ServiceDescriptor<
         configure(TService::class.java, configuration)
     }
 
+    /**
+     * Registers a settings class read from a whole configuration section, deserialized with the
+     * [JsonSerializer] in the container.
+     *
+     * ```
+     * addConfig<JdbcSettings>("jdbc")
+     * ```
+     *
+     * A settings class is **never** read field by field from [config]. When the section is missing, or has
+     * no usable JSON, `{}` is deserialized instead — so **Kotlin default values are the real defaults** and
+     * do not have to be repeated anywhere. That is why a settings class is a data class of `var` properties
+     * with a default for each one.
+     *
+     * The instance can still be adjusted afterwards with [configure], whatever the order of the two calls.
+     */
     fun <TService: Any> addConfig(serviceType: Class<TService>, configSection: String, key: String? = null) = apply {
         addSingleton(
             serviceType,
