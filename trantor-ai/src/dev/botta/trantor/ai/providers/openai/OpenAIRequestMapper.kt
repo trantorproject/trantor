@@ -9,7 +9,7 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.tools.*
 
 /** Turns a [ChatRequest] into the body of a call to the OpenAI Responses API. */
-internal class OpenAIRequestMapper {
+internal class OpenAIRequestMapper(private val config: OpenAIConfig = OpenAIConfig(apiKey = "")) {
     private val warnings = mutableListOf<ModelWarning>()
 
     fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
@@ -34,9 +34,35 @@ internal class OpenAIRequestMapper {
             parallelToolCalls?.let { body["parallel_tool_calls"] = it }
             stopSequences?.let { unsupportedSetting("stopSequences") }
             seed?.let { unsupportedSetting("seed") }
+            reasoning?.let { toReasoning(it) }?.let {
+                body["reasoning"] = it
+                // Without this the reasoning of this turn cannot be sent back on the next one
+                body["include"] = Json.array(ENCRYPTED_REASONING)
+            }
         }
 
+        config.store?.let { body["store"] = it }
+
         return MappedRequest(body, warnings.toList())
+    }
+
+    /** Null when there is nothing to ask for, so that [Reasoning.Off] and no reasoning at all mean the same. */
+    private fun toReasoning(reasoning: Reasoning): JsonObject? {
+        if (reasoning.budgetTokens != null) unsupportedSetting("reasoning.budgetTokens")
+
+        val effort = reasoning.effort?.name?.lowercase()
+        val summary = when (reasoning.summary) {
+            ReasoningSummaries.None -> null
+            ReasoningSummaries.Auto -> "auto"
+            ReasoningSummaries.Detailed -> "detailed"
+        }
+
+        if (effort == null && summary == null) return null
+
+        return Json.obj().apply {
+            effort?.let { this["effort"] = it }
+            summary?.let { this["summary"] = it }
+        }
     }
 
     private fun toOutputFormat(output: OutputSpec) = when (output) {
@@ -113,6 +139,13 @@ internal class OpenAIRequestMapper {
                     content = null
                     if (part.provider == OPENAI_PROVIDER) items.add(part.raw) else unsupportedPart(part)
                 }
+                // Reasoning is signed by whoever produced it, so only its own provider can take it back
+                is ReasoningPart -> {
+                    content = null
+                    val item = part.opaque?.takeIf { part.metadata[OPENAI_PROVIDER] != null }
+
+                    if (item != null) items.add(item) else foreignReasoning()
+                }
                 else -> unsupportedPart(part)
             }
         }
@@ -139,6 +172,10 @@ internal class OpenAIRequestMapper {
         },
     )
 
+    private fun foreignReasoning() {
+        warnings.add(ModelWarning("Reasoning that OpenAI did not produce was dropped"))
+    }
+
     private fun unsupportedPart(part: Part) {
         warnings.add(ModelWarning("${part::class.simpleName} is not sent to OpenAI yet and was dropped"))
     }
@@ -149,3 +186,5 @@ internal class OpenAIRequestMapper {
 }
 
 internal data class MappedRequest(val body: JsonObject, val warnings: List<ModelWarning>)
+
+private const val ENCRYPTED_REASONING = "reasoning.encrypted_content"

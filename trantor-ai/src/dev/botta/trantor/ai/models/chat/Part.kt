@@ -14,8 +14,12 @@ data class TextPart(
 ): Part
 
 /**
- * Model reasoning. [text] is the visible summary, which may be absent, and [opaque] the signed or encrypted state
- * that providers require to continue a conversation. Both travel back untouched on the next turn.
+ * Model reasoning. [text] is the visible summary, which is absent unless it was asked for with
+ * [ReasoningSummaries], and [opaque] is the state the provider needs to continue the conversation: it is kept whole
+ * and sent back untouched on the next turn.
+ *
+ * [metadata] says which provider it came from. Reasoning is signed or encrypted per provider, so sending it to a
+ * different one is not possible: that adapter drops it with a warning.
  */
 data class ReasoningPart(
     val text: String? = null,

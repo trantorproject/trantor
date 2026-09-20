@@ -23,13 +23,14 @@ class OpenAIChatModel(
 
     override val provider = OPENAI_PROVIDER
 
+    private val requestMapper = OpenAIRequestMapper(config)
     private val errorMapper = OpenAIErrorMapper()
     private val responseMapper = OpenAIResponseMapper()
 
     override fun generate(request: ChatRequest, options: CallOptions): ChatResponse {
         options.cancellation?.throwIfCancelled()
 
-        val mapped = OpenAIRequestMapper().map(modelId, request)
+        val mapped = requestMapper.map(modelId, request)
         val startedAt = TimeSource.Monotonic.markNow()
 
         try {
@@ -50,7 +51,7 @@ class OpenAIChatModel(
     override fun stream(request: ChatRequest, options: CallOptions): ChatStream {
         options.cancellation?.throwIfCancelled()
 
-        val mapped = OpenAIRequestMapper().map(modelId, request, stream = true)
+        val mapped = requestMapper.map(modelId, request, stream = true)
         val startedAt = TimeSource.Monotonic.markNow()
 
         val response = try {

@@ -36,6 +36,7 @@ internal class OpenAIResponseMapper {
     fun toParts(item: JsonObject): List<Part> = when (item["type"]?.asString()) {
         "message" -> toMessageParts(item)
         "function_call" -> listOf(toToolCall(item))
+        "reasoning" -> listOf(toReasoning(item))
         // Anything we don't model yet is kept whole, to send it back on the next turn
         else -> listOf(ProviderPart(OPENAI_PROVIDER, item["type"]?.asString() ?: "unknown", item))
     }
@@ -48,6 +49,23 @@ internal class OpenAIResponseMapper {
         metadata = item["id"]?.asString()?.let { ProviderMetadata.of(OPENAI_PROVIDER, Json.obj("id" to it)) }
             ?: ProviderMetadata.None,
     )
+
+    /**
+     * The item is kept whole in [ReasoningPart.opaque]: what lets the conversation go on is the encrypted content
+     * plus the id, not the summary, and it has to travel back exactly as it came.
+     */
+    private fun toReasoning(item: JsonObject) = ReasoningPart(
+        text = toSummaryText(item),
+        opaque = item,
+        metadata = item["id"]?.asString()?.let { ProviderMetadata.of(OPENAI_PROVIDER, Json.obj("id" to it)) }
+            ?: ProviderMetadata.None,
+    )
+
+    /** The summary comes in blocks, and is empty unless it was asked for. */
+    private fun toSummaryText(item: JsonObject) = item["summary"]?.asArray().orEmpty()
+        .mapNotNull { it.asObject()?.get("text")?.asString() }
+        .joinToString("\n\n")
+        .ifBlank { null }
 
     private fun toMessageParts(item: JsonObject) = item["content"]?.asArray().orEmpty().mapNotNull { it.asObject() }
         .map { part ->

@@ -1,0 +1,115 @@
+{
+  "id": "resp_0a340d743177fc23006aaf4464fa4087d28b10a76c44b528e1",
+  "object": "response",
+  "created_at": 1789871205,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1789871207,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0a340d743177fc23006aaf4465c26487d2a0d3fc74e834560f",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqr0Ro_XEPpnotPlqfGufUG73d_5RNzh0-s-MKmInm4AkHCbpPzEvnAQ4ONZVCBbGd1de2Yyw001sx9M-Y3UBysnfOopHrDeMbbkXIIZrrQ_eGTgkCWYBIxhsfQeUZn6tIIdrSa19w5iMH9W2ip03NwtKsJHmbVsuD1GgHnxhK6F_JwYSHZNvR8Zeiq8k0lKiavt_wgjawIeRFgkLwVLaQqyHAgy3CxJlXekKVQZjIgF8G6ijhPdDScSoiipyltJd2JtYRDv1lb-NzciK6X5vjj7r6G9fW5mkMgXd6HT3R9U-sDzjqJ7C3zR5HEg_Djn1QvQQRubJget0IXWtgoTas8GM_zBikNGlpOcz2WA6GIppyMVovdEeZJEtoFK9XpgDDHh8Y2udtJ8zbuhfSm2N0Jasa7Y3yiuFGkqTttiuDUrqCo0TVa59CfKRVZfxcfHAk_vDSqQf3d30OyLaeDf6tGKujKMPBTk_PPlGiIHaA6kvDDYcyxOVU8_RxepAl6WLeUZlFPvewUXWLYu8gRhDX2silC98ZSa-0chA1kfDWuG8WssK48FNABdnCyqBLsvb79yxIyDfFosoG0YFxvOppLu4JZBdxMbNp4aK5xeK4n6Pplm47oLcKj_HmAhhU7wEr5RAbLCOi8i-ezc15lNpT-8LXK--jxAZeiOGEvfmXjERNEgshWyKlvG6l1RPuH3cMgrHfb1gGX33fCPocOgwozTfFpPcnf2hevMLVcGNo_2qweBfQuO2cb-3ZuDJLsKuBBIiMry_AxWoOkNVWHTdqNytLYkJk49DjLvA_sBcfKDCZtzpBRdASeachuUSwHl2RbuaXctTrjmeU6wexm5p6MZcDg1GnvPZchTaj0IxFNkX-P7cOBuGMqlf81FUoLeEw41tPcT0nbKCXxT17Da_346MKcJDxlv6HehBdhBdF2oVEvJ_u-OiKrFBDveHsLU2Jk0srz-5F2L6IulpAv53x3HIcmV9QR6lvUV61LvamP5e_70yAYTsJjQN-JY4ATPvFTPiw4y62HGaJSqpuY7SY_bKrqdbJ-LQGFbCA1Iw0KTZYvvSMNyCMjdfb-huoPcYBLDucqbHq9LiBfSnZviexvOQPu5HuCSQjQV-e3ec2ez31NkLjpVLiewdm7adtM6_5ntX6YMdv9fkJ_xLySmGuaZyd9032419aHeH5UMQ4pHjzCu-p1Fvsj2PV275JAlVcsJHBruo1MQ6xK-eKDjaknCqmpP7IMwuaEvdJpnV6_n9E3_V06A5NTexMNwP3UaGNkrltBqXRTqAJ7ijPfKWEO6bwSj71GGN66fvsQjVHBRRMphzh2BifiTH-NV1fdUvPW6zF4rso83-DSWWkoBvocUxtU1TfgKIKo_D3DL1i5UG6BhhSf5BpUI6XousYFc1Tv3FUkJTPOApUfeHQ-3tt9UWUX9s6xt1JkH0YnGTsTafuor2c4eqg9kLqVFwExWY7YNojM5WYcMBURqBhNnmZscr5C0hzdwYQDfReR9i1gFZKLibiEUmafDpz7T-1g6_Git9IHv66SP8lHnQJci9r78lBVbYmy_MAzAg85a3FPS12klk-1z6J7d7T6JBtHBq5oapdTDWtOnRy7iTdxU7vkFvqjlKyT1xI0CSzXTJYcCNeoMACHJPWucPyxJNXTogfNNYefniMP9KMZWkEef3N_5fPpTL2s_-hqsHG4aiJU7K4d4ZXiwniaLgHEszs4izXw9FqwdJdz4h_hVvpzTypcAgcUM05zfqCrnkLYsnp8VdKs2LH8mIB26O8gfOPPoJPFS7CnbCc3nC_ll5pawEM_e3lyX1266bil6UONRd2_kBme3FNLZvdckY0hytQKE91f2bO",
+      "summary": [
+        {
+          "type": "summary_text",
+          "text": "**Calculating apple distribution**\n\nI need to solve how to distribute 16 apples among 4 people. It looks straightforward: each person gets 4 apples, and there are no leftovers. To provide clarity, I’ll walk through the steps: starting with a total of 16 apples, and dividing by 4 gives us 4 for each person. In Spanish, I could say, \"Cada persona recibe 4 manzanas y no sobran.\" Showing the division as 16 ÷ 4 = 4 with no remainder helps too!"
+        }
+      ]
+    },
+    {
+      "id": "msg_0a340d743177fc23006aaf4467a08487d2b73c3d5804a41b09",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "Tienes 16 manzanas. Si las repartes entre 4 personas:\n\n16 ÷ 4 = 4 manzanas por persona  \n16 mod 4 = 0 manzanas que sobran\n\nCada una recibe 4 manzanas y no sobra ninguna."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": "detailed"
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 124,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 215,
+    "output_tokens_details": {
+      "reasoning_tokens": 128
+    },
+    "total_tokens": 339
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

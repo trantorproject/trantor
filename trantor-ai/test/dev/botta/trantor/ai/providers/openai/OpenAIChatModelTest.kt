@@ -125,29 +125,6 @@ class OpenAIChatModelTest {
     }
 
     @Test
-    fun `keeps an output item it does not model yet`() {
-        httpClient.body = fixture("text-with-reasoning-item")
-
-        val response = model.generate(ChatRequest(Message.user("Cuanto es 6 por 7?")))
-
-        val kept = response.content.filterIsInstance<ProviderPart>().single()
-        assertThat(kept.provider).isEqualTo("openai")
-        assertThat(kept.type).isEqualTo("reasoning")
-        assertThat(kept.raw["encrypted_content"]?.asString()).startsWith("gAAAAAB")
-        assertThat(response.text).isEqualTo("6 por 7 es 42.")
-    }
-
-    @Test
-    fun `sends back an item it did not model`() {
-        httpClient.body = fixture("text-with-reasoning-item")
-        val kept = model.generate(ChatRequest(Message.user("Cuanto es 6 por 7?"))).content
-
-        model.generate(ChatRequest(Message.user("Cuanto es 6 por 7?"), Message.Assistant(kept)))
-
-        assertThat(sentBody()["input"]?.asArray()?.get(1)?.asObject()?.get("type")?.asString()).isEqualTo("reasoning")
-    }
-
-    @Test
     fun `invalid credentials throw an authentication error`() {
         httpClient.status = 401
         httpClient.body = fixture("error-401")
