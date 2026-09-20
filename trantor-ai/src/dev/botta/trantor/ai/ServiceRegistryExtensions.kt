@@ -52,7 +52,7 @@ fun ServiceRegistry.addModelRegistry() = apply {
  * ```
  */
 fun ServiceRegistry.addModelCatalog(configuration: ServiceConfiguration<ModelCatalog> = { _, _ -> }) = apply {
-    if (!has<ModelCatalog>()) addSingleton { ModelCatalog().loadFromConfig(it.config) }
+    if (!has<ModelCatalog>()) addSingleton { ModelCatalog() }
 
     configure(configuration)
 }

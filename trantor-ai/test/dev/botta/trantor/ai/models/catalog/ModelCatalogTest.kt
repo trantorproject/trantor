@@ -5,8 +5,6 @@ package dev.botta.trantor.ai.models.catalog
 import dev.botta.trantor.ai.models.chat.ReasoningEfforts
 import dev.botta.trantor.ai.providers.anthropic.addAnthropicModels
 import dev.botta.trantor.ai.providers.openai.addOpenAIModels
-import dev.botta.trantor.config.ConfigManager
-import dev.botta.trantor.config.providers.addMemoryCollection
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -116,49 +114,6 @@ class ModelCatalogTest {
     }
 
     @Nested
-    inner class `from the configuration` {
-        @Test
-        fun `a model that came out today works without a release of Trantor`() {
-            config.addMemoryCollection(
-                "ai.catalog.anthropic/claude-6.like" to "anthropic/claude-opus-5",
-                "ai.catalog.anthropic/claude-6.maxOutputTokens" to "256000",
-            )
-
-            catalog.loadFromConfig(config)
-
-            val capabilities = catalog.find("anthropic", "claude-6")?.capabilities
-
-            assertThat(capabilities?.maxOutputTokens).isEqualTo(256_000)
-            assertThat(capabilities?.reasoningEfforts).contains(ReasoningEfforts.High)
-        }
-
-        @Test
-        fun `and can correct one that Trantor got wrong`() {
-            config.addMemoryCollection(
-                "ai.catalog.anthropic/claude-opus-5.like" to "anthropic/claude-sonnet-4-5",
-            )
-
-            catalog.loadFromConfig(config)
-
-            assertThat(catalog.find("anthropic", "claude-opus-5")?.capabilities?.maxOutputTokens).isEqualTo(64_000)
-        }
-
-        @Test
-        fun `one without a like says what is missing`() {
-            config.addMemoryCollection("ai.catalog.anthropic/claude-6.maxOutputTokens" to "256000")
-
-            assertThatThrownBy { catalog.loadFromConfig(config) }.hasMessageContaining("needs a 'like'")
-        }
-
-        @Test
-        fun `and no section at all is not an error`() {
-            catalog.loadFromConfig(config)
-
-            assertThat(catalog.all()).isNotEmpty()
-        }
-    }
-
-    @Nested
     inner class `what each provider brought` {
         @Test
         fun `is listed apart`() {
@@ -178,6 +133,5 @@ class ModelCatalogTest {
         }
     }
 
-    private val config = ConfigManager()
     private val catalog = ModelCatalog().addAnthropicModels().addOpenAIModels()
 }

@@ -1,7 +1,5 @@
 package dev.botta.trantor.ai.models.catalog
 
-import dev.botta.trantor.config.Config
-
 /**
  * What each model is: what it accepts, and later what it costs.
  *
@@ -24,14 +22,19 @@ import dev.botta.trantor.config.Config
  * A dated snapshot needs no entry of its own: `claude-sonnet-4-5-20250929` is answered by `claude-sonnet-4-5`.
  * Nothing else inherits, so a model that is genuinely new is unknown until somebody writes it down.
  *
- * An application adds or replaces whatever it wants, in code or from its configuration, so a model that came out
- * today works without a release of Trantor:
+ * An application adds or replaces whatever it wants, so a model that came out today works without a release of
+ * Trantor:
  *
  * ```kotlin
  * services.addModelCatalog { catalog, _ ->
  *     catalog.add("anthropic/claude-6", like = "anthropic/claude-opus-5") { copy(maxOutputTokens = 256_000) }
  * }
  * ```
+ *
+ * **In code and not in the configuration**, on purpose. A capability is an effort level, a range or a feature, and
+ * written as text none of them are checked until the call is made: a typo in a level, a name that is not a model,
+ * a number where a range goes. In Kotlin the compiler answers all three while it is being written, and the
+ * application recompiling its own code is not a release of Trantor.
  *
  * A model described as another one is resolved when it is read and not when it is written, so it can name one that
  * a provider has not registered yet. Order does not matter by design and not by luck, which is the same rule the
@@ -96,27 +99,6 @@ class ModelCatalog {
         return specOf(reference, description.change(like.capabilities))
     }
 
-    /**
-     * Models of the `ai.catalog` section, each described as one that is already there:
-     *
-     * ```json
-     * { "ai": { "catalog": { "anthropic/claude-6": { "like": "anthropic/claude-opus-5" } } } }
-     * ```
-     *
-     * A ceiling can come along as `maxOutputTokens`. Anything finer than that is written in Kotlin, where the
-     * compiler is the one checking that a level or a feature exists.
-     */
-    fun loadFromConfig(config: Config, section: String = CATALOG_SECTION) = apply {
-        if (!config.hasSection(section)) return@apply
-
-        config.getSection(section).getChildren().forEach { model ->
-            val like = model["like"] ?: error("${model.key} in $section needs a 'like' naming a known model")
-            val ceiling = model["maxOutputTokens"]?.toIntOrNull()
-
-            add(model.key, like) { if (ceiling == null) this else copy(maxOutputTokens = ceiling) }
-        }
-    }
-
     private fun specOf(reference: String, capabilities: ModelCapabilities) = ModelSpec(
         provider = reference.substringBefore("/"),
         modelId = reference.substringAfter("/"),
@@ -143,8 +125,6 @@ class ModelCatalog {
     private data class Described(val like: String, val change: ModelCapabilities.() -> ModelCapabilities)
 
     companion object {
-        const val CATALOG_SECTION = "ai.catalog"
-
         /** The three ways a provider dates a snapshot: `-20250929`, `-2025-04-14` and the older `-0613`. */
         private val DATES = listOf(
             Regex("""^-\d{8}$"""),
