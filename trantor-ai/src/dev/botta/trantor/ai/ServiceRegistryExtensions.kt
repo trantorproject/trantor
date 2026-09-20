@@ -1,34 +1,38 @@
 package dev.botta.trantor.ai
 
 import dev.botta.trantor.ai.models.ModelRegistry
-import dev.botta.trantor.ai.models.middleware.ChatModelMiddleware
-import dev.botta.trantor.ai.providers.AIProvider
-import dev.botta.trantor.config.Config
+import dev.botta.trantor.ai.providers.openai.addOpenAI
+import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceRegistry
 
 /**
- * Registers the [ModelRegistry], with every [AIProvider] and every [ChatModelMiddleware] the application registered
- * and the aliases of the `ai.models` section.
+ * Registers everything an application needs to use models: the [ModelRegistry] and the providers that come with
+ * Trantor.
  *
- * Calling it more than once is harmless, and so is the order: nothing is resolved until the first `get`, so a
- * provider registered after this call is still found.
+ * Middlewares are named here and nowhere else, in the order they wrap the model, so that reading this call is
+ * enough to know what happens around a generation:
+ *
+ * ```kotlin
+ * services.addAI { models, services ->
+ *     models.use(RetryMiddleware())
+ *     models.use(services.create<CostMiddleware>())
+ * }
+ * ```
+ *
+ * An application that does not want the providers of Trantor calls [addModelRegistry] and adds its own.
  */
-fun ServiceRegistry.addAI() = apply {
-    addSingletonIfMissing {
-        ModelRegistry(it.getAll<AIProvider>(), aliasesOf(it.config), it.getAll<ChatModelMiddleware>())
-    }
+fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = { _, _ -> }) = apply {
+    addModelRegistry()
+    addOpenAI()
+    configure(configuration)
 }
 
 /**
- * The aliases of the `ai.models` section, as `{"ai": {"models": {"default": "openai/gpt-4.1-mini"}}}`. A name that
- * the application can repoint without touching code.
+ * The registry alone, without any provider. Each provider adds itself with its own extension, before or after this
+ * call: nothing is resolved until someone asks for a model.
  */
-private fun aliasesOf(config: Config): Map<String, String> {
-    if (!config.hasSection(MODELS_SECTION)) return emptyMap()
+fun ServiceRegistry.addModelRegistry() = apply {
+    if (has<ModelRegistry>()) return@apply
 
-    return config.getSection(MODELS_SECTION).getChildren()
-        .mapNotNull { section -> section.value?.let { section.key to it } }
-        .toMap()
+    addSingleton { ModelRegistry().loadFromConfig(it.config) }
 }
-
-private const val MODELS_SECTION = "ai.models"

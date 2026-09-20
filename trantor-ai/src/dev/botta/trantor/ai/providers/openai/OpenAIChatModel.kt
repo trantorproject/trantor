@@ -1,6 +1,7 @@
 package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
+import dev.botta.trantor.ai.errors.AuthenticationError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.web.client.*
@@ -79,6 +80,14 @@ class OpenAIChatModel(
     }
 
     private fun headers(options: CallOptions) = buildMap {
+        if (config.apiKey.isBlank()) {
+            throw AuthenticationError(
+                provider,
+                "There is no OpenAI api key. Set the OPENAI_API_KEY environment variable, " +
+                    "or ai.providers.openai.apiKey in the configuration.",
+            )
+        }
+
         put("Content-Type", "application/json")
         put("Authorization", "Bearer ${config.apiKey}")
         config.organization?.let { put("OpenAI-Organization", it) }

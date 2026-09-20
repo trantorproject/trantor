@@ -139,6 +139,18 @@ class OpenAIChatModelTest {
     }
 
     @Test
+    fun `without an api key it says what to set, instead of asking OpenAI`() {
+        val model = OpenAIChatModel("gpt-4.1-mini", OpenAIConfig(apiKey = ""), httpClient)
+
+        assertThatThrownBy { model.generate(ChatRequest(Message.user("Hola"))) }
+            .isInstanceOf(AuthenticationError::class.java)
+            .hasMessageContaining("OPENAI_API_KEY")
+            .hasMessageContaining("ai.providers.openai.apiKey")
+
+        assertThat(httpClient.request).isNull()
+    }
+
+    @Test
     fun `invalid credentials throw an authentication error`() {
         httpClient.status = 401
         httpClient.body = fixture("error-401")
