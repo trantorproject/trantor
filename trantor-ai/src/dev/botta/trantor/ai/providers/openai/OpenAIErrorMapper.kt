@@ -2,7 +2,9 @@ package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.*
+import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpStreamResponse
+import java.io.IOException
 import java.io.InterruptedIOException
 import kotlin.time.Duration.Companion.seconds
 
@@ -24,13 +26,23 @@ internal class OpenAIErrorMapper {
         }
     }
 
+    /**
+     * Only what happened on the way to OpenAI is worth trying again. Anything else — a body that did not parse,
+     * a bug of ours — is going to fail the same way on the next attempt, so it comes back as an error nobody
+     * retries, instead of looking like the provider being down.
+     */
     fun toError(error: Throwable): AIError {
         if (error is AIError) return error
         if (hasCause<InterruptedIOException>(error)) return TimeoutError(error.message ?: "The call timed out", error)
 
-        return ProviderUnavailableError(
+        if (hasCause<IOException>(error) || error is HttpClientError) {
+            return ProviderUnavailableError(OPENAI_PROVIDER, error.message ?: "Could not reach OpenAI", cause = error)
+        }
+
+        return ProviderError(
             OPENAI_PROVIDER,
-            error.message ?: "Could not reach OpenAI",
+            error.message ?: "The call to OpenAI failed",
+            retryable = false,
             cause = error,
         )
     }

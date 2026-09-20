@@ -10,12 +10,13 @@ import dev.botta.trantor.ai.models.middleware.ChatModelMiddleware
 import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.openai.OpenAIConfig
 import dev.botta.trantor.ai.providers.openai.addOpenAI
-import dev.botta.trantor.ai.providers.openai.openAIConfigOf
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.config.ConfigManager
 import dev.botta.trantor.config.providers.addMemoryCollection
 import dev.botta.trantor.di.DefaultServiceProvider
 import dev.botta.trantor.di.ServiceRegistry
+import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -51,9 +52,17 @@ class ServiceRegistryExtensionsTest {
         }
 
         @Test
-        fun `an openai the application configured wins over the one it would bring`() {
-            registry.addOpenAI(OpenAIConfig(apiKey = "sk-from-the-app"))
+        fun `a configuration of the application is kept, whichever call comes first`() {
+            registry.addOpenAI { openAI, _ -> openAI.apiKey = "sk-from-the-app" }
             registry.addAI()
+
+            assertThat(provider.get<OpenAIConfig>().apiKey).isEqualTo("sk-from-the-app")
+        }
+
+        @Test
+        fun `and the other way round too`() {
+            registry.addAI()
+            registry.addOpenAI { openAI, _ -> openAI.apiKey = "sk-from-the-app" }
 
             assertThat(provider.get<OpenAIConfig>().apiKey).isEqualTo("sk-from-the-app")
         }
@@ -162,8 +171,8 @@ class ServiceRegistryExtensionsTest {
     @Nested
     inner class `the openai provider` {
         @Test
-        fun `takes a config of its own`() {
-            registry.addOpenAI(OpenAIConfig(apiKey = "sk-test"))
+        fun `builds its models`() {
+            registry.addOpenAI()
 
             val model = models().chat("openai/gpt-4.1-mini")
 
@@ -173,7 +182,7 @@ class ServiceRegistryExtensionsTest {
 
         @Test
         fun `brings the registry along`() {
-            registry.addOpenAI(OpenAIConfig(apiKey = "sk-test"))
+            registry.addOpenAI()
 
             assertThat(models()).isNotNull()
         }
@@ -184,22 +193,22 @@ class ServiceRegistryExtensionsTest {
                 "ai.providers.openai.apiKey" to "sk-from-config",
                 "ai.providers.openai.baseUrl" to "http://localhost:1234/v1",
                 "ai.providers.openai.organization" to "org-7",
-                "ai.providers.openai.store" to "false",
             )
+            registry.addOpenAI()
 
-            val openAI = openAIConfigOf(config)
+            val openAI = provider.get<OpenAIConfig>()
 
             assertThat(openAI.apiKey).isEqualTo("sk-from-config")
             assertThat(openAI.baseUrl).isEqualTo("http://localhost:1234/v1")
             assertThat(openAI.organization).isEqualTo("org-7")
-            assertThat(openAI.store).isFalse()
         }
 
         @Test
         fun `keeps its defaults for what the config does not say`() {
             config.addMemoryCollection("ai.providers.openai.apiKey" to "sk-from-config")
+            registry.addOpenAI()
 
-            val openAI = openAIConfigOf(config)
+            val openAI = provider.get<OpenAIConfig>()
 
             assertThat(openAI.baseUrl).isEqualTo(OpenAIConfig.DEFAULT_BASE_URL)
             assertThat(openAI.organization).isNull()
@@ -208,7 +217,7 @@ class ServiceRegistryExtensionsTest {
 
         @Test
         fun `lives together with another provider`() {
-            registry.addOpenAI(OpenAIConfig(apiKey = "sk-test"))
+            registry.addOpenAI()
             registry.addFakeProvider()
 
             assertThat(models().chat("openai/gpt-4.1-mini").provider).isEqualTo("openai")
@@ -274,6 +283,8 @@ class ServiceRegistryExtensionsTest {
     }
 
     private val config = ConfigManager()
-    private val registry = ServiceRegistry(config)
+
+    // The host registers it; addConfig needs it to read a section into a settings class
+    private val registry = ServiceRegistry(config).apply { addSingleton<JsonSerializer>(GsonSerializer()) }
     private val provider = DefaultServiceProvider(registry)
 }

@@ -9,6 +9,9 @@ class FakeHttpClient(
     var responseHeaders: Map<String, String> = emptyMap(),
     var error: Throwable? = null,
 ): HttpClient() {
+    /** Runs while the body is being read, to try what happens in the middle of a call. */
+    var whileReading: () -> Unit = {}
+
     var method: HttpMethods? = null
     var request: HttpRequest? = null
     var options: StreamOptions? = null
@@ -46,7 +49,11 @@ class FakeHttpClient(
 
         override fun lines() = body.lineSequence()
 
-        override fun body() = this@FakeHttpClient.body
+        override fun body(): String {
+            whileReading()
+
+            return this@FakeHttpClient.body
+        }
 
         override fun cancel() {
             wasCancelled = true

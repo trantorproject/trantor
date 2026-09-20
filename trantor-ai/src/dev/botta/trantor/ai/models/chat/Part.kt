@@ -8,6 +8,10 @@ sealed interface Part {
     val metadata: ProviderMetadata
 }
 
+/**
+ * Text, with whatever the provider attached to it in [metadata] — citations, for one. It goes back with the text,
+ * because a provider that sent it expects to see it again.
+ */
 data class TextPart(
     val text: String,
     override val metadata: ProviderMetadata = ProviderMetadata.None,
@@ -51,12 +55,16 @@ data class ToolResultPart(
 ): Part
 
 /**
- * An item the adapter does not model yet. It is kept as it came and sent back to the same provider on the next turn,
- * so that nothing is lost while we catch up with what providers add.
+ * Something the adapter does not model yet. It is kept as it came and sent back to the same provider on the next
+ * turn, so that nothing is lost while we catch up with what providers add.
+ *
+ * [isItem] says where it was: on its own, or inside the content of a message. It has to go back to the same place,
+ * or the provider gets a message part where it expects an item.
  */
 data class ProviderPart(
     val provider: String,
     val type: String,
     val raw: JsonObject,
+    val isItem: Boolean = true,
     override val metadata: ProviderMetadata = ProviderMetadata.None,
 ): Part

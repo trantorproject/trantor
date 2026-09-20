@@ -1,23 +1,27 @@
 package dev.botta.trantor.ai.models.middleware
 
-import dev.botta.trantor.ai.errors.AIError
-import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.errors.ProviderError
 import dev.botta.trantor.ai.errors.RateLimitError
 import dev.botta.trantor.ai.errors.TimeoutError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.primitives.logging.getLogger
+import java.io.IOException
 import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 /**
- * Tries again when the provider says the problem is temporary: a rate limit, a 5xx or a timeout. Anything else —
- * a bad api key, a request the provider rejected, a cancellation — fails on the first try, because trying it again
- * only costs time.
+ * Tries again when the provider says the problem is temporary: a rate limit, a 5xx, a timeout or a connection that
+ * broke. Anything else — a bad api key, a request the provider rejected, a body that did not parse, a bug — fails
+ * on the first try, because trying it again only costs time. What counts as temporary is the adapter's call, said
+ * in [ProviderError.retryable].
+ *
+ * The timeout of the call is a deadline for the whole thing and not for each attempt: asking for an answer within
+ * thirty seconds should not end up taking ninety. Each attempt gets what is left of it.
  *
  * A stream is opened again only while nothing has come out of it. Once the caller read a part the answer already
  * started, and asking again would give them the beginning twice.
@@ -35,15 +39,23 @@ class RetryMiddleware(
         request: ChatRequest,
         options: CallOptions,
         next: (ChatRequest, CallOptions) -> ChatResponse,
-    ) = retrying { next(request, options) }
+    ): ChatResponse {
+        val deadline = Deadline.of(options)
+
+        return retrying(deadline) { next(request, deadline.applyTo(options)) }
+    }
 
     override fun stream(
         request: ChatRequest,
         options: CallOptions,
         next: (ChatRequest, CallOptions) -> ChatStream,
-    ): ChatStream = RetryingStream { next(request, options) }
+    ): ChatStream {
+        val deadline = Deadline.of(options)
 
-    private fun <T> retrying(attempt: () -> T): T {
+        return RetryingStream(deadline) { next(request, deadline.applyTo(options)) }
+    }
+
+    private fun <T> retrying(deadline: Deadline, attempt: () -> T): T {
         var tried = 0
 
         while (true) {
@@ -52,19 +64,25 @@ class RetryMiddleware(
             } catch (e: Throwable) {
                 tried++
 
-                if (tried >= maxAttempts || !isTemporary(e)) throw e
+                if (!worthAnotherTry(e, tried, deadline)) throw e
 
                 waitAfter(e, tried)
             }
         }
     }
 
+    private fun worthAnotherTry(error: Throwable, tried: Int, deadline: Deadline): Boolean {
+        if (tried >= maxAttempts || !isTemporary(error)) return false
+
+        return deadline.leaves(waitFor(error, tried))
+    }
+
     private fun isTemporary(error: Throwable) = when (error) {
-        is CancelledError -> false
         is TimeoutError -> true
         is ProviderError -> error.retryable
-        // Anything that is not ours is a connection that broke on the way, which is worth trying again
-        else -> error !is AIError
+        // A model that does not wrap what the network threw at it still deserves another try
+        is IOException -> true
+        else -> false
     }
 
     private fun waitAfter(error: Throwable, attempt: Int) {
@@ -84,12 +102,27 @@ class RetryMiddleware(
         return minOf(backoff * spread, maxDelay)
     }
 
+    /** How much of the timeout of the call is left, and whether there is any point in waiting before trying again. */
+    private class Deadline(private val startedAt: TimeSource.Monotonic.ValueTimeMark?, private val total: Duration?) {
+        val remaining get() = total?.let { it - (startedAt?.elapsedNow() ?: Duration.ZERO) }
+
+        /** Whether waiting that long would still leave time to try. */
+        fun leaves(wait: Duration) = remaining?.let { it > wait } ?: true
+
+        fun applyTo(options: CallOptions) = remaining?.let { options.copy(timeout = it) } ?: options
+
+        companion object {
+            fun of(options: CallOptions) =
+                Deadline(options.timeout?.let { TimeSource.Monotonic.markNow() }, options.timeout)
+        }
+    }
+
     /**
      * A stream that can still be opened again. It is opened right away, so that a provider saying no is an error
      * where the call was made and not later. [started] turns true as soon as a part reached the caller.
      */
-    private inner class RetryingStream(private val open: () -> ChatStream): ChatStream {
-        private var delegate: ChatStream? = retrying { open() }
+    private inner class RetryingStream(private val deadline: Deadline, private val open: () -> ChatStream): ChatStream {
+        private var delegate: ChatStream? = retrying(deadline) { open() }
         private var started = false
 
         override fun hasNext() = read { it.hasNext() }
@@ -111,7 +144,7 @@ class RetryMiddleware(
                 } catch (e: Throwable) {
                     tried++
 
-                    if (started || tried >= maxAttempts || !isTemporary(e)) throw e
+                    if (started || !worthAnotherTry(e, tried, deadline)) throw e
 
                     waitAfter(e, tried)
                     delegate?.let { runCatching { it.close() } }

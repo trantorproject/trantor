@@ -14,6 +14,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import java.io.InterruptedIOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 class OpenAIChatModelTest {
@@ -250,14 +252,42 @@ class OpenAIChatModelTest {
     }
 
     @Test
-    fun `cancelling while it runs cancels the http call`() {
+    fun `cancelling while it runs ends the call as cancelled`() {
+        httpClient.body = fixture("text-simple")
+        val cancellation = Cancellation()
+        val reading = CountDownLatch(1)
+        val letGo = CountDownLatch(1)
+        httpClient.whileReading = {
+            reading.countDown()
+            letGo.await(2, TimeUnit.SECONDS)
+        }
+        var thrown: Throwable? = null
+
+        val call = Thread.ofVirtual().start {
+            thrown = runCatching {
+                model.generate(ChatRequest(Message.user("Hola")), CallOptions(cancellation = cancellation))
+            }.exceptionOrNull()
+        }
+        reading.await(2, TimeUnit.SECONDS)
+        cancellation.cancel()
+        letGo.countDown()
+        call.join()
+
+        // Half a body is not an answer, and it is not a parsing error either
+        assertThat(thrown).isInstanceOf(CancelledError::class.java)
+        assertThat(httpClient.wasCancelled).isTrue()
+    }
+
+    @Test
+    fun `lets go of the cancellation once the call is over`() {
         httpClient.body = fixture("text-simple")
         val cancellation = Cancellation()
 
-        model.generate(ChatRequest(Message.user("Hola")), CallOptions(cancellation = cancellation))
+        repeat(3) { model.generate(ChatRequest(Message.user("Hola")), CallOptions(cancellation = cancellation)) }
         cancellation.cancel()
 
-        assertThat(httpClient.wasCancelled).isTrue()
+        // Nothing left listening: a token used for many calls does not keep a callback for each one
+        assertThat(httpClient.wasCancelled).isFalse()
     }
 
     @Test

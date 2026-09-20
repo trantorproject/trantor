@@ -119,6 +119,44 @@ class RetryMiddlewareTest {
     }
 
     @Nested
+    inner class `the timeout of the call` {
+        @Test
+        fun `is a deadline for the whole thing, not for each attempt`() {
+            val model = FlakyChatModel(failures = 5) { ProviderUnavailableError("openai") }
+
+            assertThatThrownBy {
+                model.with(retry(initialDelay = 300.milliseconds))
+                    .generate(ChatRequest("Hola"), CallOptions(timeout = 400.milliseconds))
+            }.isInstanceOf(ProviderUnavailableError::class.java)
+
+            // The second wait would not leave time to try again, so it is not even waited for
+            assertThat(model.attempts).isEqualTo(2)
+        }
+
+        @Test
+        fun `leaves each attempt what is left of it`() {
+            val model = FlakyChatModel(failures = 1) { ProviderUnavailableError("openai") }
+
+            model.with(retry()).generate(ChatRequest("Hola"), CallOptions(timeout = 30.seconds))
+
+            val given = model.timeouts.map { it!! }
+            assertThat(given).hasSize(2)
+            assertThat(given[0]).isLessThanOrEqualTo(30.seconds)
+            assertThat(given[1]).isLessThan(given[0])
+        }
+
+        @Test
+        fun `without a timeout it just counts the attempts`() {
+            val model = FlakyChatModel(failures = 2) { ProviderUnavailableError("openai") }
+
+            model.with(retry()).generate(ChatRequest("Hola"))
+
+            assertThat(model.attempts).isEqualTo(3)
+            assertThat(model.timeouts).containsExactly(null, null, null)
+        }
+    }
+
+    @Nested
     inner class `streaming` {
         @Test
         fun `tries again when the provider would not open the stream`() {
@@ -169,8 +207,8 @@ class RetryMiddlewareTest {
         }
     }
 
-    private fun retry(maxDelay: Duration = 30.seconds) =
-        RetryMiddleware(maxAttempts = 3, initialDelay = 10.milliseconds, maxDelay = maxDelay, jitter = 0.0) {
+    private fun retry(maxDelay: Duration = 30.seconds, initialDelay: Duration = 10.milliseconds) =
+        RetryMiddleware(maxAttempts = 3, initialDelay = initialDelay, maxDelay = maxDelay, jitter = 0.0) {
             waits.add(it)
         }
 
@@ -187,9 +225,11 @@ class RetryMiddlewareTest {
         override val modelId = "flaky-model"
 
         var attempts = 0
+        val timeouts = mutableListOf<Duration?>()
 
         override fun generate(request: ChatRequest, options: CallOptions): ChatResponse {
             attempts++
+            timeouts.add(options.timeout)
             if (attempts <= failures) throw error()
 
             return response()

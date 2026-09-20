@@ -3,6 +3,7 @@ package dev.botta.trantor.ai.providers.openai
 import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.AuthenticationError
 import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.ai.models.CancellationLink
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.web.client.*
 import dev.botta.trantor.web.client.okhttp.OkHttpHttpClient
@@ -35,14 +36,19 @@ class OpenAIChatModel(
         val startedAt = TimeSource.Monotonic.markNow()
 
         try {
-            call(mapped.body.toString(), options).use { response ->
-                val body = response.body()
+            CancellationLink(options.cancellation).use { link ->
+                call(mapped.body.toString(), options, link).use { response ->
+                    val body = response.body()
 
-                if (response.status != 200) throw errorMapper.toError(response, body)
+                    // Cancelling closes the connection, so what came back is half a body and not an answer
+                    link.throwIfCancelled()
 
-                val json = Json.parse(body).asObject() ?: throw errorMapper.toError(response, body)
+                    if (response.status != 200) throw errorMapper.toError(response, body)
 
-                return responseMapper.map(json, modelId, startedAt.elapsedNow(), mapped.warnings)
+                    val json = Json.parse(body).asObject() ?: throw errorMapper.toError(response, body)
+
+                    return responseMapper.map(json, modelId, startedAt.elapsedNow(), mapped.warnings)
+                }
             }
         } catch (e: Throwable) {
             throw errorMapper.toError(e)
@@ -54,29 +60,30 @@ class OpenAIChatModel(
 
         val mapped = requestMapper.map(modelId, request, stream = true)
         val startedAt = TimeSource.Monotonic.markNow()
+        // The link lives as long as the stream, and the stream closes it
+        val link = CancellationLink(options.cancellation)
 
         val response = try {
-            call(mapped.body.toString(), options)
+            call(mapped.body.toString(), options, link)
         } catch (e: Throwable) {
+            link.close()
             throw errorMapper.toError(e)
         }
 
         if (response.status != 200) {
             val body = response.use { it.body() }
+            link.close()
             throw errorMapper.toError(response, body)
         }
 
-        return OpenAIChatStream(modelId, response, startedAt, mapped.warnings, responseMapper)
+        return OpenAIChatStream(modelId, response, startedAt, mapped.warnings, responseMapper, link)
     }
 
-    private fun call(body: String, options: CallOptions): HttpStreamResponse {
+    private fun call(body: String, options: CallOptions, link: CancellationLink): HttpStreamResponse {
         val httpRequest = HttpRequest("${config.baseUrl}/responses", body, headers(options))
         val streamOptions = StreamOptions(totalTimeout = options.timeout?.inWholeMilliseconds?.toInt())
-        val response = httpClient.stream(HttpMethods.Post, httpRequest, streamOptions)
 
-        options.cancellation?.onCancel { response.cancel() }
-
-        return response
+        return link.attach(httpClient.stream(HttpMethods.Post, httpRequest, streamOptions))
     }
 
     private fun headers(options: CallOptions) = buildMap {

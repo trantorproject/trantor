@@ -165,6 +165,30 @@ class OpenAIChatModelReasoningTest {
         }
 
         @Test
+        fun `content it does not model goes back inside the message, not as an item`() {
+            httpClient.body = unknownContent
+            val answer = model.generate(ChatRequest("Hola")).content
+
+            model.generate(ChatRequest(Message.user("Hola"), Message.Assistant(answer)))
+
+            val sent = sentBody()["input"]?.asArray()?.get(1)?.asObject()!!
+            assertThat(sent["type"]?.asString()).isEqualTo("message")
+            assertThat(sent["content"]?.asArray()?.map { it.asObject()?.get("type")?.asString() })
+                .containsExactly("output_text", "output_audio")
+        }
+
+        @Test
+        fun `keeps what came attached to the text and sends it back`() {
+            httpClient.body = textWithAnnotations
+            val answer = model.generate(ChatRequest("Hola")).content
+
+            model.generate(ChatRequest(Message.user("Hola"), Message.Assistant(answer)))
+
+            val text = sentBody()["input"]?.asArray()?.get(1)?.asObject()?.get("content")?.asArray()?.get(0)
+            assertThat(text?.asObject()?.get("annotations")?.asArray()?.size).isEqualTo(1)
+        }
+
+        @Test
         fun `an output item it does not model is still kept whole`() {
             httpClient.body = fixture("unknown-item.json")
 
@@ -263,6 +287,33 @@ class OpenAIChatModelReasoningTest {
     private fun sentBody() = Json.parse(httpClient.requestBody!!).asObject()!!
 
     private fun fixtureJson(name: String) = Json.parse(fixture(name)).asObject()!!
+
+    private val unknownContent = """
+        {
+          "id": "resp_1", "status": "completed", "model": "gpt-4.1-mini",
+          "output": [{
+            "id": "msg_1", "type": "message", "role": "assistant", "status": "completed",
+            "content": [
+              {"type": "output_text", "annotations": [], "text": "Hola"},
+              {"type": "output_audio", "data": "AAAA", "transcript": "Hola"}
+            ]
+          }]
+        }
+    """.trimIndent()
+
+    private val textWithAnnotations = """
+        {
+          "id": "resp_2", "status": "completed", "model": "gpt-4.1-mini",
+          "output": [{
+            "id": "msg_2", "type": "message", "role": "assistant", "status": "completed",
+            "content": [{
+              "type": "output_text",
+              "text": "Segun la web, 7 grados.",
+              "annotations": [{"type": "url_citation", "url": "https://x.com", "title": "x"}]
+            }]
+          }]
+        }
+    """.trimIndent()
 
     private fun fixture(name: String) =
         javaClass.getResource("/openai/$name")?.readText() ?: error("Missing fixture $name")

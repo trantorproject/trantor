@@ -11,5 +11,9 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-schema-generator-json")
 }
 
+dependencies {
+    testImplementation(project(":trantor-gson"))
+}
+
 extra.set("POM_NAME", "Trantor AI")
 extra.set("POM_DESCRIPTION", "Unified access to language models, tools and agents for Trantor framework")

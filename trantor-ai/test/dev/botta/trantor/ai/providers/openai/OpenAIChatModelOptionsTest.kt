@@ -115,6 +115,54 @@ class OpenAIChatModelOptionsTest {
         }
 
         @Test
+        fun `add a field next to one the adapter wrote`() {
+            val request = ChatRequest(
+                messages = listOf(Message.user("Hola")),
+                output = OutputSpec.Json(Json.obj("type" to "object"), name = "answer"),
+                providerOptions = ProviderOptions.of(
+                    RawOptions("openai", Json.obj("text" to Json.obj("verbosity" to "low"))),
+                ),
+            )
+
+            model.generate(request)
+
+            assertThat(sentBody().path("text.format.name")?.asString()).isEqualTo("answer")
+            assertThat(sentBody().path("text.verbosity")?.asString()).isEqualTo("low")
+        }
+
+        @Test
+        fun `add to a list the adapter wrote`() {
+            val request = ChatRequest(
+                messages = listOf(Message.user("Hola")),
+                settings = ChatSettings(reasoning = Reasoning.effort(ReasoningEfforts.Low)),
+                providerOptions = ProviderOptions.of(
+                    RawOptions("openai", Json.obj("include" to Json.array("message.output_text.logprobs"))),
+                ),
+            )
+
+            model.generate(request)
+
+            assertThat(sentBody()["include"]?.asArray()?.map { it.asString() })
+                .containsExactly("reasoning.encrypted_content", "message.output_text.logprobs")
+        }
+
+        @Test
+        fun `only the value that is really in the way is a conflict`() {
+            val request = ChatRequest(
+                messages = listOf(Message.user("Hola")),
+                output = OutputSpec.Json(Json.obj("type" to "object"), name = "answer"),
+                providerOptions = ProviderOptions.of(
+                    RawOptions("openai", Json.obj("text" to Json.obj("format" to "whatever"))),
+                ),
+            )
+
+            assertThatThrownBy { model.generate(request) }
+                .isInstanceOfSatisfying(InvalidProviderOptionError::class.java) {
+                    assertThat(it.option).isEqualTo("text.format")
+                }
+        }
+
+        @Test
         fun `a typed option is what conflicts, whatever order they came in`() {
             val options = ProviderOptions.of(
                 RawOptions("openai", Json.obj("service_tier" to "flex")),

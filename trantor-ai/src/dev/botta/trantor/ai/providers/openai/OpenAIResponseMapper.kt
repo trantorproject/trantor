@@ -70,11 +70,22 @@ internal class OpenAIResponseMapper {
     private fun toMessageParts(item: JsonObject) = item["content"]?.asArray().orEmpty().mapNotNull { it.asObject() }
         .map { part ->
             when (part["type"]?.asString()) {
-                "output_text" -> TextPart(part["text"]?.asString() ?: "")
+                "output_text" -> TextPart(part["text"]?.asString() ?: "", extrasOf(part))
                 "refusal" -> RefusalPart(part["refusal"]?.asString() ?: "")
-                else -> ProviderPart(OPENAI_PROVIDER, part["type"]?.asString() ?: "unknown", part)
+                // Content of a message, not an item of its own, and it has to go back inside a message
+                else -> ProviderPart(OPENAI_PROVIDER, part["type"]?.asString() ?: "unknown", part, isItem = false)
             }
         }
+
+    /**
+     * What came with the text and we don't model: annotations are the citations of a web search, and OpenAI wants
+     * them back with the text on the next turn.
+     */
+    private fun extrasOf(part: JsonObject): ProviderMetadata {
+        val annotations = part["annotations"]?.asArray()?.takeIf { it.isNotEmpty() } ?: return ProviderMetadata.None
+
+        return ProviderMetadata.of(OPENAI_PROVIDER, Json.obj("annotations" to annotations))
+    }
 
     private fun toFinishReason(status: String?, json: JsonObject) = when (status) {
         "completed" -> when {
