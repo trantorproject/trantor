@@ -112,7 +112,7 @@ internal class AnthropicResponseMapper {
         return Usage(
             inputTokens = if (input == null) null else input + (cacheRead ?: 0) + (cacheWrite ?: 0),
             outputTokens = json["output_tokens"]?.asInt(),
-            cachedInputTokens = cacheRead,
+            cacheReadTokens = cacheRead,
             cacheWriteTokens = cacheWrite,
             // Billed inside output_tokens, which is what Usage means by a subset
             reasoningTokens = json.path("output_tokens_details.thinking_tokens")?.asInt(),

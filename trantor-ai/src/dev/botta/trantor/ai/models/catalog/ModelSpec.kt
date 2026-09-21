@@ -26,9 +26,18 @@ data class ModelSpec(
     val reference get() = "$provider/$modelId"
 }
 
+/**
+ * The list price of a model, in dollars per million tokens, named as [dev.botta.trantor.ai.models.Usage] names the
+ * tokens. [inputPerMillion] is the plain price, the one both providers call "input", and it is what the input that
+ * went through no cache pays.
+ *
+ * A cache with no price of its own is charged at the plain input price, which is what OpenAI does with a write. One
+ * price for writes, too, although Anthropic charges more for a cache kept an hour than for five minutes: this is
+ * for an estimate, and the five-minute price is the one a call uses unless it asks otherwise.
+ */
 data class ModelPricing(
     val inputPerMillion: Money,
     val outputPerMillion: Money,
-    val cachedInputPerMillion: Money? = null,
+    val cacheReadPerMillion: Money? = null,
     val cacheWritePerMillion: Money? = null,
 )

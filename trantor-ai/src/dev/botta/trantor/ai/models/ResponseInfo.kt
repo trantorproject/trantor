@@ -1,6 +1,6 @@
 package dev.botta.trantor.ai.models
 
-import dev.botta.trantor.domain.Money
+import dev.botta.trantor.ai.models.cost.CostEstimate
 import kotlin.time.Duration
 
 data class ResponseInfo(
@@ -10,6 +10,6 @@ data class ResponseInfo(
     val model: String,
     val provider: String,
     val latency: Duration,
-    // Estimated from the catalog by CostMiddleware. Null when there is no catalog or no price for the model.
-    val cost: Money? = null,
+    // Filled from the catalog by CostMiddleware. Null when there is no catalog or no price for the model.
+    val estimatedCost: CostEstimate? = null,
 )

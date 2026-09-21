@@ -116,7 +116,7 @@ internal class OpenAIResponseMapper {
         return Usage(
             inputTokens = json["input_tokens"]?.asInt(),
             outputTokens = json["output_tokens"]?.asInt(),
-            cachedInputTokens = json.path("input_tokens_details.cached_tokens")?.asInt(),
+            cacheReadTokens = json.path("input_tokens_details.cached_tokens")?.asInt(),
             cacheWriteTokens = json.path("input_tokens_details.cache_write_tokens")?.asInt(),
             reasoningTokens = json.path("output_tokens_details.reasoning_tokens")?.asInt(),
             raw = json,

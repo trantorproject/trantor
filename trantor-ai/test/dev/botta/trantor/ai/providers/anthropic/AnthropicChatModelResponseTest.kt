@@ -44,7 +44,7 @@ class AnthropicChatModelResponseTest {
 
         assertThat(usage.inputTokens).isEqualTo(15)
         assertThat(usage.outputTokens).isEqualTo(28)
-        assertThat(usage.cachedInputTokens).isZero()
+        assertThat(usage.cacheReadTokens).isZero()
         assertThat(usage.cacheWriteTokens).isZero()
         assertThat(usage.totalTokens).isEqualTo(43)
         // Anthropic reports it only when the model thought, so it is unknown and not zero
@@ -61,7 +61,7 @@ class AnthropicChatModelResponseTest {
         val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
 
         assertThat(usage.inputTokens).isEqualTo(2_000)
-        assertThat(usage.cachedInputTokens).isEqualTo(800)
+        assertThat(usage.cacheReadTokens).isEqualTo(800)
         assertThat(usage.cacheWriteTokens).isEqualTo(1_000)
         assertThat(usage.totalTokens).isEqualTo(2_050)
     }

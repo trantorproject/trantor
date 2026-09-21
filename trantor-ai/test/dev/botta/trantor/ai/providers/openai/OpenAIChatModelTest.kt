@@ -95,7 +95,7 @@ class OpenAIChatModelTest {
 
         assertThat(usage.inputTokens).isEqualTo(18)
         assertThat(usage.outputTokens).isEqualTo(9)
-        assertThat(usage.cachedInputTokens).isZero()
+        assertThat(usage.cacheReadTokens).isZero()
         assertThat(usage.cacheWriteTokens).isZero()
         assertThat(usage.reasoningTokens).isZero()
         assertThat(usage.totalTokens).isEqualTo(27)

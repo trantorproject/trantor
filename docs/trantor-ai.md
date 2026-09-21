@@ -104,6 +104,11 @@ and goes back where it came from, so a field the provider added is visible inste
 **Warnings, not silence.** When a request asks for something the provider cannot do, the response carries
 a `ModelWarning`. `failOnWarnings` turns those into an error for an application that would rather stop.
 
+**Usage is totals and their parts.** `inputTokens` and `outputTokens` are totals. The input splits into
+`uncachedInputTokens`, `cacheReadTokens` and `cacheWriteTokens`, which add up to it, and `reasoningTokens`
+is part of the output. Each part is named for what happened to those tokens because each is priced apart;
+"cached" alone would not say whether it was read or written. Null means the provider did not say.
+
 ---
 
 ## Structured output
@@ -418,6 +423,46 @@ if (ModelFeatures.StructuredOutput in spec!!.capabilities) { ... }
 ```
 
 Each provider registers its own models, so `addAI()` is all an application needs.
+
+---
+
+## Cost
+
+**It is an estimate and not the bill.** `CostCalculator` prices the tokens of a call with the list price of
+its model, and that is all it knows. Batch and priority tiers, the higher price of a long context, where
+the data is kept, discounts and taxes all move the bill away from it. It is close enough to see where the
+money goes and to notice when it starts going faster, which is what it is for.
+
+```kotlin
+val estimate = CostCalculator(catalog).estimate(response)
+
+estimate?.cacheRead      // what the cache cost, next to what it saved on estimate.uncachedInput
+estimate?.reasoning      // part of estimate.output
+estimate?.total
+```
+
+A `CostEstimate` has the names of `Usage` without the `Tokens`: `input` is `uncachedInput` plus
+`cacheRead` plus `cacheWrite`, `reasoning` is part of `output`, and `total` is input plus output. Estimates
+of several calls add up with `+`, part by part. Nothing is rounded; a call costs fractions of a cent, and
+rounding belongs to whoever shows the number.
+
+A price is per million tokens, in dollars, in `ModelSpec.pricing`. `inputPerMillion` is the plain price,
+the one both providers call "input", and it is what the uncached input pays. A cache with no price of its
+own is charged as plain input, which is what OpenAI does with a write. There is one price for writes,
+although Anthropic charges more for a cache kept an hour: for an estimate, the five-minute price is close
+enough.
+
+**No number is better than a wrong one.** The estimate is null when:
+
+- the catalog does not know the model, or knows it without a price;
+- the model is standing in for the newest one. Guessing what a model takes keeps a call from failing;
+  guessing what it costs gives a wrong number that looks right, off by however much cheaper the newest
+  model is. Being off by a tier is an estimate, being off by a model is not;
+- the usage does not say the input or the output, because half a bill passes for all of it.
+
+A response is priced as `info.model`, the model that answered. That is usually a dated snapshot, and a
+snapshot is priced as its family. A model added `like` another takes what the other takes and not what it
+costs, so it has no price until one is written for it.
 
 ---
 

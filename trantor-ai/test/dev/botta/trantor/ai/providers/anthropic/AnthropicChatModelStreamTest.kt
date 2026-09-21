@@ -88,7 +88,7 @@ class AnthropicChatModelStreamTest {
             assertThat(usage.inputTokens).isEqualTo(15)
             // The first event says 3, and 28 is the whole answer rather than 3 + 28
             assertThat(usage.outputTokens).isEqualTo(28)
-            assertThat(usage.cachedInputTokens).isEqualTo(0)
+            assertThat(usage.cacheReadTokens).isEqualTo(0)
         }
 
         @Test
