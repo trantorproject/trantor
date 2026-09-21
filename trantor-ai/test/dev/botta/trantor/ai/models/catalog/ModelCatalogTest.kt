@@ -5,6 +5,7 @@ package dev.botta.trantor.ai.models.catalog
 import dev.botta.trantor.ai.models.chat.ReasoningEfforts
 import dev.botta.trantor.ai.providers.anthropic.addAnthropicModels
 import dev.botta.trantor.ai.providers.openai.addOpenAIModels
+import dev.botta.trantor.domain.Money
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -133,7 +134,141 @@ class ModelCatalogTest {
     }
 
     @Nested
+    inner class `the price of a model` {
+        @Test
+        fun `is written apart from what it takes, since a family takes the same things at different prices`() {
+            catalog.add("x/big", "x/small", capabilities = ModelCapabilities(maxOutputTokens = 1_000))
+            catalog.price("x/big", input = "3", output = "15", cacheRead = "0.3", cacheWrite = "3.75")
+            catalog.price("x/small", input = "1", output = "5")
+
+            assertThat(catalog.find("x/big")?.pricing).isEqualTo(
+                ModelPricing(
+                    inputPerMillion = Money(3),
+                    outputPerMillion = Money(15),
+                    cacheReadPerMillion = Money("0.3"),
+                    cacheWritePerMillion = Money("3.75"),
+                )
+            )
+            assertThat(catalog.find("x/small")?.pricing?.inputPerMillion).isEqualTo(Money(1))
+        }
+
+        @Test
+        fun `and in any order`() {
+            catalog.price("x/big", input = "3", output = "15")
+            catalog.add("x/big", capabilities = ModelCapabilities())
+
+            assertThat(catalog.find("x/big")?.pricing?.inputPerMillion).isEqualTo(Money(3))
+        }
+
+        @Test
+        fun `several models can share one`() {
+            catalog.add("x/a", "x/b", capabilities = ModelCapabilities())
+            catalog.price("x/a", "x/b", input = "3", output = "15")
+
+            assertThat(catalog.find("x/b")?.pricing?.outputPerMillion).isEqualTo(Money(15))
+        }
+
+        @Test
+        fun `a dated snapshot costs what its family costs`() {
+            catalog.add("x/big", capabilities = ModelCapabilities())
+            catalog.price("x/big", input = "3", output = "15")
+
+            assertThat(catalog.find("x/big-20250929")?.pricing?.inputPerMillion).isEqualTo(Money(3))
+        }
+
+        @Test
+        fun `unless it has a price of its own, which some old snapshots do`() {
+            catalog.add("x/big", capabilities = ModelCapabilities())
+            catalog.price("x/big", input = "3", output = "15")
+            catalog.price("x/big-2024-05-13", input = "5", output = "15")
+
+            val snapshot = catalog.find("x/big-2024-05-13")
+
+            assertThat(snapshot?.pricing?.inputPerMillion).isEqualTo(Money(5))
+            assertThat(snapshot?.capabilities).isEqualTo(catalog.find("x/big")?.capabilities)
+        }
+
+        @Test
+        fun `a model described as another takes what the other takes and not what it costs`() {
+            catalog.add("x/big", capabilities = ModelCapabilities())
+            catalog.price("x/big", input = "3", output = "15")
+            catalog.add("x/bigger", like = "x/big")
+
+            assertThat(catalog.find("x/bigger")?.pricing).isNull()
+        }
+
+        @Test
+        fun `a model standing in for the newest does not take its price either`() {
+            catalog.add("x/newest", capabilities = ModelCapabilities()).setLatest("x", "x/newest")
+            catalog.price("x/newest", input = "3", output = "15")
+
+            assertThat(catalog.find("x/unknown")?.pricing).isNull()
+        }
+
+        @Test
+        fun `but keeps its own, when somebody wrote the price and not the capabilities`() {
+            // What it takes is still a guess; what it costs is not
+            catalog.add("x/newest", capabilities = ModelCapabilities()).setLatest("x", "x/newest")
+            catalog.price("x/priced", input = "1", output = "5")
+
+            val spec = catalog.find("x/priced")
+
+            assertThat(spec?.isGuess).isTrue()
+            assertThat(spec?.pricing?.inputPerMillion).isEqualTo(Money(1))
+        }
+
+        @Test
+        fun `and a spec added whole brings its price along`() {
+            val pricing = ModelPricing(inputPerMillion = Money(3), outputPerMillion = Money(15))
+
+            catalog.add(ModelSpec("x", "whole", ModelCapabilities(), pricing = pricing))
+
+            assertThat(catalog.find("x/whole")?.pricing).isEqualTo(pricing)
+        }
+
+        @Test
+        fun `and is listed with the model`() {
+            catalog.add("x/big", capabilities = ModelCapabilities())
+            catalog.price("x/big", input = "3", output = "15")
+
+            assertThat(catalog.all("x").single().pricing?.inputPerMillion).isEqualTo(Money(3))
+        }
+    }
+
+    @Nested
     inner class `what each provider brought` {
+        @Test
+        fun `has a price for every model the provider still lists one for`() {
+            // Claude 3 Haiku is off the price list of Anthropic, and a price nobody publishes is not one to write
+            val unpriced = catalog.all().filter { it.pricing == null }.map { it.reference }
+
+            assertThat(unpriced).containsExactly("anthropic/claude-3-haiku")
+        }
+
+        @Test
+        fun `as the price lists have them`() {
+            // One row of each shape, read against the pricing pages on 2026-09-21
+            assertThat(catalog.find("anthropic/claude-sonnet-4-5")?.pricing).isEqualTo(
+                ModelPricing(
+                    inputPerMillion = Money(3),
+                    outputPerMillion = Money(15),
+                    cacheReadPerMillion = Money("0.3"),
+                    cacheWritePerMillion = Money("3.75"),
+                )
+            )
+            // The one Claude whose cache reads are not a tenth of its input
+            assertThat(catalog.find("anthropic/claude-fable-5-1")?.pricing?.cacheReadPerMillion)
+                .isEqualTo(Money("0.25"))
+            // The OpenAI models that charge a cache write, which the older ones bill as plain input
+            assertThat(catalog.find("openai/gpt-6-astra")?.pricing).isEqualTo(
+                ModelPricing(Money(10), Money(50), cacheReadPerMillion = Money(1), cacheWritePerMillion = Money("12.5"))
+            )
+            assertThat(catalog.find("openai/gpt-4.1-mini")?.pricing).isEqualTo(
+                ModelPricing(Money("0.4"), Money("1.6"), cacheReadPerMillion = Money("0.1"))
+            )
+            // A snapshot that kept its launch price
+            assertThat(catalog.find("openai/gpt-4o-2024-05-13")?.pricing).isEqualTo(ModelPricing(Money(5), Money(15)))
+        }
         @Test
         fun `is listed apart`() {
             assertThat(catalog.all("anthropic")).isNotEmpty().allMatch { it.provider == "anthropic" }

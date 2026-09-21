@@ -15,7 +15,7 @@ data class ModelSpec(
     val capabilities: ModelCapabilities,
     val displayName: String? = null,
     val contextWindow: Int? = null,
-    /** Filled by whoever wants costs. Nothing in the call path reads it. */
+    /** The list price, written apart with [ModelCatalog.price]. Nothing in the call path reads it. */
     val pricing: ModelPricing? = null,
     /**
      * True when nobody described this model and it is standing in for the newest one the catalog knows.

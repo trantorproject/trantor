@@ -58,6 +58,9 @@ internal fun ModelCatalog.addOpenAIModels() = apply {
 
     // A model that came out today is the newest one with something taken away, far more often than not
     setLatest("openai", "openai/gpt-6-astra")
+
+    // What each one costs, which is written per model and not per family
+    addOpenAIPrices()
 }
 
 /** Reasons on every call and refuses every sampling setting while it does, with no way of turning it off. */

@@ -32,7 +32,9 @@ class CostCalculatorTest {
 
         @Test
         fun `splits the input by what the cache did with it`() {
-            val estimate = estimate(Usage(inputTokens = 1000, outputTokens = 0, cacheReadTokens = 800, cacheWriteTokens = 150))!!
+            val usage = Usage(inputTokens = 1000, outputTokens = 0, cacheReadTokens = 800, cacheWriteTokens = 150)
+
+            val estimate = estimate(usage)!!
 
             assertThat(estimate.uncachedInput).isEqualTo(Money("0.00015"))
             assertThat(estimate.cacheRead).isEqualTo(Money("0.00024"))
@@ -74,13 +76,27 @@ class CostCalculatorTest {
         }
 
         @Test
+        fun `of a model whose capabilities are a guess but whose price somebody wrote is made all the same`() {
+            catalog.setLatest("anthropic", "anthropic/claude-sonnet-4-5")
+            catalog.price("anthropic/claude-9", input = "3", output = "15")
+
+            val estimate = estimateOf("claude-9")
+
+            assertThat(estimate?.total).isEqualTo(Money("0.000465"))
+        }
+
+        @Test
         fun `of a response is the one of the model that answered`() {
             // Providers answer with the dated snapshot, which is priced as its family
             val response = ChatResponse(
                 content = listOf(TextPart("Hola")),
                 finishReason = FinishReasons.Stop,
                 usage = Usage(inputTokens = 15, outputTokens = 28),
-                info = ResponseInfo(model = "claude-sonnet-4-5-20250929", provider = "anthropic", latency = 10.milliseconds),
+                info = ResponseInfo(
+                    model = "claude-sonnet-4-5-20250929",
+                    provider = "anthropic",
+                    latency = 10.milliseconds,
+                ),
             )
 
             assertThat(calculator.estimate(response)?.total).isEqualTo(Money("0.000465"))
@@ -91,30 +107,29 @@ class CostCalculatorTest {
     inner class `there is no estimate` {
         @Test
         fun `for a model the catalog does not know`() {
-            assertThat(calculator.estimate(Usage(inputTokens = 15, outputTokens = 28), "anthropic", "claude-9")).isNull()
+            assertThat(estimateOf("claude-9")).isNull()
         }
 
         @Test
         fun `for one it knows without a price`() {
             catalog.add(spec("anthropic/claude-free", pricing = null))
 
-            assertThat(calculator.estimate(Usage(inputTokens = 15, outputTokens = 28), "anthropic", "claude-free")).isNull()
+            assertThat(estimateOf("claude-free")).isNull()
         }
 
         @Test
-        fun `for one that stands in for the newest, whose capabilities are a guess worth making and its price is not`() {
+        fun `for one that stands in for the newest, whose capabilities are worth guessing and its price is not`() {
             // Being off by a tier is an estimate; being off by a whole model is a wrong number that looks right
             catalog.setLatest("anthropic", "anthropic/claude-sonnet-4-5")
 
-            assertThat(calculator.estimate(Usage(inputTokens = 15, outputTokens = 28), "anthropic", "claude-9")).isNull()
+            assertThat(estimateOf("claude-9")).isNull()
         }
 
         @Test
         fun `for one described as another, which takes what the other takes and not what it costs`() {
             catalog.add("anthropic/claude-sonnet-4-6", like = "anthropic/claude-sonnet-4-5")
 
-            assertThat(calculator.estimate(Usage(inputTokens = 15, outputTokens = 28), "anthropic", "claude-sonnet-4-6"))
-                .isNull()
+            assertThat(estimateOf("claude-sonnet-4-6")).isNull()
         }
 
         @Test
@@ -126,7 +141,9 @@ class CostCalculatorTest {
 
     @Test
     fun `estimates of several calls add up part by part`() {
-        val first = estimate(Usage(inputTokens = 1000, outputTokens = 742, cacheReadTokens = 800, reasoningTokens = 456))!!
+        val first = estimate(
+            Usage(inputTokens = 1000, outputTokens = 742, cacheReadTokens = 800, reasoningTokens = 456)
+        )!!
         val second = estimate(Usage(inputTokens = 15, outputTokens = 28))!!
 
         val total = first + second
@@ -138,6 +155,10 @@ class CostCalculatorTest {
     }
 
     private fun estimate(usage: Usage) = calculator.estimate(usage, "anthropic", "claude-sonnet-4-5")
+
+    /** The usage of the recorded stream-text answer, as if another model had given it. */
+    private fun estimateOf(modelId: String) =
+        calculator.estimate(Usage(inputTokens = 15, outputTokens = 28), "anthropic", modelId)
 
     private fun spec(reference: String, pricing: ModelPricing?) = ModelSpec(
         provider = reference.substringBefore("/"),

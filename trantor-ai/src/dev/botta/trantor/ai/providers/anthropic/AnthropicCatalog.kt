@@ -84,6 +84,9 @@ internal fun ModelCatalog.addAnthropicModels() = apply {
 
     // A model that came out today is the newest one with something taken away, far more often than not
     setLatest("anthropic", "anthropic/claude-opus-5")
+
+    // What each one costs, which is written per model and not per family
+    addAnthropicPrices()
 }
 
 /** Effort and no budget: a budget is a 400 here. And no sampling settings at all, which is also a 400. */

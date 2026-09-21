@@ -1,7 +1,9 @@
 package dev.botta.trantor.ai.models.catalog
 
+import dev.botta.trantor.domain.Money
+
 /**
- * What each model is: what it accepts, and later what it costs.
+ * What each model is: what it accepts and what it costs.
  *
  * It answers a different question from the registry. *"Can I call this model?"* is always yes — the id is a string
  * and goes as it came. *"What does this model take?"* is this, and an adapter asks it before it fills the body of
@@ -21,10 +23,22 @@ package dev.botta.trantor.ai.models.catalog
  *
  * ### Keeping it up to date
  *
- * Only the part nobody else maintains lives here by hand, and it is written **per family and not per model**: the
- * whole of Anthropic is nine entries, because `copy` is what a profile looks like in Kotlin. Pricing and context
- * windows are maintained by the world already — LiteLLM publishes a couple of thousand of them — and being stale
- * there costs a wrong report, not a broken call.
+ * Capabilities are written **per family and not per model**: the whole of Anthropic is nine entries, because `copy`
+ * is what a profile looks like in Kotlin. Prices are the opposite — a family takes the same things at very
+ * different prices — so they are written apart, one line per model, with [price]. Being stale there costs a wrong
+ * estimate, not a broken call.
+ *
+ * ### What a price follows
+ *
+ * A price is a fact about one model, so it is inherited far less than a capability:
+ *
+ * - A dated snapshot costs what its family costs, unless it has a price of its own: an old snapshot sometimes
+ *   kept its launch price.
+ * - A model described `like` another takes what the other takes and not what it costs. It has no price until one
+ *   is written for it.
+ * - A model standing in for the newest one takes nothing of the newest one's price. Guessing what a model takes
+ *   keeps a call from failing; guessing what it costs gives a wrong number that looks like a right one. A price
+ *   written for that model is still its price, though, even with the capabilities a guess.
  *
  * A dated snapshot needs no entry of its own: `claude-sonnet-4-5-20250929` is answered by `claude-sonnet-4-5`.
  * Nothing else inherits, so a model that is genuinely new is unknown until somebody writes it down.
@@ -51,11 +65,14 @@ class ModelCatalog {
     private val specs = LinkedHashMap<String, ModelSpec>()
     private val described = LinkedHashMap<String, Described>()
     private val latest = mutableMapOf<String, String>()
+    private val prices = LinkedHashMap<String, ModelPricing>()
 
+    /** A spec added whole brings its price along, if it has one; without one it keeps whatever price was written. */
     @Synchronized
     fun add(spec: ModelSpec) = apply {
         described.remove(spec.reference)
         specs[spec.reference] = spec
+        spec.pricing?.let { prices[spec.reference] = it }
     }
 
     /** Several models of one family, which is the usual shape: they differ in price and not in what they take. */
@@ -81,16 +98,47 @@ class ModelCatalog {
     @Synchronized
     fun setLatest(provider: String, reference: String) = apply { latest[provider] = reference }
 
+    /**
+     * The list price of one or more models, in dollars per million tokens, written as text so that it is exactly
+     * the number on the price list. A cache the model has no price for is billed as plain input.
+     */
+    @Synchronized
+    fun price(
+        vararg references: String,
+        input: String,
+        output: String,
+        cacheRead: String? = null,
+        cacheWrite: String? = null,
+    ) = apply {
+        val pricing = ModelPricing(
+            inputPerMillion = Money(input),
+            outputPerMillion = Money(output),
+            cacheReadPerMillion = cacheRead?.let { Money(it) },
+            cacheWritePerMillion = cacheWrite?.let { Money(it) },
+        )
+
+        references.forEach { prices[it] = pricing }
+    }
+
     /** Null when nobody wrote this model down and its provider has no latest set. */
     fun find(provider: String, modelId: String) = find("$provider/$modelId")
 
     @Synchronized
-    fun find(reference: String): ModelSpec? = resolve(reference, mutableSetOf())
+    fun find(reference: String): ModelSpec? = resolve(reference, mutableSetOf())?.withPriceOf(reference)
 
     @Synchronized
     fun all(provider: String? = null) = (specs.keys + described.keys)
-        .mapNotNull { resolve(it, mutableSetOf(), standInForTheNewest = false) }
+        .mapNotNull { resolve(it, mutableSetOf(), standInForTheNewest = false)?.withPriceOf(it) }
         .filter { provider == null || it.provider == provider }
+
+    /**
+     * The price is settled here, once the capabilities are, and by the reference that was asked for: that is what
+     * keeps a `like` or a stand-in from carrying the price of the model it was resolved through.
+     */
+    private fun ModelSpec.withPriceOf(reference: String) = copy(pricing = priceOf(reference))
+
+    private fun priceOf(reference: String) =
+        prices[reference] ?: prices.keys.lastOrNull { isSnapshotOf(reference, it) }?.let { prices[it] }
 
     /**
      * [standInForTheNewest] is off while a `like` is being followed, so naming a model that does not exist is an

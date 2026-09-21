@@ -365,10 +365,11 @@ and written as text none of them are checked until the call goes out. In Kotlin 
 while it is written and the compiler answers all three, and an application recompiling its own code is
 not a release of Trantor.
 
-**What the world already maintains is not maintained here.** LiteLLM and models.dev publish prices,
-windows and capability flags for thousands of models — but neither has a field for what a model
-*refuses*, which is why LiteLLM has the GPT-5 temperature bug open. So `ModelSpec.pricing` can be fed
-from there one day, and `ModelSpec.capabilities` is ours, small and checked against real calls.
+**What a model refuses is maintained here, because nobody else does.** LiteLLM and models.dev publish
+prices, windows and capability flags for thousands of models — but neither has a field for what a model
+*refuses*, which is why LiteLLM has the GPT-5 temperature bug open. So `ModelSpec.capabilities` is ours,
+small and checked against real calls. Prices are ours too, for now: one line per model, read off each
+provider's price list, which is short enough to keep by hand.
 
 The two halves are not the same kind of fact:
 
@@ -446,7 +447,17 @@ A `CostEstimate` has the names of `Usage` without the `Tokens`: `input` is `unca
 of several calls add up with `+`, part by part. Nothing is rounded; a call costs fractions of a cent, and
 rounding belongs to whoever shows the number.
 
-A price is per million tokens, in dollars, in `ModelSpec.pricing`. `inputPerMillion` is the plain price,
+A price is per million tokens, in dollars, written apart from the capabilities because a family takes
+the same things at very different prices. Each provider brings the prices of its models, and an
+application writes or corrects its own the same way:
+
+```kotlin
+services.addModelCatalog { catalog, _ ->
+    catalog.price("openai/gpt-7", input = "12", output = "60", cacheRead = "1.20")
+}
+```
+
+The numbers are text so they stay exactly what the price list says. `inputPerMillion` is the plain price,
 the one both providers call "input", and it is what the uncached input pays. A cache with no price of its
 own is charged as plain input, which is what OpenAI does with a write. There is one price for writes,
 although Anthropic charges more for a cache kept an hour: for an estimate, the five-minute price is close
@@ -461,8 +472,14 @@ enough.
 - the usage does not say the input or the output, because half a bill passes for all of it.
 
 A response is priced as `info.model`, the model that answered. That is usually a dated snapshot, and a
-snapshot is priced as its family. A model added `like` another takes what the other takes and not what it
-costs, so it has no price until one is written for it.
+snapshot is priced as its family unless it has a price of its own, which a couple of old OpenAI snapshots
+do. A model added `like` another takes what the other takes and not what it costs, so it has no price
+until one is written for it. A model standing in for the newest one gets nothing of the newest one's
+price, but keeps its own if somebody wrote it: what it takes is still a guess, what it costs is not.
+
+The prices shipped with Trantor are the standard ones, read off the pricing pages of each provider. For
+OpenAI that is the short-context price; GPT-6 Astra, GPT-5.6, GPT-5.5 and GPT-5.4 charge more past a long
+prompt. Claude 3 Haiku has no price, because Anthropic no longer lists one.
 
 ---
 
