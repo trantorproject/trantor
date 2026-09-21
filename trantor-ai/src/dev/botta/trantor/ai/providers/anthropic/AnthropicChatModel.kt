@@ -58,7 +58,27 @@ class AnthropicChatModel(
     }
 
     override fun stream(request: ChatRequest, options: CallOptions): ChatStream {
-        throw UnsupportedOperationException("Streaming an Anthropic model is not implemented yet")
+        options.cancellation?.throwIfCancelled()
+
+        val mapped = requestMapper.map(modelId, request, stream = true)
+        val startedAt = TimeSource.Monotonic.markNow()
+        // The link lives as long as the stream, and the stream closes it
+        val link = CancellationLink(options.cancellation)
+
+        val response = try {
+            call(mapped.body.toString(), options, link)
+        } catch (e: Throwable) {
+            link.close()
+            throw errorMapper.toError(e)
+        }
+
+        if (response.status != 200) {
+            val body = response.use { it.body() }
+            link.close()
+            throw errorMapper.toError(response, body)
+        }
+
+        return AnthropicChatStream(modelId, response, startedAt, mapped.warnings, responseMapper, link)
     }
 
     private fun call(body: String, options: CallOptions, link: CancellationLink): HttpStreamResponse {

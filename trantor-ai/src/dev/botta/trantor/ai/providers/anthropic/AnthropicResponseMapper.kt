@@ -36,8 +36,32 @@ internal class AnthropicResponseMapper {
     fun toPart(block: JsonObject): Part = when (block["type"]?.asString()) {
         "text" -> TextPart(block["text"]?.asString() ?: "", extrasOf(block))
         "thinking", "redacted_thinking" -> toReasoning(block)
+        TOOL_USE, SERVER_TOOL_USE -> toToolCall(block)
         // Anything we don't model yet is kept whole, to send it back on the next turn
         else -> ProviderPart(ANTHROPIC_PROVIDER, block["type"]?.asString() ?: "unknown", block)
+    }
+
+    /**
+     * A tool Anthropic ran on its side comes as a `server_tool_use` and is marked as such: the application has
+     * nothing to run and nothing to answer for it, and its result arrives in the same response.
+     *
+     * Everything the part does not carry in a field of its own travels in the metadata, the block type included,
+     * so that what goes back on the next turn is the block that came.
+     */
+    private fun toToolCall(block: JsonObject) = ToolCallPart(
+        callId = block["id"]?.asString() ?: "",
+        toolName = block["name"]?.asString() ?: "",
+        input = block["input"]?.asObject() ?: Json.obj(),
+        providerExecuted = block["type"]?.asString() == SERVER_TOOL_USE,
+        metadata = everythingElse(block, "id", "name", "input"),
+    )
+
+    private fun everythingElse(block: JsonObject, vararg carried: String): ProviderMetadata {
+        val extras = Json.obj()
+
+        block.keys.filter { it !in carried }.forEach { extras[it] = block.getValue(it) }
+
+        return ProviderMetadata.of(ANTHROPIC_PROVIDER, extras)
     }
 
     /**
@@ -96,3 +120,9 @@ internal class AnthropicResponseMapper {
         )
     }
 }
+
+
+/** What the model asked the application to run, and what Anthropic ran on its own side. */
+private const val TOOL_USE = "tool_use"
+
+private const val SERVER_TOOL_USE = "server_tool_use"

@@ -35,17 +35,31 @@ data class ModelCapabilities(
         val Modern = ModelCapabilities(
             temperature = ValueRange.ZeroToTwo,
             topP = ValueRange.ZeroToOne,
-            features = setOf(ModelFeatures.Tools, ModelFeatures.StructuredOutput, ModelFeatures.Images),
+            features = setOf(
+                ModelFeatures.Tools,
+                ModelFeatures.StructuredOutput,
+                ModelFeatures.Images,
+                ModelFeatures.ForcedToolUse,
+            ),
         )
     }
 }
 
 enum class ModelFeatures {
     Tools,
+    /**
+     * An answer that follows a json schema. It is also what says whether a tool can be asked for strictly:
+     * Anthropic compiles both through the same grammar, and documents one list of models for the two.
+     */
     StructuredOutput,
     Images,
     Audio,
     PromptCaching,
+    /**
+     * The model can be told to call a tool, either any of them or one by name. Claude Fable 5.1 and Mythos 5.1
+     * answer 400 to both, and there the only thing to do is leave the choice to the model.
+     */
+    ForcedToolUse,
     /**
      * The model can be told not to reason at all, and only then does it take the sampling settings again.
      * It is what tells a model that reasons by default from one that reasons because it was asked to: the GPT-5.x

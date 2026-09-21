@@ -7,6 +7,8 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.schemas.JsonSchemas
 import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.ai.tools.FunctionToolSpec
+import dev.botta.trantor.ai.tools.ToolChoice
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -179,6 +181,67 @@ class AnthropicChatModelPerModelTest {
     }
 
     @Nested
+    inner class `being told to call a tool` {
+        @Test
+        fun `goes to a model that takes it`() {
+            generateWith("claude-sonnet-4-5", requestWith(ToolChoice.Required))
+
+            assertThat(sentBody()["tool_choice"].toString()).isEqualTo("""{"type":"any"}""")
+        }
+
+        @Test
+        fun `and is left to the model on the two that answer 400 to it`() {
+            val response = generateWith("claude-fable-5-1", requestWith(ToolChoice.Named("getWeather")))
+
+            assertThat(sentBody()["tool_choice"].toString()).isEqualTo("""{"type":"auto"}""")
+            assertThat(response.warnings.map { it.setting }).containsExactly("toolChoice")
+        }
+
+        @Test
+        fun `and on any model that is thinking to a budget, which is the other way it is refused`() {
+            val request = requestWith(ToolChoice.Required)
+                .copy(settings = ChatSettings(reasoning = Reasoning.budget(2_000)))
+
+            val response = generateWith("claude-sonnet-4-5", request)
+
+            assertThat(sentBody().path("thinking.type")?.asString()).isEqualTo("enabled")
+            assertThat(sentBody()["tool_choice"].toString()).isEqualTo("""{"type":"auto"}""")
+            assertThat(response.warnings.map { it.setting }).containsExactly("toolChoice")
+        }
+
+        @Test
+        fun `but not while it thinks adaptively, which is the shape the newest models take`() {
+            val request = requestWith(ToolChoice.Required)
+                .copy(settings = ChatSettings(reasoning = Reasoning.effort(ReasoningEfforts.High)))
+
+            val response = generateWith("claude-opus-5", request)
+
+            assertThat(sentBody()["tool_choice"].toString()).isEqualTo("""{"type":"any"}""")
+            assertThat(response.warnings).isEmpty()
+        }
+    }
+
+    @Nested
+    inner class `holding a tool to its schema` {
+        @Test
+        fun `is asked for where the model compiles the grammar`() {
+            generateWith("claude-sonnet-4-5", requestWith(ToolChoice.Auto))
+
+            assertThat(sentBody()["tools"]!!.asArray()!![0].asObject()!!["strict"]?.asBoolean()).isTrue()
+        }
+
+        @Test
+        fun `and the tool still goes without it where it does not, because half a tool beats none`() {
+            val response = generateWith("claude-sonnet-4", requestWith(ToolChoice.Auto))
+
+            val tool = sentBody()["tools"]!!.asArray()!![0].asObject()!!
+            assertThat(tool.containsKey("strict")).isFalse()
+            assertThat(tool["name"]?.asString()).isEqualTo("getWeather")
+            assertThat(response.warnings.map { it.setting }).containsExactly("tools")
+        }
+    }
+
+    @Nested
     inner class `a model nobody described` {
         @Test
         fun `stands in the newest one, because that is what a model that just came out is`() {
@@ -319,6 +382,20 @@ class AnthropicChatModelPerModelTest {
     private data class Answer(val city: String)
 
     private fun jsonOutput() = OutputSpec.Json(JsonSchemas.of<Answer>())
+
+    private fun requestWith(choice: ToolChoice) = ChatRequest(
+        messages = listOf(Message.user("Que temperatura hay en Bariloche?")),
+        tools = listOf(
+            FunctionToolSpec(
+                name = "getWeather",
+                parameters = Json.obj(
+                    "type" to "object",
+                    "properties" to Json.obj("city" to Json.obj("type" to "string")),
+                ),
+            )
+        ),
+        toolChoice = choice,
+    )
 
     private fun generate(modelId: String, settings: ChatSettings) =
         generateWith(modelId, ChatRequest(listOf(Message.user("Hola")), settings = settings))

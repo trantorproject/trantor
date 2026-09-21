@@ -11,6 +11,7 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.providers.RawOptions
 import dev.botta.trantor.ai.schemas.StrictSchema
+import dev.botta.trantor.ai.tools.*
 
 /**
  * Turns a [ChatRequest] into the body of a call to the Anthropic Messages API.
@@ -43,6 +44,8 @@ internal class AnthropicRequestMapper(
         private val takesEffort get() = model == null || model.reasoningEfforts.isNotEmpty()
         private val takesBudget get() = model == null || model.reasoningBudget != null
         private val takesStructuredOutput get() = model == null || ModelFeatures.StructuredOutput in model
+        private val takesTools get() = model == null || ModelFeatures.Tools in model
+        private val takesForcedToolUse get() = model == null || ModelFeatures.ForcedToolUse in model
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
             val options = anthropicOptionsOf(request.providerOptions)
@@ -60,6 +63,7 @@ internal class AnthropicRequestMapper(
             if (stream) body["stream"] = true
 
             applySettings(body, request.settings)
+            applyTools(body, request, thinking)
             applyOutputConfig(body, request.output, request.settings.reasoning, options)
             applyCache(body, options)
 
@@ -109,6 +113,118 @@ internal class AnthropicRequestMapper(
             }
 
             return sent
+        }
+
+        /**
+         * The tools and how free the model is to call them. Anthropic keeps the two together: whether calls can
+         * run in parallel is a field of `tool_choice` and not of the request, so with no tools there is nowhere
+         * to put it.
+         */
+        private fun applyTools(body: JsonObject, request: ChatRequest, thinking: JsonObject?) {
+            if (request.tools.isEmpty()) {
+                request.settings.parallelToolCalls?.let {
+                    warnings.add(
+                        ModelWarning(
+                            "Anthropic takes parallelToolCalls inside tool_choice, and the call has no tools",
+                            "parallelToolCalls",
+                        )
+                    )
+                }
+
+                return
+            }
+
+            if (!takesTools) {
+                droppedByTheModel("tools")
+
+                return
+            }
+
+            body["tools"] = Json.array(request.tools.mapNotNull { toTool(it) })
+            body["tool_choice"] = toToolChoice(request.toolChoice, request.settings.parallelToolCalls, thinking)
+        }
+
+        private fun toTool(tool: ToolSpec): JsonObject? = when (tool) {
+            is FunctionToolSpec -> toFunctionTool(tool)
+            // A tool of the provider is named by the versioned type Anthropic gave it, and its own name is an arg
+            is ProviderToolSpec -> if (tool.name.startsWith("$ANTHROPIC_PROVIDER.")) {
+                Json.obj().apply { merge(tool.args) }.with("type", tool.name.removePrefix("$ANTHROPIC_PROVIDER."))
+            } else {
+                warnings.add(ModelWarning("Tool ${tool.name} is not an Anthropic tool and was dropped"))
+                null
+            }
+        }
+
+        private fun toFunctionTool(tool: FunctionToolSpec): JsonObject {
+            val strict = strictly(tool)
+            val json = Json.obj("name" to tool.name, "input_schema" to schemaFor(tool.parameters, strict))
+
+            tool.description?.let { json["description"] = it }
+            if (strict) json["strict"] = true
+
+            return json
+        }
+
+        /**
+         * Holding the model to the schema is the same grammar as structured output, and the same models have it.
+         * Where it is not there the tool still goes, because a tool nobody can be held to is far better than no
+         * tool at all — what is lost is the guarantee, and that is what the warning says.
+         */
+        private fun strictly(tool: FunctionToolSpec): Boolean {
+            if (!tool.strict || takesStructuredOutput) return tool.strict
+
+            warnings.add(
+                ModelWarning(
+                    "$modelId cannot be held to the schema of ${tool.name}, so the tool was sent without it" +
+                        becauseItIsAGuess,
+                    "tools",
+                )
+            )
+
+            return false
+        }
+
+        private fun toToolChoice(choice: ToolChoice, parallel: Boolean?, thinking: JsonObject?): JsonObject {
+            val json = when (val asked = asTheModelTakesIt(choice, thinking)) {
+                is ToolChoice.Auto -> Json.obj("type" to "auto")
+                is ToolChoice.None -> Json.obj("type" to "none")
+                is ToolChoice.Required -> Json.obj("type" to "any")
+                is ToolChoice.Named -> Json.obj("type" to "tool", "name" to asked.name)
+            }
+
+            if (parallel == false) json["disable_parallel_tool_use"] = true
+
+            return json
+        }
+
+        /**
+         * Being told to call a tool is refused in two different ways, so both are asked before it is sent. Fable
+         * 5.1 and Mythos 5.1 answer 400 to it at all; and any model refuses it while it thinks to a budget, which
+         * is the second capability that is not a property of the model but of two settings meeting.
+         *
+         * What is left either way is auto, which is the default: the model is free to call the tool instead of
+         * having to, and the call goes out.
+         */
+        private fun asTheModelTakesIt(choice: ToolChoice, thinking: JsonObject?): ToolChoice {
+            if (choice != ToolChoice.Required && choice !is ToolChoice.Named) return choice
+
+            if (!takesForcedToolUse) {
+                droppedByTheModel("toolChoice")
+
+                return ToolChoice.Auto
+            }
+
+            if (thinking?.get("type")?.asString() != BUDGET_THINKING) return choice
+
+            warnings.add(
+                ModelWarning(
+                    "$modelId does not take a forced tool call while it thinks to a budget, " +
+                        "so the model was left to choose",
+                    "toolChoice",
+                )
+            )
+
+            return ToolChoice.Auto
         }
 
         /**
@@ -198,7 +314,7 @@ internal class AnthropicRequestMapper(
             val range = model?.reasoningBudget
 
             return Json.obj(
-                "type" to "enabled",
+                "type" to BUDGET_THINKING,
                 // The api refuses anything under a thousand, and a budget over the ceiling leaves no room to answer
                 "budget_tokens" to if (range == null) tokens else tokens.coerceIn(range.first, range.last),
             ).also { if (!summary) it["display"] = displayFor(false) }
@@ -264,12 +380,18 @@ internal class AnthropicRequestMapper(
             is OutputSpec.Text -> null
             is OutputSpec.Json -> if (takesStructuredOutput) {
                 // Anthropic names no schema and takes no strict flag: closing the schema is the whole of it
-                Json.obj("type" to "json_schema", "schema" to StrictSchema.of(output.schema))
+                Json.obj("type" to "json_schema", "schema" to schemaFor(output.schema, strict = true))
             } else {
                 droppedByTheModel("output")
                 null
             }
         }
+
+        /**
+         * A schema the model is held to has to be closed: every object saying `additionalProperties: false` and
+         * naming every property it has. The adapter closes it instead of making everyone write it by hand.
+         */
+        private fun schemaFor(schema: JsonObject, strict: Boolean) = if (strict) StrictSchema.of(schema) else schema
 
         /**
          * The top-level mark, which is Anthropic's own automatic mode: it puts the cut on the last cacheable block
@@ -374,7 +496,21 @@ internal class AnthropicRequestMapper(
                 }
             }
 
-            return result
+            return result.onEach { toolResultsFirst(it) }
+        }
+
+        /**
+         * Anthropic refuses a user message that has anything before its tool results — *"tool_use ids were found
+         * without tool_result blocks immediately after"* — so they are moved to the front. It is a rule about the
+         * wire and not about the conversation, and the caller writing a question after an answer is reasonable.
+         */
+        private fun toolResultsFirst(message: JsonObject) {
+            val content = message["content"]?.asArray() ?: return
+            val (results, rest) = content.partition { it.asObject()?.get("type")?.asString() == "tool_result" }
+
+            if (results.isEmpty() || rest.isEmpty()) return
+
+            message["content"] = Json.array(results + rest)
         }
 
         /** Null for whatever went into the system field, which is not a message here. */
@@ -396,11 +532,41 @@ internal class AnthropicRequestMapper(
 
         private fun toBlock(part: Part): JsonObject? = when (part) {
             is TextPart -> withMetadata(Json.obj("type" to "text", "text" to part.text), part)
+            // The type travels in the metadata, so a tool Anthropic ran itself goes back as the block it was
+            is ToolCallPart -> withMetadata(
+                Json.obj(
+                    "type" to "tool_use",
+                    "id" to part.callId,
+                    "name" to part.toolName,
+                    "input" to part.input,
+                ),
+                part,
+            )
+            is ToolResultPart -> withMetadata(toToolResultBlock(part), part)
             // A block we did not model when we received it goes back exactly as it came
             is ProviderPart -> if (part.provider == ANTHROPIC_PROVIDER) part.raw else unsupportedPart(part)
             // Thinking is signed by whoever produced it, so only its own provider can take it back
             is ReasoningPart -> part.opaque?.takeIf { part.metadata[ANTHROPIC_PROVIDER] != null } ?: foreignReasoning()
             else -> unsupportedPart(part)
+        }
+
+        /**
+         * A result has no room for the name of the tool: Anthropic matches it to its call by id alone. The output
+         * goes as a string, which is the form every model takes.
+         */
+        private fun toToolResultBlock(part: ToolResultPart): JsonObject {
+            val json = Json.obj(
+                "type" to "tool_result",
+                "tool_use_id" to part.callId,
+                "content" to when (val output = part.output) {
+                    is ToolOutput.Text -> output.value
+                    is ToolOutput.Json -> output.value.toString()
+                },
+            )
+
+            if (part.isError) json["is_error"] = true
+
+            return json
         }
 
         private fun foreignReasoning(): JsonObject? {
@@ -446,6 +612,9 @@ internal data class MappedRequest(val body: JsonObject, val warnings: List<Model
 
 /** Only reached by a model nobody described, where there is nothing to derive a ceiling from. */
 private const val FALLBACK_MAX_TOKENS = 4_096
+
+/** Thinking to a number of tokens, which is the shape that refuses a forced tool call. */
+private const val BUDGET_THINKING = "enabled" 
 
 private val AnthropicEfforts.wireName get() = name.lowercase()
 

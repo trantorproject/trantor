@@ -65,7 +65,7 @@ private val reasoning = ModelCapabilities(
     temperature = null,
     topP = null,
     reasoningEfforts = setOf(Low, Medium, High),
-    features = setOf(Tools, StructuredOutput, Images, PromptCaching),
+    features = setOf(Tools, StructuredOutput, Images, PromptCaching, ForcedToolUse),
 )
 
 /** Reasons unless it is told not to, and takes the sampling settings when it is. */

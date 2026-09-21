@@ -79,15 +79,7 @@ val response = models.chat().generate(
 
 ```kotlin
 models.chat().stream("Contame un cuento").use { stream ->
-    for (part in stream) {
-        when (part) {
-            is StreamPart.TextDelta -> print(part.text)
-            is StreamPart.ReasoningDelta -> { }
-            else -> { }
-        }
-    }
-
-    val response = stream.response()
+    for (part in stream) if (part is StreamPart.TextDelta) print(part.text)
 }
 ```
 
@@ -153,10 +145,57 @@ response.toolCalls.forEach { ... }
 ```
 
 `ToolSpec` has two shapes: `FunctionToolSpec` for a tool the application runs, and `ProviderToolSpec` for
-one the provider runs on its side.
+one the provider runs on its side. A tool the provider ran comes back as a `ToolCallPart` with
+`providerExecuted = true`, so the loop knows there is nothing to run and nothing to answer for it.
 
 The model layer **does not run tools**. It reports the calls the model asked for and sends back the
 results it is given. Running them is the agent layer's job.
+
+**Who chooses** is `toolChoice`: `Auto` — the model decides, and the default — `Required` for any of
+them, `Named` for one by name, and `None`. `ChatSettings.parallelToolCalls = false` asks for one call at
+a time; which field carries that is the adapter's business, and on Anthropic it is not a field of the
+request but part of the choice.
+
+**A tool is strict by default**, which holds the model to the schema instead of hoping, and the schema is
+closed exactly the way structured output closes it. Where the model has no grammar for it the tool still
+goes, without the guarantee and with a warning: half a tool beats no tool.
+
+**Being told to call one is not something every model takes.** Claude Fable 5.1 and Mythos 5.1 answer 400
+to a forced call, and any Claude refuses it while it is thinking to a budget — the second capability that
+is not a property of the model but of two settings meeting. Either way the choice goes back to `auto`,
+which is the default anyway, and the warning says which of the two it was.
+
+---
+
+## Streaming
+
+```kotlin
+models.chat().stream("Contame un cuento").use { stream ->
+    for (part in stream) { /* ... */ }
+
+    val response = stream.response()
+}
+```
+
+`ChatStream` is a **blocking pull iterator**: reading blocks the virtual thread, backpressure comes for
+free, and closing cancels the call. That is why it is a `use {}` and not a callback.
+
+Four things come out of it. `TextDelta` and `ReasoningDelta` are text as it is being written; `PartDone`
+is a block that finished, already assembled — a whole text, a reasoning block, a tool call with its input
+parsed; and `Raw` is an event the adapter does not map, handed over instead of dropped, so the day a
+provider adds one it is visible rather than lost.
+
+**`stream.response()` is the same `ChatResponse` a `generate` would have returned**, usage and finish
+reason included. It consumes whatever is left of the stream, so it can be the only thing that is called.
+
+The two apis are not symmetric about that and the adapters hide it. OpenAI sends the whole response as a
+last event. Anthropic sends nothing of the kind: a message opens empty, its blocks arrive one by one and
+the last events say how it ended — so its adapter puts the message back together as it arrives and runs
+it through the same mapper a plain call uses. A stream cut before the end still answers, with what
+arrived and a warning saying so.
+
+A tool call is the one thing that cannot be handed over early: its input travels as pieces of text that
+are not json until the last one arrives, so it comes whole in a `PartDone` or not at all.
 
 ---
 
@@ -274,9 +313,13 @@ Some capabilities are not a property of the model but of two settings meeting. T
 refuse the sampling settings **while they are reasoning**, and take them again once they are told not to
 reason at all; GPT-6 cannot be told that, so for it the refusal is flat.
 
-That condition stays as an `if` in the adapter. What the catalog holds is the plain fact it needs —
-`ModelFeatures.ReasoningOff`, whether the model can be told not to reason — because the alternative is a
-catalog filling up with flags like `rejectsTemperatureWhenReasoning`.
+Anthropic has one of its own: every Claude refuses a forced tool call while it is thinking to a budget,
+whichever model it is.
+
+Those conditions stay as an `if` in the adapter. What the catalog holds is the plain fact each one needs
+— `ModelFeatures.ReasoningOff`, whether the model can be told not to reason; `ModelFeatures.ForcedToolUse`,
+whether it can be told to call a tool at all — because the alternative is a catalog filling up with flags
+like `rejectsTemperatureWhenReasoning`.
 
 ### Keeping it maintainable
 
@@ -397,7 +440,9 @@ The Messages API is shaped differently from the Responses API, and most of the a
 | roles | any order | must alternate, so two in a row are merged into one |
 | `max_tokens` | optional | **required**, so there is always a number to send |
 | tool result | an item of its own, carrying the tool name | a block inside a `user` message, with no name |
+| parallel tool calls | a field of the request | a field of `tool_choice` |
 | cached tokens | already inside `input_tokens` | counted **apart** from it |
+| end of a stream | a last event with the whole response | nothing: it is assembled from the events |
 
 **Usage is normalized.** Anthropic charges input, cache reads and cache writes at three different prices
 and reports them apart, so the adapter adds the three into `Usage.inputTokens` and leaves the two cache
@@ -421,6 +466,19 @@ anthropic.cache = AnthropicCaches.Automatic          // or AutomaticForAnHour
 Below the model's minimum, around a thousand tokens, nothing is cached and nothing fails either, so
 leaving it on is never wrong. For a cut somewhere precise, put `cache_control` in the `ProviderMetadata`
 of the part it goes after; there are four marks per request and the automatic one takes one of them.
+
+**Tool results are a turn of the user**, because a result is something the model is told. Anthropic
+matches one to its call by id alone, so the name of the tool has nowhere to go. And it refuses a user
+message that has anything before its results — *"tool_use ids were found without tool_result blocks
+immediately after"* — so the adapter moves them to the front: that is a rule about the wire, and asking
+the next question right after the answer is a reasonable way to build a conversation.
+
+**A tool of the provider is named by the versioned type** Anthropic gave it, with its own name as an
+argument, since a server tool carries both:
+
+```kotlin
+ProviderToolSpec("anthropic.web_search_20260209", Json.obj("name" to "web_search"))
+```
 
 **`AnthropicOptions`** is the way past the catalog. It is sent as it was written, without asking what the
 model takes, so whoever knows their model gets exactly what they asked for: `effort` reaches the `xhigh`

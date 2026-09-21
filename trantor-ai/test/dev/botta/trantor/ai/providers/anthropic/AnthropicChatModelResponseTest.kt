@@ -3,10 +3,14 @@ package dev.botta.trantor.ai.providers.anthropic
 import dev.botta.json.Json
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.ai.tools.ToolOutput
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-/** What the adapter reads back, against answers recorded from the real api. */
+/**
+ * What the adapter reads back, against answers recorded from the real api. The few bodies written inline are
+ * shapes no recording has yet — a citation, a server tool — and say only what the adapter does with a field.
+ */
 class AnthropicChatModelResponseTest {
     @Test
     fun `returns the text of the response`() {
@@ -140,15 +144,32 @@ class AnthropicChatModelResponseTest {
 
     @Test
     fun `a block we do not model is kept whole and sent back`() {
-        httpClient.body = """{"content":[{"type":"server_tool_use","id":"srv_1","name":"web_search"}],
+        httpClient.body = """{"content":[{"type":"web_search_tool_result","tool_use_id":"srv_1","content":[]}],
             "stop_reason":"end_turn"}"""
         val first = model.generate(ChatRequest(Message.user("Buscá algo")))
         val part = first.content.filterIsInstance<ProviderPart>().single()
 
         model.generate(ChatRequest(Message.user("Buscá algo"), first.asMessage()))
 
-        assertThat(part.type).isEqualTo("server_tool_use")
-        assertThat(httpClient.requestBody).contains(""""type":"server_tool_use","id":"srv_1","name":"web_search"""")
+        assertThat(part.type).isEqualTo("web_search_tool_result")
+        assertThat(httpClient.requestBody)
+            .contains(""""type":"web_search_tool_result","tool_use_id":"srv_1"""")
+    }
+
+    @Test
+    fun `a tool Anthropic ran itself is a call the application has nothing to run`() {
+        httpClient.body = """{"content":[{"type":"server_tool_use","id":"srv_1","name":"web_search",
+            "input":{"query":"bariloche"}}],"stop_reason":"end_turn"}"""
+        val first = model.generate(ChatRequest(Message.user("Buscá algo")))
+
+        model.generate(ChatRequest(Message.user("Buscá algo"), first.asMessage()))
+
+        val call = first.toolCalls.single()
+        assertThat(call.toolName).isEqualTo("web_search")
+        assertThat(call.providerExecuted).isTrue()
+        // And it goes back as the block it was, not as the tool_use of a tool the application runs
+        assertThat(httpClient.requestBody)
+            .contains(""""type":"server_tool_use","id":"srv_1","name":"web_search","input":{"query":"bariloche"}""")
     }
 
     @Test
@@ -160,6 +181,42 @@ class AnthropicChatModelResponseTest {
         model.generate(ChatRequest(Message.user("Que dice?"), first.asMessage()))
 
         assertThat(httpClient.requestBody).contains(""""citations":[{"type":"char_location","document_index":0}]""")
+    }
+
+    @Test
+    fun `reads the tool the model asked for`() {
+        httpClient.body = fixture("tool-call")
+
+        val response = model.generate(ChatRequest(Message.user("Que temperatura hay en Bariloche?")))
+
+        val call = response.toolCalls.single()
+        assertThat(call.callId).isEqualTo("toolu_01HqdUxCTExh8AgjnGwofbud")
+        assertThat(call.toolName).isEqualTo("getWeather")
+        assertThat(call.input).isEqualTo(Json.obj("city" to "Bariloche, Argentina"))
+        assertThat(call.providerExecuted).isFalse()
+        assertThat(response.finishReason).isEqualTo(FinishReasons.ToolCalls)
+    }
+
+    @Test
+    fun `sends back the call as it came, with what we do not model, and its result after it`() {
+        httpClient.body = fixture("tool-call")
+        val question = Message.user("Que temperatura hay en Bariloche?")
+        val asked = model.generate(ChatRequest(question))
+        val call = asked.toolCalls.single()
+        val result = ToolResultPart(call.callId, call.toolName, ToolOutput.Json(Json.obj("celsius" to 7)))
+        httpClient.body = fixture("tool-answer")
+
+        val answer = model.generate(ChatRequest(question, asked.asMessage(), Message.toolResult(result)))
+
+        // caller is a field Anthropic added that the part has no place for, and it travels back all the same
+        assertThat(httpClient.requestBody).contains(
+            """{"role":"assistant","content":[{"type":"tool_use","id":"toolu_01HqdUxCTExh8AgjnGwofbud",""" +
+                """"name":"getWeather","input":{"city":"Bariloche, Argentina"},"caller":{"type":"direct"}}]}""",
+            """{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01HqdUxCTExh8AgjnGwofbud",""" +
+                """"content":"{\"celsius\":7}"}]}""",
+        )
+        assertThat(answer.text).isEqualTo("La temperatura actual en Bariloche, Argentina es de **7°C**.")
+        assertThat(answer.finishReason).isEqualTo(FinishReasons.Stop)
     }
 
     private fun usageOf(usage: String) =
