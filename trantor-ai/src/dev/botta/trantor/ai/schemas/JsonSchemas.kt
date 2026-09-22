@@ -4,6 +4,7 @@ import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import kotlinx.schema.generator.json.serialization.SerializationClassJsonSchemaGenerator
 import kotlinx.schema.json.encodeToString
+import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.serializer
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -17,10 +18,12 @@ import kotlin.reflect.typeOf
 object JsonSchemas {
     inline fun <reified T> of(): JsonObject = of(typeOf<T>())
 
-    fun of(type: KType): JsonObject {
-        val descriptor = serializer(type).descriptor
+    fun of(type: KType): JsonObject = of(serializer(type).descriptor)
+
+    fun of(descriptor: SerialDescriptor): JsonObject {
         val generated = SerializationClassJsonSchemaGenerator.Default.generateSchema(descriptor)
-        val schema = Json.parse(generated.encodeToString()).asObject() ?: error("Could not generate a schema for $type")
+        val schema = Json.parse(generated.encodeToString()).asObject()
+            ?: error("Could not generate a schema for ${descriptor.serialName}")
 
         // Metadata of the schema itself, which providers don't take
         schema.remove($$"$schema")
