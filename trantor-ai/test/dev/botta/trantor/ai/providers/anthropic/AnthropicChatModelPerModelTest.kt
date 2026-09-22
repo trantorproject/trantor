@@ -311,27 +311,73 @@ class AnthropicChatModelPerModelTest {
     inner class `the cache` {
         @Test
         fun `is off unless the application asked for it, because a write costs more than a plain call`() {
-            generate("claude-opus-5", ChatSettings())
+            cached(AnthropicCache.Off)
 
+            assertThat(httpClient.requestBody).doesNotContain("cache_control")
+        }
+
+        @Test
+        fun `of the system prompt is a mark at its end, which is what a long prompt shared by every call needs`() {
+            cached(AnthropicCache(system = true))
+
+            assertThat(sentBody()["system"].toString()).isEqualTo(
+                """[{"type":"text","text":"Sos el asistente de una ferreteria","cache_control":{"type":"ephemeral"}}]"""
+            )
             assertThat(sentBody().containsKey("cache_control")).isFalse()
         }
 
         @Test
-        fun `is one flag, and Anthropic moves the cut as the conversation grows`() {
-            val config = AnthropicConfig(apiKey = "sk-ant-test", cache = AnthropicCaches.Automatic)
+        fun `and with no system prompt there is nothing to mark, and nothing fails`() {
+            val config = AnthropicConfig(apiKey = "sk-ant-test", cache = AnthropicCache(system = true))
 
             AnthropicChatModel("claude-opus-5", config, httpClient).generate(ChatRequest(Message.user("Hola")))
 
-            assertThat(sentBody()["cache_control"].toString()).isEqualTo("""{"type":"ephemeral"}""")
+            assertThat(httpClient.requestBody).doesNotContain("cache_control")
         }
 
         @Test
-        fun `can be kept for an hour instead of five minutes`() {
-            val config = AnthropicConfig(apiKey = "sk-ant-test", cache = AnthropicCaches.AutomaticForAnHour)
+        fun `of the tools is a mark on the last one, so all of them are cached`() {
+            cached(AnthropicCache(tools = true))
 
-            AnthropicChatModel("claude-opus-5", config, httpClient).generate(ChatRequest(Message.user("Hola")))
+            val tools = sentBody()["tools"]!!.asArray()!!
+
+            assertThat(tools[0].asObject()!!.containsKey("cache_control")).isFalse()
+            assertThat(tools[1].asObject()!!["cache_control"].toString()).isEqualTo("""{"type":"ephemeral"}""")
+        }
+
+        @Test
+        fun `of the conversation is Anthropic's own mark, which moves forward as the conversation grows`() {
+            cached(AnthropicCache(conversation = true))
+
+            assertThat(sentBody()["cache_control"].toString()).isEqualTo("""{"type":"ephemeral"}""")
+            assertThat(sentBody()["system"]?.asString()).isEqualTo("Sos el asistente de una ferreteria")
+        }
+
+        @Test
+        fun `and the three go together, each one a mark of its own`() {
+            cached(AnthropicCache(system = true, tools = true, conversation = true))
+
+            assertThat(httpClient.requestBody!!.split("cache_control").size - 1).isEqualTo(3)
+        }
+
+        @Test
+        fun `can be kept for an hour instead of five minutes, which applies to every mark`() {
+            cached(AnthropicCache(system = true, conversation = true, ttl = AnthropicCacheTtl.OneHour))
 
             assertThat(sentBody()["cache_control"].toString()).isEqualTo("""{"type":"ephemeral","ttl":"1h"}""")
+            assertThat(sentBody()["system"].toString()).contains(""""cache_control":{"type":"ephemeral","ttl":"1h"}""")
+        }
+
+        @Test
+        fun `a call can ask for another than the one the application set`() {
+            val config = AnthropicConfig(apiKey = "sk-ant-test", cache = AnthropicCache(conversation = true))
+            val options = ProviderOptions.of(AnthropicOptions(cache = AnthropicCache(system = true)))
+
+            AnthropicChatModel("claude-opus-5", config, httpClient)
+                .generate(ChatRequest(listOf(system, Message.user("Hola")), providerOptions = options))
+
+            assertThat(sentBody().containsKey("cache_control")).isFalse()
+            assertThat(sentBody()["system"].toString()).contains("cache_control")
         }
 
         @Test
@@ -349,6 +395,19 @@ class AnthropicChatModelPerModelTest {
             assertThat(httpClient.requestBody)
                 .contains("""{"type":"text","text":"el contrato entero","cache_control":{"type":"ephemeral"}}""")
         }
+
+        /** A system prompt, two tools and a question: something for every mark to land on. */
+        private fun cached(cache: AnthropicCache) {
+            val config = AnthropicConfig(apiKey = "sk-ant-test", cache = cache)
+            val tools = listOf("getWeather", "getTime").map {
+                FunctionToolSpec(name = it, parameters = Json.obj("type" to "object"))
+            }
+
+            AnthropicChatModel("claude-opus-5", config, httpClient)
+                .generate(ChatRequest(listOf(system, Message.user("Hola")), tools = tools))
+        }
+
+        private val system = Message.system("Sos el asistente de una ferreteria")
     }
 
     @Nested

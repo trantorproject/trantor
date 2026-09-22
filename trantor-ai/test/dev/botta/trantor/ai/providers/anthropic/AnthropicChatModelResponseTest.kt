@@ -54,30 +54,30 @@ class AnthropicChatModelResponseTest {
 
     @Test
     fun `adds what went into the cache into the input, so the same field means the same as in OpenAI`() {
-        // Anthropic leaves the cache out of input_tokens: here it says 3, for a prompt of more than seven thousand
+        // Anthropic leaves the cache out of input_tokens: here it says 19, the question, for a prompt of 7,249.
+        // Recorded with the mark at the end of the system prompt, the first of two calls that share it
         httpClient.body = fixture("cache-write")
 
         val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
 
         assertThat(usage.inputTokens).isEqualTo(7_249)
-        assertThat(usage.cacheWriteTokens).isEqualTo(7_246)
+        assertThat(usage.cacheWriteTokens).isEqualTo(7_230)
         assertThat(usage.cacheReadTokens).isZero()
-        assertThat(usage.uncachedInputTokens).isEqualTo(3)
+        assertThat(usage.uncachedInputTokens).isEqualTo(19)
     }
 
     @Test
     fun `and what came out of it too`() {
-        // No recording has read from the cache yet: the one made asked a new question each time, so the automatic
-        // mark kept landing on a block that had never been written
-        httpClient.body = usageOf("""{"input_tokens":200,"cache_read_input_tokens":800,
-            "cache_creation_input_tokens":1000,"output_tokens":50}""")
+        // The second call, a moment later with another question: the whole system prompt is read back
+        httpClient.body = fixture("cache-read")
 
         val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
 
-        assertThat(usage.inputTokens).isEqualTo(2_000)
-        assertThat(usage.cacheReadTokens).isEqualTo(800)
-        assertThat(usage.cacheWriteTokens).isEqualTo(1_000)
-        assertThat(usage.totalTokens).isEqualTo(2_050)
+        assertThat(usage.inputTokens).isEqualTo(7_250)
+        assertThat(usage.cacheReadTokens).isEqualTo(7_230)
+        assertThat(usage.cacheWriteTokens).isZero()
+        assertThat(usage.uncachedInputTokens).isEqualTo(20)
+        assertThat(usage.totalTokens).isEqualTo(7_281)
     }
 
     @Test

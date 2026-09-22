@@ -11,6 +11,8 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.models.middleware.ChatModelMiddleware
 import dev.botta.trantor.ai.models.middleware.CostMiddleware
 import dev.botta.trantor.ai.providers.AIProvider
+import dev.botta.trantor.ai.providers.anthropic.AnthropicCache
+import dev.botta.trantor.ai.providers.anthropic.AnthropicCacheTtl
 import dev.botta.trantor.ai.providers.anthropic.AnthropicConfig
 import dev.botta.trantor.ai.providers.anthropic.addAnthropic
 import dev.botta.trantor.ai.providers.openai.OpenAIConfig
@@ -299,6 +301,18 @@ class ServiceRegistryExtensionsTest {
             registry.addAI()
 
             assertThat(provider.get<AnthropicConfig>().apiKey).isEqualTo("sk-ant-from-the-app")
+        }
+
+        @Test
+        fun `reads which parts of the prompt to cache, and keeps the rest of the cache off`() {
+            config.addMemoryCollection(
+                "ai.providers.anthropic.cache.system" to "true",
+                "ai.providers.anthropic.cache.ttl" to "OneHour",
+            )
+            registry.addAnthropic()
+
+            assertThat(provider.get<AnthropicConfig>().cache)
+                .isEqualTo(AnthropicCache(system = true, ttl = AnthropicCacheTtl.OneHour))
         }
 
         @Test

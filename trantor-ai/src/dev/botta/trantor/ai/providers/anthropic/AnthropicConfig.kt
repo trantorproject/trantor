@@ -29,11 +29,11 @@ data class AnthropicConfig(
      */
     var defaultMaxTokens: Int? = null,
     /**
-     * Whether to ask Anthropic to cache the prompt. Off by default because a cache write costs more than a plain
-     * call: it pays off when the same prefix comes back, which is the usual shape of a conversation. A long system
-     * prompt in front of a different question each time needs a mark of its own; see [AnthropicCaches].
+     * Which parts of the prompt to ask Anthropic to cache: the system prompt, the tools, the conversation, or any of
+     * them together. Off by default, because a cache write costs more than a plain call; see [AnthropicCache] for
+     * which one pays off when.
      */
-    var cache: AnthropicCaches = AnthropicCaches.Off,
+    var cache: AnthropicCache = AnthropicCache.Off,
     /**
      * Where a system message that is not the first one goes. Off sends them all joined into the `system` field,
      * which every model takes. On sends the later ones in place, as `role: "system"` messages, which keeps the

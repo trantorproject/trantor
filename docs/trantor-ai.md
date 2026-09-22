@@ -506,7 +506,7 @@ prompt. Claude 3 Haiku has no price, because Anthropic no longer lists one.
 ## Anthropic
 
 ```kotlin
-services.addAnthropic { anthropic, _ -> anthropic.cache = AnthropicCaches.Automatic }
+services.addAnthropic { anthropic, _ -> anthropic.cache = AnthropicCache(system = true, conversation = true) }
 ```
 
 The key comes from `ANTHROPIC_API_KEY`, and `AnthropicConfig` also holds `baseUrl`, the pinned
@@ -537,21 +537,42 @@ joined into it by default, which every model takes; `midConversationSystemMessag
 later ones in place as `role: "system"` messages, which keeps the cached prefix intact but only the
 newest models accept.
 
-**Prompt caching is one flag.** Unlike OpenAI, which caches on its own, Anthropic only caches what was
-marked — but it has a top-level mark that puts the cut on the last cacheable block and moves it forward
-as the conversation grows:
+**Prompt caching is three independent flags.** Unlike OpenAI, which caches on its own, Anthropic caches
+only up to a mark, and a later call reads the cache only if everything up to that mark is exactly the
+same. Each flag puts a mark in a different place, and they add up:
+
+| flag | where the mark goes | pays off when |
+|---|---|---|
+| `system` | at the end of the system prompt | the same long system prompt comes before a new question every time |
+| `tools` | on the last tool | the tools stay the same and the system prompt does not |
+| `conversation` | Anthropic's own mark, on the last block, moving forward as the conversation grows | each call repeats the one before and adds a turn |
 
 ```kotlin
-anthropic.cache = AnthropicCaches.Automatic          // or AutomaticForAnHour
+anthropic.cache = AnthropicCache(system = true, conversation = true)       // an agent or a chat
+anthropic.cache = AnthropicCache(system = true)                            // one-off questions, long prompt
+anthropic.cache = AnthropicCache(system = true, ttl = AnthropicCacheTtl.OneHour)
 ```
 
-It fits a conversation, where each call repeats the one before it and adds a turn. **It does not fit a
-one-off question behind a long shared prompt**: the cut lands on the question, which changes every
-time, so every call pays the higher price of a write and none reads it back. A recording showed exactly
-that — the same 7,246-token system prompt written twice, read zero times. There, put `cache_control` in
-the `ProviderMetadata` of the part the shared prompt ends with. There are four marks per request, and
-the automatic one takes one of them. Below the model's minimum, around a thousand tokens, nothing is
-cached and nothing fails either.
+In `settings.json`, under `ai.providers.anthropic`: `"cache": { "system": true, "conversation": true }`.
+A call can replace the whole setting with `AnthropicOptions(cache = ...)`.
+
+**Anthropic reads the tools first**, then the system prompt, then the messages, so a mark on the system
+prompt caches the tools too. `tools` is only worth it alone when the system prompt changes on every call
+— because it carries today's date, say.
+
+**`conversation` alone does not cache a shared prompt.** Its mark lands on the last block, which in a
+one-off question is the question itself: new every time, so every call pays the higher price of a write
+and none reads it back. A recording showed exactly that — the same 7,246-token system prompt written
+twice, read zero times. The same two calls with `system` wrote 7,230 tokens once and read all of them
+back the second time, paying the plain price only for the twenty tokens of each question. That is why
+`system` exists, and why the two go together for an agent. The other
+libraries that go beyond a manual mark — Spring AI, Pydantic AI, Laravel, LangChain, LiteLLM — mark the
+system prompt for the same reason.
+
+Everything is off by default: a write costs 1.25 times the input for five minutes and twice for an hour,
+and only pays off when it is read back. Below the model's minimum, between 512 and 4,096 tokens depending
+on the model, nothing is cached and nothing fails either. Anthropic takes four marks per request and
+these use at most three; a cut somewhere else goes in the `ProviderMetadata` of the part it follows.
 
 **Tool results are a turn of the user**, because a result is something the model is told. Anthropic
 matches one to its call by id alone, so the name of the tool has nowhere to go. And it refuses a user

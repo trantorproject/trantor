@@ -394,16 +394,27 @@ internal class AnthropicRequestMapper(
         private fun schemaFor(schema: JsonObject, strict: Boolean) = if (strict) StrictSchema.of(schema) else schema
 
         /**
-         * The top-level mark, which is Anthropic's own automatic mode: it puts the cut on the last cacheable block
-         * and moves it forward as the conversation grows. A cut somewhere precise is marked on the part instead.
+         * One mark for each part the application asked to cache, all with the same duration: Anthropic refuses a
+         * mark that outlives one before it. The system prompt has to become a list of blocks to carry one,
+         * and a missing system prompt or tool list is simply nothing to mark. A cut somewhere precise is marked on
+         * the part instead, and travels in its metadata.
          */
         private fun applyCache(body: JsonObject, options: AnthropicOptions?) {
-            when (options?.cache ?: config.cache) {
-                AnthropicCaches.Off -> return
-                AnthropicCaches.Automatic -> body["cache_control"] = Json.obj("type" to "ephemeral")
-                AnthropicCaches.AutomaticForAnHour ->
-                    body["cache_control"] = Json.obj("type" to "ephemeral", "ttl" to "1h")
+            val cache = options?.cache ?: config.cache
+            val mark = when (cache.ttl) {
+                AnthropicCacheTtl.FiveMinutes -> Json.obj("type" to "ephemeral")
+                AnthropicCacheTtl.OneHour -> Json.obj("type" to "ephemeral", "ttl" to "1h")
             }
+
+            if (cache.system) {
+                body["system"]?.asString()?.let {
+                    body["system"] = Json.array(Json.obj("type" to "text", "text" to it, "cache_control" to mark))
+                }
+            }
+
+            if (cache.tools) body["tools"]?.asArray()?.lastOrNull()?.asObject()?.set("cache_control", mark)
+
+            if (cache.conversation) body["cache_control"] = mark
         }
 
         private fun anthropicOptionsOf(options: ProviderOptions): AnthropicOptions? {

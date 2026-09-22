@@ -19,8 +19,8 @@ data class AnthropicOptions(
     val effort: AnthropicEfforts? = null,
     /** Whether the model thinks, and how. Setting it stops `ChatSettings.reasoning` from choosing. */
     val thinking: AnthropicThinking? = null,
-    /** Overrides `AnthropicConfig.cache` for this call. */
-    val cache: AnthropicCaches? = null,
+    /** Replaces `AnthropicConfig.cache` for this call, flags and all. */
+    val cache: AnthropicCache? = null,
     /** Goes as `metadata.user_id`, for abuse detection. Not an id that identifies a person. */
     val userId: String? = null,
     /** Whether the call can be served by spare capacity, which is cheaper and slower. */
@@ -41,25 +41,6 @@ sealed interface AnthropicThinking {
 
     /** A fixed budget in tokens, which models from Claude 4.7 on reject. Minimum 1024. */
     data class Budget(val tokens: Int, val summary: Boolean = true): AnthropicThinking
-}
-
-/**
- * Prompt caching. Unlike OpenAI, which caches on its own, Anthropic only caches what was marked.
- *
- * [Automatic] is the top-level mark: Anthropic puts the cut on the last cacheable block and moves it forward as
- * the conversation grows, which is what a conversation needs. It is the wrong mark for a one-off question behind
- * a long shared prompt: the cut lands on the question, which is new every time, so every call pays for a write
- * and none reads it back — a recording wrote the same 7,246 tokens twice and read none. Below the model's minimum
- * — a thousand-odd tokens — nothing is cached and nothing fails either.
- *
- * For a cut somewhere precise, put `cache_control` in the `ProviderMetadata` of the part it goes after. There are
- * four marks per request, and the automatic one takes one of them.
- */
-enum class AnthropicCaches {
-    Off,
-    Automatic,
-    /** The same, kept for an hour instead of five minutes. Writing costs more; worth it for a long prefix. */
-    AutomaticForAnHour,
 }
 
 enum class ServiceTiers { Auto, StandardOnly }
