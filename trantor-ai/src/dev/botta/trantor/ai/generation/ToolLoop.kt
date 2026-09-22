@@ -40,7 +40,7 @@ class ToolLoop(
     private val logger = getLogger()
     private val toolsByName = tools.associateBy { it.name }
 
-    fun run(request: ChatRequest, options: CallOptions = CallOptions()): List<Step> {
+    fun run(request: ChatRequest, options: CallOptions = CallOptions()): RunResult {
         val steps = mutableListOf<Step>()
         var messages = request.messages
         val specs = request.tools + tools.map { it.spec() }
@@ -51,9 +51,11 @@ class ToolLoop(
             val response = model.generate(request.copy(messages = messages, tools = specs), options)
             val calls = response.toolCalls.filterNot { it.providerExecuted }
 
-            if (calls.isEmpty()) return steps + Step(response)
+            if (calls.isEmpty()) return RunResult(steps + Step(response))
 
-            if (steps.size + 1 >= maxSteps) throw MaxStepsExceededError(maxSteps, steps + Step(response))
+            if (steps.size + 1 >= maxSteps) {
+                throw MaxStepsExceededError(maxSteps, RunResult(steps + Step(response)))
+            }
 
             val executions = calls.map { execute(it) }
             val results = executions.map { it.result }

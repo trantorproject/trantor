@@ -21,7 +21,7 @@ class ToolLoopTest {
     fun `an answer without tool calls is a single step`() {
         model.answers(listOf(TextPart("Hola")))
 
-        val steps = loop().run(ChatRequest("Hola"))
+        val steps = loop().run(ChatRequest("Hola")).steps
 
         assertThat(steps).hasSize(1)
         assertThat(steps.single().response.text).isEqualTo("Hola")
@@ -32,7 +32,7 @@ class ToolLoopTest {
     fun `runs the tool the model asked for and calls the model again with its result`() {
         model.answers(listOf(weatherCall("call_1", "Bariloche")), listOf(TextPart("Hacen 7 grados")))
 
-        val steps = loop().run(ChatRequest("Que temperatura hay en Bariloche?"))
+        val steps = loop().run(ChatRequest("Que temperatura hay en Bariloche?")).steps
 
         assertThat(weather.cities).containsExactly("Bariloche")
         assertThat(steps).hasSize(2)
@@ -74,7 +74,7 @@ class ToolLoopTest {
             listOf(TextPart("Frio en los dos")),
         )
 
-        val steps = loop().run(ChatRequest("Y en Bariloche y Ushuaia?"))
+        val steps = loop().run(ChatRequest("Y en Bariloche y Ushuaia?")).steps
 
         assertThat(weather.cities).containsExactly("Bariloche", "Ushuaia")
         assertThat(model.requests[1].messages.last())
@@ -83,11 +83,25 @@ class ToolLoopTest {
     }
 
     @Test
+    fun `the new messages are what the run added to the conversation, for the next request`() {
+        val call = weatherCall("call_1", "Bariloche")
+        model.answers(listOf(call), listOf(TextPart("Hacen 7 grados")))
+
+        val result = loop().run(ChatRequest("Que temperatura hay en Bariloche?"))
+
+        assertThat(result.newMessages).containsExactly(
+            Message.Assistant(listOf(call)),
+            Message.Tool(listOf(ToolResultPart("call_1", "getWeather", ToolOutput.Text("7 grados en Bariloche")))),
+            Message.Assistant(listOf(TextPart("Hacen 7 grados"))),
+        )
+    }
+
+    @Test
     fun `a tool the provider ran is not run again`() {
         val search = ToolCallPart("srv_1", "web_search", Json.obj("query" to "clima"), providerExecuted = true)
         model.answers(listOf(search, TextPart("Hacen 7 grados")))
 
-        val steps = loop().run(ChatRequest("Que temperatura hay?"))
+        val steps = loop().run(ChatRequest("Que temperatura hay?")).steps
 
         assertThat(steps).hasSize(1)
         assertThat(model.requests).hasSize(1)
@@ -124,7 +138,7 @@ class ToolLoopTest {
             assertThatThrownBy { loop(maxSteps = 2).run(ChatRequest("Que temperatura hay?")) }
                 .isInstanceOfSatisfying(MaxStepsExceededError::class.java) {
                     assertThat(it.maxSteps).isEqualTo(2)
-                    assertThat(it.steps).hasSize(2)
+                    assertThat(it.result.steps).hasSize(2)
                 }
         }
 
@@ -138,12 +152,23 @@ class ToolLoopTest {
         }
 
         @Test
+        fun `and leaves out of the new messages the call nobody answered, which a provider would reject`() {
+            model.answers(listOf(weatherCall("call_1", "Bariloche")), listOf(weatherCall("call_2", "Ushuaia")))
+
+            val error = runCatching { loop(maxSteps = 2).run(ChatRequest("Que temperatura hay?")) }
+
+            val messages = (error.exceptionOrNull() as MaxStepsExceededError).result.newMessages
+            assertThat(messages).hasSize(2)
+            assertThat(messages.last()).isInstanceOf(Message.Tool::class.java)
+        }
+
+        @Test
         fun `ten steps unless told otherwise`() {
             repeat(10) { model.answers(listOf(weatherCall("call_$it", "Bariloche"))) }
 
             assertThatThrownBy { ToolLoop(model, listOf(weather)).run(ChatRequest("Hola")) }
                 .isInstanceOfSatisfying(MaxStepsExceededError::class.java) {
-                    assertThat(it.steps).hasSize(10)
+                    assertThat(it.result.steps).hasSize(10)
                 }
         }
 

@@ -25,7 +25,7 @@ class ToolLoopErrorsTest {
         fun `args that do not fit go back naming the field, and the run goes on`() {
             model.answers(listOf(call("getWeather", Json.obj("town" to "Bariloche"))), listOf(TextPart("Perdon")))
 
-            val steps = loop().run(ChatRequest("Hola"))
+            val steps = loop().run(ChatRequest("Hola")).steps
 
             val result = steps[0].toolResults.single()
             assertThat(result.isError).isTrue()
@@ -38,7 +38,7 @@ class ToolLoopErrorsTest {
         fun `and so do args their own type rejects`() {
             model.answers(listOf(call("getWeather", Json.obj("city" to ""))))
 
-            val steps = loop().run(ChatRequest("Hola"))
+            val steps = loop().run(ChatRequest("Hola")).steps
 
             assertThat(text(steps[0].toolResults.single())).contains("The city cannot be blank")
         }
@@ -47,7 +47,7 @@ class ToolLoopErrorsTest {
         fun `a tool that does not exist goes back with the ones that do`() {
             model.answers(listOf(call("getWheather", Json.obj("city" to "Bariloche"))))
 
-            val steps = loop().run(ChatRequest("Hola"))
+            val steps = loop().run(ChatRequest("Hola")).steps
 
             val result = steps[0].toolResults.single()
             assertThat(result.isError).isTrue()
@@ -63,7 +63,7 @@ class ToolLoopErrorsTest {
             weather.failWith = ToolError("There is no weather for Atlantis, ask for a real city")
             model.answers(listOf(weatherCall()))
 
-            val steps = loop().run(ChatRequest("Hola"))
+            val steps = loop().run(ChatRequest("Hola")).steps
 
             assertThat(text(steps[0].toolResults.single()))
                 .isEqualTo("There is no weather for Atlantis, ask for a real city")
@@ -75,7 +75,7 @@ class ToolLoopErrorsTest {
             weather.failWith = failure
             model.answers(listOf(weatherCall()), listOf(TextPart("No pude")))
 
-            val steps = loop().run(ChatRequest("Hola"))
+            val steps = loop().run(ChatRequest("Hola")).steps
 
             val result = steps[0].toolResults.single()
             assertThat(text(result)).isEqualTo("Tool execution failed")
@@ -90,7 +90,7 @@ class ToolLoopErrorsTest {
             val handler = ToolErrorHandler { error, _ -> if (error is NotFound) "It does not exist" else null }
             model.answers(listOf(weatherCall()))
 
-            val steps = loop(handlers = listOf(handler)).run(ChatRequest("Hola"))
+            val steps = loop(handlers = listOf(handler)).run(ChatRequest("Hola")).steps
 
             assertThat(text(steps[0].toolResults.single())).isEqualTo("It does not exist")
             assertThat(steps[0].toolFailures.single().error).isSameAs(weather.failWith)
@@ -104,7 +104,7 @@ class ToolLoopErrorsTest {
             val second = ToolErrorHandler { _, _ -> "second" }
             model.answers(listOf(weatherCall()))
 
-            val steps = loop(handlers = listOf(unrelated, first, second)).run(ChatRequest("Hola"))
+            val steps = loop(handlers = listOf(unrelated, first, second)).run(ChatRequest("Hola")).steps
 
             assertThat(text(steps[0].toolResults.single())).isEqualTo("first, for getWeather")
         }
@@ -114,7 +114,9 @@ class ToolLoopErrorsTest {
             weather.failWith = NotFound("city 42")
             model.answers(listOf(weatherCall()))
 
-            val steps = loop(handlers = listOf(ToolErrorHandler { _, _ -> null })).run(ChatRequest("Hola"))
+            val handler = ToolErrorHandler { _, _ -> null }
+
+            val steps = loop(handlers = listOf(handler)).run(ChatRequest("Hola")).steps
 
             assertThat(text(steps[0].toolResults.single())).isEqualTo("Tool execution failed")
         }
@@ -124,7 +126,7 @@ class ToolLoopErrorsTest {
             weather.failWith = IllegalStateException("boom")
             model.answers(listOf(weatherCall(), call("getTime", Json.obj(), "call_2")))
 
-            val steps = loop().run(ChatRequest("Hola"))
+            val steps = loop().run(ChatRequest("Hola")).steps
 
             assertThat(steps[0].toolResults.map { it.isError }).containsExactly(true, false)
             assertThat(time.calls).isEqualTo(1)
