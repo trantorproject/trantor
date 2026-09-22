@@ -2,6 +2,7 @@
 
 package dev.botta.trantor.ai
 
+import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.ModelNotFoundError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
@@ -18,6 +19,10 @@ import dev.botta.trantor.ai.providers.anthropic.addAnthropic
 import dev.botta.trantor.ai.providers.openai.OpenAIConfig
 import dev.botta.trantor.ai.providers.openai.addOpenAI
 import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.tools.Tool
+import dev.botta.trantor.ai.tools.ToolContext
+import dev.botta.trantor.ai.tools.ToolOutput
+import dev.botta.trantor.ai.tools.ToolResult
 import dev.botta.trantor.config.ConfigManager
 import dev.botta.trantor.config.providers.addMemoryCollection
 import dev.botta.trantor.di.DefaultServiceProvider
@@ -25,6 +30,7 @@ import dev.botta.trantor.di.ServiceRegistry
 import dev.botta.trantor.domain.Money
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
+import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -340,6 +346,55 @@ class ServiceRegistryExtensionsTest {
         }
     }
 
+    @Nested
+    inner class `the facade` {
+        @Test
+        fun `addAI brings it, over the registry of the application`() {
+            registry.addAI()
+            registry.addFakeProvider()
+            registry.configure<ModelRegistry> { models, _ -> models.addAlias("default", "fake/a-model") }
+
+            val ai = provider.get<AI>()
+
+            assertThat(ai.text("Hola")).isEqualTo("ok")
+            assertThat(ai.models()).isSameAs(models())
+        }
+
+        @Test
+        fun `once, however many times addAI is called`() {
+            registry.addAI()
+            registry.addAI()
+
+            assertThat(registry.count { it.serviceType == AI::class.java }).isEqualTo(1)
+        }
+
+        @Test
+        fun `an AI of the application is kept`() {
+            val own = DefaultAI(ModelRegistry())
+            registry.addSingleton<AI>(own)
+            registry.addAI()
+
+            assertThat(provider.get<AI>()).isSameAs(own)
+        }
+
+        @Test
+        fun `the tool error handlers the application names reach its tools`() {
+            val model = FakeChatModel(provider = "scripted").answers(listOf(ToolCallPart("call_1", "fail", Json.obj())))
+            registry.addAI()
+            registry.configure<ModelRegistry> { models, _ -> models.addProvider(ScriptedProvider(model)) }
+            registry.addToolErrorHandlers { handlers, _ -> handlers.add { _, _ -> "Not available right now" } }
+
+            val result = provider.get<AI>().generate {
+                model("scripted/a-model")
+                user("Hola")
+                tools(FailingTool())
+            }
+
+            assertThat(result.steps[0].toolResults.single().output)
+                .isEqualTo(ToolOutput.Text("Not available right now"))
+        }
+    }
+
     @BeforeEach
     fun forgetWhatTheMiddlewaresSaw() {
         Counting.calls = 0
@@ -362,6 +417,22 @@ class ServiceRegistryExtensionsTest {
 
         override fun chatModel(modelId: String) =
             FakeChatModel(modelId = modelId, provider = name, usage = Usage(inputTokens = 15, outputTokens = 28))
+    }
+
+    private class ScriptedProvider(private val model: FakeChatModel): AIProvider {
+        override val name = "scripted"
+
+        override fun chatModel(modelId: String) = model
+    }
+
+    private class FailingTool: Tool<FailingTool.Args>(Args.serializer()) {
+        override val name = "fail"
+        override val description = "Always fails"
+
+        override fun execute(args: Args, context: ToolContext): ToolResult = error("db down")
+
+        @Serializable
+        class Args
     }
 
     private class Counting(private val greeting: String? = null): ChatModelMiddleware {
