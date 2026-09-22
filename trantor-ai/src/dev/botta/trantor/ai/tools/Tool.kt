@@ -37,6 +37,9 @@ abstract class Tool<TArgs: Any>(val argsSerializer: KSerializer<TArgs>) {
     /** A tool that only reads can run at the same time as others of the same turn. */
     open val readOnly: Boolean = false
 
+    /** What a failure of [execute] does to the run. Input the model got wrong always goes back to it. */
+    open val onError: ToolErrorModes = ToolErrorModes.SendToModel
+
     abstract fun execute(args: TArgs, context: ToolContext): ToolResult
 
     /** What the model is told about the tool. */
@@ -45,8 +48,8 @@ abstract class Tool<TArgs: Any>(val argsSerializer: KSerializer<TArgs>) {
     /**
      * Runs the tool with the input the model sent, decoded into its args.
      *
-     * @throws InvalidToolInputError when the input does not fit the args, saying which field, so the model can fix
-     * the call.
+     * @throws InvalidToolInputError when the input does not fit the args, or an init block of the args rejects it,
+     * saying why, so the model can fix the call.
      */
     fun call(input: JsonObject, context: ToolContext) = execute(decode(input), context)
 
@@ -55,6 +58,9 @@ abstract class Tool<TArgs: Any>(val argsSerializer: KSerializer<TArgs>) {
             return json.decodeFromString(argsSerializer, input.toString())
         } catch (e: SerializationException) {
             throw InvalidToolInputError(name, "The input of $name does not fit its args: ${e.message}", e)
+        } catch (e: IllegalArgumentException) {
+            // What a require in an init block of the args throws, which is how a type validates itself
+            throw InvalidToolInputError(name, "The input of $name is not valid: ${e.message}", e)
         }
     }
 

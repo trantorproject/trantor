@@ -14,4 +14,6 @@ data class Step(
     val response: ChatResponse,
     /** In the order of the calls. Empty in the last step, where the model answered without asking for tools. */
     val toolResults: List<ToolResultPart> = emptyList(),
+    /** The calls of [toolResults] that failed, with their exception. What the model got is in the result itself. */
+    val toolFailures: List<ToolFailure> = emptyList(),
 )
