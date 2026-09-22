@@ -244,6 +244,16 @@ models.use(RetryMiddleware())
 the first try. The call's `timeout` is a **deadline for the whole thing**, not for each attempt, and each
 attempt gets what is left. A stream is reopened only while nothing has reached the caller.
 
+`CostMiddleware` puts what the call probably cost in `response.info.estimatedCost` — see [Cost](#cost).
+It takes the catalog the providers share, so the container builds it:
+
+```kotlin
+services.addAI { models, services ->
+    models.use(RetryMiddleware())
+    models.use(services.create<CostMiddleware>())
+}
+```
+
 Middlewares wrap in the order they were named.
 
 ---
@@ -328,16 +338,17 @@ like `rejectsTemperatureWhenReasoning`.
 
 ### Keeping it maintainable
 
-**Written per family, not per model.** Within a generation every model takes the same things, so a
-profile is a `val` and a family is a `copy`. All of Anthropic is nine entries:
+**One line per model, with everything known about it.** Within a generation every model takes the same
+things, so what it takes is a profile — a `val`, changed with `copy` — and the line names it. What it
+costs goes on the same line, so asking what the catalog knows of a model has one place to look:
 
 ```kotlin
-add("anthropic/claude-opus-5", "anthropic/claude-sonnet-5", "anthropic/claude-opus-4-8",
-    capabilities = effortOnly)
-
-add("anthropic/claude-sonnet-4-6", "anthropic/claude-opus-4-6", capabilities = effortOnly.copy(
-    temperature = ValueRange.ZeroToOne, reasoningBudget = MIN_BUDGET..128_000))
+add("anthropic/claude-opus-5", effortOnly, opusPrice)
+add("anthropic/claude-sonnet-4-6", bothWays, sonnetPrice)
+add("openai/gpt-5.4", reasoningOptional, ModelPricing(input = "2.50", output = "15", cacheRead = "0.25"))
 ```
+
+Models come out a few times a year, and a line each is what they cost to write down.
 
 **A dated snapshot needs no entry.** `claude-sonnet-4-5-20250929` is answered by `claude-sonnet-4-5`, and
 so are `@`, `:` and `-latest` suffixes. The three date shapes the providers use are `-20250929`,
@@ -350,7 +361,9 @@ so are `@`, `:` and `-latest` suffixes. The three date shapes the providers use 
 
 ```kotlin
 services.addModelCatalog { catalog, _ ->
-    catalog.add("anthropic/claude-6", like = "anthropic/claude-opus-5") { copy(maxOutputTokens = 256_000) }
+    catalog.add("anthropic/claude-6", like = "anthropic/claude-opus-5", ModelPricing(input = "5", output = "25")) {
+        copy(maxOutputTokens = 256_000)
+    }
 }
 ```
 
@@ -368,8 +381,8 @@ not a release of Trantor.
 **What a model refuses is maintained here, because nobody else does.** LiteLLM and models.dev publish
 prices, windows and capability flags for thousands of models — but neither has a field for what a model
 *refuses*, which is why LiteLLM has the GPT-5 temperature bug open. So `ModelSpec.capabilities` is ours,
-small and checked against real calls. Prices are ours too, for now: one line per model, read off each
-provider's price list, which is short enough to keep by hand.
+small and checked against real calls. Prices are ours too, for now, read off each provider's price
+list, which is short enough to keep by hand.
 
 The two halves are not the same kind of fact:
 
@@ -434,30 +447,37 @@ its model, and that is all it knows. Batch and priority tiers, the higher price 
 the data is kept, discounts and taxes all move the bill away from it. It is close enough to see where the
 money goes and to notice when it starts going faster, which is what it is for.
 
+With `CostMiddleware` registered, every response carries it:
+
 ```kotlin
-val estimate = CostCalculator(catalog).estimate(response)
+val estimate = response.info.estimatedCost
 
 estimate?.cacheRead      // what the cache cost, next to what it saved on estimate.uncachedInput
 estimate?.reasoning      // part of estimate.output
 estimate?.total
 ```
 
+A stream's parts go through untouched and its `response()` carries the estimate, since the tokens are
+only known once the answer is over. Without the middleware, `CostCalculator(catalog).estimate(response)`
+gives the same number.
+
 A `CostEstimate` has the names of `Usage` without the `Tokens`: `input` is `uncachedInput` plus
 `cacheRead` plus `cacheWrite`, `reasoning` is part of `output`, and `total` is input plus output. Estimates
 of several calls add up with `+`, part by part. Nothing is rounded; a call costs fractions of a cent, and
 rounding belongs to whoever shows the number.
 
-A price is per million tokens, in dollars, written apart from the capabilities because a family takes
-the same things at very different prices. Each provider brings the prices of its models, and an
-application writes or corrects its own the same way:
+A price is per million tokens, in dollars, on the line of the model it belongs to. Each provider brings
+the prices of its models. An application prices a model it adds on the same line, and corrects a price,
+or prices a model it never describes, with `price`:
 
 ```kotlin
 services.addModelCatalog { catalog, _ ->
-    catalog.price("openai/gpt-7", input = "12", output = "60", cacheRead = "1.20")
+    catalog.price("openai/gpt-5.2", ModelPricing(input = "1.75", output = "14", cacheRead = "0.175"))
 }
 ```
 
-The numbers are text so they stay exactly what the price list says. `inputPerMillion` is the plain price,
+The numbers are text so they stay exactly what the price list says. A price is all an estimate needs,
+so a model priced and never described in the catalog is estimated too. `inputPerMillion` is the plain price,
 the one both providers call "input", and it is what the uncached input pays. A cache with no price of its
 own is charged as plain input, which is what OpenAI does with a write. There is one price for writes,
 although Anthropic charges more for a cache kept an hour: for an estimate, the five-minute price is close
@@ -525,9 +545,13 @@ as the conversation grows:
 anthropic.cache = AnthropicCaches.Automatic          // or AutomaticForAnHour
 ```
 
-Below the model's minimum, around a thousand tokens, nothing is cached and nothing fails either, so
-leaving it on is never wrong. For a cut somewhere precise, put `cache_control` in the `ProviderMetadata`
-of the part it goes after; there are four marks per request and the automatic one takes one of them.
+It fits a conversation, where each call repeats the one before it and adds a turn. **It does not fit a
+one-off question behind a long shared prompt**: the cut lands on the question, which changes every
+time, so every call pays the higher price of a write and none reads it back. A recording showed exactly
+that — the same 7,246-token system prompt written twice, read zero times. There, put `cache_control` in
+the `ProviderMetadata` of the part the shared prompt ends with. There are four marks per request, and
+the automatic one takes one of them. Below the model's minimum, around a thousand tokens, nothing is
+cached and nothing fails either.
 
 **Tool results are a turn of the user**, because a result is something the model is told. Anthropic
 matches one to its call by id alone, so the name of the tool has nowhere to go. And it refuses a user

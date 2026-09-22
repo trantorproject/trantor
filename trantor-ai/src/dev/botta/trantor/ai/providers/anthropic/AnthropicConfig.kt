@@ -30,8 +30,8 @@ data class AnthropicConfig(
     var defaultMaxTokens: Int? = null,
     /**
      * Whether to ask Anthropic to cache the prompt. Off by default because a cache write costs more than a plain
-     * call: it pays off when the same prefix comes back, which is the usual shape of a conversation or of a long
-     * system prompt, and not when every call is different.
+     * call: it pays off when the same prefix comes back, which is the usual shape of a conversation. A long system
+     * prompt in front of a different question each time needs a mark of its own; see [AnthropicCaches].
      */
     var cache: AnthropicCaches = AnthropicCaches.Off,
     /**

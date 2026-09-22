@@ -47,8 +47,10 @@ sealed interface AnthropicThinking {
  * Prompt caching. Unlike OpenAI, which caches on its own, Anthropic only caches what was marked.
  *
  * [Automatic] is the top-level mark: Anthropic puts the cut on the last cacheable block and moves it forward as
- * the conversation grows, which is the whole of what most applications need. Below the model's minimum — a
- * thousand-odd tokens — nothing is cached and nothing fails either, so leaving it on is never wrong.
+ * the conversation grows, which is what a conversation needs. It is the wrong mark for a one-off question behind
+ * a long shared prompt: the cut lands on the question, which is new every time, so every call pays for a write
+ * and none reads it back — a recording wrote the same 7,246 tokens twice and read none. Below the model's minimum
+ * — a thousand-odd tokens — nothing is cached and nothing fails either.
  *
  * For a cut somewhere precise, put `cache_control` in the `ProviderMetadata` of the part it goes after. There are
  * four marks per request, and the automatic one takes one of them.

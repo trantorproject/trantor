@@ -44,7 +44,7 @@ class ModelCatalogTest {
         fun `but a plain prefix is not, because that is a different model`() {
             // gpt-4 is written before gpt-4o and gpt-4.1 without being either of them, so inheriting by
             // prefix would hand a newer model the capabilities of an older one and drop what it does take
-            val onlyGpt4 = ModelCatalog().add("openai/gpt-4", capabilities = ModelCapabilities.Modern)
+            val onlyGpt4 = ModelCatalog().add("openai/gpt-4", ModelCapabilities.Modern)
 
             assertThat(onlyGpt4.find("openai", "gpt-4o")).isNull()
             assertThat(onlyGpt4.find("openai", "gpt-4.1")).isNull()
@@ -73,7 +73,7 @@ class ModelCatalogTest {
 
         @Test
         fun `with no latest set there is nothing to stand in, and the model stays unknown`() {
-            val bare = ModelCatalog().add("x/a", capabilities = ModelCapabilities.Modern)
+            val bare = ModelCatalog().add("x/a", ModelCapabilities.Modern)
 
             assertThat(bare.find("x", "b")).isNull()
         }
@@ -136,12 +136,20 @@ class ModelCatalogTest {
     @Nested
     inner class `the price of a model` {
         @Test
-        fun `is written apart from what it takes, since a family takes the same things at different prices`() {
-            catalog.add("x/big", "x/small", capabilities = ModelCapabilities(maxOutputTokens = 1_000))
-            catalog.price("x/big", input = "3", output = "15", cacheRead = "0.3", cacheWrite = "3.75")
-            catalog.price("x/small", input = "1", output = "5")
+        fun `is written with what it takes, on the one line that says everything about the model`() {
+            catalog.add("x/big", ModelCapabilities(maxOutputTokens = 1_000), big)
 
-            assertThat(catalog.find("x/big")?.pricing).isEqualTo(
+            val spec = catalog.find("x/big")
+
+            assertThat(spec?.capabilities?.maxOutputTokens).isEqualTo(1_000)
+            assertThat(spec?.pricing).isEqualTo(big)
+        }
+
+        @Test
+        fun `as the price list shows it, per million tokens`() {
+            val pricing = ModelPricing(input = "3", output = "15", cacheRead = "0.3", cacheWrite = "3.75")
+
+            assertThat(pricing).isEqualTo(
                 ModelPricing(
                     inputPerMillion = Money(3),
                     outputPerMillion = Money(15),
@@ -149,38 +157,58 @@ class ModelCatalogTest {
                     cacheWritePerMillion = Money("3.75"),
                 )
             )
-            assertThat(catalog.find("x/small")?.pricing?.inputPerMillion).isEqualTo(Money(1))
         }
 
         @Test
-        fun `and in any order`() {
-            catalog.price("x/big", input = "3", output = "15")
-            catalog.add("x/big", capabilities = ModelCapabilities())
+        fun `a model written again without one keeps the price it had`() {
+            catalog.add("x/big", ModelCapabilities(), big)
+            catalog.add("x/big", ModelCapabilities(maxOutputTokens = 1_000))
 
-            assertThat(catalog.find("x/big")?.pricing?.inputPerMillion).isEqualTo(Money(3))
+            assertThat(catalog.find("x/big")?.pricing).isEqualTo(big)
         }
 
         @Test
-        fun `several models can share one`() {
-            catalog.add("x/a", "x/b", capabilities = ModelCapabilities())
-            catalog.price("x/a", "x/b", input = "3", output = "15")
+        fun `a model described as another comes with its own price`() {
+            catalog.add("x/big", ModelCapabilities(), big)
+            catalog.add("x/bigger", like = "x/big", pricing = ModelPricing(input = "5", output = "25"))
 
-            assertThat(catalog.find("x/b")?.pricing?.outputPerMillion).isEqualTo(Money(15))
+            assertThat(catalog.find("x/bigger")?.pricing?.inputPerMillion).isEqualTo(Money(5))
+        }
+
+        @Test
+        fun `and takes what the other takes, but not what it costs`() {
+            catalog.add("x/big", ModelCapabilities(), big)
+            catalog.add("x/bigger", like = "x/big")
+
+            assertThat(catalog.find("x/bigger")?.pricing).isNull()
+        }
+
+        @Test
+        fun `a model nobody described can still be priced, which is all an estimate needs`() {
+            catalog.price("x/priced", ModelPricing(input = "1", output = "5"))
+
+            assertThat(catalog.priceOf("x", "priced")?.inputPerMillion).isEqualTo(Money(1))
+        }
+
+        @Test
+        fun `and a price can be written before the model, since order never matters`() {
+            catalog.price("x/big", big)
+            catalog.add("x/big", ModelCapabilities())
+
+            assertThat(catalog.find("x/big")?.pricing).isEqualTo(big)
         }
 
         @Test
         fun `a dated snapshot costs what its family costs`() {
-            catalog.add("x/big", capabilities = ModelCapabilities())
-            catalog.price("x/big", input = "3", output = "15")
+            catalog.add("x/big", ModelCapabilities(), big)
 
-            assertThat(catalog.find("x/big-20250929")?.pricing?.inputPerMillion).isEqualTo(Money(3))
+            assertThat(catalog.find("x/big-20250929")?.pricing).isEqualTo(big)
         }
 
         @Test
         fun `unless it has a price of its own, which some old snapshots do`() {
-            catalog.add("x/big", capabilities = ModelCapabilities())
-            catalog.price("x/big", input = "3", output = "15")
-            catalog.price("x/big-2024-05-13", input = "5", output = "15")
+            catalog.add("x/big", ModelCapabilities(), big)
+            catalog.price("x/big-2024-05-13", ModelPricing(input = "5", output = "15"))
 
             val snapshot = catalog.find("x/big-2024-05-13")
 
@@ -189,18 +217,8 @@ class ModelCatalogTest {
         }
 
         @Test
-        fun `a model described as another takes what the other takes and not what it costs`() {
-            catalog.add("x/big", capabilities = ModelCapabilities())
-            catalog.price("x/big", input = "3", output = "15")
-            catalog.add("x/bigger", like = "x/big")
-
-            assertThat(catalog.find("x/bigger")?.pricing).isNull()
-        }
-
-        @Test
-        fun `a model standing in for the newest does not take its price either`() {
-            catalog.add("x/newest", capabilities = ModelCapabilities()).setLatest("x", "x/newest")
-            catalog.price("x/newest", input = "3", output = "15")
+        fun `a model standing in for the newest does not take its price`() {
+            catalog.add("x/newest", ModelCapabilities(), big).setLatest("x", "x/newest")
 
             assertThat(catalog.find("x/unknown")?.pricing).isNull()
         }
@@ -208,8 +226,8 @@ class ModelCatalogTest {
         @Test
         fun `but keeps its own, when somebody wrote the price and not the capabilities`() {
             // What it takes is still a guess; what it costs is not
-            catalog.add("x/newest", capabilities = ModelCapabilities()).setLatest("x", "x/newest")
-            catalog.price("x/priced", input = "1", output = "5")
+            catalog.add("x/newest", ModelCapabilities()).setLatest("x", "x/newest")
+            catalog.price("x/priced", ModelPricing(input = "1", output = "5"))
 
             val spec = catalog.find("x/priced")
 
@@ -219,20 +237,19 @@ class ModelCatalogTest {
 
         @Test
         fun `and a spec added whole brings its price along`() {
-            val pricing = ModelPricing(inputPerMillion = Money(3), outputPerMillion = Money(15))
+            catalog.add(ModelSpec("x", "whole", ModelCapabilities(), pricing = big))
 
-            catalog.add(ModelSpec("x", "whole", ModelCapabilities(), pricing = pricing))
-
-            assertThat(catalog.find("x/whole")?.pricing).isEqualTo(pricing)
+            assertThat(catalog.find("x/whole")?.pricing).isEqualTo(big)
         }
 
         @Test
         fun `and is listed with the model`() {
-            catalog.add("x/big", capabilities = ModelCapabilities())
-            catalog.price("x/big", input = "3", output = "15")
+            catalog.add("x/big", ModelCapabilities(), big)
 
-            assertThat(catalog.all("x").single().pricing?.inputPerMillion).isEqualTo(Money(3))
+            assertThat(catalog.all("x").single().pricing).isEqualTo(big)
         }
+
+        private val big = ModelPricing(input = "3", output = "15")
     }
 
     @Nested

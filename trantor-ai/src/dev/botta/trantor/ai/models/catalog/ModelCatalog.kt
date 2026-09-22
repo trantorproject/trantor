@@ -1,7 +1,5 @@
 package dev.botta.trantor.ai.models.catalog
 
-import dev.botta.trantor.domain.Money
-
 /**
  * What each model is: what it accepts and what it costs.
  *
@@ -23,10 +21,10 @@ import dev.botta.trantor.domain.Money
  *
  * ### Keeping it up to date
  *
- * Capabilities are written **per family and not per model**: the whole of Anthropic is nine entries, because `copy`
- * is what a profile looks like in Kotlin. Prices are the opposite — a family takes the same things at very
- * different prices — so they are written apart, one line per model, with [price]. Being stale there costs a wrong
- * estimate, not a broken call.
+ * **One line per model, with everything known about it**: what it takes and what it costs. What a family shares
+ * is a profile — a `val` of capabilities, changed with `copy` — so a line names its profile rather than repeating
+ * it, and asking what the catalog knows of a model has one place to look. Models come out a few times a year, and
+ * a line each is what they cost to write down. A stale price costs a wrong estimate, not a broken call.
  *
  * ### What a price follows
  *
@@ -48,7 +46,9 @@ import dev.botta.trantor.domain.Money
  *
  * ```kotlin
  * services.addModelCatalog { catalog, _ ->
- *     catalog.add("anthropic/claude-6", like = "anthropic/claude-opus-5") { copy(maxOutputTokens = 256_000) }
+ *     catalog.add("anthropic/claude-6", like = "anthropic/claude-opus-5", ModelPricing(input = "5", output = "25")) {
+ *         copy(maxOutputTokens = 256_000)
+ *     }
  * }
  * ```
  *
@@ -75,19 +75,30 @@ class ModelCatalog {
         spec.pricing?.let { prices[spec.reference] = it }
     }
 
-    /** Several models of one family, which is the usual shape: they differ in price and not in what they take. */
-    fun add(vararg references: String, capabilities: ModelCapabilities) = apply {
-        references.forEach { add(specOf(it, capabilities)) }
+    /**
+     * A model, with what it takes and what it costs. Written again without a price, it keeps the one it had: the
+     * two are facts of a different kind, and correcting one is no reason to forget the other.
+     */
+    @Synchronized
+    fun add(reference: String, capabilities: ModelCapabilities, pricing: ModelPricing? = null) = apply {
+        add(specOf(reference, capabilities))
+        pricing?.let { prices[reference] = it }
     }
 
     /**
-     * A model described as another one, with what changed. It is the shape a new model usually has — the same as
-     * the last, with a bigger ceiling — and the reason the catalog stays short.
+     * A model described as another one, with what changed and what it costs. It is the shape a new model usually
+     * has — the same as the last, with a bigger ceiling — and it takes nothing of the other's price.
      */
     @Synchronized
-    fun add(reference: String, like: String, change: ModelCapabilities.() -> ModelCapabilities = { this }) = apply {
+    fun add(
+        reference: String,
+        like: String,
+        pricing: ModelPricing? = null,
+        change: ModelCapabilities.() -> ModelCapabilities = { this },
+    ) = apply {
         specs.remove(reference)
         described[reference] = Described(like, change)
+        pricing?.let { prices[reference] = it }
     }
 
     /**
@@ -99,26 +110,11 @@ class ModelCatalog {
     fun setLatest(provider: String, reference: String) = apply { latest[provider] = reference }
 
     /**
-     * The list price of one or more models, in dollars per million tokens, written as text so that it is exactly
-     * the number on the price list. A cache the model has no price for is billed as plain input.
+     * The price of a model alone: to correct one, or to price a model the catalog does not describe, which is
+     * enough for an estimate. A model it does describe gets its price on the line that describes it.
      */
     @Synchronized
-    fun price(
-        vararg references: String,
-        input: String,
-        output: String,
-        cacheRead: String? = null,
-        cacheWrite: String? = null,
-    ) = apply {
-        val pricing = ModelPricing(
-            inputPerMillion = Money(input),
-            outputPerMillion = Money(output),
-            cacheReadPerMillion = cacheRead?.let { Money(it) },
-            cacheWritePerMillion = cacheWrite?.let { Money(it) },
-        )
-
-        references.forEach { prices[it] = pricing }
-    }
+    fun price(reference: String, pricing: ModelPricing) = apply { prices[reference] = pricing }
 
     /** Null when nobody wrote this model down and its provider has no latest set. */
     fun find(provider: String, modelId: String) = find("$provider/$modelId")
@@ -137,7 +133,14 @@ class ModelCatalog {
      */
     private fun ModelSpec.withPriceOf(reference: String) = copy(pricing = priceOf(reference))
 
-    private fun priceOf(reference: String) =
+    /**
+     * The price of a model, by the same rules [find] follows, but without needing to know what the model takes: a
+     * price is all an estimate needs, and an application can price a model it never described.
+     */
+    fun priceOf(provider: String, modelId: String) = priceOf("$provider/$modelId")
+
+    @Synchronized
+    fun priceOf(reference: String) =
         prices[reference] ?: prices.keys.lastOrNull { isSnapshotOf(reference, it) }?.let { prices[it] }
 
     /**

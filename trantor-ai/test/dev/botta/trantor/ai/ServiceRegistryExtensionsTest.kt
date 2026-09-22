@@ -5,8 +5,11 @@ package dev.botta.trantor.ai
 import dev.botta.trantor.ai.errors.ModelNotFoundError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
+import dev.botta.trantor.ai.models.Usage
+import dev.botta.trantor.ai.models.catalog.ModelPricing
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.models.middleware.ChatModelMiddleware
+import dev.botta.trantor.ai.models.middleware.CostMiddleware
 import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.anthropic.AnthropicConfig
 import dev.botta.trantor.ai.providers.anthropic.addAnthropic
@@ -17,6 +20,7 @@ import dev.botta.trantor.config.ConfigManager
 import dev.botta.trantor.config.providers.addMemoryCollection
 import dev.botta.trantor.di.DefaultServiceProvider
 import dev.botta.trantor.di.ServiceRegistry
+import dev.botta.trantor.domain.Money
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
@@ -121,6 +125,19 @@ class ServiceRegistryExtensionsTest {
             models().chat("fake/a-model").generate(ChatRequest("Hola"))
 
             assertThat(Counting.seen).isEqualTo("hola")
+        }
+
+        @Test
+        fun `the one that estimates cost is built out of the container, with the catalog every provider shares`() {
+            registry.addAI { models, services -> models.use(services.create<CostMiddleware>()) }
+            registry.addFakeProvider()
+            registry.addModelCatalog { catalog, _ ->
+                catalog.price("fake/a-model", ModelPricing(input = "3", output = "15"))
+            }
+
+            val response = models().chat("fake/a-model").generate(ChatRequest("Hola"))
+
+            assertThat(response.info.estimatedCost?.total).isEqualTo(Money("0.000465"))
         }
 
         @Test
@@ -329,7 +346,8 @@ class ServiceRegistryExtensionsTest {
     private class FakeProvider: AIProvider {
         override val name = "fake"
 
-        override fun chatModel(modelId: String) = FakeChatModel(modelId = modelId, provider = name)
+        override fun chatModel(modelId: String) =
+            FakeChatModel(modelId = modelId, provider = name, usage = Usage(inputTokens = 15, outputTokens = 28))
     }
 
     private class Counting(private val greeting: String? = null): ChatModelMiddleware {

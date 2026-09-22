@@ -15,7 +15,7 @@ data class ModelSpec(
     val capabilities: ModelCapabilities,
     val displayName: String? = null,
     val contextWindow: Int? = null,
-    /** The list price, written apart with [ModelCatalog.price]. Nothing in the call path reads it. */
+    /** The list price, written on the same line as the capabilities. Nothing in the call path reads it. */
     val pricing: ModelPricing? = null,
     /**
      * True when nobody described this model and it is standing in for the newest one the catalog knows.
@@ -40,4 +40,12 @@ data class ModelPricing(
     val outputPerMillion: Money,
     val cacheReadPerMillion: Money? = null,
     val cacheWritePerMillion: Money? = null,
-)
+) {
+    /** The price as the price list writes it, as text so it stays exactly that number. */
+    constructor(input: String, output: String, cacheRead: String? = null, cacheWrite: String? = null): this(
+        inputPerMillion = Money(input),
+        outputPerMillion = Money(output),
+        cacheReadPerMillion = cacheRead?.let { Money(it) },
+        cacheWritePerMillion = cacheWrite?.let { Money(it) },
+    )
+}

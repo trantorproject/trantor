@@ -103,6 +103,32 @@ class OpenAIChatModelTest {
     }
 
     @Test
+    fun `counts what went into the cache inside the input, as OpenAI does`() {
+        // Recorded on gpt-5.6-luna, one of the models that bill a cache write apart
+        httpClient.body = fixture("cache-write")
+
+        val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
+
+        assertThat(usage.inputTokens).isEqualTo(5_142)
+        assertThat(usage.cacheWriteTokens).isEqualTo(5_139)
+        assertThat(usage.cacheReadTokens).isZero()
+        assertThat(usage.uncachedInputTokens).isEqualTo(3)
+    }
+
+    @Test
+    fun `and what came out of it too, so the three parts add up to the input`() {
+        // The same prefix a moment later: most of it is read, and the little that changed is written
+        httpClient.body = fixture("cache-read")
+
+        val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
+
+        assertThat(usage.inputTokens).isEqualTo(5_141)
+        assertThat(usage.cacheReadTokens).isEqualTo(5_125)
+        assertThat(usage.cacheWriteTokens).isEqualTo(13)
+        assertThat(usage.uncachedInputTokens).isEqualTo(3)
+    }
+
+    @Test
     fun `returns the id and the model that actually answered`() {
         httpClient.body = fixture("text-simple")
 

@@ -53,8 +53,22 @@ class AnthropicChatModelResponseTest {
     }
 
     @Test
-    fun `adds what the cache cost into the input, so the same field means the same as in OpenAI`() {
-        // Anthropic leaves cache out of input_tokens and charges each of the three at its own price
+    fun `adds what went into the cache into the input, so the same field means the same as in OpenAI`() {
+        // Anthropic leaves the cache out of input_tokens: here it says 3, for a prompt of more than seven thousand
+        httpClient.body = fixture("cache-write")
+
+        val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
+
+        assertThat(usage.inputTokens).isEqualTo(7_249)
+        assertThat(usage.cacheWriteTokens).isEqualTo(7_246)
+        assertThat(usage.cacheReadTokens).isZero()
+        assertThat(usage.uncachedInputTokens).isEqualTo(3)
+    }
+
+    @Test
+    fun `and what came out of it too`() {
+        // No recording has read from the cache yet: the one made asked a new question each time, so the automatic
+        // mark kept landing on a block that had never been written
         httpClient.body = usageOf("""{"input_tokens":200,"cache_read_input_tokens":800,
             "cache_creation_input_tokens":1000,"output_tokens":50}""")
 

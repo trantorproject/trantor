@@ -7,7 +7,6 @@ import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.models.catalog.ModelCapabilities
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.models.catalog.ModelPricing
-import dev.botta.trantor.ai.models.catalog.ModelSpec
 import dev.botta.trantor.ai.models.chat.ChatResponse
 import dev.botta.trantor.ai.models.chat.FinishReasons
 import dev.botta.trantor.ai.models.chat.TextPart
@@ -62,7 +61,7 @@ class CostCalculatorTest {
 
         @Test
         fun `a cache the model has no price for is charged as plain input`() {
-            catalog.add(spec("openai/gpt-plain", ModelPricing(inputPerMillion = Money(2), outputPerMillion = Money(8))))
+            catalog.add("openai/gpt-plain", ModelCapabilities(), ModelPricing(input = "2", output = "8"))
 
             val estimate = calculator.estimate(
                 Usage(inputTokens = 1000, outputTokens = 0, cacheReadTokens = 800, cacheWriteTokens = 100),
@@ -78,9 +77,19 @@ class CostCalculatorTest {
         @Test
         fun `of a model whose capabilities are a guess but whose price somebody wrote is made all the same`() {
             catalog.setLatest("anthropic", "anthropic/claude-sonnet-4-5")
-            catalog.price("anthropic/claude-9", input = "3", output = "15")
+            catalog.price("anthropic/claude-9", ModelPricing(input = "3", output = "15"))
 
             val estimate = estimateOf("claude-9")
+
+            assertThat(estimate?.total).isEqualTo(Money("0.000465"))
+        }
+
+        @Test
+        fun `of a model the catalog knows only the price of is made too, since a price is all it takes`() {
+            val onlyPrices = ModelCatalog().price("anthropic/claude-9", ModelPricing(input = "3", output = "15"))
+            val usage = Usage(inputTokens = 15, outputTokens = 28)
+
+            val estimate = CostCalculator(onlyPrices).estimate(usage, "anthropic", "claude-9")
 
             assertThat(estimate?.total).isEqualTo(Money("0.000465"))
         }
@@ -112,7 +121,7 @@ class CostCalculatorTest {
 
         @Test
         fun `for one it knows without a price`() {
-            catalog.add(spec("anthropic/claude-free", pricing = null))
+            catalog.add("anthropic/claude-free", ModelCapabilities())
 
             assertThat(estimateOf("claude-free")).isNull()
         }
@@ -160,24 +169,11 @@ class CostCalculatorTest {
     private fun estimateOf(modelId: String) =
         calculator.estimate(Usage(inputTokens = 15, outputTokens = 28), "anthropic", modelId)
 
-    private fun spec(reference: String, pricing: ModelPricing?) = ModelSpec(
-        provider = reference.substringBefore("/"),
-        modelId = reference.substringAfter("/"),
-        capabilities = ModelCapabilities(),
-        pricing = pricing,
-    )
-
     // Numbers for the arithmetic, not the price list of any model
     private val catalog = ModelCatalog().add(
-        spec(
-            "anthropic/claude-sonnet-4-5",
-            ModelPricing(
-                inputPerMillion = Money(3),
-                outputPerMillion = Money(15),
-                cacheReadPerMillion = Money("0.3"),
-                cacheWritePerMillion = Money("3.75"),
-            ),
-        )
+        "anthropic/claude-sonnet-4-5",
+        ModelCapabilities(),
+        ModelPricing(input = "3", output = "15", cacheRead = "0.3", cacheWrite = "3.75"),
     )
     private val calculator = CostCalculator(catalog)
 }

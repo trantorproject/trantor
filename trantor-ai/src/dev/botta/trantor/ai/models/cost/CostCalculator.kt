@@ -11,10 +11,11 @@ import dev.botta.trantor.domain.Money
  *
  * It answers null rather than a number it cannot stand behind:
  *
- * - **A model with no price**, or none the catalog knows. That includes a model standing in for the newest one,
- *   which the catalog hands over without the newest one's price: guessing what a model takes keeps a call from
- *   failing, while guessing what it costs gives a wrong number that looks like a right one. Being off by a tier is
- *   an estimate; being off by a model is not. See [ModelCatalog] for what a price follows.
+ * - **A model with no price.** The price is all it asks the catalog for, so a model priced and never described is
+ *   estimated all the same. What it never does is borrow a price: a model standing in for the newest one does not
+ *   take the newest one's, because guessing what a model takes keeps a call from failing, while guessing what it
+ *   costs gives a wrong number that looks like a right one. Being off by a tier is an estimate; being off by a
+ *   model is not. See [ModelCatalog] for what a price follows.
  * - **A usage whose input or output is unknown.** Half a bill passes for the whole of it.
  */
 class CostCalculator(private val catalog: ModelCatalog) {
@@ -22,7 +23,7 @@ class CostCalculator(private val catalog: ModelCatalog) {
     fun estimate(response: ChatResponse) = estimate(response.usage, response.info.provider, response.info.model)
 
     fun estimate(usage: Usage, provider: String, modelId: String): CostEstimate? {
-        val pricing = catalog.find(provider, modelId)?.pricing ?: return null
+        val pricing = catalog.priceOf(provider, modelId) ?: return null
         val uncachedInput = usage.uncachedInputTokens ?: return null
         val output = usage.outputTokens ?: return null
 
