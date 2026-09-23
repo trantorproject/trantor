@@ -30,7 +30,13 @@ class RunContextTest {
     @Test
     fun `require fails saying what there is, which is what someone who forgot to pass it needs`() {
         assertThatThrownBy { RunContext(Locale("es")).require<Tenant>() }
-            .hasMessage("There is no Tenant in the run context. It has: Locale")
+            .hasMessage("The run context has no Tenant. It has: Locale")
+    }
+
+    @Test
+    fun `two values of the type asked for are ambiguous, and asking for it names them`() {
+        assertThatThrownBy { RunContext(Tenant("acme"), Store("centro")).get<Scope>() }
+            .hasMessage("The run context has more than one Scope: Tenant, Store. Ask for one of those")
     }
 
     @Test
@@ -41,6 +47,8 @@ class RunContextTest {
     interface Scope
 
     data class Tenant(val name: String): Scope
+
+    data class Store(val name: String): Scope
 
     data class Locale(val language: String)
 }

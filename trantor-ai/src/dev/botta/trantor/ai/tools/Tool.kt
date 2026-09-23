@@ -53,7 +53,8 @@ abstract class Tool<TArgs: Any>(val argsSerializer: KSerializer<TArgs>) {
      */
     fun call(input: JsonObject, context: ToolContext) = execute(decode(input), context)
 
-    private fun decode(input: JsonObject): TArgs {
+    /** The args the model sent, as the tool reads them. */
+    internal fun decode(input: JsonObject): TArgs {
         try {
             return json.decodeFromString(argsSerializer, input.toString())
         } catch (e: SerializationException) {

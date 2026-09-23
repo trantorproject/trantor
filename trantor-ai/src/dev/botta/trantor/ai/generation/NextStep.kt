@@ -2,7 +2,9 @@ package dev.botta.trantor.ai.generation
 
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
+import dev.botta.trantor.ai.models.chat.ToolCallPart
 import dev.botta.trantor.ai.tools.Tool
+import dev.botta.trantor.ai.tools.ToolContext
 
 /**
  * Decides what each step of a [ToolLoop] goes out with. The loop asks before every step, so that each one can go out
@@ -32,4 +34,16 @@ fun interface NextStep {
  * answer. The loop adds what the model is told about [tools] to the tools of [request], asking each tool again, so a
  * description that depends on the moment is up to date.
  */
-class StepSetup(val model: ChatModel, val request: ChatRequest, val tools: List<Tool<*>> = emptyList())
+class StepSetup(
+    val model: ChatModel,
+    val request: ChatRequest,
+    val tools: List<Tool<*>> = emptyList(),
+    /**
+     * The tool whose args are the answer, when the answer is an object asked for as a tool. One of [tools]. With it
+     * the run ends when the model calls it, once every call of that step ran, and not when the model answers
+     * without calling tools: that answer gets a reminder to call it, once in a row, and a second one ends the run.
+     */
+    val outputTool: String? = null,
+    /** What each tool knows about its call. Without it, the call and the [dev.botta.trantor.ai.RunContext] of the loop. */
+    val toolContext: ((ToolCallPart) -> ToolContext)? = null,
+)

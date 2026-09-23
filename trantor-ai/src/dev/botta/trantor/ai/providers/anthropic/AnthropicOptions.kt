@@ -27,6 +27,15 @@ data class AnthropicOptions(
     val serviceTier: ServiceTiers? = null,
 ): ProviderOption {
     override val provider = ANTHROPIC_PROVIDER
+
+    /** These options with what [later] sets on top. */
+    internal fun overriddenBy(later: AnthropicOptions) = AnthropicOptions(
+        effort = later.effort ?: effort,
+        thinking = later.thinking ?: thinking,
+        cache = later.cache ?: cache,
+        userId = later.userId ?: userId,
+        serviceTier = later.serviceTier ?: serviceTier,
+    )
 }
 
 /** The five levels Anthropic takes. `Reasoning` only reaches [High]; the two above it are asked for here. */

@@ -3,6 +3,7 @@
 package dev.botta.trantor.ai
 
 import dev.botta.json.Json
+import dev.botta.trantor.ai.agents.AgentRunner
 import dev.botta.trantor.ai.errors.ModelNotFoundError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
@@ -375,6 +376,14 @@ class ServiceRegistryExtensionsTest {
             registry.addAI()
 
             assertThat(provider.get<AI>()).isSameAs(own)
+        }
+
+        @Test
+        fun `addAI brings the runner of the agents too, once`() {
+            registry.addAI()
+
+            assertThat(provider.get<AgentRunner>()).isNotNull()
+            assertThat(registry.count { it.serviceType == AgentRunner::class.java }).isEqualTo(1)
         }
 
         @Test

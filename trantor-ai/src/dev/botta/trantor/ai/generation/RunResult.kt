@@ -29,6 +29,7 @@ data class RunResult(val steps: List<Step>) {
         get() = steps.flatMap { step ->
             when {
                 step.toolResults.isNotEmpty() -> listOf(step.response.asMessage(), Message.Tool(step.toolResults))
+                step.reminder != null -> listOf(step.response.asMessage(), step.reminder)
                 step.response.toolCalls.any { !it.providerExecuted } -> emptyList()
                 else -> listOf(step.response.asMessage())
             }

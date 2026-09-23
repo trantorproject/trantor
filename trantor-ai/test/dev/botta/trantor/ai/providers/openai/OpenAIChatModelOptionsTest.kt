@@ -45,6 +45,20 @@ class OpenAIChatModelOptionsTest {
         }
 
         @Test
+        fun `several add up in order, and what a later one sets wins`() {
+            // An agent brings its options and the run its own after them
+            val options = ProviderOptions.of(
+                OpenAIOptions(serviceTier = ServiceTiers.Flex, promptCacheKey = "del-agente"),
+                OpenAIOptions(promptCacheKey = "del-run"),
+            )
+
+            model.generate(requestWith(options))
+
+            assertThat(sentBody()["prompt_cache_key"]?.asString()).isEqualTo("del-run")
+            assertThat(sentBody()["service_tier"]?.asString()).isEqualTo("flex")
+        }
+
+        @Test
         fun `verbosity travels inside text, where OpenAI takes it`() {
             generateWith(OpenAIOptions(verbosity = Verbosities.Low))
 

@@ -59,10 +59,22 @@ class ToolLoop(
             val response = step.model.generate(step.request, options)
             val calls = run.callsOf(response)
 
-            if (calls.isEmpty()) return run.finish(response)
+            if (calls.isEmpty()) {
+                if (run.endsWith(step)) return run.finish(response)
 
-            run.throwIfOutOfSteps(response)
-            run.advance(response, step.executeAll(calls, options))
+                run.remind(response, step)
+                continue
+            }
+
+            if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response)
+
+            val executions = step.executeAll(calls, options)
+
+            run.advance(response, executions)
+
+            if (step.endedBy(executions)) return RunResult(run.steps)
+
+            run.throwIfNoStepsLeft()
         }
     }
 
@@ -95,11 +107,35 @@ class ToolLoop(
         fun finish(response: ChatResponse) = RunResult(steps + Step(response))
 
         /**
+         * Whether an answer without calls ends the run. It does, unless the step answers by calling an output tool
+         * and the model has not been reminded of it yet.
+         */
+        fun endsWith(step: Outgoing) = step.outputTool == null || steps.lastOrNull()?.reminder != null
+
+        /** Keeps the answer and tells the model to answer by calling the output tool, which takes one more step. */
+        fun remind(response: ChatResponse, step: Outgoing) {
+            throwIfOutOfSteps(response)
+
+            val reminder = Message.user("Please include your response in a call to ${step.outputTool}.")
+
+            steps.add(Step(response, reminder = reminder))
+            messages = messages + response.asMessage() + reminder
+        }
+
+        /**
          * Fails when the step that just answered was the last one allowed. It is asked before running its calls:
          * no model would read their results, and a tool with effects would have them all the same.
          */
         fun throwIfOutOfSteps(response: ChatResponse) {
             if (steps.size + 1 >= maxSteps) throw MaxStepsExceededError(maxSteps, finish(response))
+        }
+
+        /**
+         * Fails when the steps are used up after running calls. Only a call to the output tool runs on the last step,
+         * since it could end the run; this is when the model got it wrong and another step would be needed.
+         */
+        fun throwIfNoStepsLeft() {
+            if (steps.size >= maxSteps) throw MaxStepsExceededError(maxSteps, RunResult(steps))
         }
 
         /** Keeps the step and prepares the next one. */
@@ -131,8 +167,21 @@ class ToolLoop(
                 current = null
 
                 val calls = run.callsOf(response)
+                val number = run.steps.size + 1
 
-                if (calls.isNotEmpty()) run.throwIfOutOfSteps(response)
+                if (calls.isEmpty()) {
+                    if (run.endsWith(step)) {
+                        last = run.finish(response)
+                        yield(RunEvent.StepFinished(number))
+                        return@iterator
+                    }
+
+                    run.remind(response, step)
+                    yield(RunEvent.StepFinished(number))
+                    continue
+                }
+
+                if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response)
 
                 val executions = mutableListOf<Execution>()
 
@@ -153,16 +202,15 @@ class ToolLoop(
                     }
                 }
 
-                val number = run.steps.size + 1
+                run.advance(response, executions)
+                yield(RunEvent.StepFinished(number))
 
-                if (calls.isEmpty()) {
-                    last = run.finish(response)
-                    yield(RunEvent.StepFinished(number))
+                if (step.endedBy(executions)) {
+                    last = RunResult(run.steps)
                     return@iterator
                 }
 
-                run.advance(response, executions)
-                yield(RunEvent.StepFinished(number))
+                run.throwIfNoStepsLeft()
             }
         }
 
@@ -190,8 +238,9 @@ class ToolLoop(
      * that answer its calls. The calls of an answer run with the tools of the step that got it, even when the next
      * step goes out with others.
      */
-    private inner class Outgoing(setup: StepSetup) {
+    private inner class Outgoing(private val setup: StepSetup) {
         val model = setup.model
+        val outputTool = setup.outputTool
         private val toolsByName = setup.tools.associateBy { it.name }
 
         // Asked again on every step, so that a description that depends on the moment is up to date
@@ -202,6 +251,12 @@ class ToolLoop(
          * when any of them can write. Two calls that write could step on each other, and in order they happen the
          * way the model asked for them.
          */
+        /** Whether the answer calls the output tool, which ends the run if the call is right. */
+        fun mayEndWith(calls: List<ToolCallPart>) = calls.any { it.toolName == outputTool }
+
+        fun endedBy(executions: List<Execution>) =
+            executions.any { it.result.toolName == outputTool && !it.result.isError }
+
         fun executeAll(calls: List<ToolCallPart>, options: CallOptions): List<Execution> =
             if (runInParallel(calls)) inParallel(calls, options) else calls.map { execute(it) }
 
@@ -228,7 +283,7 @@ class ToolLoop(
             val tool = toolsByName[call.toolName] ?: return unknown(call).let { failed(call, it, it.message!!) }
 
             return try {
-                val result = tool.call(call.input, ToolContext(call.callId, call.toolName, run))
+                val result = tool.call(call.input, contextOf(call))
                 Execution(ToolResultPart(call.callId, call.toolName, result.output))
             } catch (e: CancelledError) {
                 throw e
@@ -246,6 +301,9 @@ class ToolLoop(
                 failed(call, e, errorHandlers.firstNotNullOfOrNull { it.handle(e, call) } ?: GENERIC_FAILURE)
             }
         }
+
+        private fun contextOf(call: ToolCallPart) =
+            setup.toolContext?.invoke(call) ?: ToolContext(call.callId, call.toolName, run)
 
         private fun unknown(call: ToolCallPart) = ToolError(
             "There is no tool called ${call.toolName}. The tools are: ${toolsByName.keys.joinToString()}",

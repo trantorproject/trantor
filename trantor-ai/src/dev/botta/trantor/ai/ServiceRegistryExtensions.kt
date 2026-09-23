@@ -1,5 +1,6 @@
 package dev.botta.trantor.ai
 
+import dev.botta.trantor.ai.agents.AgentRunner
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.providers.anthropic.addAnthropic
@@ -9,8 +10,8 @@ import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceRegistry
 
 /**
- * Registers everything an application needs to use models: [AI], the [ModelRegistry] and the providers that come
- * with Trantor.
+ * Registers everything an application needs to use models: [AI], the [AgentRunner], the [ModelRegistry] and the
+ * providers that come with Trantor.
  *
  * Middlewares are named here and nowhere else, in the order they wrap the model, so that reading this call is
  * enough to know what happens around a generation:
@@ -33,6 +34,7 @@ fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = {
     addAnthropic()
     configure(configuration)
     addSingletonIfMissing<AI> { DefaultAI(it.get(), it.get()) }
+    addSingletonIfMissing<AgentRunner> { AgentRunner(it.get(), it.get()) }
 }
 
 /**

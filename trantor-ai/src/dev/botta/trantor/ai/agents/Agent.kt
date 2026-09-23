@@ -31,7 +31,7 @@ class Agent internal constructor(
     private val model: (ModelRegistry) -> ChatModel,
     private val instructions: ((RunContext) -> String)?,
     private val dynamicInstructions: ((RunContext) -> String)?,
-    /** Its own tools, then the ones its handoffs turned into. */
+    /** Its own tools, then the ones its handoffs turned into, then the one it answers with in [OutputMode.Tool]. */
     val tools: List<Tool<*>>,
     /** The agents it can hand the conversation over to, by name. */
     val handoffs: List<String>,

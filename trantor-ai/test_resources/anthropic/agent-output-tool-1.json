@@ -1,0 +1,44 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfMGd7abHocsgpk1DA8ze",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "El usuario pregunta por la temperatura en Bariloche. Bariloche es una ciudad en Argentina. Necesito usar la función getWeather para obtener la temperatura actual.\n\nDebo especificar la ciudad con el país, así que usaré \"Bariloche, Argentina\".",
+      "signature": "EvQDCpsBCBIYAipAGPjAK1TxCNF5FWqjg7sQOz4jJa8elag2K8ihSHz2vVgq7FcQMTfpLT465qsq8gNA79KAieJIRP13sqFn1pC58TIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGFiY2QxOWUxLTFjZDItNDRmOC1hNDFkLTcxMTNiMDU0ZWFkNagBzMzR1QYSDPV6HhoxGysDtsM7lRoMOA3jXWSAFCOQiRdiIjBLsIWcyWICkKEQ6u0WuabjSPokryWaDQsrCO8YG2YA+02ab/Ww8xbjVt8pbCe1bksqhQJU90XLocro9x6/NNJyyGayXcTQ64NtbWRE4KLwxMejY3LWb+rG3fHxl70ZqabJuPfsTEXYpG8V4q2C++nnV0YPIeDgaTx9wCNBPD/hgfkunOXoqxJqgQOTZDD8+WLDyVeKVn8/N6cdrz47PQOqLIyO6RSp/N+pKqvcv2++n4eAsr8zsUISnFQ/cIWsFTMJEfHC4rsZqfadNUb8Dyf69/X5npQmMdIx+HnxD1hRLADSCriiLjvISaN+7U73qzwcrY/99sGSITBhw+AOc4iMN07ndnZnOEI3WxKAqqHT8sDNQB0gyw6ydQIUtt1E9OLpD058X3IvLs50T7CqrdqPbeS7gQcUByAYAQ=="
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01TWaVYtMMHgDDEcNkokAsGb",
+      "name": "getWeather",
+      "input": {
+        "city": "Bariloche, Argentina"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 737,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 131,
+    "output_tokens_details": {
+      "thinking_tokens": 71
+    },
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "diagnostics": null
+}

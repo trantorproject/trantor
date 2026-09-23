@@ -2,6 +2,9 @@ package dev.botta.trantor.ai.providers
 
 /**
  * Provider specific options of a request. Each adapter reads only its own and ignores the rest with a warning.
+ *
+ * Several of one provider add up in order, and where two set the same field the later one wins: an agent brings its
+ * options and a run adds its own after them.
  */
 class ProviderOptions private constructor(private val options: List<ProviderOption>) {
     val isEmpty get() = options.isEmpty()

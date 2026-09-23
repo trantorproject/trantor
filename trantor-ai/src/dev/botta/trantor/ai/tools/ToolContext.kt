@@ -7,8 +7,10 @@ import dev.botta.trantor.ai.RunContext
  * inside a plain generation or inside an agent.
  *
  * Invoking a use case is not here: a tool is a service like any other and takes what it needs in its constructor.
+ *
+ * Inside an agent it is an `AgentToolContext`, which also says which agent called the tool.
  */
-class ToolContext(
+open class ToolContext(
     /** The id the provider gave the call, which ties the result to it. */
     val callId: String,
     val toolName: String,

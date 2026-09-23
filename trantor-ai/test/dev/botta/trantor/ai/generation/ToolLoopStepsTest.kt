@@ -1,3 +1,5 @@
+@file:Suppress("ClassName")
+
 package dev.botta.trantor.ai.generation
 
 import dev.botta.json.Json
@@ -6,6 +8,7 @@ import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /** A loop whose steps do not all go out the same, which is what an agent needs: it is asked before each one. */
@@ -97,6 +100,101 @@ class ToolLoopStepsTest {
         assertThat(result.text).isEqualTo("7 grados")
     }
 
+    @Test
+    fun `the tools get the context the step makes for them`() {
+        first.answers(listOf(call("call_1", "getWeather")))
+        val contexts = mutableListOf<ToolContext>()
+        weather.onExecute = { contexts.add(it) }
+        val made = ToolContext("call_1", "getWeather")
+
+        ToolLoop({ request, _ -> StepSetup(first, request, listOf(weather), toolContext = { made }) })
+            .run(ChatRequest("Que temperatura hay?"))
+
+        assertThat(contexts).containsExactly(made)
+    }
+
+    /** A step whose answer is a call: the run ends when the model calls it and not when it stops calling tools. */
+    @Nested
+    inner class `With an output tool` {
+        @Test
+        fun `a call to it ends the run once every call of the step ran`() {
+            first.answers(listOf(call("call_1", "getWeather"), city("call_2", "Bariloche")))
+
+            val result = loop().run(ChatRequest("Que temperatura hay?"))
+
+            assertThat(first.requests).hasSize(1)
+            assertThat(weather.calls).isEqualTo(1)
+            assertThat(result.steps.single().toolResults.map { it.toolName }).containsExactly("getWeather", "final")
+            assertThat(result.newMessages).hasSize(2)
+        }
+
+        @Test
+        fun `a call to it the model got wrong goes back to it, and the run goes on`() {
+            first.answers(
+                listOf(ToolCallPart("call_1", "final", Json.obj("town" to "Bariloche"))),
+                listOf(city("call_2", "Bariloche")),
+            )
+
+            val result = loop().run(ChatRequest("Que temperatura hay?"))
+
+            assertThat(result.steps).hasSize(2)
+            assertThat(result.steps[0].toolResults.single().isError).isTrue()
+            assertThat(result.steps[1].toolResults.single().isError).isFalse()
+        }
+
+        @Test
+        fun `on the last step it still ends the run, since no other call to the model is needed`() {
+            first.answers(listOf(call("call_1", "getWeather")), listOf(city("call_2", "Bariloche")))
+
+            val result = loop(maxSteps = 2).run(ChatRequest("Que temperatura hay?"))
+
+            assertThat(result.steps).hasSize(2)
+        }
+
+        @Test
+        fun `an answer without it reminds the model, and the reminder stays in the conversation`() {
+            first.answers(listOf(TextPart("Bariloche")), listOf(city("call_1", "Bariloche")))
+
+            val result = loop().run(ChatRequest("Que ciudad?"))
+            val reminder = Message.user("Please include your response in a call to final.")
+
+            assertThat(first.requests[1].messages.last()).isEqualTo(reminder)
+            assertThat(result.steps[0].reminder).isEqualTo(reminder)
+            assertThat(result.newMessages[1]).isEqualTo(reminder)
+            assertThat(result.steps).hasSize(2)
+        }
+
+        @Test
+        fun `a second answer without it in a row ends the run with that answer`() {
+            first.answers(listOf(TextPart("Bariloche")), listOf(TextPart("Te dije Bariloche")))
+
+            val result = loop().run(ChatRequest("Que ciudad?"))
+
+            assertThat(result.steps).hasSize(2)
+            assertThat(result.text).isEqualTo("Te dije Bariloche")
+        }
+
+        @Test
+        fun `the stream ends the same ways`() {
+            first.answers(listOf(TextPart("Bariloche")), listOf(city("call_1", "Bariloche")))
+
+            val result = loop().stream(ChatRequest("Que ciudad?")).use { it.result() }
+
+            assertThat(result.steps).hasSize(2)
+            assertThat(result.steps[0].reminder).isNotNull()
+            assertThat(result.steps[1].toolResults.single().toolName).isEqualTo("final")
+        }
+
+        private fun loop(maxSteps: Int = 5) = ToolLoop(
+            { request, _ -> StepSetup(first, request, listOf(weather, output), outputTool = "final") },
+            maxSteps,
+        )
+
+        private fun city(callId: String, city: String) = ToolCallPart(callId, "final", Json.obj("city" to city))
+
+        private val output = OutputTool()
+    }
+
     private fun ChatRequest.toolNames() = tools.map { (it as FunctionToolSpec).name }
 
     private fun call(callId: String, tool: String) = ToolCallPart(callId, tool, Json.obj("city" to "Bariloche"))
@@ -112,11 +210,20 @@ class ToolLoopStepsTest {
         override val description get() = "The weather, asked $calls times"
 
         var calls = 0
+        var onExecute: (ToolContext) -> Unit = {}
 
         override fun execute(args: City, context: ToolContext): ToolResult {
             calls++
+            onExecute(context)
             return ToolResult.text("7 grados")
         }
+    }
+
+    class OutputTool: Tool<City>(City.serializer()) {
+        override val name = "final"
+        override val description = "The city asked for"
+
+        override fun execute(args: City, context: ToolContext) = ToolResult.text("Final result processed.")
     }
 
     class PriceTool: Tool<City>(City.serializer()) {

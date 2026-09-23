@@ -1,0 +1,145 @@
+{
+  "id": "resp_001b4ef45c15806e006ab46627bb2c87d2a2f063e8b42c5bbe",
+  "object": "response",
+  "created_at": 1790207527,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790207530,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_001b4ef45c15806e006ab46628e51087d287a7ae23dc47286d",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtGYqTp-Hpnq9kPtZxxOk8hWFwyg5gkyMSoCIZh9pHBsexrCdF3ZGvLc23zAVGYU8qEqJ0q3fyeCJS4yTvbyBNl6BxXDFTw25qB7mouzVrHrII67aKwtrt2EE0cCu4zAScJEmKq66DCrrGAQJ62ODjbudlTzBGxY3xfnSl5Wi7Lvc_pG_UqOCL-83SVAZBBRPhUfNOujmz2kw4wtXjg_q58dMvenZtgWduCOmQv1J3gp-nzJHZr21-5Pmp5a_U6Zo74j55FqCn5EUsmz_xxjrha7BaY_MSpclyu5beusOH_0DhzrcLZMPxOSil8-sVzPBfoFvQ08Ofl8G8PtJxnziJgN3Ty_dW02Z4pAn8OS7QxVkGLo1xgOllWfsk17JiSO0ewm4cb96ISE1Sji06e3PlsA3rJ4q9gpcoRinWpVsKCFBMDxxJmd-s4j4Ka4v1B9QWzHjzUETo-XzRNggDLJTD08Fa1kxL6uJ8qtROCaCfVV0OxJths-rRpRWlTmLcn19axWKvJbhprRunshmMqIq9L3iVF-MTIAcM1xHGt6Dj7qNTeqxFzLnxlryIha949DeNuTkfjIsBpZM56gUqLF-Hh7_RJ7zNh_eIyNorWurmUaEb6J6819_hplgmXV12CBf6EXjb_BPsshbIIRNpTjE2CMxLJeUj5Mtt2JinZ4DJcMyQaxe-9PeUHuNt9wbX74YoGv9XDlSSEUywq8wnwqkzGOijTOro_MgyufydQDn-GZvs9XTJhHdUltp7xZu4UpWwBodVWH5AW_DCrYJivJlTchhOOdUnUNhwUAYry-kCC5UFq7LXsnpT_jFLLgggdN9aVnxKC84-D3KUG1GNPa9UbZCnxdxiOEQByph0lFnQxbNSCCX30AC3fKqnrP8lHugAQFmRA_k1AQXq9V-sUhClI5X92D0lsHxE-QHGpqfit_g7ewo0Cbira7PMTHYGFm7z-HlpSBYuJVnax0c_vrYjcLnB7SX9m1fn7_tp2wWh2QCPC8L18Fk4uTRJ1K3kIg2SRCuf6h_DwKdZG4qp89uQklultH-sUlhQQxF0j3MIg8qGs0ODwBWoSiBgbOB-Xy8fbV_mYxJksT6DswKCqcPJN-wibQ0CtpKpDU8XVIY83eaxPAkS5jfj_Icn1OVTii-a35LjzRxedTuZYaGbAyr1aLW4DHFfGlnqYA2PHnkjNyxzcAhnngdTu5flCideFTp1LKTCQDXh-t081ecbIrr8MFYJLV5v7QT-2vOfGMyG7s3YVnqq9tsNhVNgGPVYDaM8lfjHlr7x0FeZ17zbryVFVCz49mBIVk1R7h6Be9P9W-zkRJMHsIwfz7vfSV2Rkh1rhTsVeumMq482fG6-0RQQetIsW1cQP01hb6vpUSj5hvNiJ_199gB5q4oQv4woiilMe3S0FGhm67pA9O0e3CY1tYCFSiDk8uLSvHw-j8EZ3Po5GRQxnji53IEvArGgl6L1b0pzm8DlIkTzzCtcmxi1rH6DYVuMvBf5k1F9riJ-nqRvmeEYvPw92EbqfyIqvXEac_Giags1vFtrL7liFuhZwqJBwEHVunmJ7sinAiCc_R5KXC-g1JU97AqcjtfsNIZakauAdVaq_5ncgAaGIBLCNDTGH6_UQuQSl0wjDyVQiA8TieImsdrwMBZ3T9N8XsYMjz_72DuioMt0Mpnryk9baK8NA==",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_001b4ef45c15806e006ab46629f3b087d2aab58bfc3fb2a128",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche\",\"celsius\":7}",
+      "call_id": "call_ptfU4nqt8ibpp9YthipHAGYo",
+      "name": "final_result"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "low",
+    "mode": "standard",
+    "summary": "detailed"
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "description": "Gives the final answer, as its arguments. Call it once you have everything the answer needs.",
+      "name": "final_result",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "celsius": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city",
+          "celsius"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 319,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 131,
+    "output_tokens_details": {
+      "reasoning_tokens": 64
+    },
+    "total_tokens": 450
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

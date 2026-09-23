@@ -50,9 +50,9 @@ class AgentBuilder internal constructor(private val name: String) {
     fun options(vararg options: ProviderOption) = apply { this.options.addAll(options) }
 
     /** Answers with a [T] instead of text. */
-    inline fun <reified T> output(mode: OutputMode = OutputMode.Native) = output(serializer<T>(), mode)
+    inline fun <reified T: Any> output(mode: OutputMode = OutputMode.Native) = output(serializer<T>(), mode)
 
-    fun <T> output(serializer: KSerializer<T>, mode: OutputMode = OutputMode.Native) =
+    fun <T: Any> output(serializer: KSerializer<T>, mode: OutputMode = OutputMode.Native) =
         apply { output = AgentOutput(serializer, mode) }
 
     /** A value of the application the agent carries, found later by its type with [Agent.get]. */
@@ -60,7 +60,7 @@ class AgentBuilder internal constructor(private val name: String) {
 
     fun build(): Agent {
         val holder = "The agent $name"
-        val tools = tools + handoffs
+        val tools = tools + handoffs + listOfNotNull(output?.tool)
         val values = TypedValues(holder, values.toList())
 
         require(name.isNotEmpty()) { "An agent needs a name" }

@@ -1,6 +1,7 @@
 package dev.botta.trantor.ai.generation
 
 import dev.botta.trantor.ai.models.chat.ChatResponse
+import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.models.chat.ToolResultPart
 
 /**
@@ -16,4 +17,9 @@ data class Step(
     val toolResults: List<ToolResultPart> = emptyList(),
     /** The calls of [toolResults] that failed, with their exception. What the model got is in the result itself. */
     val toolFailures: List<ToolFailure> = emptyList(),
+    /**
+     * What the run told the model after this answer, when the answer could not end it: a reminder to answer by
+     * calling the output tool. It is part of the conversation, since the answers after it make no sense without it.
+     */
+    val reminder: Message.User? = null,
 )

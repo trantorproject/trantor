@@ -423,7 +423,8 @@ internal class AnthropicRequestMapper(
                 warnings.add(ModelWarning("${it::class.simpleName} is not an option this adapter knows"))
             }
 
-            return ours.filterIsInstance<AnthropicOptions>().firstOrNull()
+            // Several add up in order, as an agent's and then a run's do: what a later one sets wins
+            return ours.filterIsInstance<AnthropicOptions>().reduceOrNull { earlier, later -> earlier.overriddenBy(later) }
         }
 
         private fun applyRawOptions(body: JsonObject, options: ProviderOptions) {

@@ -136,9 +136,11 @@ class AgentTest {
         }
 
         @Test
-        fun `or as a tool`() {
-            assertThat(Agent("support").output<Invoice>(OutputMode.Tool).build().output!!.mode)
-                .isEqualTo(OutputMode.Tool)
+        fun `or as a tool, which is one more of its tools`() {
+            val agent = Agent("support").tools(weather).output<Invoice>(OutputMode.Tool).build()
+
+            assertThat(agent.output!!.mode).isEqualTo(OutputMode.Tool)
+            assertThat(agent.tools.map { it.name }).containsExactly("getWeather", "final_result")
         }
 
         @Test

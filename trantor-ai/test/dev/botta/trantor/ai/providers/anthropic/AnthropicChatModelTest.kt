@@ -5,6 +5,7 @@ import dev.botta.trantor.ai.Cancellation
 import dev.botta.trantor.ai.errors.*
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpMethods
@@ -150,6 +151,20 @@ class AnthropicChatModelTest {
 
         assertThatThrownBy { model.generate(ChatRequest(listOf(Message.user("Hola")), settings = settings)) }
             .isInstanceOf(UnsupportedRequestError::class.java)
+    }
+
+    @Test
+    fun `several options of its own add up in order, and what a later one sets wins`() {
+        // An agent brings its options and the run its own after them
+        val options = ProviderOptions.of(
+            AnthropicOptions(userId = "del-agente", serviceTier = ServiceTiers.StandardOnly),
+            AnthropicOptions(userId = "del-run"),
+        )
+
+        model.generate(ChatRequest(listOf(Message.user("Hola")), providerOptions = options))
+
+        assertThat(sentBody()["metadata"].toString()).isEqualTo("""{"user_id":"del-run"}""")
+        assertThat(sentBody()["service_tier"]?.asString()).isEqualTo("standard_only")
     }
 
     @Test
