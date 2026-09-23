@@ -11,7 +11,9 @@ import dev.botta.trantor.primitives.logging.getLogger
  * Calls the model, runs the tools it asks for and calls it again with their results, until it answers without
  * asking for more.
  *
- * It is the one tool loop of trantor-ai: a generation with tools and an agent both run on it.
+ * It is the one tool loop of trantor-ai: a generation with tools and an agent both run on it. What each step goes
+ * out with — the model, the request and the tools — comes from [nextStep], asked before every step; everything else
+ * is the loop's.
  *
  * Each call carries the answer before it whole — reasoning, signatures and parts we do not model — because that is
  * what lets the provider pick up where it left off. Tools the provider ran on its side are not run again: their
@@ -29,16 +31,23 @@ import dev.botta.trantor.primitives.logging.getLogger
  * [ToolErrorModes.FailRun] fails the run with its exception instead, and a cancellation always ends it.
  */
 class ToolLoop(
-    private val model: ChatModel,
-    private val tools: List<Tool<*>>,
+    private val nextStep: NextStep,
     /** How many calls to the model a generation may take. Past them, [MaxStepsExceededError]. */
     private val maxSteps: Int = DEFAULT_MAX_STEPS,
     private val run: RunContext = RunContext(),
     /** Asked in order for a safe message about an exception of a tool; the first that answers wins. */
     private val errorHandlers: List<ToolErrorHandler> = emptyList(),
 ) {
+    /** A loop whose every step goes out with the same model and tools, as a generation does. */
+    constructor(
+        model: ChatModel,
+        tools: List<Tool<*>>,
+        maxSteps: Int = DEFAULT_MAX_STEPS,
+        run: RunContext = RunContext(),
+        errorHandlers: List<ToolErrorHandler> = emptyList(),
+    ): this(NextStep.fixed(model, tools), maxSteps, run, errorHandlers)
+
     private val logger = getLogger()
-    private val toolsByName = tools.associateBy { it.name }
 
     fun run(request: ChatRequest, options: CallOptions = CallOptions()): RunResult {
         val run = Run(request, options)
@@ -46,13 +55,14 @@ class ToolLoop(
         while (true) {
             throwIfCancelled(options)
 
-            val response = model.generate(run.next(), options)
+            val step = run.next()
+            val response = step.model.generate(step.request, options)
             val calls = run.callsOf(response)
 
             if (calls.isEmpty()) return run.finish(response)
 
             run.throwIfOutOfSteps(response)
-            run.advance(response, executeAll(calls, options))
+            run.advance(response, step.executeAll(calls, options))
         }
     }
 
@@ -68,14 +78,15 @@ class ToolLoop(
      */
     private inner class Run(private val request: ChatRequest, private val options: CallOptions) {
         val steps = mutableListOf<Step>()
-        private var messages = request.messages
-        private val specs = request.tools + tools.map { it.spec() }
 
-        /** The request of the next step, with everything the run has said so far. */
-        fun next(): ChatRequest {
+        /** The whole conversation, whatever each step sent of it. */
+        private var messages = request.messages
+
+        /** What the next step goes out with, set up with everything the run has said so far. */
+        fun next(): Outgoing {
             throwIfCancelled(options)
 
-            return request.copy(messages = messages, tools = specs)
+            return Outgoing(nextStep.setUp(request.copy(messages = messages), steps.toList()))
         }
 
         /** The calls the application has to run. The ones the provider ran already came answered. */
@@ -107,11 +118,11 @@ class ToolLoop(
 
         private val events = iterator {
             while (true) {
-                val request = run.next()
+                val step = run.next()
 
                 yield(RunEvent.StepStarted(run.steps.size + 1))
 
-                val stream = model.stream(request, options).also { current = it }
+                val stream = step.model.stream(step.request, options).also { current = it }
                 val response = stream.use {
                     for (part in it) yield(RunEvent.Model(part))
                     it.response()
@@ -125,17 +136,17 @@ class ToolLoop(
 
                 val executions = mutableListOf<Execution>()
 
-                if (runInParallel(calls)) {
+                if (step.runInParallel(calls)) {
                     for (call in calls) yield(RunEvent.ToolStarted(call))
 
-                    executions.addAll(inParallel(calls, options))
+                    executions.addAll(step.inParallel(calls, options))
 
                     for (execution in executions) yield(RunEvent.ToolFinished(execution.result, execution.failure))
                 } else {
                     for (call in calls) {
                         yield(RunEvent.ToolStarted(call))
 
-                        val execution = execute(call)
+                        val execution = step.execute(call)
 
                         executions.add(execution)
                         yield(RunEvent.ToolFinished(execution.result, execution.failure))
@@ -175,30 +186,70 @@ class ToolLoop(
     }
 
     /**
-     * The calls of a step: at the same time when every tool of the step only reads, and one after the other when
-     * any of them can write. Two calls that write could step on each other, and in order they happen the way the
-     * model asked for them.
+     * A step about to go out: its model, the request with what the model is told about the tools, and the tools
+     * that answer its calls. The calls of an answer run with the tools of the step that got it, even when the next
+     * step goes out with others.
      */
-    private fun executeAll(calls: List<ToolCallPart>, options: CallOptions): List<Execution> =
-        if (runInParallel(calls)) inParallel(calls, options) else calls.map { execute(it) }
+    private inner class Outgoing(setup: StepSetup) {
+        val model = setup.model
+        private val toolsByName = setup.tools.associateBy { it.name }
 
-    private fun runInParallel(calls: List<ToolCallPart>) =
-        calls.size > 1 && calls.all { toolsByName[it.toolName]?.readOnly == true }
+        // Asked again on every step, so that a description that depends on the moment is up to date
+        val request = setup.request.copy(tools = setup.request.tools + setup.tools.map { it.spec() })
 
-    /**
-     * Each call on its own virtual thread. They all finish before the step goes on, even when one of them fails,
-     * and the results come back in the order of the calls and not in the order they answered. A cancellation, from
-     * outside or from one of the tools, interrupts every one of them.
-     */
-    private fun inParallel(calls: List<ToolCallPart>, options: CallOptions): List<Execution> {
-        val running = calls.map { Parallel(it, options) }
+        /**
+         * The calls of the step: at the same time when every tool of the step only reads, and one after the other
+         * when any of them can write. Two calls that write could step on each other, and in order they happen the
+         * way the model asked for them.
+         */
+        fun executeAll(calls: List<ToolCallPart>, options: CallOptions): List<Execution> =
+            if (runInParallel(calls)) inParallel(calls, options) else calls.map { execute(it) }
 
-        options.cancellation?.onCancel { running.forEach { it.interrupt() } }.use {
-            running.forEach { it.start() }
-            joinAll(running)
+        fun runInParallel(calls: List<ToolCallPart>) =
+            calls.size > 1 && calls.all { toolsByName[it.toolName]?.readOnly == true }
+
+        /**
+         * Each call on its own virtual thread. They all finish before the step goes on, even when one of them
+         * fails, and the results come back in the order of the calls and not in the order they answered. A
+         * cancellation, from outside or from one of the tools, interrupts every one of them.
+         */
+        fun inParallel(calls: List<ToolCallPart>, options: CallOptions): List<Execution> {
+            val running = calls.map { Parallel(it, this, options) }
+
+            options.cancellation?.onCancel { running.forEach { it.interrupt() } }.use {
+                running.forEach { it.start() }
+                joinAll(running)
+            }
+
+            return running.map { it.result() }
         }
 
-        return running.map { it.result() }
+        fun execute(call: ToolCallPart): Execution {
+            val tool = toolsByName[call.toolName] ?: return unknown(call).let { failed(call, it, it.message!!) }
+
+            return try {
+                val result = tool.call(call.input, ToolContext(call.callId, call.toolName, run))
+                Execution(ToolResultPart(call.callId, call.toolName, result.output))
+            } catch (e: CancelledError) {
+                throw e
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+                throw CancelledError("The thread was interrupted while ${call.toolName} ran", e)
+            } catch (e: InvalidToolInputError) {
+                failed(call, e, e.message!!)
+            } catch (e: ToolError) {
+                failed(call, e, e.message!!)
+            } catch (e: Exception) {
+                if (tool.onError == ToolErrorModes.FailRun) throw e
+
+                logger.error("Tool ${call.toolName} failed on call ${call.callId}: ${e.message}", e)
+                failed(call, e, errorHandlers.firstNotNullOfOrNull { it.handle(e, call) } ?: GENERIC_FAILURE)
+            }
+        }
+
+        private fun unknown(call: ToolCallPart) = ToolError(
+            "There is no tool called ${call.toolName}. The tools are: ${toolsByName.keys.joinToString()}",
+        )
     }
 
     /** Waits for every one of them, and if the run itself is interrupted while it waits, stops them all. */
@@ -215,7 +266,11 @@ class ToolLoop(
     }
 
     /** One call of a step on its own virtual thread, holding what it left: its execution or the error that ended it. */
-    private inner class Parallel(private val call: ToolCallPart, private val options: CallOptions) {
+    private inner class Parallel(
+        private val call: ToolCallPart,
+        private val step: Outgoing,
+        private val options: CallOptions,
+    ) {
         private var execution: Execution? = null
         private var error: Throwable? = null
 
@@ -223,7 +278,7 @@ class ToolLoop(
             try {
                 // It may have been cancelled between the moment the step started and the moment this one did
                 throwIfCancelled(options)
-                execution = execute(call)
+                execution = step.execute(call)
             } catch (e: Throwable) {
                 error = e
             }
@@ -251,33 +306,6 @@ class ToolLoop(
             return execution!!
         }
     }
-
-    private fun execute(call: ToolCallPart): Execution {
-        val tool = toolsByName[call.toolName] ?: return unknown(call).let { failed(call, it, it.message!!) }
-
-        return try {
-            val result = tool.call(call.input, ToolContext(call.callId, call.toolName, run))
-            Execution(ToolResultPart(call.callId, call.toolName, result.output))
-        } catch (e: CancelledError) {
-            throw e
-        } catch (e: InterruptedException) {
-            Thread.currentThread().interrupt()
-            throw CancelledError("The thread was interrupted while ${call.toolName} ran", e)
-        } catch (e: InvalidToolInputError) {
-            failed(call, e, e.message!!)
-        } catch (e: ToolError) {
-            failed(call, e, e.message!!)
-        } catch (e: Exception) {
-            if (tool.onError == ToolErrorModes.FailRun) throw e
-
-            logger.error("Tool ${call.toolName} failed on call ${call.callId}: ${e.message}", e)
-            failed(call, e, errorHandlers.firstNotNullOfOrNull { it.handle(e, call) } ?: GENERIC_FAILURE)
-        }
-    }
-
-    private fun unknown(call: ToolCallPart) = ToolError(
-        "There is no tool called ${call.toolName}. The tools are: ${toolsByName.keys.joinToString()}",
-    )
 
     private fun failed(call: ToolCallPart, error: Throwable, message: String) = Execution(
         ToolResultPart(call.callId, call.toolName, ToolOutput.Text(message), isError = true),

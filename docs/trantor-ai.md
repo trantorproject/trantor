@@ -205,6 +205,22 @@ flight and runs no more tools.
 val result = ToolLoop(model, listOf(weather), maxSteps = 5).run(ChatRequest("¿Llueve en Bariloche?"))
 ```
 
+That loop sends every step with the same model and tools. The loop can also ask, before each step, what to send it
+with: a `NextStep` gets the request with the whole conversation so far and the steps done, and answers with a
+`StepSetup` — the model, the request and the tools. It is what agents run on: after a handoff the next step goes out
+with another agent, and the instructions and the history sent are worked out again every time.
+
+```kotlin
+val loop = ToolLoop({ request, steps ->
+    val agent = if (steps.isEmpty()) support else sales
+    val messages = listOf(Message.system(agent.instructions)) + request.messages
+    StepSetup(agent.model, request.copy(messages = messages), agent.tools)
+})
+```
+
+The loop keeps the rest: the conversation stays whole whatever a step sends of it, the calls of an answer run with the
+tools of the step that got it, and the tools are asked for their description again on every step.
+
 ---
 
 ## Getting a model
