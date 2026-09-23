@@ -1,7 +1,8 @@
 # trantor-ai
 
-Access to LLM providers behind one contract. This is the model layer: one call, one answer. Agents,
-tools loops and runs are built on top of it, not here.
+Access to LLM providers behind one contract, and a facade for use cases that runs the tools a model asks
+for. The model layer is one call, one answer; the facade and its tool loop are built on top of it, and
+agents will be built on the same loop.
 
 ---
 
@@ -38,6 +39,169 @@ The order of `addAI` and `addOpenAI` does not matter. Both are idempotent.
 The api key is **not** in the configuration file. It comes from `OPENAI_API_KEY`, and if it is missing the
 failure happens on the first call, with a message saying what to set — not at startup, so an application
 that never calls OpenAI never needs the key.
+
+---
+
+## The facade and the tool loop
+
+A use case talks to models through `AI`, which `addAI()` registers. It keeps no state, so it is injected
+like any other service and mocked in the tests of the use case.
+
+```kotlin
+class AnswerCustomer(private val ai: AI, private val products: SearchProductsTool) {
+    fun execute(question: String): String {
+        val summary = ai.text("Resumí en una línea: $question", model = "fast")
+
+        val result = ai.generate {
+            system("Sos el asistente de una ferretería")
+            user(question)
+            tools(products)
+        }
+
+        return result.text
+    }
+}
+```
+
+`ai.text` is one call and its text. `ai.generate { }` is a **run**: the model is called, the tools it asks
+for are run, and it is called again with their results, until it answers without asking for more. Each
+call to the model and the tools it asked for is a **step**. The words are the ones AI SDK uses; "turn" is
+left out because it also means an exchange between the user and the application.
+
+The builder takes the messages in the order they are written — `system`, `user`, `messages(history)` —
+and `model` (a reference or an alias, `default` when left out), `tools`, `toolChoice`, `maxSteps`,
+`settings { }`, `options(...)` for the provider, `context(RunContext)` for the tools and
+`callOptions(...)` for the timeout and the cancellation, which reach every step.
+
+### What a run gives back
+
+```kotlin
+result.text              // what the model answered last
+result.steps             // each call to the model, with the results of its tools
+result.usage             // added up over the steps
+result.estimatedCost     // added up too; null if any step has no estimate
+result.newMessages       // what the run added to the conversation, to keep it
+result.toolFailures      // the exceptions of the tools that failed, for the application
+```
+
+`newMessages` is what to store to continue the conversation later: the answers of the model, whole, and
+the results of the tools. A step whose calls were not run is left out of it, because a tool call without
+its result is something every provider refuses.
+
+### Objects
+
+```kotlin
+val invoice = ai.generate<Invoice> { user("Extraé los datos de la factura: $text") }
+
+val result = ai.generateObject<Invoice> { user("Extraé los datos de la factura: $text") }
+result.value             // null when the model did not give it
+result.refusal           // what it said instead, if it refused
+```
+
+`generate<T>` fails with `NoObjectGeneratedError` when the model refused, ran out of tokens or wrote
+something that is not a `T`. `generateObject<T>` says so without failing, for whoever wants to decide what
+to do. The schema of `T` goes on every step, tools included: the model can call tools and answers with the
+object at the end.
+
+### Tools
+
+```kotlin
+class SearchProductsTool(private val catalog: Catalog): Tool<SearchProductsTool.Args>(Args.serializer()) {
+    override val name = "searchProducts"
+    override val description = "Products of the store whose name contains the text"
+    override val readOnly = true
+
+    override fun execute(args: Args, context: ToolContext) = ToolResult.json(catalog.search(args.text))
+
+    @Serializable
+    data class Args(@SerialDescription("Part of the name of the product") val text: String)
+}
+```
+
+A tool plays the part of a controller: it turns what the model asked for into an operation of the
+application, and its result into something the model can read. The schema the model sees comes from the
+same serializer that decodes what it sends back, so the two cannot drift apart. The args are decoded
+leniently: a field the args do not have is ignored, and a nullable arg the model left out reads as null.
+An optional arg is best nullable, since OpenAI in strict mode sends every field and Anthropic leaves out
+the ones it has nothing for.
+
+`ToolContext` carries the `callId`, the `toolName` and the `RunContext` of the run, a typed bag that
+whoever launches the run fills: `context.run.require<Tenant>()`. What a tool needs from the application —
+a repository, the executor — it gets by constructor, like any other service.
+
+Tools the provider runs on its side, like a web search, are not run again: their results came in the
+answer.
+
+### When a tool fails
+
+A failing tool **does not fail the run**. The model gets a result marked as an error and can try
+something else:
+
+| What happened | What the model reads |
+|---|---|
+| The input does not fit the args | The detail, so it can fix the call |
+| It asked for a tool that does not exist | The names of the ones that do |
+| The tool threw `ToolError` | Its message, which the tool wrote for the model |
+| Any other exception | `Tool execution failed`, unless a `ToolErrorHandler` has something safe to say |
+
+The message of any other exception was written for a developer and could reach the user, so it does not
+go to the model. It stays in `result.toolFailures` and in the log. An application that has something safe
+to say about its own exceptions registers a handler:
+
+```kotlin
+services.addToolErrorHandlers { handlers, _ ->
+    handlers.add { error, _ -> if (error is ProductNotFoundError) "There is no such product" else null }
+}
+```
+
+Handlers are asked in order and the first that answers wins. A tool with `onError = ToolErrorModes.FailRun`
+fails the run with its exception instead, and a cancellation always ends it.
+
+### Steps and their limit
+
+A run takes at most `maxSteps` calls to the model, 10 by default. Past them it throws
+`MaxStepsExceededError`, with what the run did so far in `error.result`. The calls of that last step are
+**not** run: no model would read their results, and a tool with effects would have them all the same.
+
+The limit fails instead of handing back what there is, which is what AI SDK does: a use case that expects
+a text would get an empty one without noticing.
+
+### Calls at the same time
+
+When the model asks for several calls in one step and **every** tool of the step is `readOnly`, they run
+at the same time, each on its own virtual thread. Otherwise they run one after the other, in the order the
+model asked for them, since two calls that write could depend on each other.
+
+- `readOnly` is `false` by default: a tool says it only reads, and nobody checks it.
+- The results go back in the order of the calls, not in the order they finished.
+- They all finish before the run goes on, even when one fails, and each failure is handled as above.
+- A cancellation interrupts every one of them.
+- A tool that is `readOnly` can run on two threads at once, so it cannot keep mutable state of its own.
+
+### Streaming a run
+
+```kotlin
+ai.stream { user(question); tools(products) }.use { stream ->
+    stream.textDeltas().forEach { print(it) }
+
+    val result = stream.result()
+}
+```
+
+A `RunStream` is the same run received as it happens, as `RunEvent`s: `StepStarted`, `Model` with what
+the model produces (a `StreamPart`, as the adapter read it), `ToolStarted`, `ToolFinished` and
+`StepFinished`. A step whose calls run at the same time says they all started before any of them finished.
+
+`result()` consumes whatever is left and gives the `RunResult`, and closing the stream closes the call in
+flight and runs no more tools.
+
+### Without the facade
+
+`ToolLoop` is the loop the facade runs on, for whoever has a `ChatModel` in hand:
+
+```kotlin
+val result = ToolLoop(model, listOf(weather), maxSteps = 5).run(ChatRequest("¿Llueve en Bariloche?"))
+```
 
 ---
 
@@ -154,7 +318,8 @@ one the provider runs on its side. A tool the provider ran comes back as a `Tool
 `providerExecuted = true`, so the loop knows there is nothing to run and nothing to answer for it.
 
 The model layer **does not run tools**. It reports the calls the model asked for and sends back the
-results it is given. Running them is the agent layer's job.
+results it is given. Running them is the job of the tool loop, in [The facade and the tool
+loop](#the-facade-and-the-tool-loop).
 
 **Who chooses** is `toolChoice`: `Auto` — the model decides, and the default — `Required` for any of
 them, `Named` for one by name, and `None`. `ChatSettings.parallelToolCalls = false` asks for one call at

@@ -1,0 +1,43 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfKUxy3pQJFnPe9yduffY",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "The user is asking \"What temperature is there in Bariloche?\" in Spanish. Bariloche refers to San Carlos de Bariloche, a city in Argentina. I should use the getWeather function to get the current temperature.\n\nI need to provide the city parameter. The city is Bariloche, Argentina.",
+      "signature": "EpcECpsBCBIYAipAdvT80xg70K+HI1bMnZIeALoUvTlNFGiwsi9aSRewn2TogYp0LQJnQmY44fdZ9/faBUa5utW23Cqp+iW96ro5WjIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGFiY2QxOWUxLTFjZDItNDRmOC1hNDFkLTcxMTNiMDU0ZWFkNagBq8/M1QYSDP/ur2oo8xz7RiN5gBoM50LdK6IWea5CDJMqIjAjqmBH4p2Ob5yAyg+h8iNkduhcNohuU3RlSRk+SnrIksAaU5Xk+0P2mK8sTMhgo3MqqAI1+nIO0kt+cQmctG2Yk0FPpslOatAni4do13o3Bv7V81zJkTiXKoRSr1ykyzsx1F5c3ttRg/bWMp/KoMP+dm3crPnjQsR5oj+MsptVcnImPzNezoiBIOQ/bmzb47ZsUK4y1shqtLcFUKcT8KOV7rs7Q/XIn++LJ0MW0x8oRSUSIcZSYB+WgpvT0I3KRemXWiES+wMZjPeSdSEPSch5Y0RSRs8bAbnbFQZIfA9GDLPch4ctQzh2hhtmnDRPcxrthwgwS7B8BBevgK3z3gpqV2jTjPC9kW5MKG92xcIOXK8YwKei4OS1AaodWJNfglahV9YIn1klqDfHgXPvRXwIx0fYZy8UVJAGbKAbETTD51ksZiyjvwASGpwHqpFgktKSIhwp51f1+4lGBBgB"
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01XCyTE71xVmXCy731sYwL9K",
+      "name": "getWeather",
+      "input": {
+        "city": "Bariloche, Argentina"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 616,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 136,
+    "output_tokens_details": {
+      "thinking_tokens": 75
+    },
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  }
+}

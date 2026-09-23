@@ -18,16 +18,24 @@ class FakeHttpClient(
     var wasCancelled = false
     var wasClosed = false
 
+    /** Every request, in order: a tool loop makes one per step. */
+    val requests = mutableListOf<HttpRequest>()
+    private val queued = ArrayDeque<String>()
+
     val requestBody get() = request?.body as String?
+
+    /** The bodies of the next calls, one each and in order. Once they run out, [body] answers. */
+    fun answers(vararg bodies: String) = apply { queued.addAll(bodies) }
 
     override fun stream(method: HttpMethods, request: HttpRequest, options: StreamOptions): HttpStreamResponse {
         this.method = method
         this.request = request
         this.options = options
+        requests.add(request)
 
         error?.let { throw it }
 
-        return FakeStreamResponse()
+        return FakeStreamResponse(queued.removeFirstOrNull() ?: body)
     }
 
     override fun get(request: HttpRequest) = notUsed()
@@ -42,17 +50,17 @@ class FakeHttpClient(
 
     private fun notUsed(): HttpResponse = throw UnsupportedOperationException("Not used by these tests")
 
-    private inner class FakeStreamResponse: HttpStreamResponse {
+    private inner class FakeStreamResponse(private val answer: String): HttpStreamResponse {
         override val status = this@FakeHttpClient.status
         override val contentType = "application/json"
         override val headers = responseHeaders
 
-        override fun lines() = body.lineSequence()
+        override fun lines() = answer.lineSequence()
 
         override fun body(): String {
             whileReading()
 
-            return this@FakeHttpClient.body
+            return answer
         }
 
         override fun cancel() {

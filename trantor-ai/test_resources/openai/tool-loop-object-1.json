@@ -1,0 +1,141 @@
+{
+  "id": "resp_0f04274d2e9d1887006ab327aee68887d2814c85333fb95dda",
+  "object": "response",
+  "created_at": 1790125998,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790125999,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0f04274d2e9d1887006ab327af3b2c87d2bb60af14bd7349d7",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqsyewHke5hNkfKv92TuNO-cen-Z4GrFfBQ4qOfawEr_inU7YE7BRNLnkZx-zCdIAIhVS8JKVXf5bakwt1OUjx9pNfWvqGUg9QtiuhW7Tjzbdgn6NGiFTsRA0S4b7GkLkfMtiY5b1SfyWmhzb1IrnYtWLQnQJsChQC1KTjA_JErS1LCzy7OPsZilFGoAsT5z0Jwt5tV3sGhDx_Yurinm4uh5hN7_0igBN64dwdh3pnHO46JT07u3IkcJQEYI2NW6e5oQhdqsXff4OcjNamqeB40BMvJDUSKpujFzRZUVjWAd4os1IDtOrawzT8eR8pnWwijnhnkVV8kv9w27szUada-Ejad6GlvUmtn0JnwI1bk3Y29IL-D_jak536lkG1kjg091IdW9v4lj40Y6syN17CbVT3fDcOASipUcu5gWRjr9FBn2ypoWhB5gjvMwZNWz6cMVUvdEnlE544sObp4FEuBsD7HYmoPxSuVr9_DggXwNWNN7VaS4UDoLRSpqiiiIgcs273KfUTAchtm1xPQzu5RxpfrFqaUaocjHR6zdwAM18SqDj8sjFRC8FqbSxH-u52KY0r0yzg6bH2X0QSAI9wVy8q2K58Jc6wWx8EVrkvosuEshMYzXKCkMhqjowoI4WQwIHhE_ukIEUWnxa7lGNywx5QjTmEtBpoebqXBElSNaf_04X69v7i3uPFnG0ZqvZoAxnyK1adcqL-ID0gu-ZNSoPHeMGZ_cn9PPtyuxav94UbQ4NQ2jMksse3Q4SzZ--TU-sitsYJMZhFoDpxqVw-XOyl85TjEWoQqGdQ9orvAncnfw-hFiflePAEcaUUxO1oqdV753MEbRe02Cn-DG5I6QE4aNvrG3BZoEk549aWf5dXOf31g6V5A1cJojCXzjznpqKiWvtcvjgnNxs7pBZCFvEWiocxiiMQs8G-VPq7hfQXyHd8evJR721S_wa4nc_Q71_d1uswH8VNdfREKB8Tg6I2-L2CGBxyshXUa_fkJQVf7sriLl6CA4T2diy9b7qPkNdczqMi75E540AitXN--HlIGkOXE9846kxpiMEZt6OLbV4qQ_c_24BoE1aIMuDz3FG5fLnUFfPj1QrgQ4rI1YrlIVNYGxwRpF0qFowQXiQcR9XeWqRl7w355Vxm8vqhPxGncFucFIkcHMXOpaW6GKOHZV8PnE0YV76NKcXZ0H0Ubqv9Xq-kTyw3HlchimPv1r5nZNyy3xibcQVm7FxLE77EVsSInZv6IZnN4Ppcd1-6Bn-uwW-2jLkL3kW775WoqcIKrqWclb2UO5TX1wCdgQ7uhPgiEN6NmwlGONX1YPVybU-O5be_Kd24RKbiL4QlIwoICoBEzXTbCTt-mHxeAIc8mo4ZE4wH2xKHLQ4S7MLxJ3mukV_i58V2ybXABqlK6Yp--uRq4eX0Ku4rB5XF0SaNtQ==",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0f04274d2e9d1887006ab327afd2f087d2a3fcf5da407c7726",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"San Carlos de Bariloche\"}",
+      "call_id": "call_0oPW1CqyTrWVXICpaKxng7bU",
+      "name": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "low",
+    "mode": "standard",
+    "summary": "detailed"
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "json_schema",
+      "description": null,
+      "name": "response",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "celsius": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city",
+          "celsius"
+        ]
+      },
+      "strict": true
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 87,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 70,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 157
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

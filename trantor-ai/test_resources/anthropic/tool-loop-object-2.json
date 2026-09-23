@@ -1,0 +1,36 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfKV3xeeJqbpivoorzU5b",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "The function returned that the temperature in Bariloche, Argentina is 7 degrees Celsius. Now I need to format my response according to the required JSON schema, which requires two fields:\n- \"city\": string\n- \"celsius\": integer\n\nI should use \"Bariloche, Argentina\" for the city and 7 for the celsius value.",
+      "signature": "ErAECpsBCBIYAipAWOUQRwjBXThHhTL0GtNTy5VF5VJ8WkJ9t3gMmjDwJ0hXSlbbOsoKptXR6qoCcc6Rue+zXTMz9nSnL85DOzfEDzIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGFiY2QxOWUxLTFjZDItNDRmOC1hNDFkLTcxMTNiMDU0ZWFkNagB2M/M1QYSDPG7WtgE2KTJjIE3FRoMy4DUVRX/Mzyo7DGRIjBG/A6bkZY/+GEsSu/483fJxkZlIbUrdYzk6SjC9//mdt0V8X5opIX2mlm8u7iCZBwqwQJeOlgP8FhL8Admntw+43EJykOuDos2oUAhSJQfe5ySCIU2PiGY+DqtYSDOJLdwHvxnGV7z1L4CSYGvH+e6imQ/hj30PUIBT4RLSIX9+/r78Pa6mSSgpnMfI4d3DRXt3v2WCzEVyrPJ4aJjrfpIK60C/Cn5H2C3tzT8VnfpGP1axhDbdyypeK06oxWhAUv9JgGs7Ocsnk3ONYgg9P4E8WkyqME5YSzzJ51zKlL6xUhvWAma7jBfTVPoSY7cr28xuus4KfDBN8g45EIkVfrN4z4yreE5HKmXMkHpYqdJ32CAzFuoJmhNDLMF9sA//C/e8vBkixbjI1YfIu3RH4oZmquS6VVyIWqNfeVUpo/8OcCoe3FttCRw/WXUrTa5BCGT5E68BHxVkTwHtUWPTsIBkuVv3uF0ubZVcQr5egiYJbu0tyYYAQ=="
+    },
+    {
+      "type": "text",
+      "text": "{\"city\":\"Bariloche, Argentina\",\"celsius\":7}"
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 954,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 108,
+    "output_tokens_details": {
+      "thinking_tokens": 88
+    },
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  }
+}

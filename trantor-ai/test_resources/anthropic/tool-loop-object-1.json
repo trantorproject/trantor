@@ -1,0 +1,43 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfKV2SRwbddcP8y2VjHvh",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "The user is asking in Spanish \"What temperature is there in Bariloche?\" (Que temperatura hay en Bariloche?).\n\nBariloche refers to San Carlos de Bariloche, a city in Argentina. I need to use the getWeather function to get the current weather for this city.\n\nI'll call the function with the city parameter set to \"Bariloche, Argentina\" to be more specific.",
+      "signature": "EuEECpsBCBIYAipA8uLEV1DvPk1XHEih1VNVe6uGzF04PW3juHhYrb6PA1udU2urv6B49zfomQPowkWH8TWwbGn6l38h6DcYFcLdxDIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGFiY2QxOWUxLTFjZDItNDRmOC1hNDFkLTcxMTNiMDU0ZWFkNagB1c/M1QYSDGcvDD2Mp8UQfq1NqRoMJczqphMbastBQTcOIjCJbAmJTUD5cWaouk+9VnPcqDywVkStEBkSRvoay1OedQnyr3aqY6SyRkOIcETIzc8q8gLY/tBTEidovqdKm6DEiGXxRMAwPrUKm0lEilKl52Xz8eqyajSOAamqFfyPzuHcDoV+W909AU1eEKj2hbFLZEhMJFe4RGpr9VmDuP9m/95S9++AuiS35snPi8J2CVwPp8im2ZgNYU10eNZdixRL6AYdgbcQuiVzpR7dUP2FQxQu1IKq+qTrMj8y8OIEYBNndgLUfjhk5/7HNZJ92DM+hgRNKhWdRJCZq2WOcjed5sWbOWEFdftMtIUwrTUdZFKBrfR5M59Bz28fa7aixJzofW0U5OBEBYmCy3pDQkdr4Im2A57ggLBkP3ZYqMdtIRWme2zEzCkHJ6WzdhyZrd94LSiUdmm1Fvze0cJOcnK+/BeVDfG7JQti9yzRCafh1QDjZxR7nUcj3JVFeX+VBnNdXXn5NdsiGOXNamMiqn9mBf8ZpTquhgW9uSyKHvFatAEM+2GUDhmz/N2wH+0FVJKb1PsRjebOUUZOfpx/ATGXZ2llXjK4GAE="
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_019GpHtZ8RbAoEJCzvhFvq3d",
+      "name": "getWeather",
+      "input": {
+        "city": "Bariloche, Argentina"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 780,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 158,
+    "output_tokens_details": {
+      "thinking_tokens": 97
+    },
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  }
+}

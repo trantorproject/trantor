@@ -1,0 +1,122 @@
+{
+  "id": "resp_0dc630f192c6c3e3006ab3278e525087d2a0cede53a8a4b534",
+  "object": "response",
+  "created_at": 1790125966,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790125968,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0dc630f192c6c3e3006ab3278f7ff087d28cdcd035c72db603",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqsyeQmp-mst5L0zhsO5EOfLZwtfgVewZFFXJj4ZuPhGfY7q83SBRFCPxVed87xw60CJP3-2o51i2FNGauwHTWCcbWvH4ezOXSPws24J9g4-DtINSljRJ0fCdsizSpmrYa9sRCbEuCBKIeqAS2RskqljnptL0ckGYbn1HcSkUchdb9Eqzo7mS__-kjNIQFUoI6qwXymNnVcbtlw5CksYxeRFllxJkRIEKFporGe2rO_3iXxaYmP_2mdl9-eu79fTTsfoFwtXz5FylkZ5k1AmDURuPqe3GyrPiU_Zfm0IqI6L8C5edoIRoLYqZFgJ-1VI2lHH0X62eA1crqZALfF_INDjlZgx_ICL7vPEBapa6ta0VR5J4JfYDKiMKUl-naLhzY4qFmMvtBQAIvLFsrJht-_8QmC5ywlQsnutIeymfE3TYELa1ReBnALtR-sao8GEALXXTWXEYbtII57T5sMbIBs9kPIUmLi4F1Ghv8FcMBjPq4kTVSkEOjXEn7ovsbezjBfxQ8gpBpxe04WPHZ1WNEBvRSq_ezxJVyedBdgqZTwstwSNelgt272pu_-bkfdQuDa3ApapR6KnM4khHYAIZWiMut9DeyI5W-bcRZVo3uXXNJgRQ8taeWFsksYtwWBgO8UbanCd0RuUqwoKg03tFikXtLeSyNvEd_B1pGqsmicMDDROuuaTbPD6Hc1l8tGgOdb2xr7sEvFMrsTP7ucg2D3alM7nGUVxoPljUpqyV95IZqaVLjfPIgRLhrULVsIRrQ8IqyFXzy5Ci0F1VEnSrnoP2EJjGqfUFHjeXuS1m0NmNGHRLRu7XWs5sMMNjgiJ-TGRLGJPnKAyDjnrwlY3yRULHiy3y2Xflz86wlkQ9EVkV7Pu685Bmtuo8BU2VeU4PUwFDo3HErcZ0gdbRM3Q0W8ckmqDG0dI7h-Sg19oBTGeQV9OVf23j-eOXUdkzY3L4-rHnCISpKIQtxHvnJ_Y3BGxZF2tD1MUwjdx8O2tNgGVpWddedv94hWI_HxPjZffvPea7RSzVoOX2HsR0GE6dJ1Qv6wh5s42a0sAwNRW6arI7XMgqEdbdm4ciUxpLMlYrhOWj_sk6zF4N1wjVLAWs9Wn3CR53x3Saum-nQ2luPbqiwidh1yhgYw0J7SwDwk1ROmlRvurMRn52YSeat7yxvXkidkQWliDKzjdcfSgrTnQJWDiYC2-HCodCAylbsdRqms7uzqVEESR2Q1G8_yhsF5ZUg_wxtrmgdz8bN5mISfg4sa5_6D732GaCetkhih1Q3r0yIRcqIa0RfnhBiwGNKBQyz_4-IXVv7R8mFLCpO_5LHfb7jD29EnDNW323jT_G2jqeuFFQAcqGXCBxQhE3QmqLLsHnSAg1PshJ6ifrmw4_Srk3_ZrbxYd6Pjgp5-_wNZ0YEZbdl5um1rC1bEVj4Q4PmV98KE3qr2n1CqRxofqZIxOV4Sob8KDQxJWc4s1k2tNVf-_F4UsD8kVwWFCYx36TuSsBK-7T37F5o-Y-W-pCxDSKoA0M66HktN2mPOTQLQpjSPIK9koBdutNYSqK-Ge6zh-zF7mXv8qFQbZVYaFdufAxRl6aR38uWTtCDmMWmGAK6",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0dc630f192c6c3e3006ab3279024f487d293ea73ae94eeb3c1",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche, Argentina\"}",
+      "call_id": "call_YAzyZWGQCR8mFAYDVqxoQy2E",
+      "name": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "low",
+    "mode": "standard",
+    "summary": "detailed"
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 58,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 100,
+    "output_tokens_details": {
+      "reasoning_tokens": 64
+    },
+    "total_tokens": 158
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}
