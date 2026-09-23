@@ -74,6 +74,18 @@ class DefaultAITest {
         }
 
         @Test
+        fun `the dynamic system prompt goes apart from the messages`() {
+            ai.generate {
+                system("Sos el asistente de una ferreteria")
+                dynamicSystem("Hoy es martes")
+                user("Tienen taladros?")
+            }
+
+            assertThat(model.request?.dynamicSystem).isEqualTo("Hoy es martes")
+            assertThat(model.request?.messages).hasSize(2)
+        }
+
+        @Test
         fun `runs the tools until the model answers`() {
             model.answers(listOf(weatherCall), listOf(TextPart("Hacen 7 grados")))
 

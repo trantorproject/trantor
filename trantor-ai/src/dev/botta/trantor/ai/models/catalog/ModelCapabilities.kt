@@ -66,6 +66,12 @@ enum class ModelFeatures {
      * families take a `temperature` alongside an effort of none, and GPT-6 refuses both.
      */
     ReasoningOff,
+    /**
+     * The model takes a system message anywhere in the conversation, not only at the start. It is what lets an
+     * instruction that changes go after the conversation instead of before it, where changing it would undo the
+     * cache of everything that follows. OpenAI takes them anywhere; among the Claude models only the newest do.
+     */
+    MidConversationSystem,
 }
 
 /** A closed range of a numeric setting, with the two that come up written down. */

@@ -13,7 +13,8 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  * Three things moved between generations and they are the everyday ones. `temperature`, `top_p` and `top_k` stopped
  * being accepted after Opus 4.6. A thinking budget in tokens gave way to an effort level, and the models from 4.7
  * on refuse a budget. Structured output does not exist before Sonnet 4.5, and neither does asking for a tool
- * strictly, which Anthropic compiles through the same grammar and documents in the same list.
+ * strictly, which Anthropic compiles through the same grammar and documents in the same list. And only the newest
+ * take a system message in the middle of the conversation.
  *
  * One line per model, naming a profile of what it takes and a tier of what it costs: within a generation every
  * model takes the same things, and within a tier every model costs the same. A dated snapshot is answered by the
@@ -25,12 +26,12 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  * [AnthropicOptions.effort], which is not checked against any of this.
  */
 internal fun ModelCatalog.addAnthropicModels() = apply {
-    add("anthropic/claude-opus-5", effortOnly, opusPrice)
+    add("anthropic/claude-opus-5", systemAnywhere, opusPrice)
     add("anthropic/claude-sonnet-5", effortOnly, sonnet5Price)
-    add("anthropic/claude-opus-4-8", effortOnly, opusPrice)
+    add("anthropic/claude-opus-4-8", systemAnywhere, opusPrice)
     add("anthropic/claude-opus-4-7", effortOnly, opusPrice)
-    add("anthropic/claude-fable-5", effortOnly, fablePrice)
-    add("anthropic/claude-mythos-5", effortOnly, fablePrice)
+    add("anthropic/claude-fable-5", systemAnywhere, fablePrice)
+    add("anthropic/claude-mythos-5", systemAnywhere, fablePrice)
     add("anthropic/claude-fable-5-1", withoutForcedToolUse, fable51Price)
     add("anthropic/claude-mythos-5-1", withoutForcedToolUse, fable51Price)
 
@@ -72,8 +73,15 @@ private val effortOnly = ModelCapabilities(
     features = setOf(Tools, StructuredOutput, Images, PromptCaching, ForcedToolUse),
 )
 
+/**
+ * The newest ones also take a system message anywhere in the conversation, where Sonnet 5 and Opus 4.7 take it only
+ * as the system field (platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages, read on
+ * 2026-09-23). Opus 5.5 is on that list too, and not in this catalog yet.
+ */
+private val systemAnywhere = effortOnly.copy(features = effortOnly.features + MidConversationSystem)
+
 /** Fable 5.1 and Mythos 5.1 answer 400 to a forced tool call, so the choice of calling one is left to the model. */
-private val withoutForcedToolUse = effortOnly.copy(features = effortOnly.features - ForcedToolUse)
+private val withoutForcedToolUse = systemAnywhere.copy(features = systemAnywhere.features - ForcedToolUse)
 
 /** The generation in the middle takes both ways of asking, though the budget is already deprecated there. */
 private val bothWays = effortOnly.copy(

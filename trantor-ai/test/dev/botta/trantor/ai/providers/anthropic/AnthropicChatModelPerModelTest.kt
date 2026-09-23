@@ -413,28 +413,156 @@ class AnthropicChatModelPerModelTest {
     @Nested
     inner class `a system message in the middle` {
         @Test
-        fun `is joined into the system field by default, which every model takes`() {
-            generateWith(
-                "claude-opus-5",
-                ChatRequest(Message.system("Sos un asistente"), Message.user("Hola"), Message.system("Se breve")),
-            )
-
-            assertThat(sentBody()["system"]?.asString()).isEqualTo("Sos un asistente\n\nSe breve")
-            assertThat(sentBody()["messages"]?.asArray()?.size).isEqualTo(1)
-        }
-
-        @Test
-        fun `and stays where it was when the application turned that on, so the cached prefix survives`() {
-            val config = AnthropicConfig(apiKey = "sk-ant-test", midConversationSystemMessages = true)
-            val request =
-                ChatRequest(Message.system("Sos un asistente"), Message.user("Hola"), Message.system("Se breve"))
-
-            AnthropicChatModel("claude-opus-5", config, httpClient).generate(request)
+        fun `stays where it was on a model that takes it, so the cached prefix survives`() {
+            generateWith("claude-opus-5", withSystemInTheMiddle)
 
             assertThat(sentBody()["system"]?.asString()).isEqualTo("Sos un asistente")
             assertThat(sentBody()["messages"]?.asArray()?.get(1).toString())
                 .isEqualTo("""{"role":"system","content":[{"type":"text","text":"Se breve"}]}""")
         }
+
+        @Test
+        fun `is joined into the system field on a model that does not, and says so`() {
+            val response = generateWith("claude-sonnet-4-5", withSystemInTheMiddle)
+
+            assertThat(sentBody()["system"]?.asString()).isEqualTo("Sos un asistente\n\nSe breve")
+            assertThat(sentBody()["messages"]?.asArray()?.size).isEqualTo(1)
+            assertThat(response.warnings.map { it.message }).containsExactly(
+                "claude-sonnet-4-5 does not take system messages in the middle of the conversation, " +
+                    "so the 2 of them were joined into the system prompt",
+            )
+        }
+
+        @Test
+        fun `and a model nobody described is taken to be the newest, which takes it`() {
+            generateWith("claude-sonnet-9", withSystemInTheMiddle)
+
+            assertThat(sentBody()["messages"]?.asArray()?.get(1)?.asObject()?.get("role")?.asString())
+                .isEqualTo("system")
+        }
+
+        private val withSystemInTheMiddle =
+            ChatRequest(Message.system("Sos un asistente"), Message.user("Hola"), Message.system("Se breve"))
+    }
+
+    @Nested
+    inner class `the dynamic system prompt` {
+        @Test
+        fun `goes last, as a system message, on a model that takes one in the middle`() {
+            generateWith("claude-opus-5", withDynamicSystem)
+
+            assertThat(sentBody()["system"]?.asString()).isEqualTo("Sos el asistente de una ferreteria")
+            assertThat(sentBody()["messages"]?.asArray()?.last().toString())
+                .isEqualTo("""{"role":"system","content":[{"type":"text","text":"Hoy es martes"}]}""")
+        }
+
+        @Test
+        fun `goes under the system prompt, as a block of its own, on a model that does not`() {
+            generateWith("claude-sonnet-4-5", withDynamicSystem)
+
+            assertThat(sentBody()["system"].toString()).isEqualTo(
+                """[{"type":"text","text":"Sos el asistente de una ferreteria"},""" +
+                    """{"type":"text","text":"Hoy es martes"}]"""
+            )
+            assertThat(sentBody()["messages"]?.asArray()?.size).isEqualTo(1)
+        }
+
+        @Test
+        fun `and there the mark of the system cache goes between the two, so a change does not undo it`() {
+            cachedWith("claude-sonnet-4-5", AnthropicCache(system = true), withDynamicSystem)
+
+            assertThat(sentBody()["system"].toString()).isEqualTo(
+                """[{"type":"text","text":"Sos el asistente de una ferreteria",""" +
+                    """"cache_control":{"type":"ephemeral"}},{"type":"text","text":"Hoy es martes"}]"""
+            )
+        }
+
+        @Test
+        fun `with no stable system prompt there is nothing to mark`() {
+            val onlyDynamic = withDynamicSystem.copy(messages = listOf(hola))
+
+            cachedWith("claude-sonnet-4-5", AnthropicCache(system = true), onlyDynamic)
+
+            assertThat(sentBody()["system"]?.asString()).isEqualTo("Hoy es martes")
+            assertThat(httpClient.requestBody).doesNotContain("cache_control")
+        }
+
+        @Test
+        fun `the conversation mark goes on the last block before it, which Anthropic's own mark would not`() {
+            cachedWith("claude-opus-5", AnthropicCache(conversation = true), withDynamicSystem)
+
+            val messages = sentBody()["messages"]!!.asArray()!!
+
+            assertThat(sentBody().containsKey("cache_control")).isFalse()
+            assertThat(messages[0].toString()).isEqualTo(
+                """{"role":"user","content":[{"type":"text","text":"Hola","cache_control":{"type":"ephemeral"}}]}"""
+            )
+            assertThat(messages.last().toString()).doesNotContain("cache_control")
+        }
+
+        @Test
+        fun `and it keeps the duration of the cache`() {
+            val cache = AnthropicCache(conversation = true, ttl = AnthropicCacheTtl.OneHour)
+
+            cachedWith("claude-opus-5", cache, withDynamicSystem)
+
+            assertThat(sentBody()["messages"]!!.asArray()!![0].toString())
+                .contains(""""cache_control":{"type":"ephemeral","ttl":"1h"}""")
+        }
+
+        /**
+         * Two turns recorded with the long system prompt of the cache recordings and the time as the dynamic part,
+         * which changed between them. What the second one read back is what the whole thing is for.
+         */
+        @Test
+        fun `recorded where it goes last, the second turn reads back everything but the dynamic part`() {
+            val next = twoRecordedTurns("claude-opus-5", "dynamic-system")
+
+            assertThat(sentBody()["messages"]!!.asArray()!!.last().asObject()!!["role"]?.asString())
+                .isEqualTo("system")
+            assertThat(next.usage.cacheReadTokens).isEqualTo(8_157)
+            assertThat(next.usage.cacheWriteTokens).isEqualTo(123)
+            assertThat(next.usage.uncachedInputTokens).isEqualTo(24)
+        }
+
+        @Test
+        fun `recorded where it goes under the system prompt, only the system prompt is read back`() {
+            val next = twoRecordedTurns("claude-sonnet-4-5", "dynamic-system-fallback")
+
+            assertThat(sentBody()["system"]!!.asArray()).hasSize(2)
+            assertThat(next.usage.cacheReadTokens).isEqualTo(7_230)
+            assertThat(next.usage.cacheWriteTokens).isEqualTo(103)
+        }
+
+        private fun twoRecordedTurns(modelId: String, recording: String): ChatResponse {
+            val cache = AnthropicCache(system = true, conversation = true)
+            val model = AnthropicChatModel(modelId, AnthropicConfig(apiKey = "sk-ant-test", cache = cache), httpClient)
+            httpClient.answers(fixture("$recording-1"), fixture("$recording-2"))
+
+            val answer = model.generate(withDynamicSystem)
+
+            return model.generate(
+                withDynamicSystem.copy(
+                    messages = withDynamicSystem.messages + answer.asMessage() + Message.user("Y el 17?"),
+                    dynamicSystem = "Son las 11",
+                ),
+            )
+        }
+
+        private fun fixture(name: String) =
+            javaClass.getResource("/anthropic/$name.json")?.readText() ?: error("Missing fixture $name")
+
+        private fun cachedWith(modelId: String, cache: AnthropicCache, request: ChatRequest) {
+            val config = AnthropicConfig(apiKey = "sk-ant-test", cache = cache)
+
+            AnthropicChatModel(modelId, config, httpClient).generate(request)
+        }
+
+        private val hola = Message.user("Hola")
+        private val withDynamicSystem = ChatRequest(
+            messages = listOf(Message.system("Sos el asistente de una ferreteria"), hola),
+            dynamicSystem = "Hoy es martes",
+        )
     }
 
     @Serializable

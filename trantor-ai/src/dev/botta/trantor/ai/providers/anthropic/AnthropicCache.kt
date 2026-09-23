@@ -14,8 +14,10 @@ package dev.botta.trantor.ai.providers.anthropic
  *   off when each call repeats the one before and adds a turn.
  *
  * Anthropic reads the tools first, then the system prompt, then the messages. So a mark on the system prompt caches
- * the tools too, and [tools] is only worth it on its own when the system prompt changes on every call — say, because
- * it carries today's date.
+ * the tools too, and [tools] is only worth it on its own when the system prompt changes on every call. What changes
+ * on every call, like today's date, is better in the `dynamicSystem` of the request, and the marks leave it out: the
+ * one of the system prompt goes before it when it goes under the system prompt, and the one of the conversation goes
+ * on the block before it when it goes last.
  *
  * **[conversation] alone does not cache a shared prompt.** The mark lands on the last block, which in a one-off
  * question is the question itself: new every time, so every call pays for a write and none reads it back. A
@@ -45,7 +47,7 @@ data class AnthropicCache(
     val system: Boolean = false,
     /** Marks the last tool. Nothing to mark when the call has none. */
     val tools: Boolean = false,
-    /** Anthropic's automatic mark, on the last block of the request. */
+    /** Anthropic's automatic mark, on the last block of the request, or the one before the dynamic system part. */
     val conversation: Boolean = false,
     /** How long every mark keeps what it cached. An hour costs more to write. */
     val ttl: AnthropicCacheTtl = AnthropicCacheTtl.FiveMinutes,

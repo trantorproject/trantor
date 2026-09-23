@@ -54,9 +54,11 @@ internal class OpenAIRequestMapper(
         }
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
+            // OpenAI takes a system message anywhere, and the one that changes goes last so the rest stays cached
+            val dynamic = request.dynamicSystem?.let { Message.System(it) }
             val body = Json.obj(
                 "model" to modelId,
-                "input" to Json.array(request.messages.flatMap { toItems(it) }),
+                "input" to Json.array((request.messages + listOfNotNull(dynamic)).flatMap { toItems(it) }),
             )
 
             if (stream) body["stream"] = true

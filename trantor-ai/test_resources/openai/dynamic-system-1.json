@@ -1,0 +1,114 @@
+{
+  "id": "resp_0a559c91ff3feb42006ab405d30c5487d2906d631995990775",
+  "object": "response",
+  "created_at": 1790182867,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790182869,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5.6-luna",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0a559c91ff3feb42006ab405d464e887d2be67d2f0e17882d4",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtAXVwPX2vAJhBXe53YsK225pjt6lFbrAgsY0jJshys6zbnSRctorFW-NJruSEzEk_8ZTZZbKorxIywM1tsIp9QdPsa_wCwUFOV2a80eC3tAS3eDLOcJxVdIi5l6oEeKChUfR3FvktcbhAOvfE6i_9PJnMtDCcxsJXICszc5XUgR-8AzTnFEKbUtuYwljejGbia1UWHwAvN-uAdMk_mLHdj2d92GQuFJqZfdd3UShu8bNN2sY8VZugQNxijYPSVEykZ_jmLaVMct4VRIc2mo7HqLtmBWTU7PPvD8_HZS0V8LRSp5Ud_siIC1YjOyQXXw2Qcu8tOItnJ5-6_nWhOYkjKkC5oisysL3MNXoyWJ5n1cgGgEjmGqmcMhGpJANaWM5Wi-hJ6Bz96DyV5lQb13TfYTsb9FeYb8DWovIQB-nVQfF7BRP7uPFv-PP99XEB-_U35KsviqZ7qAUafuOmJtAyBLP_D0jSssL3KkN8S4zzKlZ7ZyT4WH5ffhAD83vY0wnSK_CaYR0ATwtPagRWN2a0usc5SKiR3Gz2ry4Ebu3ANfB2ueuMCWoPJN3x4a_9agB7r9tbdnu_p-68LFob6LK9-Fuflh-emnUik5BDKo4s1GH038PzgPBafPibG3s6XQfW2PQFQndcs9FGtQe8pad-D7W_4DVjb8I0bLnwN5zP7Ib9nT1Sr5ED2Ve065sbh_xgUlMRKaPpgPWgo4UfMhT4f9qhn-BulecSfPFVK9--v4hNm9lk4jiNb9N1TpNCGbJtDeQeP1_mQ3Se7LFWoX2bw03ZYwSCfe4N4Le6z9QFm0Z4S_7OgnTPQGDCzYdPSK9EDug5ykVWD_TVliLzbj9wOPlCrVUh_K5hvYWw89krKNICXKZxN3DU5db-HNGkP95DRtdNG_lb1sg3nvu1dJFPgf_eC30zCUrxTNajnPN3EeZwR3jgP-YSnqr71EY7b7iP9191ftuHwDB9ovJzehz5RjP_qvqg7mByTihKhxb1-7vTFd9L6VCbw35FfeQSyeFWF32gfl6eTIOPYWyFWmab2h3PJAqsY7XuOvbemRObW7QG6jTBpiuFDUPyW3tRY5xfD4iLrk2oCBMlwxKeklGTYk-rrj5-PhuUSFj11TYOaAmj5zragHWYYc-nwtL2v12aH3OeujVvdP74N87YRqycD6FZnVK5ZkoXf-ay39iWEzN_shWT3aSVZLCcikGw2ECdQF-ekG5SoUZrz33rq-3MyWSA7f92OkMY4hy6kPYFI_--JZLuTY5s7hmUnpQjJdJk5Ir8VHENcU-NDiKUIKExlq3tf060NiZPtUhw7Ar8Nfjw2U=",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_0a559c91ff3feb42006ab405d4c9e487d2b63c1d0c12dbb724",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "El pedido 42 se despacha en 1 día hábil desde el depósito 3."
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": "trantor-dynamic-system-recording",
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "all_turns",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    
+  ],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 5159,
+    "input_tokens_details": {
+      "cache_write_tokens": 5139,
+      "cached_tokens": 0
+    },
+    "output_tokens": 55,
+    "output_tokens_details": {
+      "reasoning_tokens": 30
+    },
+    "total_tokens": 5214
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

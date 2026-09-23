@@ -45,6 +45,43 @@ class OpenAIChatModelTest {
     }
 
     @Test
+    fun `sends the dynamic system prompt last, so what comes before it stays cached`() {
+        httpClient.body = fixture("text-simple")
+
+        val messages = listOf(Message.system("Sos un asistente"), Message.user("Hola"))
+
+        model.generate(ChatRequest(messages, dynamicSystem = "Hoy es martes"))
+
+        val input = sentBody()["input"]!!.asArray()!!
+
+        assertThat(input.first().toString())
+            .isEqualTo("""{"type":"message","role":"system","content":"Sos un asistente"}""")
+        assertThat(input.last().toString())
+            .isEqualTo("""{"type":"message","role":"system","content":"Hoy es martes"}""")
+    }
+
+    @Test
+    fun `and a recorded second turn with another dynamic part reads back everything before it`() {
+        // Two turns recorded on gpt-5.6-luna with the long system prompt of the cache recordings, and the time as
+        // the dynamic part, which changed between them
+        httpClient.answers(fixture("dynamic-system-1"), fixture("dynamic-system-2"))
+        val luna = OpenAIChatModel("gpt-5.6-luna", OpenAIConfig(apiKey = "sk-test"), httpClient)
+        val first = ChatRequest(
+            listOf(Message.system("Sos un asistente"), Message.user("Y el 42?")),
+            dynamicSystem = "10:00",
+        )
+
+        val answer = luna.generate(first)
+        val conversation = first.messages + answer.asMessage() + Message.user("Y el 17?")
+        val next = luna.generate(first.copy(messages = conversation, dynamicSystem = "11:00"))
+
+        assertThat(sentBody()["input"]!!.asArray()!!.last().toString())
+            .isEqualTo("""{"type":"message","role":"system","content":"11:00"}""")
+        assertThat(next.usage.cacheReadTokens).isEqualTo(5_139)
+        assertThat(next.usage.cacheWriteTokens).isEqualTo(70)
+    }
+
+    @Test
     fun `sends an assistant message as output text`() {
         httpClient.body = fixture("text-simple")
 

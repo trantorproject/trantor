@@ -76,8 +76,10 @@ class AnthropicChatModelTest {
         )
 
         assertThat(sentBody()["system"]?.asString()).isEqualTo("Sos un asistente\n\nContesta corto")
-        assertThat(response.warnings.map { it.message })
-            .containsExactly("Anthropic takes one system prompt, so the 2 of them were joined")
+        assertThat(response.warnings.map { it.message }).containsExactly(
+            "claude-sonnet-4-5 does not take system messages in the middle of the conversation, " +
+                "so the 2 of them were joined into the system prompt",
+        )
     }
 
     @Test

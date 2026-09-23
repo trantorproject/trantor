@@ -34,12 +34,6 @@ data class AnthropicConfig(
      * which one pays off when.
      */
     var cache: AnthropicCache = AnthropicCache.Off,
-    /**
-     * Where a system message that is not the first one goes. Off sends them all joined into the `system` field,
-     * which every model takes. On sends the later ones in place, as `role: "system"` messages, which keeps the
-     * cached prefix intact instead of invalidating it — but only the newest models accept them.
-     */
-    var midConversationSystemMessages: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_BASE_URL = "https://api.anthropic.com/v1"

@@ -75,12 +75,18 @@ internal fun ModelCatalog.addOpenAIModels() = apply {
     setLatest("openai", "openai/gpt-6-astra")
 }
 
-/** Reasons on every call and refuses every sampling setting while it does, with no way of turning it off. */
+/**
+ * Reasons on every call and refuses every sampling setting while it does, with no way of turning it off.
+ *
+ * Every profile comes from this one, and every OpenAI model takes a system message anywhere in the input: the
+ * prompt caching guide puts the ones that change, *"such as user-specific content and timestamps"*, after the
+ * stable ones (developers.openai.com/api/docs/guides/prompt-caching, read on 2026-09-23).
+ */
 private val reasoning = ModelCapabilities(
     temperature = null,
     topP = null,
     reasoningEfforts = setOf(Low, Medium, High),
-    features = setOf(Tools, StructuredOutput, Images, PromptCaching, ForcedToolUse),
+    features = setOf(Tools, StructuredOutput, Images, PromptCaching, ForcedToolUse, MidConversationSystem),
 )
 
 /** Reasons unless it is told not to, and takes the sampling settings when it is. */

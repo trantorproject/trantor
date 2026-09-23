@@ -1,0 +1,114 @@
+{
+  "id": "resp_0a559c91ff3feb42006ab405d5ae9487d29f9080ff103eb2cd",
+  "object": "response",
+  "created_at": 1790182869,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790182871,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5.6-luna",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0a559c91ff3feb42006ab405d7166487d29ab25a81f806841b",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtAXXl_bgeLIzBqL2dER7VgORH6VvaRMgTxMIkzH9i8dzBExV-f5FHwTVWpewwDSu3XRidX25cbT12tk8i9NsTFqP1pCAEu_qyfDATt9R9vlN3zEj1Tb7gFp1-8WsblSrWnOPA9dCdntjQRcwVMwns751mx1X-ecZpYppsFWpT5yNK5JU8DYXQrwKYYwe7PdnVs04LIfAlq2lCgG47tHj13Mv1XhplfWNQN1-Z_NhLcQh_SIwbWpsThgTkkcGSOoSW_v54SXEOAvIQViA9EnunY9-ROTIdXZNpSgwv5zbnBBg_Xefe7ftNURHkzNDzw3AFOQitwFHB99P40DD8TTNPGYYSeULhujzhwz46kCU56iC6lSZK4qflURfmKE_6fwqp8aVgLt--jIGSiB-6Yj8u6T36Izz1xD6Z0hAOxFaLZWUwp-30tcxmTVx7pvHhSCTLxV9j9bhmKOzeU8i7ymHbNiQhfVu_Uo4LghSQqaENKTYWjwNL2eaK1a_NVAcMsQa5fL7n6Q-0DzoE1Z6CoKnFcmO3wX2mO4w9HgC4WtrTYemWRldWGaaI9_4LUwoJ2TZgyLHS02tkhSUYXvWTnY6fu2l_hS5XQaWvyJOgQj9qQVlCPhrt9v6lFvENrz1TyXytbipe8CE_jFhSuBeVh4TfZhwflEG9uYvU1SGQL90qBOpPrUSvtZeyRJOICRbKRDO7wtLQAQy5tWhDugQJz-eFUld2sdvabiBop1Pcqrfk6BGC9cF7keEpWxLII3zrocQZ2PdJiofLNESJLZriRaCl8I4KhCNEeSqpgYKttFnAwGnT7hf4bwNtIXTDpjky7hIZTfJtG9-8HtUqfxeqghQHRBWkodnneZ4nDALf1s1JxrywDlc4KUIBMAZkInaulQerAhd9PXu7oA7VfWxEYZSHvrgUaX_IULDodiSy80aoNMvIhJofMh0pmetIzMhObX_ql7bVlWJErt2pvp4nLKglSgrwss82GiUYmbY3yw-nuO4iFbCiWiFigCydUJApUfmmSD1udzHbQyPJbgRMAJY0wdF_i4OQxzNPFjxk_mFhxljzJexav5nfwzubejRnAO-lsPVCOyzXtpyVRwwhapc9F7NqV2bYLMdlYADWBJzBVDAOjrrgEXhvTz4TdWNJyC3LwgeGq3OvrdZZQsrAfrBPyL8RP3t-FF6ctC3fqwAH8IagmGdQcpgGvg880WfyoCigIQZQgBJqA8HtzYDb6HXg7baog==",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_0a559c91ff3feb42006ab405d7490c87d2b50b11a9168faf85",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "El pedido 17 sale del depósito 3."
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": "trantor-dynamic-system-recording",
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "all_turns",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    
+  ],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 5229,
+    "input_tokens_details": {
+      "cache_write_tokens": 70,
+      "cached_tokens": 5139
+    },
+    "output_tokens": 33,
+    "output_tokens_details": {
+      "reasoning_tokens": 17
+    },
+    "total_tokens": 5262
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

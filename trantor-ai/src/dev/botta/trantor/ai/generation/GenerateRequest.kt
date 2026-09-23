@@ -41,10 +41,15 @@ class GenerateRequest {
         private set
     var callOptions = CallOptions()
         private set
+    var dynamicSystem: String? = null
+        private set
 
     fun model(reference: String?) = apply { model = reference }
 
     fun system(text: String) = apply { messages.add(Message.system(text)) }
+
+    /** Instructions that change from one call to the next, sent where they do not undo the cache of the rest. */
+    fun dynamicSystem(text: String) = apply { dynamicSystem = text }
 
     fun user(text: String) = apply { messages.add(Message.user(text)) }
 
@@ -80,5 +85,6 @@ class GenerateRequest {
         output = output,
         settings = settings.copy(),
         providerOptions = ProviderOptions.of(*providerOptions.toTypedArray()),
+        dynamicSystem = dynamicSystem,
     )
 }

@@ -68,6 +68,18 @@ class ToolLoopTest {
     }
 
     @Test
+    fun `the dynamic system prompt goes on every step and never into the conversation`() {
+        model.answers(listOf(weatherCall("call_1", "Bariloche")), listOf(TextPart("Hacen 7 grados")))
+        val request = ChatRequest(listOf(Message.user("Que temperatura hay?")), dynamicSystem = "Hoy es martes")
+
+        val result = loop().run(request)
+
+        assertThat(model.requests.map { it.dynamicSystem }).containsExactly("Hoy es martes", "Hoy es martes")
+        assertThat(model.requests[1].messages.filterIsInstance<Message.System>()).isEmpty()
+        assertThat(result.newMessages.filterIsInstance<Message.System>()).isEmpty()
+    }
+
+    @Test
     fun `the calls of one turn run in order and their results go back together`() {
         model.answers(
             listOf(weatherCall("call_1", "Bariloche"), weatherCall("call_2", "Ushuaia")),

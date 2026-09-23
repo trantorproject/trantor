@@ -3,6 +3,7 @@ package dev.botta.trantor.ai.providers.anthropic
 import dev.botta.json.Json
 import dev.botta.json.values.JsonArray
 import dev.botta.json.values.JsonObject
+import dev.botta.json.values.JsonValue
 import dev.botta.trantor.ai.errors.InvalidProviderOptionError
 import dev.botta.trantor.ai.errors.UnsupportedRequestError
 import dev.botta.trantor.ai.models.ModelWarning
@@ -46,16 +47,22 @@ internal class AnthropicRequestMapper(
         private val takesStructuredOutput get() = model == null || ModelFeatures.StructuredOutput in model
         private val takesTools get() = model == null || ModelFeatures.Tools in model
         private val takesForcedToolUse get() = model == null || ModelFeatures.ForcedToolUse in model
+        private val takesMidConversationSystem
+            get() = model == null || ModelFeatures.MidConversationSystem in model
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
             val options = anthropicOptionsOf(request.providerOptions)
+            val cache = options?.cache ?: config.cache
             val thinking = toThinking(request.settings.reasoning, options)
+            // Where the model takes a system message after the conversation, what changes goes there
+            val dynamicLast = request.dynamicSystem?.takeIf { takesMidConversationSystem }
             val body = Json.obj(
                 "model" to modelId,
-                "messages" to Json.array(toMessages(request.messages)),
+                "messages" to Json.array(toMessages(request.messages, dynamicLast)),
             )
 
-            systemOf(request.messages)?.let { body["system"] = it }
+            systemOf(request.messages, request.dynamicSystem.takeIf { dynamicLast == null }, cache)
+                ?.let { body["system"] = it }
             // Required by the api, unlike everywhere else, so there is always a number to send
             body["max_tokens"] = maxTokensFor(request.settings, thinking)
             thinking?.let { body["thinking"] = it }
@@ -65,7 +72,7 @@ internal class AnthropicRequestMapper(
             applySettings(body, request.settings)
             applyTools(body, request, thinking)
             applyOutputConfig(body, request.output, request.settings.reasoning, options)
-            applyCache(body, options)
+            applyCache(body, cache, afterTheDynamicPart = dynamicLast != null)
 
             options?.userId?.let { body["metadata"] = Json.obj("user_id" to it) }
             options?.serviceTier?.let { body["service_tier"] = it.wireName }
@@ -395,26 +402,33 @@ internal class AnthropicRequestMapper(
 
         /**
          * One mark for each part the application asked to cache, all with the same duration: Anthropic refuses a
-         * mark that outlives one before it. The system prompt has to become a list of blocks to carry one,
-         * and a missing system prompt or tool list is simply nothing to mark. A cut somewhere precise is marked on
-         * the part instead, and travels in its metadata.
+         * mark that outlives one before it. The one of the system prompt goes on in [systemOf], and a missing tool
+         * list is simply nothing to mark. A cut somewhere precise is marked on the part instead, and travels in its
+         * metadata.
+         *
+         * The one of the conversation is Anthropic's own, which lands on the last block. When the last block is the
+         * dynamic part, that would cache what changes on every call and read it back never, so the mark goes on the
+         * block before it instead.
          */
-        private fun applyCache(body: JsonObject, options: AnthropicOptions?) {
-            val cache = options?.cache ?: config.cache
-            val mark = when (cache.ttl) {
-                AnthropicCacheTtl.FiveMinutes -> Json.obj("type" to "ephemeral")
-                AnthropicCacheTtl.OneHour -> Json.obj("type" to "ephemeral", "ttl" to "1h")
+        private fun applyCache(body: JsonObject, cache: AnthropicCache, afterTheDynamicPart: Boolean) {
+            if (cache.tools) body["tools"]?.asArray()?.lastOrNull()?.asObject()?.set("cache_control", markOf(cache))
+
+            if (!cache.conversation) return
+
+            if (!afterTheDynamicPart) {
+                body["cache_control"] = markOf(cache)
+                return
             }
 
-            if (cache.system) {
-                body["system"]?.asString()?.let {
-                    body["system"] = Json.array(Json.obj("type" to "text", "text" to it, "cache_control" to mark))
-                }
-            }
+            val messages = body["messages"]!!.asArray()!!
 
-            if (cache.tools) body["tools"]?.asArray()?.lastOrNull()?.asObject()?.set("cache_control", mark)
+            messages.getOrNull(messages.size - 2)?.asObject()?.get("content")?.asArray()?.lastOrNull()?.asObject()
+                ?.set("cache_control", markOf(cache))
+        }
 
-            if (cache.conversation) body["cache_control"] = mark
+        private fun markOf(cache: AnthropicCache) = when (cache.ttl) {
+            AnthropicCacheTtl.FiveMinutes -> Json.obj("type" to "ephemeral")
+            AnthropicCacheTtl.OneHour -> Json.obj("type" to "ephemeral", "ttl" to "1h")
         }
 
         private fun anthropicOptionsOf(options: ProviderOptions): AnthropicOptions? {
@@ -464,19 +478,41 @@ internal class AnthropicRequestMapper(
         }
 
         /**
-         * The system prompt is a field of the request and not a message, so the first one ends up there wherever it
-         * was written. What happens to the rest is a trade-off between reach and cache, which is why it is a
-         * setting: joined into the field they work on every model, and left in place they keep the cached prefix
-         * intact but only the newest models take them.
+         * The system field: the system prompt, and under it the dynamic part when the model cannot take it after the
+         * conversation. The mark of the system cache goes on the system prompt alone, so a dynamic part that changes
+         * does not undo it. A single block with nothing to mark goes as the plain string.
          */
-        private fun systemOf(messages: List<Message>): String? {
+        private fun systemOf(messages: List<Message>, dynamic: String?, cache: AnthropicCache): JsonValue? {
+            val blocks = listOfNotNull(
+                systemPromptOf(messages)?.let { prompt ->
+                    textBlock(prompt).also { if (cache.system) it["cache_control"] = markOf(cache) }
+                },
+                dynamic?.let { textBlock(it) },
+            )
+
+            return when {
+                blocks.isEmpty() -> null
+                blocks.size == 1 && !blocks[0].containsKey("cache_control") -> blocks[0]["text"]
+                else -> Json.array(blocks)
+            }
+        }
+
+        /**
+         * The system prompt is a field of the request and not a message, so the first one ends up there wherever it
+         * was written. The rest stay where they were on a model that takes a system message in the middle, which
+         * keeps the cached prefix intact, and are joined into the field on one that does not.
+         */
+        private fun systemPromptOf(messages: List<Message>): String? {
             val texts = messages.filterIsInstance<Message.System>().map { it.text }
 
-            if (config.midConversationSystemMessages) return texts.firstOrNull()
+            if (takesMidConversationSystem) return texts.firstOrNull()
 
             if (texts.size > 1) {
                 warnings.add(
-                    ModelWarning("Anthropic takes one system prompt, so the ${texts.size} of them were joined")
+                    ModelWarning(
+                        "$modelId does not take system messages in the middle of the conversation, " +
+                            "so the ${texts.size} of them were joined into the system prompt$becauseItIsAGuess",
+                    )
                 )
             }
 
@@ -487,28 +523,37 @@ internal class AnthropicRequestMapper(
          * Anthropic wants the roles to alternate, so two messages of the same role in a row become one message
          * with the content of both. A conversation built turn by turn — an assistant message and the reasoning
          * that came with it, a tool result after another — is otherwise rejected before the model sees it.
+         *
+         * [dynamicLast] goes after all of it, so that what changes from one call to the next comes after what repeats.
          */
-        private fun toMessages(messages: List<Message>): List<JsonObject> {
+        private fun toMessages(messages: List<Message>, dynamicLast: String?): List<JsonObject> {
             val result = mutableListOf<JsonObject>()
             val firstSystem = messages.indexOfFirst { it is Message.System }
 
             messages.forEachIndexed { index, message ->
                 val role = roleOf(message, isTheSystemPrompt = index == firstSystem) ?: return@forEachIndexed
-                val content = toContent(message)
 
-                if (content.isEmpty()) return@forEachIndexed
-
-                val last = result.lastOrNull()
-
-                if (last?.get("role")?.asString() == role) {
-                    content.forEach { last["content"]!!.asArray()!!.add(it) }
-                } else {
-                    result.add(Json.obj("role" to role, "content" to Json.array(content)))
-                }
+                append(result, role, toContent(message))
             }
+
+            dynamicLast?.let { append(result, "system", listOf(textBlock(it))) }
 
             return result.onEach { toolResultsFirst(it) }
         }
+
+        private fun append(result: MutableList<JsonObject>, role: String, content: List<JsonObject>) {
+            if (content.isEmpty()) return
+
+            val last = result.lastOrNull()
+
+            if (last?.get("role")?.asString() == role) {
+                content.forEach { last["content"]!!.asArray()!!.add(it) }
+            } else {
+                result.add(Json.obj("role" to role, "content" to Json.array(content)))
+            }
+        }
+
+        private fun textBlock(text: String) = Json.obj("type" to "text", "text" to text)
 
         /**
          * Anthropic refuses a user message that has anything before its tool results — *"tool_use ids were found
@@ -526,8 +571,7 @@ internal class AnthropicRequestMapper(
 
         /** Null for whatever went into the system field, which is not a message here. */
         private fun roleOf(message: Message, isTheSystemPrompt: Boolean) = when (message) {
-            is Message.System ->
-                if (isTheSystemPrompt || !config.midConversationSystemMessages) null else "system"
+            is Message.System -> if (isTheSystemPrompt || !takesMidConversationSystem) null else "system"
             is Message.User -> "user"
             is Message.Assistant -> "assistant"
             // A tool result is something the model is told, so Anthropic reads it as a turn of the user
@@ -535,7 +579,7 @@ internal class AnthropicRequestMapper(
         }
 
         private fun toContent(message: Message): List<JsonObject> = when (message) {
-            is Message.System -> listOf(Json.obj("type" to "text", "text" to message.text))
+            is Message.System -> listOf(textBlock(message.text))
             is Message.User -> message.parts.mapNotNull { toBlock(it) }
             is Message.Assistant -> message.parts.mapNotNull { toBlock(it) }
             is Message.Tool -> message.results.mapNotNull { toBlock(it) }

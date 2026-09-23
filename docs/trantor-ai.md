@@ -69,7 +69,9 @@ call to the model and the tools it asked for is a **step**. The words are the on
 left out because it also means an exchange between the user and the application.
 
 The builder takes the messages in the order they are written — `system`, `user`, `messages(history)` —
-and `model` (a reference or an alias, `default` when left out), `tools`, `toolChoice`, `maxSteps`,
+and `dynamicSystem` for the part of the instructions that changes from one call to the next (see [What
+changes goes last](#what-changes-goes-last)). It also takes `model` (a reference or an alias, `default` when
+left out), `tools`, `toolChoice`, `maxSteps`,
 `settings { }`, `options(...)` for the provider, `context(RunContext)` for the tools and
 `callOptions(...)` for the timeout and the cancellation, which reach every step.
 
@@ -247,11 +249,45 @@ models.chat().stream("Contame un cuento").use { stream ->
 }
 ```
 
-`ChatRequest` carries what the call is about: `messages`, `tools`, `toolChoice`, `output`, `settings` and
-`providerOptions`. `ChatSettings` holds the knobs — `temperature`, `maxOutputTokens`, `seed`, `reasoning`,
-`failOnWarnings`. `CallOptions` is about the call and not the content: `timeout`, `cancellation`, `headers`.
+`ChatRequest` carries what the call is about: `messages`, `dynamicSystem`, `tools`, `toolChoice`, `output`,
+`settings` and `providerOptions`. `ChatSettings` holds the knobs — `temperature`, `maxOutputTokens`, `seed`,
+`reasoning`, `failOnWarnings`. `CallOptions` is about the call and not the content: `timeout`,
+`cancellation`, `headers`.
 
 A `ChatResponse` has `content` (a list of `Part`), `finishReason`, `usage`, `info` and `warnings`.
+
+### What changes goes last
+
+```kotlin
+ChatRequest(
+    messages = listOf(Message.system("Sos el asistente de una ferretería..."), Message.user(question)),
+    dynamicSystem = "Hoy es martes 23/09. El contacto está asignado a Juan.",
+)
+```
+
+A system prompt usually has a long part that never changes and a short one that does: the time, what the
+application knows about the user, the state of a process. Providers cache the beginning of a request that
+repeats, and they read the tools first, then the system prompt, then the conversation. So a part that
+changes at the end of the system prompt still comes before the whole conversation, and every time it
+changes the conversation is paid for again.
+
+`dynamicSystem` is that part, kept apart. Each adapter puts it last:
+
+| | where it goes |
+|---|---|
+| OpenAI | a system message at the end of the input |
+| Anthropic, a model that takes a system message in the middle | a `role: "system"` message after the conversation |
+| Anthropic, a model that does not | a second block under the system prompt, after the mark of the system cache |
+
+It is not a message of the conversation: it never shows up in `newMessages`, and a run sends it again on
+every step. The facade has it as `dynamicSystem(...)`.
+
+This is what both providers recommend. OpenAI's prompt caching guide puts the *"dynamic developer
+instructions, such as user-specific content and timestamps"* after the stable ones, and Anthropic added
+system messages in the middle of the conversation because editing the top one *"invalidates the cache for
+everything that follows"*. PydanticAI keeps its dynamic instructions after the static ones, and ADK sends
+the dynamic part after the conversation as content of the user; here it keeps the role of a system message
+wherever the model takes one.
 
 ---
 
@@ -675,15 +711,14 @@ services.addAnthropic { anthropic, _ -> anthropic.cache = AnthropicCache(system 
 ```
 
 The key comes from `ANTHROPIC_API_KEY`, and `AnthropicConfig` also holds `baseUrl`, the pinned
-`anthropic-version`, a list of `betas` sent as `anthropic-beta`, `defaultMaxTokens` and
-`midConversationSystemMessages`.
+`anthropic-version`, a list of `betas` sent as `anthropic-beta` and `defaultMaxTokens`.
 
 The Messages API is shaped differently from the Responses API, and most of the adapter is that:
 
 | | OpenAI | Anthropic |
 |---|---|---|
 | shape | a flat list of **items** | messages, each holding **blocks** |
-| system | an item with a role | a field of the request |
+| system | an item with a role, anywhere | a field of the request, and a message anywhere on the newest models |
 | roles | any order | must alternate, so two in a row are merged into one |
 | `max_tokens` | optional | **required**, so there is always a number to send |
 | tool result | an item of its own, carrying the tool name | a block inside a `user` message, with no name |
@@ -697,10 +732,13 @@ ones named beside it. `Usage` says the details are **subsets**, and without this
 mean one thing here and another in OpenAI, and every sum would be wrong by however much the cache was
 used.
 
-**The system prompt** is a field, so the first one goes there wherever it was written. The rest are
-joined into it by default, which every model takes; `midConversationSystemMessages = true` sends the
-later ones in place as `role: "system"` messages, which keeps the cached prefix intact but only the
-newest models accept.
+**The system prompt** is a field, so the first one goes there wherever it was written. The rest stay
+where they were, as `role: "system"` messages, on the models that take one in the middle of the
+conversation — Opus 4.8 and 5, Fable and Mythos 5 and 5.1 — which keeps the cached prefix intact. On the
+others they are joined into the field, with a warning. The catalog says which is which, so there is
+nothing to configure. The `dynamicSystem` of a request goes by the same rule: last, as a system message,
+where the model takes it, and as a second block under the system prompt where it does not (see [What
+changes goes last](#what-changes-goes-last)).
 
 **Prompt caching is three independent flags.** Unlike OpenAI, which caches on its own, Anthropic caches
 only up to a mark, and a later call reads the cache only if everything up to that mark is exactly the
@@ -708,9 +746,9 @@ same. Each flag puts a mark in a different place, and they add up:
 
 | flag | where the mark goes | pays off when |
 |---|---|---|
-| `system` | at the end of the system prompt | the same long system prompt comes before a new question every time |
+| `system` | at the end of the system prompt, before the `dynamicSystem` when it goes under it | the same long system prompt comes before a new question every time |
 | `tools` | on the last tool | the tools stay the same and the system prompt does not |
-| `conversation` | Anthropic's own mark, on the last block, moving forward as the conversation grows | each call repeats the one before and adds a turn |
+| `conversation` | Anthropic's own mark, on the last block, moving forward as the conversation grows; on the block before the `dynamicSystem` when that one goes last | each call repeats the one before and adds a turn |
 
 ```kotlin
 anthropic.cache = AnthropicCache(system = true, conversation = true)       // an agent or a chat
@@ -722,8 +760,8 @@ In `settings.json`, under `ai.providers.anthropic`: `"cache": { "system": true, 
 A call can replace the whole setting with `AnthropicOptions(cache = ...)`.
 
 **Anthropic reads the tools first**, then the system prompt, then the messages, so a mark on the system
-prompt caches the tools too. `tools` is only worth it alone when the system prompt changes on every call
-— because it carries today's date, say.
+prompt caches the tools too. `tools` is only worth it alone when the system prompt changes on every call.
+What changes on every call, like today's date, is better in `dynamicSystem`, and the marks leave it out.
 
 **`conversation` alone does not cache a shared prompt.** Its mark lands on the last block, which in a
 one-off question is the question itself: new every time, so every call pays the higher price of a write
