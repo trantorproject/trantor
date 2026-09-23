@@ -52,7 +52,7 @@ class ToolLoop(
             if (calls.isEmpty()) return run.finish(response)
 
             run.throwIfOutOfSteps(response)
-            run.advance(response, calls.map { execute(it) })
+            run.advance(response, executeAll(calls, options))
         }
     }
 
@@ -125,13 +125,21 @@ class ToolLoop(
 
                 val executions = mutableListOf<Execution>()
 
-                for (call in calls) {
-                    yield(RunEvent.ToolStarted(call))
+                if (runInParallel(calls)) {
+                    for (call in calls) yield(RunEvent.ToolStarted(call))
 
-                    val execution = execute(call)
+                    executions.addAll(inParallel(calls, options))
 
-                    executions.add(execution)
-                    yield(RunEvent.ToolFinished(execution.result, execution.failure))
+                    for (execution in executions) yield(RunEvent.ToolFinished(execution.result, execution.failure))
+                } else {
+                    for (call in calls) {
+                        yield(RunEvent.ToolStarted(call))
+
+                        val execution = execute(call)
+
+                        executions.add(execution)
+                        yield(RunEvent.ToolFinished(execution.result, execution.failure))
+                    }
                 }
 
                 val number = run.steps.size + 1
@@ -163,6 +171,84 @@ class ToolLoop(
             closed = true
             current?.close()
             current = null
+        }
+    }
+
+    /**
+     * The calls of a step: at the same time when every tool of the step only reads, and one after the other when
+     * any of them can write. Two calls that write could step on each other, and in order they happen the way the
+     * model asked for them.
+     */
+    private fun executeAll(calls: List<ToolCallPart>, options: CallOptions): List<Execution> =
+        if (runInParallel(calls)) inParallel(calls, options) else calls.map { execute(it) }
+
+    private fun runInParallel(calls: List<ToolCallPart>) =
+        calls.size > 1 && calls.all { toolsByName[it.toolName]?.readOnly == true }
+
+    /**
+     * Each call on its own virtual thread. They all finish before the step goes on, even when one of them fails,
+     * and the results come back in the order of the calls and not in the order they answered. A cancellation, from
+     * outside or from one of the tools, interrupts every one of them.
+     */
+    private fun inParallel(calls: List<ToolCallPart>, options: CallOptions): List<Execution> {
+        val running = calls.map { Parallel(it, options) }
+
+        options.cancellation?.onCancel { running.forEach { it.interrupt() } }.use {
+            running.forEach { it.start() }
+            joinAll(running)
+        }
+
+        return running.map { it.result() }
+    }
+
+    /** Waits for every one of them, and if the run itself is interrupted while it waits, stops them all. */
+    private fun joinAll(running: List<Parallel>) {
+        try {
+            running.forEach { it.join() }
+        } catch (e: InterruptedException) {
+            running.forEach { it.interrupt() }
+            running.forEach { it.joinInterrupted() }
+
+            Thread.currentThread().interrupt()
+            throw CancelledError("The thread was interrupted while the tools of the step ran", e)
+        }
+    }
+
+    /** One call of a step on its own virtual thread, holding what it left: its execution or the error that ended it. */
+    private inner class Parallel(private val call: ToolCallPart, private val options: CallOptions) {
+        private var execution: Execution? = null
+        private var error: Throwable? = null
+
+        private val thread = Thread.ofVirtual().name("tool:${call.toolName}").unstarted {
+            try {
+                // It may have been cancelled between the moment the step started and the moment this one did
+                throwIfCancelled(options)
+                execution = execute(call)
+            } catch (e: Throwable) {
+                error = e
+            }
+        }
+
+        fun start() = thread.start()
+
+        fun interrupt() = thread.interrupt()
+
+        fun join() = thread.join()
+
+        /** Waits for one that was told to stop, without minding another interruption. */
+        fun joinInterrupted() {
+            try {
+                thread.join()
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+        }
+
+        /** What the call left. The first error in the order of the calls is the one that ends the run. */
+        fun result(): Execution {
+            error?.let { throw it }
+
+            return execution!!
         }
     }
 

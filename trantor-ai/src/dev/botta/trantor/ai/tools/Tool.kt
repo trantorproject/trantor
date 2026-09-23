@@ -34,7 +34,7 @@ abstract class Tool<TArgs: Any>(val argsSerializer: KSerializer<TArgs>) {
     /** What the tool is for, which is all the model knows to decide when to call it. */
     abstract val description: String
 
-    /** A tool that only reads can run at the same time as others of the same turn. */
+    /** A tool that only reads runs at the same time as the other calls of its step, when they all only read. */
     open val readOnly: Boolean = false
 
     /** What a failure of [execute] does to the run. Input the model got wrong always goes back to it. */
