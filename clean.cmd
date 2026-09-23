@@ -3,6 +3,7 @@
 taskkill /f /t /im java.exe 2>nul
 
 rmdir /s /q "build"
+rmdir /s /q "trantor-ai\build"
 rmdir /s /q "trantor-aws\build"
 rmdir /s /q "trantor-bom\build"
 rmdir /s /q "trantor-config\build"
