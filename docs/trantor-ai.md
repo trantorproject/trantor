@@ -278,6 +278,7 @@ changes the conversation is paid for again.
 | OpenAI | a system message at the end of the input |
 | Anthropic, a model that takes a system message in the middle | a `role: "system"` message after the conversation |
 | Anthropic, a model that does not | a second block under the system prompt, after the mark of the system cache |
+| Anthropic, a model that ties its thinking to the conversation (Opus 5.5, Fable 5.1) | a system message after the conversation that lasts one turn, with the earlier ones put back where they were (see [Thinking tied to the conversation](#thinking-tied-to-the-conversation)) |
 
 It is not a message of the conversation: it never shows up in `newMessages`, and a run sends it again on
 every step. The facade has it as `dynamicSystem(...)`.
@@ -799,6 +800,53 @@ ProviderToolSpec("anthropic.web_search_20260209", Json.obj("name" to "web_search
 model takes, so whoever knows their model gets exactly what they asked for: `effort` reaches the `xhigh`
 and `max` levels `Reasoning` does not have, `thinking` names a budget or the adaptive mode, and there are
 `cache`, `userId` and `serviceTier`.
+
+### Thinking tied to the conversation
+
+This is the strangest rule of the whole API, and nothing an application has to do about it: the adapter
+does it. It is written down because it shapes everything that touches a conversation, and because it
+fails in a way that is hard to trace back.
+
+**What Anthropic does.** On Claude Opus 5.5 and Fable 5.1, each thinking block the model returns is tied
+to everything that came before it when it was produced: the system prompt, the tools and every earlier
+message. When the block goes back in a later call — the next step of a run, or the next turn of a chat —
+the API checks that all of that is still exactly the same, and answers 400 when it is not:
+
+> *Invalid `signature` in `thinking` block. The block is bound to a different conversation. [...] Content
+> that preceded this block when it was created is missing from this request.*
+
+It does it by default on accounts created from 31 August 2026 on, and on older ones only if a call asks for
+it. The rule it lays down is that **on those models a conversation can only grow at its end**: nothing
+already sent can be edited, moved or removed. Appending, and changing the settings of the call or the cache
+marks, is fine.
+
+**Why it collides with `dynamicSystem`.** The dynamic part goes after the conversation and is never a
+message of it, so on every call it moves: the thinking of the last answer was produced with it right
+before, and on the next call it is at the end instead. That is an edit, and the 400 comes on the turn after.
+A recording showed exactly that: a run on Opus 5.5 went well, and the next question failed with the error
+above, naming the dynamic part as what was missing.
+
+**What the adapter does about it.** On those models the dynamic part goes as a system message that lasts
+one turn: `clear_at: "next_user_message"`, a beta the adapter asks for itself. The model reads it until a
+user message comes after it — a message with only tool results counts — and from then on it stays in its
+place but reads as nothing and costs no tokens. The thinking of the answer remembers the dynamic part it
+was produced with, in the `ProviderMetadata` of its part, next to the signature. On the next call the
+adapter puts that copy back right before the answer, already cleared, so what came before the thinking is
+exactly what it was. The cache reads everything but the new part, the model keeps its earlier reasoning,
+and the dynamic part never becomes a message of the conversation.
+
+The one thing it asks of an application is what the signature already asks: that the parts of a message
+are stored with their metadata, as they came.
+
+**What the other libraries do.** Most of them let the block go instead. The option for that is
+`thinking.block_binding.prefix_mismatch_behavior`: with `"drop_block"`, Anthropic removes a block whose
+past changed, and every thinking block after it, before the model reads the call; the call goes through,
+but the model no longer sees what it reasoned there. Zed sends it on every call to those models;
+PydanticAI sends nothing, retries once with it when the 400 comes, and warns; Goose makes it a setting.
+Here it is left for the two cases where the past really changes, which come with the agents: one agent
+handing the conversation to another, with other instructions and other tools, and a context policy that
+drops old messages. Losing the earlier reasoning at that point is what happens anyway when the model
+changes.
 
 ---
 

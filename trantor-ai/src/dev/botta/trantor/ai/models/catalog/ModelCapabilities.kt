@@ -74,6 +74,12 @@ enum class ModelFeatures {
      * cache of everything that follows. OpenAI takes them anywhere; among the Claude models only the newest do.
      */
     MidConversationSystem,
+    /**
+     * The model ties each thinking block to everything that came before it when it was produced — the system prompt,
+     * the tools and every earlier message — and answers 400 when a later call sends the block back after any of that
+     * changed. On such a model a conversation can only grow at its end. Claude Opus 5.5 and Fable 5.1 do it.
+     */
+    BoundThinking,
 }
 
 /** A closed range of a numeric setting, with the two that come up written down. */

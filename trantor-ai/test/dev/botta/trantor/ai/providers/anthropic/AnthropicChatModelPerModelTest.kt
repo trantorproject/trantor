@@ -575,6 +575,108 @@ class AnthropicChatModelPerModelTest {
         )
     }
 
+    /**
+     * Claude Opus 5.5 and Fable 5.1 tie each thinking block to everything that came before it, and answer 400 when
+     * that changed. The dynamic part moves to the end on every call, which is such a change for the thinking of the
+     * call before, so the copy that was there is put back where it was, turned off.
+     */
+    @Nested
+    inner class `on a model that ties its thinking to what came before it` {
+        @Test
+        fun `the dynamic part goes last as a system message that lasts one turn, with the beta it takes`() {
+            generateWith("claude-opus-5-5", request())
+
+            assertThat(sentBody()["messages"]!!.asArray()!!.last().toString()).isEqualTo(turnScoped("Son las 10"))
+            assertThat(httpClient.request?.headers?.get("anthropic-beta"))
+                .isEqualTo("mid-conversation-system-clear-at-2026-08-21")
+        }
+
+        @Test
+        fun `the thinking of the answer keeps the dynamic part it was produced with`() {
+            httpClient.body = fixture("bound-thinking-2")
+
+            val answer = generateWith("claude-opus-5-5", request())
+
+            assertThat(stampOf(answer.content)).isEqualTo("Son las 10")
+        }
+
+        @Test
+        fun `and the next call puts that copy back before the answer, where it was`() {
+            httpClient.body = fixture("bound-thinking-2")
+            val answer = generateWith("claude-opus-5-5", request())
+            val history = listOf(question, answer.asMessage(), Message.user("Y en Lima?"))
+
+            generateWith("claude-opus-5-5", request("Son las 11", history))
+
+            val messages = sentBody()["messages"]!!.asArray()!!.map { it.asObject()!! }
+            assertThat(messages.map { it["role"]?.asString() })
+                .containsExactly("user", "system", "assistant", "user", "system")
+            assertThat(messages[1].toString()).isEqualTo(turnScoped("Son las 10"))
+            assertThat(messages[4].toString()).isEqualTo(turnScoped("Son las 11"))
+        }
+
+        @Test
+        fun `an answer that carries none goes back as it came`() {
+            val history = listOf(question, Message.assistant("Hacen 7 grados"), Message.user("Y en Lima?"))
+
+            generateWith("claude-opus-5-5", request(history = history))
+
+            assertThat(sentBody()["messages"]!!.asArray()!!.map { it.asObject()!!["role"]?.asString() })
+                .containsExactly("user", "assistant", "user", "system")
+        }
+
+        @Test
+        fun `a streamed answer keeps it too`() {
+            httpClient.body = fixture("stream-thinking", "txt")
+            val model = AnthropicChatModel("claude-opus-5-5", AnthropicConfig(apiKey = "sk-ant-test"), httpClient)
+
+            val (done, response) = model.stream(request()).use { stream ->
+                val parts = stream.asSequence().filterIsInstance<StreamPart.PartDone>().map { it.part }.toList()
+
+                parts to stream.response()
+            }
+
+            assertThat(stampOf(done)).isEqualTo("Son las 10")
+            assertThat(stampOf(response.content)).isEqualTo("Son las 10")
+        }
+
+        @Test
+        fun `a model that does not tie its thinking gets none of this`() {
+            httpClient.body = fixture("bound-thinking-2")
+
+            val answer = generateWith("claude-opus-5", request())
+
+            assertThat(sentBody()["messages"]!!.asArray()!!.last().toString()).doesNotContain("clear_at")
+            assertThat(httpClient.request?.headers).doesNotContainKey("anthropic-beta")
+            assertThat(stampOf(answer.content)).isNull()
+        }
+
+        @Test
+        fun `and neither does a call without a dynamic part`() {
+            httpClient.body = fixture("bound-thinking-2")
+
+            val answer = generateWith("claude-opus-5-5", request(dynamic = null))
+
+            assertThat(httpClient.requestBody).doesNotContain("clear_at")
+            assertThat(httpClient.request?.headers).doesNotContainKey("anthropic-beta")
+            assertThat(stampOf(answer.content)).isNull()
+        }
+
+        private fun request(dynamic: String? = "Son las 10", history: List<Message> = listOf(question)) =
+            ChatRequest(history, dynamicSystem = dynamic)
+
+        private fun stampOf(parts: List<Part>) = parts.filterIsInstance<ReasoningPart>().single()
+            .metadata["anthropic"]?.get("dynamic_system")?.asString()
+
+        private fun turnScoped(text: String) =
+            """{"role":"system","content":[{"type":"text","text":"$text"}],"clear_at":"next_user_message"}"""
+
+        private fun fixture(name: String, extension: String = "json") =
+            javaClass.getResource("/anthropic/$name.$extension")?.readText() ?: error("Missing fixture $name")
+
+        private val question = Message.user("Que temperatura hay en Bariloche?")
+    }
+
     @Serializable
     private data class Answer(val city: String)
 

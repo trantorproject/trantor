@@ -3,7 +3,6 @@ package dev.botta.trantor.ai.providers.anthropic
 import dev.botta.json.Json
 import dev.botta.json.values.JsonArray
 import dev.botta.json.values.JsonObject
-import dev.botta.json.values.JsonValue
 import dev.botta.trantor.ai.errors.InvalidProviderOptionError
 import dev.botta.trantor.ai.errors.UnsupportedRequestError
 import dev.botta.trantor.ai.models.ModelWarning
@@ -38,32 +37,18 @@ internal class AnthropicRequestMapper(
 
     /** [spec] is null when the provider has no latest set either, and then nothing here holds anything back. */
     private inner class Mapping(private val spec: ModelSpec?, private val modelId: String) {
-        private val warnings = mutableListOf<ModelWarning>()
         private val model: ModelCapabilities? = spec?.capabilities
-
-        private val takesSamplingSettings get() = model == null || model.temperature != null
-        private val takesEffort get() = model == null || model.reasoningEfforts.isNotEmpty()
-        private val takesBudget get() = model == null || model.reasoningBudget != null
-        private val takesStructuredOutput get() = model == null || ModelFeatures.StructuredOutput in model
-        private val takesTools get() = model == null || ModelFeatures.Tools in model
-        private val takesForcedToolUse get() = model == null || ModelFeatures.ForcedToolUse in model
-        private val takesMidConversationSystem
-            get() = model == null || ModelFeatures.MidConversationSystem in model
-        private val takesReasoningOff get() = model == null || ModelFeatures.ReasoningOff in model
+        private val takes = WhatTheModelTakes(spec)
+        private val warnings = MappingWarnings(modelId, takes.isGuess)
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
             val options = anthropicOptionsOf(request.providerOptions)
             val cache = options?.cache ?: config.cache
             val thinking = toThinking(request.settings.reasoning, options)
-            // Where the model takes a system message after the conversation, what changes goes there
-            val dynamicLast = request.dynamicSystem?.takeIf { takesMidConversationSystem }
-            val body = Json.obj(
-                "model" to modelId,
-                "messages" to Json.array(toMessages(request.messages, dynamicLast)),
-            )
+            val conversation = AnthropicConversation(takes, warnings, cache, modelId)
+            val body = Json.obj("model" to modelId)
 
-            systemOf(request.messages, request.dynamicSystem.takeIf { dynamicLast == null }, cache)
-                ?.let { body["system"] = it }
+            conversation.writeTo(body, request.messages, request.dynamicSystem)
             // Required by the api, unlike everywhere else, so there is always a number to send
             body["max_tokens"] = maxTokensFor(request.settings, thinking)
             thinking?.let { body["thinking"] = it }
@@ -73,7 +58,7 @@ internal class AnthropicRequestMapper(
             applySettings(body, request.settings)
             applyTools(body, request, thinking)
             applyOutputConfig(body, request.output, request.settings.reasoning, options)
-            applyCache(body, cache, afterTheDynamicPart = dynamicLast != null)
+            applyCache(body, cache, conversation)
 
             options?.userId?.let { body["metadata"] = Json.obj("user_id" to it) }
             options?.serviceTier?.let { body["service_tier"] = it.wireName }
@@ -84,19 +69,19 @@ internal class AnthropicRequestMapper(
                 throw UnsupportedRequestError(ANTHROPIC_PROVIDER, warnings.toList())
             }
 
-            return MappedRequest(body, warnings.toList())
+            return MappedRequest(body, warnings.toList(), conversation.betas, conversation.stamp)
         }
 
         private fun applySettings(body: JsonObject, settings: ChatSettings): Unit = with(settings) {
             stopSequences?.let { body["stop_sequences"] = Json.array(it.map { stop -> Json.value(stop) }) }
-            seed?.let { unsupportedSetting("seed") }
+            seed?.let { warnings.unsupportedSetting("seed") }
 
             if (temperature == null && topP == null) return
 
             // Deprecated from Claude Opus 4.6 on: the models after it answer 400 to anything but the default
-            if (!takesSamplingSettings) {
-                temperature?.let { droppedByTheModel("temperature") }
-                topP?.let { droppedByTheModel("topP") }
+            if (!takes.samplingSettings) {
+                temperature?.let { warnings.droppedByTheModel("temperature") }
+                topP?.let { warnings.droppedByTheModel("topP") }
                 return
             }
 
@@ -142,8 +127,8 @@ internal class AnthropicRequestMapper(
                 return
             }
 
-            if (!takesTools) {
-                droppedByTheModel("tools")
+            if (!takes.tools) {
+                warnings.droppedByTheModel("tools")
 
                 return
             }
@@ -179,12 +164,12 @@ internal class AnthropicRequestMapper(
          * tool at all — what is lost is the guarantee, and that is what the warning says.
          */
         private fun strictly(tool: FunctionToolSpec): Boolean {
-            if (!tool.strict || takesStructuredOutput) return tool.strict
+            if (!tool.strict || takes.structuredOutput) return tool.strict
 
             warnings.add(
                 ModelWarning(
                     "$modelId cannot be held to the schema of ${tool.name}, so the tool was sent without it" +
-                        becauseItIsAGuess,
+                        warnings.becauseItIsAGuess,
                     "tools",
                 )
             )
@@ -216,8 +201,8 @@ internal class AnthropicRequestMapper(
         private fun asTheModelTakesIt(choice: ToolChoice, thinking: JsonObject?): ToolChoice {
             if (choice != ToolChoice.Required && choice !is ToolChoice.Named) return choice
 
-            if (!takesForcedToolUse) {
-                droppedByTheModel("toolChoice")
+            if (!takes.forcedToolUse) {
+                warnings.droppedByTheModel("toolChoice")
 
                 return ToolChoice.Auto
             }
@@ -288,17 +273,17 @@ internal class AnthropicRequestMapper(
             if (reasoning == Reasoning.Off) return thinkingOff()
 
             reasoning.budgetTokens?.let {
-                if (takesBudget) return budgetThinking(it, reasoning.summary)
+                if (takes.budget) return budgetThinking(it, reasoning.summary)
 
-                droppedByTheModel("reasoning.budgetTokens")
+                warnings.droppedByTheModel("reasoning.budgetTokens")
                 return null
             }
 
             if (reasoning.effort == null) return null
-            if (takesEffort) return adaptiveThinking(reasoning.summary)
-            if (takesBudget) return budgetThinking(budgetFor(reasoning.effort), reasoning.summary)
+            if (takes.effort) return adaptiveThinking(reasoning.summary)
+            if (takes.budget) return budgetThinking(budgetFor(reasoning.effort), reasoning.summary)
 
-            droppedByTheModel("reasoning")
+            warnings.droppedByTheModel("reasoning")
 
             return null
         }
@@ -311,12 +296,12 @@ internal class AnthropicRequestMapper(
 
         /** A model that always thinks answers 400 to thinking disabled: there, thinking less is a lower effort. */
         private fun thinkingOff(): JsonObject? {
-            if (takesReasoningOff) return Json.obj("type" to "disabled")
+            if (takes.reasoningOff) return Json.obj("type" to "disabled")
 
             warnings.add(
                 ModelWarning(
                     "$modelId always thinks, so Reasoning.Off was not sent; a lower effort is how it thinks less" +
-                        becauseItIsAGuess,
+                        warnings.becauseItIsAGuess,
                     "reasoning",
                 )
             )
@@ -377,7 +362,7 @@ internal class AnthropicRequestMapper(
             options?.effort?.let { return it.wireName }
             if (options?.thinking != null) return null
 
-            val asked = reasoning?.effort?.takeIf { takesEffort } ?: return null
+            val asked = reasoning?.effort?.takeIf { takes.effort } ?: return null
             val sent = nearest(asked) ?: return null
 
             if (sent != asked) {
@@ -401,11 +386,11 @@ internal class AnthropicRequestMapper(
 
         private fun formatFor(output: OutputSpec) = when (output) {
             is OutputSpec.Text -> null
-            is OutputSpec.Json -> if (takesStructuredOutput) {
+            is OutputSpec.Json -> if (takes.structuredOutput) {
                 // Anthropic names no schema and takes no strict flag: closing the schema is the whole of it
                 Json.obj("type" to "json_schema", "schema" to schemaFor(output.schema, strict = true))
             } else {
-                droppedByTheModel("output")
+                warnings.droppedByTheModel("output")
                 null
             }
         }
@@ -417,34 +402,14 @@ internal class AnthropicRequestMapper(
         private fun schemaFor(schema: JsonObject, strict: Boolean) = if (strict) StrictSchema.of(schema) else schema
 
         /**
-         * One mark for each part the application asked to cache, all with the same duration: Anthropic refuses a
-         * mark that outlives one before it. The one of the system prompt goes on in [systemOf], and a missing tool
-         * list is simply nothing to mark. A cut somewhere precise is marked on the part instead, and travels in its
-         * metadata.
-         *
-         * The one of the conversation is Anthropic's own, which lands on the last block. When the last block is the
-         * dynamic part, that would cache what changes on every call and read it back never, so the mark goes on the
-         * block before it instead.
+         * One mark for each part the application asked to cache. The ones of the system prompt and the conversation
+         * go on in [AnthropicConversation], and a missing tool list is simply nothing to mark. A cut somewhere
+         * precise is marked on the part instead, and travels in its metadata.
          */
-        private fun applyCache(body: JsonObject, cache: AnthropicCache, afterTheDynamicPart: Boolean) {
+        private fun applyCache(body: JsonObject, cache: AnthropicCache, conversation: AnthropicConversation) {
             if (cache.tools) body["tools"]?.asArray()?.lastOrNull()?.asObject()?.set("cache_control", markOf(cache))
 
-            if (!cache.conversation) return
-
-            if (!afterTheDynamicPart) {
-                body["cache_control"] = markOf(cache)
-                return
-            }
-
-            val messages = body["messages"]!!.asArray()!!
-
-            messages.getOrNull(messages.size - 2)?.asObject()?.get("content")?.asArray()?.lastOrNull()?.asObject()
-                ?.set("cache_control", markOf(cache))
-        }
-
-        private fun markOf(cache: AnthropicCache) = when (cache.ttl) {
-            AnthropicCacheTtl.FiveMinutes -> Json.obj("type" to "ephemeral")
-            AnthropicCacheTtl.OneHour -> Json.obj("type" to "ephemeral", "ttl" to "1h")
+            conversation.markCache(body)
         }
 
         private fun anthropicOptionsOf(options: ProviderOptions): AnthropicOptions? {
@@ -492,194 +457,19 @@ internal class AnthropicRequestMapper(
                 }
             }
         }
-
-        /**
-         * The system field: the system prompt, and under it the dynamic part when the model cannot take it after the
-         * conversation. The mark of the system cache goes on the system prompt alone, so a dynamic part that changes
-         * does not undo it. A single block with nothing to mark goes as the plain string.
-         */
-        private fun systemOf(messages: List<Message>, dynamic: String?, cache: AnthropicCache): JsonValue? {
-            val blocks = listOfNotNull(
-                systemPromptOf(messages)?.let { prompt ->
-                    textBlock(prompt).also { if (cache.system) it["cache_control"] = markOf(cache) }
-                },
-                dynamic?.let { textBlock(it) },
-            )
-
-            return when {
-                blocks.isEmpty() -> null
-                blocks.size == 1 && !blocks[0].containsKey("cache_control") -> blocks[0]["text"]
-                else -> Json.array(blocks)
-            }
-        }
-
-        /**
-         * The system prompt is a field of the request and not a message, so the first one ends up there wherever it
-         * was written. The rest stay where they were on a model that takes a system message in the middle, which
-         * keeps the cached prefix intact, and are joined into the field on one that does not.
-         */
-        private fun systemPromptOf(messages: List<Message>): String? {
-            val texts = messages.filterIsInstance<Message.System>().map { it.text }
-
-            if (takesMidConversationSystem) return texts.firstOrNull()
-
-            if (texts.size > 1) {
-                warnings.add(
-                    ModelWarning(
-                        "$modelId does not take system messages in the middle of the conversation, " +
-                            "so the ${texts.size} of them were joined into the system prompt$becauseItIsAGuess",
-                    )
-                )
-            }
-
-            return texts.takeIf { it.isNotEmpty() }?.joinToString("\n\n")
-        }
-
-        /**
-         * Anthropic wants the roles to alternate, so two messages of the same role in a row become one message
-         * with the content of both. A conversation built turn by turn — an assistant message and the reasoning
-         * that came with it, a tool result after another — is otherwise rejected before the model sees it.
-         *
-         * [dynamicLast] goes after all of it, so that what changes from one call to the next comes after what repeats.
-         */
-        private fun toMessages(messages: List<Message>, dynamicLast: String?): List<JsonObject> {
-            val result = mutableListOf<JsonObject>()
-            val firstSystem = messages.indexOfFirst { it is Message.System }
-
-            messages.forEachIndexed { index, message ->
-                val role = roleOf(message, isTheSystemPrompt = index == firstSystem) ?: return@forEachIndexed
-
-                append(result, role, toContent(message))
-            }
-
-            dynamicLast?.let { append(result, "system", listOf(textBlock(it))) }
-
-            return result.onEach { toolResultsFirst(it) }
-        }
-
-        private fun append(result: MutableList<JsonObject>, role: String, content: List<JsonObject>) {
-            if (content.isEmpty()) return
-
-            val last = result.lastOrNull()
-
-            if (last?.get("role")?.asString() == role) {
-                content.forEach { last["content"]!!.asArray()!!.add(it) }
-            } else {
-                result.add(Json.obj("role" to role, "content" to Json.array(content)))
-            }
-        }
-
-        private fun textBlock(text: String) = Json.obj("type" to "text", "text" to text)
-
-        /**
-         * Anthropic refuses a user message that has anything before its tool results — *"tool_use ids were found
-         * without tool_result blocks immediately after"* — so they are moved to the front. It is a rule about the
-         * wire and not about the conversation, and the caller writing a question after an answer is reasonable.
-         */
-        private fun toolResultsFirst(message: JsonObject) {
-            val content = message["content"]?.asArray() ?: return
-            val (results, rest) = content.partition { it.asObject()?.get("type")?.asString() == "tool_result" }
-
-            if (results.isEmpty() || rest.isEmpty()) return
-
-            message["content"] = Json.array(results + rest)
-        }
-
-        /** Null for whatever went into the system field, which is not a message here. */
-        private fun roleOf(message: Message, isTheSystemPrompt: Boolean) = when (message) {
-            is Message.System -> if (isTheSystemPrompt || !takesMidConversationSystem) null else "system"
-            is Message.User -> "user"
-            is Message.Assistant -> "assistant"
-            // A tool result is something the model is told, so Anthropic reads it as a turn of the user
-            is Message.Tool -> "user"
-        }
-
-        private fun toContent(message: Message): List<JsonObject> = when (message) {
-            is Message.System -> listOf(textBlock(message.text))
-            is Message.User -> message.parts.mapNotNull { toBlock(it) }
-            is Message.Assistant -> message.parts.mapNotNull { toBlock(it) }
-            is Message.Tool -> message.results.mapNotNull { toBlock(it) }
-        }
-
-        private fun toBlock(part: Part): JsonObject? = when (part) {
-            is TextPart -> withMetadata(Json.obj("type" to "text", "text" to part.text), part)
-            // The type travels in the metadata, so a tool Anthropic ran itself goes back as the block it was
-            is ToolCallPart -> withMetadata(
-                Json.obj(
-                    "type" to "tool_use",
-                    "id" to part.callId,
-                    "name" to part.toolName,
-                    "input" to part.input,
-                ),
-                part,
-            )
-            is ToolResultPart -> withMetadata(toToolResultBlock(part), part)
-            // A block we did not model when we received it goes back exactly as it came
-            is ProviderPart -> if (part.provider == ANTHROPIC_PROVIDER) part.raw else unsupportedPart(part)
-            // Thinking is signed by whoever produced it, so only its own provider can take it back
-            is ReasoningPart -> part.opaque?.takeIf { part.metadata[ANTHROPIC_PROVIDER] != null } ?: foreignReasoning()
-            else -> unsupportedPart(part)
-        }
-
-        /**
-         * A result has no room for the name of the tool: Anthropic matches it to its call by id alone. The output
-         * goes as a string, which is the form every model takes.
-         */
-        private fun toToolResultBlock(part: ToolResultPart): JsonObject {
-            val json = Json.obj(
-                "type" to "tool_result",
-                "tool_use_id" to part.callId,
-                "content" to when (val output = part.output) {
-                    is ToolOutput.Text -> output.value
-                    is ToolOutput.Json -> output.value.toString()
-                },
-            )
-
-            if (part.isError) json["is_error"] = true
-
-            return json
-        }
-
-        private fun foreignReasoning(): JsonObject? {
-            warnings.add(ModelWarning("Reasoning that Anthropic did not produce was dropped"))
-
-            return null
-        }
-
-        /** Whatever the provider attached to the part travels back with it: citations and cache marks, for two. */
-        private fun withMetadata(json: JsonObject, part: Part): JsonObject {
-            val extras = part.metadata[ANTHROPIC_PROVIDER] ?: return json
-
-            extras.keys.forEach { json[it] = extras.getValue(it) }
-
-            return json
-        }
-
-        private fun unsupportedPart(part: Part): JsonObject? {
-            warnings.add(ModelWarning("${part::class.simpleName} is not sent to Anthropic yet and was dropped"))
-
-            return null
-        }
-
-        private fun unsupportedSetting(setting: String) {
-            warnings.add(ModelWarning("The Anthropic Messages API does not support $setting", setting))
-        }
-
-        private fun droppedByTheModel(setting: String) {
-            warnings.add(ModelWarning("$modelId does not take $setting, so it was not sent$becauseItIsAGuess", setting))
-        }
-
-        /**
-         * A decision taken from a guess says so. The catalog is standing in the newest model it knows for one
-         * nobody described, which is right far more often than not and wrong in a way a written entry never is.
-         */
-        private val becauseItIsAGuess
-            get() = if (spec?.isGuess != true) "" else
-                ". That is what the newest model in the catalog takes; add $modelId to it if it takes more"
     }
 }
 
-internal data class MappedRequest(val body: JsonObject, val warnings: List<ModelWarning>)
+/**
+ * A request ready to go: its body, what was changed on the way, the beta headers it needs, and what the thinking of
+ * its answer has to remember ([DynamicSystemStamp]).
+ */
+internal data class MappedRequest(
+    val body: JsonObject,
+    val warnings: List<ModelWarning>,
+    val betas: Set<String> = emptySet(),
+    val stamp: String? = null,
+)
 
 /** Only reached by a model nobody described, where there is nothing to derive a ceiling from. */
 private const val FALLBACK_MAX_TOKENS = 4_096

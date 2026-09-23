@@ -26,14 +26,14 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  * [AnthropicOptions.effort], which is not checked against any of this.
  */
 internal fun ModelCatalog.addAnthropicModels() = apply {
-    add("anthropic/claude-opus-5-5", withoutForcedToolUse, opus55Price)
+    add("anthropic/claude-opus-5-5", boundThinking, opus55Price)
     add("anthropic/claude-opus-5", systemAnywhere, opusPrice)
     add("anthropic/claude-sonnet-5", effortOnly, sonnet5Price)
     add("anthropic/claude-opus-4-8", systemAnywhere, opusPrice)
     add("anthropic/claude-opus-4-7", effortOnly, opusPrice)
     add("anthropic/claude-fable-5", alwaysThinking, fablePrice)
     add("anthropic/claude-mythos-5", alwaysThinking, fablePrice)
-    add("anthropic/claude-fable-5-1", withoutForcedToolUse, fable51Price)
+    add("anthropic/claude-fable-5-1", boundThinking, fable51Price)
     add("anthropic/claude-mythos-5-1", withoutForcedToolUse, fable51Price)
 
     add("anthropic/claude-opus-4-6", bothWays, opusPrice)
@@ -95,6 +95,12 @@ private val alwaysThinking = systemAnywhere.copy(features = systemAnywhere.featu
  * the model.
  */
 private val withoutForcedToolUse = alwaysThinking.copy(features = alwaysThinking.features - ForcedToolUse)
+
+/**
+ * Opus 5.5 and Fable 5.1 also tie each thinking block to everything before it, and answer 400 when that changed;
+ * Mythos 5.1 does not (platform.claude.com/docs/en/build-with-claude/preserved-thinking, read on 2026-09-23).
+ */
+private val boundThinking = withoutForcedToolUse.copy(features = withoutForcedToolUse.features + BoundThinking)
 
 /** The generation in the middle takes both ways of asking, though the budget is already deprecated there. */
 private val bothWays = effortOnly.copy(

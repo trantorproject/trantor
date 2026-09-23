@@ -29,17 +29,17 @@ class AnthropicChatModel(
 
     private val requestMapper = AnthropicRequestMapper(config, catalog)
     private val errorMapper = AnthropicErrorMapper()
-    private val responseMapper = AnthropicResponseMapper()
 
     override fun generate(request: ChatRequest, options: CallOptions): ChatResponse {
         options.cancellation?.throwIfCancelled()
 
         val mapped = requestMapper.map(modelId, request)
+        val responseMapper = AnthropicResponseMapper(mapped.stamp)
         val startedAt = TimeSource.Monotonic.markNow()
 
         try {
             CancellationLink(options.cancellation).use { link ->
-                call(mapped.body.toString(), options, link).use { response ->
+                call(mapped, options, link).use { response ->
                     val body = response.body()
 
                     // Cancelling closes the connection, so what came back is half a body and not an answer
@@ -66,7 +66,7 @@ class AnthropicChatModel(
         val link = CancellationLink(options.cancellation)
 
         val response = try {
-            call(mapped.body.toString(), options, link)
+            call(mapped, options, link)
         } catch (e: Throwable) {
             link.close()
             throw errorMapper.toError(e)
@@ -78,17 +78,19 @@ class AnthropicChatModel(
             throw errorMapper.toError(response, body)
         }
 
+        val responseMapper = AnthropicResponseMapper(mapped.stamp)
+
         return AnthropicChatStream(modelId, response, startedAt, mapped.warnings, responseMapper, link)
     }
 
-    private fun call(body: String, options: CallOptions, link: CancellationLink): HttpStreamResponse {
-        val httpRequest = HttpRequest("${config.baseUrl}/messages", body, headers(options))
+    private fun call(mapped: MappedRequest, options: CallOptions, link: CancellationLink): HttpStreamResponse {
+        val httpRequest = HttpRequest("${config.baseUrl}/messages", mapped.body.toString(), headers(mapped, options))
         val streamOptions = StreamOptions(totalTimeout = options.timeout?.inWholeMilliseconds?.toInt())
 
         return link.attach(httpClient.stream(HttpMethods.Post, httpRequest, streamOptions))
     }
 
-    private fun headers(options: CallOptions) = buildMap {
+    private fun headers(mapped: MappedRequest, options: CallOptions) = buildMap {
         if (config.apiKey.isBlank()) {
             throw AuthenticationError(
                 provider,
@@ -101,7 +103,9 @@ class AnthropicChatModel(
         // A header and not a bearer token: Anthropic takes the key as x-api-key
         put("x-api-key", config.apiKey)
         put("anthropic-version", config.version)
-        config.betas.takeIf { it.isNotEmpty() }?.let { put("anthropic-beta", it.joinToString(",")) }
+        // The ones the application asked for, and the ones this request needs for what the adapter wrote in it
+        (config.betas + mapped.betas).distinct().takeIf { it.isNotEmpty() }
+            ?.let { put("anthropic-beta", it.joinToString(",")) }
         putAll(options.headers)
     }
 

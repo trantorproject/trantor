@@ -63,6 +63,35 @@ class AnthropicToolLoopTest {
         assertThat(http.requests.map { body(it.body).outputFormat() }).containsExactly("json_schema", "json_schema")
     }
 
+    /**
+     * Two turns recorded on Opus 5.5 with the control of thinking tied to the conversation forced to fail, and a
+     * dynamic part that changed between them. The first turn thought before its answer; the second sent that
+     * thinking back, which before the copy was put back where it was failed with a 400. Recorded, it went through,
+     * read all of the first turn from the cache and dropped no reasoning.
+     */
+    @Test
+    fun `on a model that ties its thinking, the next turn puts the dynamic part back where its thinking saw it`() {
+        http.answers(*(1..4).map { fixture("bound-thinking-$it") }.toTypedArray())
+        val opus = AnthropicChatModel("claude-opus-5-5", AnthropicConfig(apiKey = "sk-ant-test"), http)
+        val loop = ToolLoop(opus, listOf(weather))
+        val first = ChatRequest(listOf(Message.user("Bariloche o Bogota?")), dynamicSystem = "Son las 10:00")
+
+        val turn = loop.run(first)
+        val next = loop.run(
+            first.copy(
+                messages = first.messages + turn.newMessages + Message.user("Y Lima?"),
+                dynamicSystem = "Son las 11:00",
+            ),
+        )
+
+        val messages = sent(2)["messages"]!!.asArray()!!.map { it.asObject()!! }
+        val answer = messages.indexOfLast { it["role"]?.asString() == "assistant" }
+        assertThat(messages[answer - 1]["clear_at"]?.asString()).isEqualTo("next_user_message")
+        assertThat(messages[answer - 1].blocks().single()["text"]?.asString()).isEqualTo("Son las 10:00")
+        assertThat(next.steps.first().response.usage.cacheReadTokens).isEqualTo(8_767)
+        assertThat(next.text).startsWith("Lima también marca 7")
+    }
+
     private fun loop() = ToolLoop(model, listOf(weather))
 
     private fun request(output: OutputSpec = OutputSpec.Text) = ChatRequest(

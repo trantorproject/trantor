@@ -9,8 +9,11 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.ProviderMetadata
 import kotlin.time.Duration
 
-/** Turns a response of the Anthropic Messages API into a [ChatResponse]. */
-internal class AnthropicResponseMapper {
+/**
+ * Turns a response of the Anthropic Messages API into a [ChatResponse]. One is made for each call, with the [stamp]
+ * of its request: what its thinking has to remember ([DynamicSystemStamp]).
+ */
+internal class AnthropicResponseMapper(private val stamp: String? = null) {
     fun map(json: JsonObject, modelId: String, latency: Duration, warnings: List<ModelWarning>): ChatResponse {
         val stopReason = json["stop_reason"]?.asString()
 
@@ -72,7 +75,10 @@ internal class AnthropicResponseMapper {
     private fun toReasoning(block: JsonObject) = ReasoningPart(
         text = block["thinking"]?.asString()?.ifBlank { null },
         opaque = block,
-        metadata = ProviderMetadata.of(ANTHROPIC_PROVIDER, Json.obj("type" to (block["type"] ?: Json.value("")))),
+        metadata = ProviderMetadata.of(
+            ANTHROPIC_PROVIDER,
+            DynamicSystemStamp.stamped(Json.obj("type" to (block["type"] ?: Json.value(""))), stamp),
+        ),
     )
 
     /**
