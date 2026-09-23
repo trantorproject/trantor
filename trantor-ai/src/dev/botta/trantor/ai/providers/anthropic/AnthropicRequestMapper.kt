@@ -49,6 +49,7 @@ internal class AnthropicRequestMapper(
         private val takesForcedToolUse get() = model == null || ModelFeatures.ForcedToolUse in model
         private val takesMidConversationSystem
             get() = model == null || ModelFeatures.MidConversationSystem in model
+        private val takesReasoningOff get() = model == null || ModelFeatures.ReasoningOff in model
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
             val options = anthropicOptionsOf(request.providerOptions)
@@ -284,7 +285,7 @@ internal class AnthropicRequestMapper(
         private fun toThinking(reasoning: Reasoning?, options: AnthropicOptions?): JsonObject? {
             options?.thinking?.let { return toThinking(it) }
             if (reasoning == null) return null
-            if (reasoning == Reasoning.Off) return Json.obj("type" to "disabled")
+            if (reasoning == Reasoning.Off) return thinkingOff()
 
             reasoning.budgetTokens?.let {
                 if (takesBudget) return budgetThinking(it, reasoning.summary)
@@ -306,6 +307,21 @@ internal class AnthropicRequestMapper(
             is AnthropicThinking.Off -> Json.obj("type" to "disabled")
             is AnthropicThinking.Adaptive -> adaptiveThinking(thinking.summary)
             is AnthropicThinking.Budget -> budgetThinking(thinking.tokens, thinking.summary)
+        }
+
+        /** A model that always thinks answers 400 to thinking disabled: there, thinking less is a lower effort. */
+        private fun thinkingOff(): JsonObject? {
+            if (takesReasoningOff) return Json.obj("type" to "disabled")
+
+            warnings.add(
+                ModelWarning(
+                    "$modelId always thinks, so Reasoning.Off was not sent; a lower effort is how it thinks less" +
+                        becauseItIsAGuess,
+                    "reasoning",
+                )
+            )
+
+            return null
         }
 
         private fun adaptiveThinking(summary: ReasoningSummaries) =

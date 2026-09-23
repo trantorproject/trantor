@@ -61,9 +61,11 @@ enum class ModelFeatures {
      */
     ForcedToolUse,
     /**
-     * The model can be told not to reason at all, and only then does it take the sampling settings again.
-     * It is what tells a model that reasons by default from one that reasons because it was asked to: the GPT-5.x
-     * families take a `temperature` alongside an effort of none, and GPT-6 refuses both.
+     * The model can be told not to reason at all. A model that always reasons answers 400 to being told that:
+     * GPT-6 Astra refuses an effort of none, and Claude Opus 5.5, Fable and Mythos refuse thinking disabled.
+     *
+     * On OpenAI it is also what gives the sampling settings back: the GPT-5.x families take a `temperature`
+     * alongside an effort of none, and refuse it while they reason.
      */
     ReasoningOff,
     /**

@@ -124,6 +124,16 @@ class AnthropicChatModelPerModelTest {
         }
 
         @Test
+        fun `except on a model that always thinks, which answers 400 to it`() {
+            val response = generate("claude-opus-5-5", ChatSettings(reasoning = Reasoning.Off))
+
+            assertThat(sentBody().containsKey("thinking")).isFalse()
+            assertThat(response.warnings.map { it.message }).containsExactly(
+                "claude-opus-5-5 always thinks, so Reasoning.Off was not sent; a lower effort is how it thinks less",
+            )
+        }
+
+        @Test
         fun `and saying nothing sends nothing, so the model keeps its own default`() {
             generate("claude-opus-5", ChatSettings())
 
@@ -190,7 +200,7 @@ class AnthropicChatModelPerModelTest {
         }
 
         @Test
-        fun `and is left to the model on the two that answer 400 to it`() {
+        fun `and is left to the model on the ones that answer 400 to it`() {
             val response = generateWith("claude-fable-5-1", requestWith(ToolChoice.Named("getWeather")))
 
             assertThat(sentBody()["tool_choice"].toString()).isEqualTo("""{"type":"auto"}""")

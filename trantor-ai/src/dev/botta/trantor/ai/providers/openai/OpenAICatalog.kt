@@ -17,20 +17,33 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  *
  * The GPT-5.x families sit in the middle and are the reason [ReasoningOff] exists: they reason by default and
  * refuse the sampling settings while they do, but they can be told not to reason at all, and then they take them
- * again. GPT-6 cannot be told that — an effort of `none` is a 400 there — so for it the refusal is flat.
+ * again. GPT-6 Astra cannot be told that — an effort of `none` is a 400 there — so for it the refusal is flat.
+ * GPT-6 Sol and Luna take an effort of `none`; whether they then take a `temperature` is written nowhere, so they
+ * are kept without one, which drops it with a warning instead of risking a 400.
  *
  * Read against the OpenAI model and reasoning guides and against the capability table of the Vercel AI SDK
  * (`openai-language-model-capabilities.ts`), which agree on the split. What neither states per family is the
  * exact ceiling of the older models, so those are left null rather than guessed: nothing in the call path reads
  * them here, since the Responses API does not require `max_output_tokens` the way Anthropic requires `max_tokens`.
  *
- * Each price is the Standard tier of the OpenAI pricing page on 2026-09-21 (developers.openai.com/api/docs/pricing),
- * for a short context: GPT-6 Astra, the GPT-5.6 family, GPT-5.5 and GPT-5.4 charge more past a long prompt, and
- * for an estimate the short price is the one most calls pay. Only the newest models charge a cache write; on the
- * rest a write is billed as plain input, which is what a missing cacheWrite means.
+ * Each price is the Standard tier of the OpenAI pricing page on 2026-09-21, and on 2026-09-23 for GPT-6 Sol and
+ * Luna (developers.openai.com/api/docs/pricing), for a short context: the GPT-6 and GPT-5.6 families, GPT-5.5 and
+ * GPT-5.4 charge more past a long prompt, and for an estimate the short price is the one most calls pay. Only the
+ * newest models charge a cache write; on the rest a write is billed as plain input, which is what a missing
+ * cacheWrite means.
  */
 internal fun ModelCatalog.addOpenAIModels() = apply {
     add("openai/gpt-6-astra", gpt6, ModelPricing(input = "10", output = "50", cacheRead = "1", cacheWrite = "12.50"))
+    add(
+        "openai/gpt-6-sol",
+        gpt6Optional,
+        ModelPricing(input = "2", output = "10", cacheRead = "0.20", cacheWrite = "2.50"),
+    )
+    add(
+        "openai/gpt-6-luna",
+        gpt6Optional,
+        ModelPricing(input = "0.10", output = "0.50", cacheRead = "0.01", cacheWrite = "0.125"),
+    )
 
     add("openai/gpt-5.6-sol", gpt56, ModelPricing(input = "4", output = "20", cacheRead = "0.40", cacheWrite = "5"))
     add(
@@ -103,8 +116,14 @@ private val sampling = reasoning.copy(
     reasoningEfforts = emptySet(),
 )
 
-/** GPT-6 cannot be told not to reason: an effort of none is a 400 there. */
+/** GPT-6 Astra cannot be told not to reason: an effort of none is a 400 there. */
 private val gpt6 = reasoning.copy(maxOutputTokens = 128_000)
+
+/**
+ * GPT-6 Sol and Luna can, with an effort of none (developers.openai.com/api/docs/models, read on 2026-09-23). They
+ * keep refusing the sampling settings, since nothing says they take them then.
+ */
+private val gpt6Optional = gpt6.copy(features = gpt6.features + ReasoningOff)
 
 /** The GPT-5.6 family: reasoning it can be told to skip, and a higher ceiling than the one before. */
 private val gpt56 = reasoningOptional.copy(maxOutputTokens = 128_000)

@@ -366,8 +366,8 @@ request but part of the choice.
 closed exactly the way structured output closes it. Where the model has no grammar for it the tool still
 goes, without the guarantee and with a warning: half a tool beats no tool.
 
-**Being told to call one is not something every model takes.** Claude Fable 5.1 and Mythos 5.1 answer 400
-to a forced call, and any Claude refuses it while it is thinking to a budget — the second capability that
+**Being told to call one is not something every model takes.** Claude Opus 5.5, Fable 5.1 and Mythos 5.1
+answer 400 to a forced call, and any Claude refuses it while it is thinking to a budget — the second capability that
 is not a property of the model but of two settings meeting. Either way the choice goes back to `auto`,
 which is the default anyway, and the warning says which of the two it was.
 
@@ -527,7 +527,12 @@ nobody filled it in. With that, an adapter does **three** things rather than one
 
 Some capabilities are not a property of the model but of two settings meeting. The GPT-5.x families
 refuse the sampling settings **while they are reasoning**, and take them again once they are told not to
-reason at all; GPT-6 cannot be told that, so for it the refusal is flat.
+reason at all; GPT-6 Astra cannot be told that, so for it the refusal is flat. GPT-6 Sol and Luna can be
+told not to reason, but nothing says they take a `temperature` then, so they are kept without one.
+
+Being told not to reason is itself something a model can refuse: GPT-6 Astra answers 400 to an effort of
+`none`, and Claude Opus 5.5, Fable and Mythos always think and answer 400 to thinking disabled. There
+`Reasoning.Off` is not sent, and the warning says that a lower effort is how they think less.
 
 Anthropic has one of its own: every Claude refuses a forced tool call while it is thinking to a budget,
 whichever model it is.
@@ -598,7 +603,7 @@ The two halves are not the same kind of fact:
 It **is taken to be the latest model of its provider**, which is what `setLatest` names:
 
 ```kotlin
-setLatest("anthropic", "anthropic/claude-opus-5")
+setLatest("anthropic", "anthropic/claude-opus-5-5")
 ```
 
 One slot per provider, so setting it again replaces it. When the next generation comes out, that line is what
@@ -734,7 +739,7 @@ used.
 
 **The system prompt** is a field, so the first one goes there wherever it was written. The rest stay
 where they were, as `role: "system"` messages, on the models that take one in the middle of the
-conversation — Opus 4.8 and 5, Fable and Mythos 5 and 5.1 — which keeps the cached prefix intact. On the
+conversation — Opus 4.8, 5 and 5.5, Fable and Mythos 5 and 5.1 — which keeps the cached prefix intact. On the
 others they are joined into the field, with a warning. The catalog says which is which, so there is
 nothing to configure. The `dynamicSystem` of a request goes by the same rule: last, as a system message,
 where the model takes it, and as a second block under the system prompt where it does not (see [What

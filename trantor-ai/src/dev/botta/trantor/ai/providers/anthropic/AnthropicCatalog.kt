@@ -26,12 +26,13 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  * [AnthropicOptions.effort], which is not checked against any of this.
  */
 internal fun ModelCatalog.addAnthropicModels() = apply {
+    add("anthropic/claude-opus-5-5", withoutForcedToolUse, opus55Price)
     add("anthropic/claude-opus-5", systemAnywhere, opusPrice)
     add("anthropic/claude-sonnet-5", effortOnly, sonnet5Price)
     add("anthropic/claude-opus-4-8", systemAnywhere, opusPrice)
     add("anthropic/claude-opus-4-7", effortOnly, opusPrice)
-    add("anthropic/claude-fable-5", systemAnywhere, fablePrice)
-    add("anthropic/claude-mythos-5", systemAnywhere, fablePrice)
+    add("anthropic/claude-fable-5", alwaysThinking, fablePrice)
+    add("anthropic/claude-mythos-5", alwaysThinking, fablePrice)
     add("anthropic/claude-fable-5-1", withoutForcedToolUse, fable51Price)
     add("anthropic/claude-mythos-5-1", withoutForcedToolUse, fable51Price)
 
@@ -55,33 +56,45 @@ internal fun ModelCatalog.addAnthropicModels() = apply {
             maxOutputTokens = 4_096,
             temperature = ValueRange.ZeroToOne,
             topP = ValueRange.ZeroToOne,
-            features = setOf(Tools, Images, PromptCaching, ForcedToolUse),
+            features = setOf(Tools, Images, PromptCaching, ForcedToolUse, ReasoningOff),
         ),
     )
 
     // A model that came out today is the newest one with something taken away, far more often than not
-    setLatest("anthropic", "anthropic/claude-opus-5")
+    setLatest("anthropic", "anthropic/claude-opus-5-5")
 }
 
-/** Effort and no budget: a budget is a 400 here. And no sampling settings at all, which is also a 400. */
+/**
+ * Effort and no budget: a budget is a 400 here. And no sampling settings at all, which is also a 400. Thinking can
+ * still be turned off, which on Opus 5 holds up to an effort of `high`.
+ */
 private val effortOnly = ModelCapabilities(
     maxOutputTokens = 128_000,
     temperature = null,
     topP = null,
     reasoningEfforts = setOf(Low, Medium, High),
     reasoningBudget = null,
-    features = setOf(Tools, StructuredOutput, Images, PromptCaching, ForcedToolUse),
+    features = setOf(Tools, StructuredOutput, Images, PromptCaching, ForcedToolUse, ReasoningOff),
 )
 
 /**
  * The newest ones also take a system message anywhere in the conversation, where Sonnet 5 and Opus 4.7 take it only
  * as the system field (platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages, read on
- * 2026-09-23). Opus 5.5 is on that list too, and not in this catalog yet.
+ * 2026-09-23).
  */
 private val systemAnywhere = effortOnly.copy(features = effortOnly.features + MidConversationSystem)
 
-/** Fable 5.1 and Mythos 5.1 answer 400 to a forced tool call, so the choice of calling one is left to the model. */
-private val withoutForcedToolUse = systemAnywhere.copy(features = systemAnywhere.features - ForcedToolUse)
+/**
+ * Fable, Mythos and Opus 5.5 always think, and answer 400 to thinking disabled; a lower effort is how they think less
+ * (platform.claude.com/docs/en/build-with-claude/thinking, read on 2026-09-23).
+ */
+private val alwaysThinking = systemAnywhere.copy(features = systemAnywhere.features - ReasoningOff)
+
+/**
+ * Fable 5.1, Mythos 5.1 and Opus 5.5 also answer 400 to a forced tool call, so the choice of calling one is left to
+ * the model.
+ */
+private val withoutForcedToolUse = alwaysThinking.copy(features = alwaysThinking.features - ForcedToolUse)
 
 /** The generation in the middle takes both ways of asking, though the budget is already deprecated there. */
 private val bothWays = effortOnly.copy(
@@ -103,13 +116,15 @@ private val budgetOnly = effortOnly.copy(
 private val earlyOpus = budgetOnly.copy(maxOutputTokens = 32_000, reasoningBudget = MIN_BUDGET..32_000)
 
 /*
- * What each tier costs, in dollars per million tokens, as the Anthropic pricing page had it on 2026-09-21
- * (platform.claude.com/docs/en/about-claude/pricing). The cache write is the five-minute one: a cache kept an hour
- * costs more to write, and for an estimate the difference is not worth a second price. Cache reads are a tenth of
- * the input everywhere but on Fable 5.1 and Mythos 5.1, where they are a fortieth.
+ * What each tier costs, in dollars per million tokens, as the Anthropic pricing page had it on 2026-09-21, and on
+ * 2026-09-23 for Opus 5.5 (platform.claude.com/docs/en/about-claude/pricing). The cache write is the five-minute one:
+ * a cache kept an hour costs more to write, and for an estimate the difference is not worth a second price. Cache
+ * reads are a tenth of the input everywhere but on Fable 5.1 and Mythos 5.1, where they are a fortieth, and on
+ * Opus 5.5, where they are a twentieth.
  */
 private val fable51Price = ModelPricing(input = "10", output = "50", cacheRead = "0.25", cacheWrite = "12.50")
 private val fablePrice = ModelPricing(input = "10", output = "50", cacheRead = "1", cacheWrite = "12.50")
+private val opus55Price = ModelPricing(input = "4", output = "20", cacheRead = "0.20", cacheWrite = "5")
 private val opusPrice = ModelPricing(input = "5", output = "25", cacheRead = "0.50", cacheWrite = "6.25")
 private val earlyOpusPrice = ModelPricing(input = "15", output = "75", cacheRead = "1.50", cacheWrite = "18.75")
 private val sonnet5Price = ModelPricing(input = "2", output = "10", cacheRead = "0.20", cacheWrite = "2.50")

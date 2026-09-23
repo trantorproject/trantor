@@ -60,7 +60,7 @@ class ModelCatalogTest {
             // so the newest entry is the closest guess there is and the call goes out working
             val guess = catalog.find("anthropic", "claude-sonnet-9")
 
-            assertThat(guess?.capabilities).isEqualTo(catalog.find("anthropic", "claude-opus-5")?.capabilities)
+            assertThat(guess?.capabilities).isEqualTo(catalog.find("anthropic", "claude-opus-5-5")?.capabilities)
             assertThat(guess?.modelId).isEqualTo("claude-sonnet-9")
             assertThat(guess?.isGuess).isTrue()
         }
