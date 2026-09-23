@@ -36,12 +36,17 @@ class DefaultAI(
         }
     }
 
+    override fun stream(request: GenerateRequest) =
+        loopFor(request).stream(request.toChatRequest(), request.callOptions)
+
     override fun models() = models
 
-    private fun run(request: GenerateRequest, first: ChatRequest): RunResult {
-        val model = request.model?.let { models.chat(it) } ?: models.chat()
-        val loop = ToolLoop(model, request.tools.toList(), request.maxSteps, request.context, errorHandlers.all)
+    private fun run(request: GenerateRequest, first: ChatRequest) =
+        loopFor(request).run(first, request.callOptions)
 
-        return loop.run(first, request.callOptions)
+    private fun loopFor(request: GenerateRequest): ToolLoop {
+        val model = request.model?.let { models.chat(it) } ?: models.chat()
+
+        return ToolLoop(model, request.tools.toList(), request.maxSteps, request.context, errorHandlers.all)
     }
 }

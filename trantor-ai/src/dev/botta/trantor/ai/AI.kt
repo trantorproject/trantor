@@ -3,6 +3,7 @@ package dev.botta.trantor.ai
 import dev.botta.trantor.ai.generation.GenerateRequest
 import dev.botta.trantor.ai.generation.ObjectResult
 import dev.botta.trantor.ai.generation.RunResult
+import dev.botta.trantor.ai.generation.RunStream
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
 import kotlinx.serialization.KSerializer
@@ -20,6 +21,8 @@ import kotlinx.serialization.serializer
  * }
  *
  * val invoice = ai.generate<InvoiceData> { user("Extract the invoice data: $text") }
+ *
+ * ai.stream { user(question) }.use { stream -> stream.textDeltas().forEach { print(it) } }
  * ```
  *
  * It keeps no state, so it is injected like any other service and mocked in the tests of a use case. Whoever needs
@@ -35,10 +38,15 @@ interface AI {
     /** A run whose answer is an object of the type [serializer] describes. It does not fail when it does not come. */
     fun <T> generateObject(request: GenerateRequest, serializer: KSerializer<T>): ObjectResult<T>
 
+    /** The same run, received as it happens. Use it with `use {}`: closing it cancels the call in flight. */
+    fun stream(request: GenerateRequest): RunStream
+
     fun models(): ModelRegistry
 }
 
 fun AI.generate(build: GenerateRequest.() -> Unit) = generate(GenerateRequest().apply(build))
+
+fun AI.stream(build: GenerateRequest.() -> Unit) = stream(GenerateRequest().apply(build))
 
 /**
  * The answer as an object of type [T], a @Serializable type whose schema is sent to the model.

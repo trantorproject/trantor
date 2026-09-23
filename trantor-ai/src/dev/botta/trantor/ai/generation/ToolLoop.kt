@@ -41,26 +41,128 @@ class ToolLoop(
     private val toolsByName = tools.associateBy { it.name }
 
     fun run(request: ChatRequest, options: CallOptions = CallOptions()): RunResult {
-        val steps = mutableListOf<Step>()
-        var messages = request.messages
-        val specs = request.tools + tools.map { it.spec() }
+        val run = Run(request, options)
 
         while (true) {
             throwIfCancelled(options)
 
-            val response = model.generate(request.copy(messages = messages, tools = specs), options)
-            val calls = response.toolCalls.filterNot { it.providerExecuted }
+            val response = model.generate(run.next(), options)
+            val calls = run.callsOf(response)
 
-            if (calls.isEmpty()) return RunResult(steps + Step(response))
+            if (calls.isEmpty()) return run.finish(response)
 
-            if (steps.size + 1 >= maxSteps) {
-                throw MaxStepsExceededError(maxSteps, RunResult(steps + Step(response)))
-            }
+            run.throwIfOutOfSteps(response)
+            run.advance(response, calls.map { execute(it) })
+        }
+    }
 
-            val executions = calls.map { execute(it) }
+    /**
+     * The same loop, received as it happens. Every event is produced while the run is going, so whoever reads it
+     * sees the text and the tools as they happen; closing it stops the run where it is.
+     */
+    fun stream(request: ChatRequest, options: CallOptions = CallOptions()): RunStream = Streamed(request, options)
+
+    /**
+     * The steps of a run and the rules that end it, shared by [run] and [stream] so that both stop for the same
+     * reasons and send the same thing on the next call.
+     */
+    private inner class Run(private val request: ChatRequest, private val options: CallOptions) {
+        val steps = mutableListOf<Step>()
+        private var messages = request.messages
+        private val specs = request.tools + tools.map { it.spec() }
+
+        /** The request of the next step, with everything the run has said so far. */
+        fun next(): ChatRequest {
+            throwIfCancelled(options)
+
+            return request.copy(messages = messages, tools = specs)
+        }
+
+        /** The calls the application has to run. The ones the provider ran already came answered. */
+        fun callsOf(response: ChatResponse) = response.toolCalls.filterNot { it.providerExecuted }
+
+        fun finish(response: ChatResponse) = RunResult(steps + Step(response))
+
+        /**
+         * Fails when the step that just answered was the last one allowed. It is asked before running its calls:
+         * no model would read their results, and a tool with effects would have them all the same.
+         */
+        fun throwIfOutOfSteps(response: ChatResponse) {
+            if (steps.size + 1 >= maxSteps) throw MaxStepsExceededError(maxSteps, finish(response))
+        }
+
+        /** Keeps the step and prepares the next one. */
+        fun advance(response: ChatResponse, executions: List<Execution>) {
             val results = executions.map { it.result }
+
             steps.add(Step(response, results, executions.mapNotNull { it.failure }))
             messages = messages + response.asMessage() + Message.Tool(results)
+        }
+    }
+
+    private inner class Streamed(request: ChatRequest, private val options: CallOptions): RunStream {
+        private val run = Run(request, options)
+        private var current: ChatStream? = null
+        private var closed = false
+
+        private val events = iterator {
+            while (true) {
+                val request = run.next()
+
+                yield(RunEvent.StepStarted(run.steps.size + 1))
+
+                val stream = model.stream(request, options).also { current = it }
+                val response = stream.use {
+                    for (part in it) yield(RunEvent.Model(part))
+                    it.response()
+                }
+
+                current = null
+
+                val calls = run.callsOf(response)
+
+                if (calls.isNotEmpty()) run.throwIfOutOfSteps(response)
+
+                val executions = mutableListOf<Execution>()
+
+                for (call in calls) {
+                    yield(RunEvent.ToolStarted(call))
+
+                    val execution = execute(call)
+
+                    executions.add(execution)
+                    yield(RunEvent.ToolFinished(execution.result, execution.failure))
+                }
+
+                val number = run.steps.size + 1
+
+                if (calls.isEmpty()) {
+                    last = run.finish(response)
+                    yield(RunEvent.StepFinished(number))
+                    return@iterator
+                }
+
+                run.advance(response, executions)
+                yield(RunEvent.StepFinished(number))
+            }
+        }
+
+        private var last: RunResult? = null
+
+        override fun hasNext() = !closed && events.hasNext()
+
+        override fun next() = events.next()
+
+        override fun result(): RunResult {
+            while (hasNext()) next()
+
+            return last ?: RunResult(run.steps)
+        }
+
+        override fun close() {
+            closed = true
+            current?.close()
+            current = null
         }
     }
 
@@ -96,7 +198,7 @@ class ToolLoop(
         ToolFailure(call.callId, call.toolName, error),
     )
 
-    private class Execution(val result: ToolResultPart, val failure: ToolFailure? = null)
+    class Execution(val result: ToolResultPart, val failure: ToolFailure? = null)
 
     private fun throwIfCancelled(options: CallOptions) {
         options.cancellation?.throwIfCancelled()

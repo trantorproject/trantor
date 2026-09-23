@@ -5,6 +5,8 @@ package dev.botta.trantor.ai
 import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.MaxStepsExceededError
+import dev.botta.trantor.ai.generation.RunEvent
+import dev.botta.trantor.ai.generation.textDeltas
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.*
@@ -200,6 +202,33 @@ class DefaultAITest {
 
             assertThat(result.value).isEqualTo(Weather("Bariloche", 7))
             assertThat(result.error).isNull()
+        }
+    }
+
+    @Nested
+    inner class stream {
+        @Test
+        fun `gives the text as it arrives and the result at the end`() {
+            model.streams(listOf(StreamPart.TextDelta("Ho"), StreamPart.TextDelta("la")))
+
+            val (text, result) = ai.stream { user("Saludá") }.use { it.textDeltas().joinToString("") to it.result() }
+
+            assertThat(text).isEqualTo("Hola")
+            assertThat(result.steps).hasSize(1)
+        }
+
+        @Test
+        fun `and says which tool is running in between`() {
+            model.streams(listOf(StreamPart.PartDone(weatherCall)), listOf(StreamPart.TextDelta("7 grados")))
+            model.answers(listOf(weatherCall), listOf(TextPart("7 grados")))
+
+            val events = ai.stream {
+                user("Que temperatura hay en Bariloche?")
+                tools(weather)
+            }.use { it.asSequence().toList() }
+
+            assertThat(events.filterIsInstance<RunEvent.ToolStarted>().single().call.toolName).isEqualTo("getWeather")
+            assertThat(weather.cities).containsExactly("Bariloche")
         }
     }
 
