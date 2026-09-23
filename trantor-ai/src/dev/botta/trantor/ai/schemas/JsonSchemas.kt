@@ -29,6 +29,10 @@ object JsonSchemas {
         schema.remove($$"$schema")
         schema.remove($$"$id")
 
+        // A type without properties comes without the key, which strict mode needs to list them all as required:
+        // the args of a tool that takes none, like the ones handoffs turn into
+        if (schema["type"]?.asString() == "object" && !schema.containsKey("properties")) schema["properties"] = Json.obj()
+
         return schema
     }
 }

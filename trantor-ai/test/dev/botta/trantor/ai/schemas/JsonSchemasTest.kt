@@ -75,6 +75,23 @@ class JsonSchemasTest {
         assertThat(schema).isEqualTo(Json.parse(JsonSchemas.of<Item>().toString()))
     }
 
+    @Test
+    fun `a type without properties is an object without properties, which strict mode can close`() {
+        val schema = StrictSchema.of(JsonSchemas.of<Nothing>())
+
+        assertThat(schema).isEqualTo(
+            Json.obj(
+                "type" to "object",
+                "properties" to Json.obj(),
+                "additionalProperties" to false,
+                "required" to Json.array(),
+            ),
+        )
+    }
+
+    @Serializable
+    class Nothing
+
     @Serializable
     data class Order(
         @SerialDescription("Who ordered")
