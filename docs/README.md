@@ -7,7 +7,7 @@ Start with [architecture](architecture.md) for what Trantor is and how the modul
 - [Conventions](conventions.md) - code style, naming, settings classes, the registration patterns
 - [Testing](testing.md) - layout, naming, fixtures, how to run and how to check a test really ran
 
-The rules an agent needs in one place are in [AGENTS.md](../AGENTS.md) at the root.
+The rules an agent needs in one place are in `AGENTS.md`, at the root of the Trantor repository.
 
 ## Modules
 

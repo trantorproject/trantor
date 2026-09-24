@@ -227,7 +227,7 @@ Current implementation note:
 
 ```kotlin
 val host = Host.builder {
-    appName = "Crafty API"
+    appName = "Orders API"
     environmentName = "DEVELOPMENT"
 }
     .apply {
