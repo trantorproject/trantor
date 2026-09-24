@@ -17,7 +17,7 @@ import dev.botta.trantor.ai.tools.ToolOutput
  * is made (see [DynamicPlacement]), so that nothing after asks again.
  *
  * One conversation belongs to one mapping, and remembers what it wrote: where the dynamic part went, for
- * [markCache], and the [betas] and the [stamp] that come out of it.
+ * [markCache], the thinking it sent, for [bindThinking], and the [betas] and the [stamp] that come out of it.
  */
 internal class AnthropicConversation(
     private val takes: WhatTheModelTakes,
@@ -30,23 +30,33 @@ internal class AnthropicConversation(
         takes.midConversationSystem -> Last
         else -> UnderTheSystemPrompt
     }
+    private val thinking = if (takes.boundThinking) BoundThinking(modelId, warnings) else null
+    private var dynamic: String? = null
     private var dynamicLast: SystemMessage? = null
     private val takenBetas = mutableSetOf<String>()
 
     /** The beta headers that what was written needs. */
     val betas: Set<String> get() = takenBetas
 
-    /** What the thinking of the answer has to remember, if anything (see [DynamicSystemStamp]). */
-    var stamp: String? = null
-        private set
+    /** What the thinking of the answer has to remember, on a model that ties it (see [ThinkingStamp]). */
+    val stamp: ThinkingStamp? get() = thinking?.stamp
 
     /** The `messages` and the `system` field of [body]. */
     fun writeTo(body: JsonObject, messages: List<Message>, dynamic: String?) {
+        this.dynamic = dynamic
         dynamicLast = placement.last(dynamic)
-        stamp = placement.stamp(dynamic)
 
         body["messages"] = Json.array(toMessages(messages))
         systemOf(messages, placement.underTheSystemPrompt(dynamic))?.let { body["system"] = it }
+    }
+
+    /**
+     * On a model that ties its thinking, leaves out what Anthropic would refuse and learns what the thinking of the
+     * answer has to remember (see [BoundThinking]). It needs the system prompt and the tools, so it goes once both
+     * are in [body].
+     */
+    fun bindThinking(body: JsonObject) {
+        thinking?.bind(body, dynamic)
     }
 
     /**
@@ -210,7 +220,9 @@ internal class AnthropicConversation(
         // A block we did not model when we received it goes back exactly as it came
         is ProviderPart -> if (part.provider == ANTHROPIC_PROVIDER) part.raw else unsupportedPart(part)
         // Thinking is signed by whoever produced it, so only its own provider can take it back
-        is ReasoningPart -> part.opaque?.takeIf { part.metadata[ANTHROPIC_PROVIDER] != null } ?: foreignReasoning()
+        is ReasoningPart -> part.opaque?.takeIf { part.metadata[ANTHROPIC_PROVIDER] != null }
+            ?.also { thinking?.sending(it, part) }
+            ?: foreignReasoning()
         else -> unsupportedPart(part)
     }
 
@@ -270,9 +282,6 @@ private sealed interface DynamicPlacement {
 
     /** A copy of an earlier dynamic part, put back before the answer of the model it preceded. */
     fun before(answer: Message.Assistant): SystemMessage? = null
-
-    /** What the thinking of the answer has to remember to find its copy again on the next call. */
-    fun stamp(dynamic: String?): String? = null
 }
 
 /** On a model that takes no system message in the middle, the best left is right under the system prompt. */
@@ -291,7 +300,7 @@ private object Last: DynamicPlacement {
  * The dynamic part still goes last, but that moves it on every call: the thinking of an answer was produced with it
  * right before, and on the next call it is not there anymore. Anthropic reads that as a change before the thinking
  * and answers 400. So the part goes as a message that lasts one turn (`clear_at`), the thinking of the answer
- * remembers it (see [DynamicSystemStamp]), and on the next call the copy is put back right before the answer: a user
+ * remembers it (see [ThinkingStamp]), and on the next call the copy is put back right before the answer: a user
  * message came after it, so it is cleared, reads as nothing and costs nothing, and what came before the thinking is
  * exactly what it was. That is how Anthropic asks for it — the conversation only grows at its end — while the dynamic
  * part never becomes a message of the conversation.
@@ -300,29 +309,11 @@ private object LastForOneTurn: DynamicPlacement {
     override fun last(dynamic: String?) = dynamic?.let { SystemMessage(it, forOneTurn = true) }
 
     override fun before(answer: Message.Assistant) =
-        DynamicSystemStamp.of(answer)?.let { SystemMessage(it, forOneTurn = true) }
-
-    override fun stamp(dynamic: String?) = dynamic
+        ThinkingStamp.dynamicSystemOf(answer)?.let { SystemMessage(it, forOneTurn = true) }
 }
 
 /** A system message in the middle of the conversation, which with [forOneTurn] clears when a user message follows. */
 private data class SystemMessage(val text: String, val forOneTurn: Boolean)
-
-/**
- * The dynamic part a thinking block was produced with, kept in the metadata of its part so that a later call can put
- * it back where it was. The application stores it with the rest of the part, as it stores the signature, without
- * having to know what it is.
- */
-internal object DynamicSystemStamp {
-    private const val KEY = "dynamic_system"
-
-    /** [metadata] of a thinking block, with the dynamic part of the call that produced it when there was one. */
-    fun stamped(metadata: JsonObject, dynamic: String?) = metadata.also { if (dynamic != null) it[KEY] = dynamic }
-
-    /** The dynamic part the thinking of [answer] was produced with, if it was. */
-    fun of(answer: Message.Assistant) = answer.parts.filterIsInstance<ReasoningPart>()
-        .firstNotNullOfOrNull { it.metadata[ANTHROPIC_PROVIDER]?.get(KEY)?.asString() }
-}
 
 /** Turn-scoped system messages, the ones with `clear_at`, are a beta. */
 private const val CLEAR_AT_BETA = "mid-conversation-system-clear-at-2026-08-21"

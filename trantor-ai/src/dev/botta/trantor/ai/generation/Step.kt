@@ -1,5 +1,6 @@
 package dev.botta.trantor.ai.generation
 
+import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.ChatResponse
 import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.models.chat.ToolResultPart
@@ -22,4 +23,8 @@ data class Step(
      * calling the output tool. It is part of the conversation, since the answers after it make no sense without it.
      */
     val reminder: Message.User? = null,
+    /** The agent of the team this step handed the conversation over to, which runs the next step. */
+    val handoff: String? = null,
+    /** What the run itself noticed in this step, apart from what the model call said in [ChatResponse.warnings]. */
+    val warnings: List<ModelWarning> = emptyList(),
 )

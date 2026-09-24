@@ -1,0 +1,37 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfMJ8K5JyrYRZqEiXt1xL",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "El precio por persona de un paquete de una semana a Bariloche es $900 dólares. \n\nRespecto al clima, no tengo función disponible para consultarlo, pero puedo dar información general basada en conocimiento común sobre Bariloche. Está ubicada en la Patagonia argentina, en la región de los lagos, y tiene un clima frío de montaña.",
+      "signature": "Es8ECpsBCBIYAipAWA1UXMjRPzvA06goYIYBkp1lxDo6IQEyFrg7CMZzzywt4qwkqgunHIiEdQzP0DvonIV8kC2c8HDAyZmc+axXQjIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGFiY2QxOWUxLTFjZDItNDRmOC1hNDFkLTcxMTNiMDU0ZWFkNagBzdXR1QYSDFNfwD3JbdbaTCrF7RoMx0SkoApwwB3OFoRMIjCklwVOSD1NT7Fequvmm+xs4Qc7EWEdPnxLltw+d5ieeUQu7wtF0S+Hr3581DgJ5+Uq4AI76rH4Py8AM2S1gXCgrzjJegwcT4/rZO5WssbntRtnqCQg/wMgFCApo4cpH+5b1IqMYrqdsMFnqHElf5YsGUhvgKxTRBSNANYum6oXsoe2iEqUzkMMtKX0kXR1lpGvCwHpfBP1+GVmnWN14unheibO34oGTueiFKAUiqApnoy3BVE/64FSGdnTRYpRkg8z9mxoyCnbNUCcVlQJmxEZ+4a6SrVJ8JPYvC+uECZVLgswx/QH+DNS7VK6CZGheK1nPrhx5pMN63NjzOUlnFh62AEUxZfC4nRenFlNq6FbaY4xo/kHM3vLIHuPFVYYO7ISkRkoeH5UGIYePWSgZGnV5ndMz1m4HFWcI5ZkYj603DT9XZRe3OFRNZzN6xNWsqIlN1BzAeGPMT6buJtyysnyjv5m8MDa21S+SL+ESQRF20gZTTZGBxnbjNCGYZLs7O8zVxZV6VoLoUZcvM7uzNx2JswFGAE="
+    },
+    {
+      "type": "text",
+      "text": "¡Perfecto! El paquete de una semana a Bariloche tiene un costo de **$900 dólares por persona**.\n\nRespecto al clima, Bariloche está ubicada en la Patagonia argentina y tiene un clima frío de montaña. Dependiendo de la época del año:\n\n- **Invierno (junio-septiembre)**: Temperaturas entre -2°C y 8°C, ideal para esquiar con buena nieve\n- **Verano (diciembre-marzo)**: Temperaturas entre 8°C y 24°C, perfecto para trekking y actividades al aire libre\n- **Otoño y Primavera**: Clima intermedio, muy lindo por los colores del bosque andino\n\n¿Te gustaría más información sobre qué incluye el paquete o reservar para alguna fecha en particular?"
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 1315,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 328,
+    "output_tokens_details": {
+      "thinking_tokens": 104
+    },
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "diagnostics": null
+}

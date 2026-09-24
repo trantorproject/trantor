@@ -854,15 +854,29 @@ and the dynamic part never becomes a message of the conversation.
 The one thing it asks of an application is what the signature already asks: that the parts of a message
 are stored with their metadata, as they came.
 
+**When the past does change: a handoff.** When one agent hands the conversation over to another, the
+next call goes out with other instructions and other tools, and the thinking of the agent before was
+produced under the old ones. That thinking would be refused, and there is no way around losing it: the
+new agent goes on without the reasoning of the old one, as it would with another model. What the adapter
+makes sure is that it loses nothing else.
+
+Each thinking block also remembers a fingerprint of the system prompt and the tools it was produced
+under, in the same metadata. A call leaves out every thinking block up to the last one whose fingerprint
+is not the one of the call, with a warning, and sends the rest. It is not only the blocks that changed:
+Anthropic takes thinking left out from the start of the conversation, or from its end, but not from its
+middle, so a block that still fits goes too when one after it did not. The blocks after the last one
+that changed — the reasoning of the new agent — stay valid, and stay. A conversation that goes on with
+the new agent, in the next turn or the one after, keeps leaving out the same old blocks and keeps all of
+its own.
+
 **What the other libraries do.** Most of them let the block go instead. The option for that is
 `thinking.block_binding.prefix_mismatch_behavior`: with `"drop_block"`, Anthropic removes a block whose
 past changed, and every thinking block after it, before the model reads the call; the call goes through,
 but the model no longer sees what it reasoned there. Zed sends it on every call to those models;
 PydanticAI sends nothing, retries once with it when the 400 comes, and warns; Goose makes it a setting.
-Here it is left for the two cases where the past really changes, which come with the agents: one agent
-handing the conversation to another, with other instructions and other tools, and a context policy that
-drops old messages. Losing the earlier reasoning at that point is what happens anyway when the model
-changes.
+It is not used here: after a handoff, "every thinking block after it" is all the reasoning of the new
+agent, on every call of the conversation from then on. The one case left is a context policy that drops
+old messages, which comes later.
 
 ---
 

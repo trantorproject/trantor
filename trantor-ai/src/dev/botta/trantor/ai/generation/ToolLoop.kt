@@ -3,6 +3,7 @@ package dev.botta.trantor.ai.generation
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.primitives.logging.getLogger
@@ -68,9 +69,9 @@ class ToolLoop(
 
             if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response)
 
-            val executions = step.executeAll(calls, options)
+            val executions = step.executeAll(calls, options).map { step.handoffs.settle(it) }
 
-            run.advance(response, executions)
+            run.advance(response, executions, step)
 
             if (step.endedBy(executions)) return RunResult(run.steps)
 
@@ -138,11 +139,19 @@ class ToolLoop(
             if (steps.size >= maxSteps) throw MaxStepsExceededError(maxSteps, RunResult(steps))
         }
 
-        /** Keeps the step and prepares the next one. */
-        fun advance(response: ChatResponse, executions: List<Execution>) {
+        /** Keeps the step, with the agent its calls handed the conversation over to, and prepares the next one. */
+        fun advance(response: ChatResponse, executions: List<Execution>, step: Outgoing) {
             val results = executions.map { it.result }
 
-            steps.add(Step(response, results, executions.mapNotNull { it.failure }))
+            steps.add(
+                Step(
+                    response,
+                    results,
+                    executions.mapNotNull { it.failure },
+                    handoff = step.handoffs.winner,
+                    warnings = step.handoffs.warnings,
+                )
+            )
             messages = messages + response.asMessage() + Message.Tool(results)
         }
     }
@@ -188,21 +197,21 @@ class ToolLoop(
                 if (step.runInParallel(calls)) {
                     for (call in calls) yield(RunEvent.ToolStarted(call))
 
-                    executions.addAll(step.inParallel(calls, options))
+                    executions.addAll(step.inParallel(calls, options).map { step.handoffs.settle(it) })
 
                     for (execution in executions) yield(RunEvent.ToolFinished(execution.result, execution.failure))
                 } else {
                     for (call in calls) {
                         yield(RunEvent.ToolStarted(call))
 
-                        val execution = step.execute(call)
+                        val execution = step.handoffs.settle(step.execute(call))
 
                         executions.add(execution)
                         yield(RunEvent.ToolFinished(execution.result, execution.failure))
                     }
                 }
 
-                run.advance(response, executions)
+                run.advance(response, executions, step)
                 yield(RunEvent.StepFinished(number))
 
                 if (step.endedBy(executions)) {
@@ -241,6 +250,7 @@ class ToolLoop(
     private inner class Outgoing(private val setup: StepSetup) {
         val model = setup.model
         val outputTool = setup.outputTool
+        val handoffs = Handoffs(setup.team)
         private val toolsByName = setup.tools.associateBy { it.name }
 
         // Asked again on every step, so that a description that depends on the moment is up to date
@@ -284,7 +294,7 @@ class ToolLoop(
 
             return try {
                 val result = tool.call(call.input, contextOf(call))
-                Execution(ToolResultPart(call.callId, call.toolName, result.output))
+                Execution(ToolResultPart(call.callId, call.toolName, result.output), handoff = result.handoff)
             } catch (e: CancelledError) {
                 throw e
             } catch (e: InterruptedException) {
@@ -370,7 +380,65 @@ class ToolLoop(
         ToolFailure(call.callId, call.toolName, error),
     )
 
-    class Execution(val result: ToolResultPart, val failure: ToolFailure? = null)
+    class Execution(
+        val result: ToolResultPart,
+        val failure: ToolFailure? = null,
+        /** The agent the tool handed the conversation over to, before the step settles it. */
+        val handoff: String? = null,
+    )
+
+    /**
+     * The handoffs of one step, settled in the order of the calls as they finish. The conversation changes hands
+     * once the step is over, so every call of the step still runs with the tools that asked for it.
+     *
+     * - The first handoff to an agent of the team wins.
+     * - A later one in the same step is answered as an error to the model — its tool did run, with its effects — and
+     *   leaves a warning, since the model asked for two things at once and only one could happen.
+     * - One to an agent outside the team is answered as an error naming the team, so the model can pick again.
+     * - Without a team, which is a generation, there is nobody to hand over to: it is left with a warning.
+     */
+    private class Handoffs(private val team: Set<String>?) {
+        /** The agent the conversation goes to after the step. */
+        var winner: String? = null
+            private set
+        private var winnerTool: String? = null
+        val warnings = mutableListOf<ModelWarning>()
+
+        fun settle(execution: Execution): Execution {
+            val to = execution.handoff ?: return execution
+            val tool = execution.result.toolName
+
+            if (team == null) {
+                warnings.add(
+                    ModelWarning(
+                        "$tool handed the conversation over to $to, but a generation has no agents to hand it to; " +
+                            "it was ignored",
+                    )
+                )
+                return execution
+            }
+
+            if (to !in team) return refused(execution, "There is no agent called $to. The team is: ${team.joinToString()}")
+
+            val first = winner ?: return execution.also {
+                winner = to
+                winnerTool = tool
+            }
+
+            warnings.add(
+                ModelWarning(
+                    "$tool handed the conversation over to $to after $winnerTool had handed it over to $first in " +
+                        "the same step; the first one won",
+                )
+            )
+            return refused(execution, "The conversation was already handed over to $first, so this handoff to $to was ignored")
+        }
+
+        private fun refused(execution: Execution, message: String) = Execution(
+            execution.result.copy(output = ToolOutput.Text(message), isError = true),
+            execution.failure,
+        )
+    }
 
     private fun throwIfCancelled(options: CallOptions) {
         options.cancellation?.throwIfCancelled()

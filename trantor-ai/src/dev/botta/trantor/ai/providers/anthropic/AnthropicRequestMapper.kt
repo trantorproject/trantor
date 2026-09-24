@@ -58,6 +58,7 @@ internal class AnthropicRequestMapper(
             applySettings(body, request.settings)
             applyTools(body, request, thinking)
             applyOutputConfig(body, request.output, request.settings.reasoning, options)
+            conversation.bindThinking(body)
             applyCache(body, cache, conversation)
 
             options?.userId?.let { body["metadata"] = Json.obj("user_id" to it) }
@@ -463,13 +464,13 @@ internal class AnthropicRequestMapper(
 
 /**
  * A request ready to go: its body, what was changed on the way, the beta headers it needs, and what the thinking of
- * its answer has to remember ([DynamicSystemStamp]).
+ * its answer has to remember ([ThinkingStamp]).
  */
 internal data class MappedRequest(
     val body: JsonObject,
     val warnings: List<ModelWarning>,
     val betas: Set<String> = emptySet(),
-    val stamp: String? = null,
+    val stamp: ThinkingStamp? = null,
 )
 
 /** Only reached by a model nobody described, where there is nothing to derive a ceiling from. */

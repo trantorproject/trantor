@@ -1,0 +1,37 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfMJ3bMDUrcNncpL2T7Vo",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "OK, entonces ya tengo toda la información:\n\n1. Clima en Bariloche: 7°C\n2. Precio del paquete de una semana: $900 dólares por persona\n\nAhora puedo responder al usuario con toda la información que solicitó.",
+      "signature": "EtEDCpsBCBIYAipAgWGdbexrLtKRxsJrvNLD7mRAQOMpVfkKpGY+tfyeTDqhTy4UsdCnHbF80DcA/PssMq2yJOGLLImWr3MKDOriTTIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGFiY2QxOWUxLTFjZDItNDRmOC1hNDFkLTcxMTNiMDU0ZWFkNagBjNXR1QYSDKYdQH2VVN/DrGpU/hoMILhEfogvNsUodqRTIjA0IwX6Jp61EKNv/rrBn5wEk96JQOg6Xn8HjUH22J9z8QG0t9lcrykNDGfxR4ADr1Iq4gFVQ8tsrVQdPTht/KS6X+6EcyY5Ld/JCHnTKeQ237DgT2y4otBGrq/KIcMf1xc015lW64B8CvEf/6+7xdVPODLlew8Cy0JCXkv6BtmQlqiUmpCS95oyVwsUp2w/WYC4YXByNX40eWr1jtcl/BwlJOqAy1k53i9L7MZTwn6Y8rzvce4eVeSStPHGm8fG4/7rwYvIixPJWex8re9ICr4+TZQpsVTHXrTFJDqQ55QO1jVRbQS6x+v05oOTOAcXFuq9+3fxQjoOf3WhlafTFLLpL7kCb60UBb1YLZG37DAGRjBA6wZ9GAE="
+    },
+    {
+      "type": "text",
+      "text": "¡Perfecto! Te paso la información:\n\n**Precio:** El paquete de una semana a Bariloche cuesta **USD 900 por persona**.\n\n**Clima:** Actualmente en Bariloche hay **7°C**, un clima fresquito típico de la zona patagónica.\n\n¿Te interesa este destino? ¿Querés que te cuente más detalles sobre qué incluye el paquete o te gustaría consultar por otras fechas?"
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 1311,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 208,
+    "output_tokens_details": {
+      "thinking_tokens": 78
+    },
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "diagnostics": null
+}

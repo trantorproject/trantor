@@ -1,0 +1,132 @@
+{
+  "id": "resp_0340d5cb22a6fd07006ab46a94735887d28b544129f434654c",
+  "object": "response",
+  "created_at": 1790208660,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790208663,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0340d5cb22a6fd07006ab46a94ec6887d2bdd9a0e4c02cf0da",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtGqXf82JyclwFVipg0tdb_fQIe8msGivqDM5WQitVVIxWA1NvI7EobUFurZ8Pvd1MjO9cF2Pna0VjFP00z2KeFyj6uR_BcIeeZD0QBfSpu-4KnIohyemu1eMCIFKmXAF0f82au1a217BCVhTjl2-VYZ9VrsDPrc3xmTSCFVP-vKyc8FKnmpqbaZJwbuiiakKnKtn4NGkNE1iqzccWrihW5O0thgHkR8uX6DAzrhI_CR1jY__uk4D_Tgitdr84Gh62sFmo2RXwMbrg7-Wa6X52z0AOOe-UbjDvbXggMyhLIYiMRIuHudQPXurxwJZgkKOCsmwIkU4hTXuz0HRj0Brq9SmNkTecQmRYX075pt5LOuEOuTiVq6O5PsZ2BUfxP8wvzb1MF9HIYfecAHBEqWl02rHCQ7CPMC_R60WCvRIYQTJQuTNvIEbaFYWJM459p_cl_v2YdzUbKRYTUqUMU1W7rQI8lyGIkFMnY0DT5k6217IKQS1LDhUH5p7RH9S-HEJQ0ID6wt4fVsBmfAEiirZlvDoqwlS7NDFoDHPQ5zXLVXe14HLX0Lj-XSy1JAi34gCLQ_3rykBzGmInC2mjhJzQ04M7QG8y05_aBp44wKASnnKhWvRpHkZ8NC6k6o6ZKnj6lsrGOv_6OMTvP_882Tu0ZASBFsLIK_R9EAZxPhRW0Ub3Mf24s-m3T0ViCAxr8D1g4euaUgadGazoorWsVW8yAS3jqNelkXoVuT-shpKAfS4YhtMECAVobvSj4SWpI9aGwsNFSS4L1MrGXRtDpO8XeSujNEj8ZtLbQI-n8hhOiUxVVnzJ90I-fsSU7vdDsPC3CLcuVEtOzitRwlSjq_Bx4MEewKeR13ZbwEaOLKjok2vYcdb3HMvZZgmd3d5vxKEHbDqs-veu7W7dVxmMUsvEBT_GRG9arJ8NV8ib09STC5_zO3ysWnwVXHp7_D-IPg0cBynomX2jScxTnR4dW_cHHdQBiqjxIpPirItIOYpLqMijzMD2nDw1RSHX1cfh7S6gIQbEK4t-AIY_FhcubeylTmtY6akktGYSD_ssOYak0wJwKjug61RaORw2vBkRCTQ-ndO7E4GUtOzGLTzrenIYgPxnrZgclEbksf2y7mhDtAPzasNLDjMF9Plfmy8E6uKvs25ZVVp70alPNc0SrBoZGUmUQOUhuNzPJtYzaK4uf4r7H8K8AkdNxZe43hbC1gGrNKEaQ0iq6CYNWzmTIOj0ChOmqvNd5H9Wwej-r6CM_hd8uE7lX_pOqZ06xisg3ucIQrCWNk8cUjMM8coa11PPW0I-BxZyERJHLUjbuDmp6iF4KznVW01L0_XPD88_GJpl7hlyH97S_QdjMCvpl_0JDYd8EcZRS53QIXUjH3Eh9pPpPYwuTSMgiUFqJiAXitw0nYj_QSNMwZgO-iefAcxWBkJL2J529NnMKUp_Y9cO31pXY_xfP31B5XNVfQBYN8VwZgFkM_YZMsiUsEXfPBSILzaa7nbYtulebk7-aSV8yFJcUWVdwYZMVRRXvUM2Q2otOI2kRxgrxW7N9ygKNNDa6RrA7bRrSudeEPNOYEI5McLijXSuY0fqfrxHYdLeBmwaVzDKGsXdtRqNVSgy9M8jnREBGT0E6TDwL6t34YB9FG5-nnmKSBjts4FeMrtj_RkJOKV7cIGM_Hspj8LFUI1m0wJ850-yAItJkvIEGeH1AxumExHQYGyKKIJtA-rsJYMTbuHpmpTLDogO4mdK9YSsZEvTjzkgnBh29n89bvapRFbs8GmMpSHkNCSqmW6CAQ2FK2rRknKU2PuAt8U1epGN8cezYkXXF6Hl-i5WCCLp-xLMmYf70yU1vfAMHiKzMOZwXzlYKCevaIvBoL8Ny_6sRI9hA==",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_0340d5cb22a6fd07006ab46a96ec9c87d291cc9d06e6e234ca",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "El paquete de una semana a Bariloche sale 900 USD por persona.\n\nEn cuanto al clima, Bariloche tiene clima de montaña y patagónico:\n\n- Verano (diciembre a febrero): días templados, con máximas entre 15 °C y 25 °C; las noches pueden bajar a 5 °C–10 °C.  \n- Otoño (marzo a mayo): fresco, con temperaturas que oscilan entre 5 °C y 18 °C, y días a veces ventosos.  \n- Invierno (junio a agosto): frío, con máximas de 0 °C a 8 °C, mínimas que pueden caer por debajo de 0 °C y frecuentes nevadas especialmente en zonas altas.  \n- Primavera (septiembre a noviembre): variable, temperaturas de 5 °C a 20 °C, con días soleados y otros lluviosos.\n\nSi me dices en qué época planeas viajar, puedo darte un pronóstico más preciso."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "low",
+    "mode": "standard",
+    "summary": "detailed"
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The price of a one-week package to a city, per person, in dollars",
+      "name": "getPrice",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 243,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 337,
+    "output_tokens_details": {
+      "reasoning_tokens": 64
+    },
+    "total_tokens": 580
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

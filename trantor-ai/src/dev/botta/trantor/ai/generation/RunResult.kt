@@ -48,7 +48,8 @@ data class RunResult(val steps: List<Step>) {
             return costs.reduce(CostEstimate::plus)
         }
 
-    val warnings get() = steps.flatMap { it.response.warnings }
+    /** What each call to the model said, and what the run noticed on its own, step by step. */
+    val warnings get() = steps.flatMap { it.response.warnings + it.warnings }
 
     val toolFailures get() = steps.flatMap { it.toolFailures }
 }

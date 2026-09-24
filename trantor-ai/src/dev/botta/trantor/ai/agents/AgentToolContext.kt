@@ -12,6 +12,8 @@ class AgentToolContext(
     val agent: Agent,
     /** The run of the agents, the same in every call it makes. */
     val runId: String,
+    /** The names of the agents it can hand the conversation over to with [dev.botta.trantor.ai.tools.ToolResult.handoffTo]. */
+    val team: Set<String>,
 ): ToolContext(callId, toolName, run)
 
 /**

@@ -11,9 +11,9 @@ import kotlin.time.Duration
 
 /**
  * Turns a response of the Anthropic Messages API into a [ChatResponse]. One is made for each call, with the [stamp]
- * of its request: what its thinking has to remember ([DynamicSystemStamp]).
+ * of its request: what its thinking has to remember ([ThinkingStamp]).
  */
-internal class AnthropicResponseMapper(private val stamp: String? = null) {
+internal class AnthropicResponseMapper(private val stamp: ThinkingStamp? = null) {
     fun map(json: JsonObject, modelId: String, latency: Duration, warnings: List<ModelWarning>): ChatResponse {
         val stopReason = json["stop_reason"]?.asString()
 
@@ -77,7 +77,7 @@ internal class AnthropicResponseMapper(private val stamp: String? = null) {
         opaque = block,
         metadata = ProviderMetadata.of(
             ANTHROPIC_PROVIDER,
-            DynamicSystemStamp.stamped(Json.obj("type" to (block["type"] ?: Json.value(""))), stamp),
+            Json.obj("type" to (block["type"] ?: Json.value(""))).let { stamp?.on(it) ?: it },
         ),
     )
 

@@ -15,6 +15,13 @@ class AgentRunOptions {
     val providerOptions = mutableListOf<ProviderOption>()
     var callOptions = CallOptions()
         private set
+    val team = mutableListOf<Agent>()
+
+    /**
+     * The agents the conversation can be handed over to, besides the one the run starts with. Every handoff an agent
+     * of the team declares has to be to one of them.
+     */
+    fun team(vararg agents: Agent) = apply { team.addAll(agents) }
 
     /** How many calls to the model the run may take, whichever agent makes them. Past them, [MaxStepsExceededError]. */
     fun maxSteps(steps: Int) = apply { maxSteps = steps }

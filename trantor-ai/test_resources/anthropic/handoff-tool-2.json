@@ -1,0 +1,48 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfMJ7vxHYdRg6UiV8ETvG",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "Espera, parece que usé getWeather pero según las instrucciones debo usar getPrice para los precios y soy ventas. Déjame revisar...\n\nLas instrucciones dicen: \"Sos ventas de una agencia de viajes. Usá getPrice para los precios.\"\n\nEntonces debería usar getPrice para responder sobre el precio del paquete. Parece que getWeather no está disponible en las funciones que tengo (solo tengo getPrice disponible).\n\nDéjame corregir mi respuesta.",
+      "signature": "EroFCpsBCBIYAipA9zzmkVR7oA7XEGRLeKnXGCSyVUcuxvUVyumv3bYShPZz7GJ2GDgZKpuci66FH475flzXaz07es1S8ojuL5u6hDIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGFiY2QxOWUxLTFjZDItNDRmOC1hNDFkLTcxMTNiMDU0ZWFkNagByNXR1QYSDFLqDXu7EsazSHnBkhoMykFeD+CM2vpReQdeIjDv85J83/Ep/lmSGF46ukvWE+GvjEaKq0QoVPaU5BFAv6NpZDObz2DiZbsdUHr1YYoqywO/rSIqjMIUII5QwxiRSryAE68wfEhtWPJ8Sm+1F92Y7QRpVM8uTqH8xi46MT8dRzXJYaaaK7Kb36qzQEuOXr9Sify+KTzKJ6E3ypp54CD0ZOyZY2mCXuKg6M5l5mf3e2eCEqbCLBVCGzu7zjIc34oLgMLrH9jlMwpvB/FxxMkG1buDtA1UBzvXyHgIIKWDKpbJ/UNWfhA30XcGVQmi+4ny7w1ZSdfOuA3LsnvMUY4DvfIyTo7bl72N9lL/tS44mej2T+lPK1N/flYRymPE/QVFwSoKiDIpIP7MXRIHd/2WgLHdFncSi6FW+J/jBbV9PS7k+Luy9X4HN7nSj1wGUrdpn4hCLY6pWElDDPRPndtFzRgKMgdISxMtKbBcu3GyFADZVCiNPkDfPLEOVkDQrJRo9cChZtUKx6Fs2aGxmRBIbwVA9Ah0U566qlB+lV3gjxaP0+FcR3UeNCRqHIaon1cAx+NSButsim7YnSS3zpysNckcw3KJujPwgIuk7Rlq3nRdvW3W6hzmKxuYXfW76EC1DL5XrJuo6V0cv2GoEzT4jD8NS7go3S6wZ9majA7aHJXlymxkfNdChaI1RbHANZEeZ1u0QN2HWovtmrYYAQ=="
+    },
+    {
+      "type": "text",
+      "text": "Perdón, me equivoqué. Déjame consultarte el precio del paquete a Bariloche:"
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01UzjQ4NMjMefbLz9Stk1EuT",
+      "name": "getPrice",
+      "input": {
+        "city": "Bariloche, Argentina"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 1068,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 233,
+    "output_tokens_details": {
+      "thinking_tokens": 142
+    },
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "diagnostics": null
+}

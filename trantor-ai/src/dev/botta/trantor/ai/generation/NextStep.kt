@@ -46,4 +46,9 @@ class StepSetup(
     val outputTool: String? = null,
     /** What each tool knows about its call. Without it, the call and the [dev.botta.trantor.ai.RunContext] of the loop. */
     val toolContext: ((ToolCallPart) -> ToolContext)? = null,
+    /**
+     * The agents a tool of this step can hand the conversation over to, by name. Null where there are none, as in
+     * a generation, whose handoffs are left with a warning.
+     */
+    val team: Set<String>? = null,
 )

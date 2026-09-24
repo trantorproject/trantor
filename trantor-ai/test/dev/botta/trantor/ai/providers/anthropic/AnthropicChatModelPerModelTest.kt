@@ -649,6 +649,7 @@ class AnthropicChatModelPerModelTest {
             assertThat(sentBody()["messages"]!!.asArray()!!.last().toString()).doesNotContain("clear_at")
             assertThat(httpClient.request?.headers).doesNotContainKey("anthropic-beta")
             assertThat(stampOf(answer.content)).isNull()
+            assertThat(setupOf(answer.content)).isNull()
         }
 
         @Test
@@ -662,8 +663,120 @@ class AnthropicChatModelPerModelTest {
             assertThat(stampOf(answer.content)).isNull()
         }
 
+        @Test
+        fun `the thinking of the answer remembers the system prompt and tools it was produced under`() {
+            httpClient.body = fixture("bound-thinking-2")
+
+            val answer = generateWith("claude-opus-5-5", request(history = listOf(Message.system("Sos soporte"), question)))
+            val other = generateWith("claude-opus-5-5", request(history = listOf(Message.system("Sos ventas"), question)))
+
+            assertThat(setupOf(answer.content)).isNotBlank().isNotEqualTo(setupOf(other.content))
+        }
+
+        @Test
+        fun `thinking produced under another system prompt is left out, since Anthropic would refuse it`() {
+            // What a handoff does: the agent that answers next has other instructions and other tools
+            httpClient.body = fixture("bound-thinking-2")
+            val support = Message.system("Sos soporte")
+            val first = generateWith("claude-opus-5-5", request(history = listOf(support, question)))
+            val second = generateWith(
+                "claude-opus-5-5",
+                request(history = listOf(support, question, first.asMessage(), Message.user("Y en Lima?"))),
+            )
+            val history = listOf(
+                Message.system("Sos ventas"), question, first.asMessage(), Message.user("Y en Lima?"),
+                second.asMessage(), Message.user("Te paso con ventas"),
+            )
+
+            val result = generateWith("claude-opus-5-5", request(history = history))
+
+            assertThat(blockTypesOf("assistant")).containsExactly(listOf("text"), listOf("text"))
+            assertThat(result.warnings.map { it.message }).contains(
+                "Thinking produced under another system prompt or other tools was left out: claude-opus-5-5 ties " +
+                    "each thinking block to what came before it, and would refuse it",
+            )
+        }
+
+        @Test
+        fun `and so is the one under other tools`() {
+            httpClient.body = fixture("bound-thinking-2")
+            val before = generateWith("claude-opus-5-5", request())
+            val history = listOf(question, before.asMessage(), Message.user("Y en Lima?"))
+
+            generateWith("claude-opus-5-5", request(history = history).copy(tools = listOf(weatherSpec)))
+
+            assertThat(blockTypesOf("assistant")).containsExactly(listOf("text"))
+        }
+
+        @Test
+        fun `only up to the last one that changed, so the thinking produced after it stays`() {
+            // Anthropic takes thinking left out from the start, not from the middle
+            httpClient.body = fixture("bound-thinking-2")
+            val support = Message.system("Sos soporte")
+            val sales = Message.system("Sos ventas")
+            val bySupport = generateWith("claude-opus-5-5", request(history = listOf(support, question)))
+            val bySales = generateWith(
+                "claude-opus-5-5",
+                request(history = listOf(sales, question, bySupport.asMessage(), Message.user("Y en Lima?"))),
+            )
+            val history = listOf(
+                sales, question, bySupport.asMessage(), Message.user("Y en Lima?"), bySales.asMessage(),
+                Message.user("Y en Quito?"),
+            )
+
+            generateWith("claude-opus-5-5", request(history = history))
+
+            assertThat(blockTypesOf("assistant")).containsExactly(listOf("text"), listOf("thinking", "text"))
+        }
+
+        @Test
+        fun `and a block that still fits goes too when one after it changed, since none can be left out of the middle`() {
+            // Sales hands over to support and support back to sales: the first thinking of sales still fits, but
+            // keeping it would leave out the one of support from the middle
+            httpClient.body = fixture("bound-thinking-2")
+            val support = Message.system("Sos soporte")
+            val sales = Message.system("Sos ventas")
+            val bySales = generateWith("claude-opus-5-5", request(history = listOf(sales, question)))
+            val bySupport = generateWith(
+                "claude-opus-5-5",
+                request(history = listOf(support, question, bySales.asMessage(), Message.user("Y en Lima?"))),
+            )
+            val history = listOf(
+                sales, question, bySales.asMessage(), Message.user("Y en Lima?"), bySupport.asMessage(),
+                Message.user("Y en Quito?"),
+            )
+
+            generateWith("claude-opus-5-5", request(history = history))
+
+            assertThat(blockTypesOf("assistant")).containsExactly(listOf("text"), listOf("text"))
+        }
+
+        @Test
+        fun `the same system prompt and tools keep all of it`() {
+            httpClient.body = fixture("bound-thinking-2")
+            val before = generateWith("claude-opus-5-5", request())
+            val history = listOf(question, before.asMessage(), Message.user("Y en Lima?"))
+
+            val result = generateWith("claude-opus-5-5", request(history = history))
+
+            assertThat(blockTypesOf("assistant")).containsExactly(listOf("thinking", "text"))
+            assertThat(result.warnings).isEmpty()
+        }
+
         private fun request(dynamic: String? = "Son las 10", history: List<Message> = listOf(question)) =
             ChatRequest(history, dynamicSystem = dynamic)
+
+        private fun blockTypesOf(role: String) = sentBody()["messages"]!!.asArray()!!.map { it.asObject()!! }
+            .filter { it["role"]?.asString() == role }
+            .map { message -> message["content"]!!.asArray()!!.map { it.asObject()!!["type"]?.asString() } }
+
+        private fun setupOf(parts: List<Part>) = parts.filterIsInstance<ReasoningPart>().single()
+            .metadata["anthropic"]?.get("setup")?.asString()
+
+        private val weatherSpec = FunctionToolSpec(
+            name = "getWeather",
+            parameters = Json.obj("type" to "object", "properties" to Json.obj("city" to Json.obj("type" to "string"))),
+        )
 
         private fun stampOf(parts: List<Part>) = parts.filterIsInstance<ReasoningPart>().single()
             .metadata["anthropic"]?.get("dynamic_system")?.asString()
