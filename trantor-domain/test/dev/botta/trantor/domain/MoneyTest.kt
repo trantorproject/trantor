@@ -1,6 +1,9 @@
 package dev.botta.trantor.domain
 
+import dev.botta.trantor.domain.Money.Companion.sum
+import dev.botta.trantor.domain.errors.DomainError
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.*
 import java.math.*
 
@@ -99,6 +102,7 @@ class MoneyTest {
     @Test
     fun isZero() {
         assertThat(Money(0).isZero()).isTrue
+        assertThat(Money("0.00").isZero()).isTrue
         assertThat(Money(0.00001).isZero()).isFalse
         assertThat(Money(-0.00001).isZero()).isFalse
     }
@@ -187,5 +191,74 @@ class MoneyTest {
         assertThrows<ArithmeticException> {
             Money("3214553536.1361525377").unscaledLongValue(12)
         }
+    }
+
+    @Test
+    fun `equal amounts hash the same whatever their scale, so they work as set members and map keys`() {
+        val amounts = setOf(Money("2.0"), Money("2.00"), Money(2))
+
+        assertThat(amounts).hasSize(1)
+    }
+
+    @Test
+    fun `sum adds a list of amounts, and an empty list sums to zero`() {
+        assertThat(listOf(Money(1), Money("2.50"), Money("0.25")).sum()).isEqualTo(Money("3.75"))
+        assertThat(listOf<Money>().sum()).isEqualTo(Money.zero())
+    }
+
+    @Test
+    fun `divides without failing when the result never ends, keeping 34 significant digits`() {
+        assertThat(Money(1) / 3).isEqualTo(Money("0.3333333333333333333333333333333333"))
+    }
+
+    @Test
+    fun `rounded rounds half even to the given precision, and keeps that scale`() {
+        assertThat(Money("2.345").rounded(2).plainString()).isEqualTo("2.34")
+        assertThat(Money("2.355").rounded(2).plainString()).isEqualTo("2.36")
+        assertThat(Money(2).rounded(2).plainString()).isEqualTo("2.00")
+    }
+
+    @Test
+    fun `allocate splits an amount in equal parts that add up to it, the remainder going to the first ones`() {
+        val parts = Money(100).allocate(3, precision = 2)
+
+        assertThat(parts).containsExactly(Money("33.34"), Money("33.33"), Money("33.33"))
+        assertThat(parts.sum()).isEqualTo(Money(100))
+    }
+
+    @Test
+    fun `allocate splits an amount by ratios`() {
+        val parts = Money(100).allocate(listOf(1, 1, 2), precision = 2)
+
+        assertThat(parts).containsExactly(Money(25), Money(25), Money(50))
+    }
+
+    @Test
+    fun `allocate gives nothing to a zero ratio, not even the remainder`() {
+        val parts = Money("0.05").allocate(listOf(0, 1, 1), precision = 2)
+
+        assertThat(parts).containsExactly(Money(0), Money("0.03"), Money("0.02"))
+    }
+
+    @Test
+    fun `allocate splits a negative amount the same way, with the sign`() {
+        val parts = Money(-100).allocate(3, precision = 2)
+
+        assertThat(parts).containsExactly(Money("-33.34"), Money("-33.33"), Money("-33.33"))
+    }
+
+    @Test
+    fun `allocate splits the amount rounded to the precision asked for`() {
+        val parts = Money("10.005").allocate(2, precision = 2)
+
+        assertThat(parts.sum()).isEqualTo(Money("10.00"))
+    }
+
+    @Test
+    fun `allocate refuses what cannot be split`() {
+        assertThatThrownBy { Money(100).allocate(0, precision = 2) }.isInstanceOf(DomainError::class.java)
+        assertThatThrownBy { Money(100).allocate(listOf(), precision = 2) }.isInstanceOf(DomainError::class.java)
+        assertThatThrownBy { Money(100).allocate(listOf(1, -1), precision = 2) }.isInstanceOf(DomainError::class.java)
+        assertThatThrownBy { Money(100).allocate(listOf(0, 0), precision = 2) }.isInstanceOf(DomainError::class.java)
     }
 }
