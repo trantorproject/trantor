@@ -17,9 +17,10 @@ The rules an agent needs in one place are in [AGENTS.md](../AGENTS.md) at the ro
 | [trantor-config](trantor-config.md) | `trantor-config` | Stacked providers, sections, paths |
 | [trantor-hosting](trantor-hosting.md) | `trantor-hosting` | `Host`, `HostBuilder`, hosted services, modules |
 | [trantor-core](trantor-core.md) | `trantor-core` | Application pipeline, events, jobs, queues, cache, transactions |
+| [trantor-domain](trantor-domain.md) | `trantor-domain` | Aggregates, ids, domain events, domain errors, `fail` and `Ensure`, repositories, `Email` and `Money` |
 | [trantor-web](trantor-web.md) | `trantor-web` | HTTP server, routes, controllers, error handlers, websockets |
 | [trantor-ai](trantor-ai.md) | `trantor-ai` | Chat models, the OpenAI and Anthropic adapters, the model registry and the capability catalog |
 
-Not documented yet: `trantor-data`, `trantor-domain`, `trantor-web-client`, `trantor-gson`,
+Not documented yet: `trantor-data`, `trantor-web-client`, `trantor-gson`,
 `trantor-taskpool`, `trantor-primitives`, `trantor-aws`, `trantor-queues-sqs`. Their KDoc and tests are
 the reference for now.

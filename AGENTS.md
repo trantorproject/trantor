@@ -17,6 +17,7 @@ Most of what looks missing already exists:
 | Register services, read a config section, configure an instance after creation | [docs/trantor-di.md](docs/trantor-di.md) and `trantor-di/src/.../ServiceRegistry.kt` |
 | Read configuration | [docs/trantor-config.md](docs/trantor-config.md) |
 | Start something with the application | [docs/trantor-hosting.md](docs/trantor-hosting.md) |
+| Model a domain: aggregates, ids, events, domain errors, `fail`/`Ensure` | [docs/trantor-domain.md](docs/trantor-domain.md) |
 | Add a module of your own | [docs/architecture.md](docs/architecture.md), then the table below |
 | Write tests | [docs/testing.md](docs/testing.md) |
 | Match the house style | [docs/conventions.md](docs/conventions.md) |

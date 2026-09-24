@@ -180,6 +180,8 @@ Includes utilities for:
 - Domain events
 - Repository abstractions
 
+See `docs/trantor-domain.md`.
+
 ---
 
 ## Serialization
@@ -243,5 +245,6 @@ More detailed documentation about specific Trantor modules can be found in:
 - [trantor-config](trantor-config.md)
 - [trantor-hosting](trantor-hosting.md)
 - [trantor-core](trantor-core.md)
+- [trantor-domain](trantor-domain.md)
 - [trantor-web](trantor-web.md)
 - [trantor-ai](trantor-ai.md)
