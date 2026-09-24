@@ -1,6 +1,7 @@
 dependencies {
     implementation(kotlin("reflect"))
     api(project(":trantor-primitives"))
+    api(project(":trantor-core"))
     api(project(":trantor-domain"))
     api("org.junit.jupiter:junit-jupiter")
     api("org.assertj:assertj-core")

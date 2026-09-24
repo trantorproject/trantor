@@ -196,10 +196,51 @@ class HttpServerTest { ... }
 
 Tag a test `slow` when it starts a real server, hits a network, or waits on a clock.
 
-> `slowTest` and `allTests` come from the conventions plugin, which registers them without a classpath and
-> lets its own `excludeTags("slow")` leak into both. The root `build.gradle.kts` puts both back. Without
-> that, a test tagged `slow` runs in **no** task at all, which looks exactly like a test that passes — so
-> after tagging one, run `slowTest` and check the count.
+> `slowTest` and `allTests` come from the conventions plugin (`dev.botta.kotlin-conventions`). Versions
+> before 0.4.3 registered them without the test classpath and let `excludeTags("slow")` leak into both, so a
+> test tagged `slow` ran in **no** task at all, which looks exactly like a test that passes. After tagging
+> one, run `slowTest` and check the count.
+
+---
+
+## Testing an application against a database
+
+For applications built on Trantor. The usual shape: a test database migrated by the build, and every test
+wrapped in a transaction that is rolled back at the end, so tests never see each other's data.
+
+**Use `addSimpleJdbc()`**, registered before the application's modules. Its `SimpleJdbcTransactionManager`
+keeps one transaction for every thread, and `TransactionAwareDataSource` hands its connection to whoever asks.
+The test opens the transaction; the use cases' own transactions nest inside it as savepoints; the HTTP
+server's threads see what the test wrote. `addJdbc()` is thread-local, so the server would not see the
+scenario and the rollback would not undo what the requests wrote.
+
+```kotlin
+val builder = WebApplication.builder { appName = "orders-test" }
+builder.config.addMemoryCollection("jdbc.url" to testDbUrl, "httpServer.port" to "9191")
+builder.services.addSimpleJdbc()
+builder.services.addSingleton<EventDispatcher>(events)          // FakeEventDispatcher
+builder.services.addSingleton<JobDispatcher>(jobs)              // FakeJobDispatcher
+builder.services.addModule<OrdersModule>()
+builder.services.addSingleton<Scheduler, NullScheduler>()       // after the module that adds the scheduler
+val app = builder.build()
+
+val transaction = app.services.get<TransactionManager>().beginTransaction()
+app.start()
+// ... the test ...
+app.stop()
+transaction.rollback()
+```
+
+- `addModule` composes the module right away and the last registration wins, so a service registered **after**
+  the module replaces the module's one. Services the framework adds with `addSingletonIfMissing`
+  (`EventDispatcher`, `JobDispatcher`) can be registered before.
+- **Replace the scheduler.** `DefaultScheduler` polls the database from its own thread, and in this setup that
+  is the test's connection.
+- **Replace the dispatchers.** `FakeEventDispatcher` and `FakeJobDispatcher` (`trantor-test`) record what was
+  published or dispatched, so a test can assert it, and nothing reaches a queue.
+- **Event handlers that run after commit never run** in these tests: they wait for the outermost transaction,
+  and it is rolled back. Test those handlers by calling them directly.
+- Begin the transaction before building the scenario, or the scenario is committed and outlives the test.
 
 ---
 
