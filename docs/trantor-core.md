@@ -141,4 +141,6 @@ implementation for applications with no database.
   websockets; `NullBroadcaster` is the one for applications that do not broadcast.
 - **Scheduling**: `Scheduler` and `ScheduledJob` over db-scheduler, with `NullScheduler` as the default.
 - **Validation**: `ValidationMiddleware` runs Jakarta Bean Validation on a request before its handler,
-  raising `ValidationError`.
+  raising `ValidationError`. Besides the standard constraints, `trantor-primitives` has `@NullOrNotBlank` for
+  the fields of a partial update, where null means "leave it as it is" and `@NotBlank` would refuse it. It
+  lives in `trantor-primitives`, not here, so a request can use it without depending on core.
