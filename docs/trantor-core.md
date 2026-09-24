@@ -139,7 +139,9 @@ implementation for applications with no database.
   `NotAuthenticatedError` and `UnauthorizedAccessError`.
 - **Broadcast**: `Broadcaster`, `Channel`, `ClientSession`. The implementation is in `trantor-web` over
   websockets; `NullBroadcaster` is the one for applications that do not broadcast.
-- **Scheduling**: `Scheduler` and `ScheduledJob` over db-scheduler, with `NullScheduler` as the default.
+- **Scheduling**: `Scheduler` and `ScheduledJob` over db-scheduler, with `NullScheduler` as the default. A
+  `ScheduledJob` declares its `schedule` with db-scheduler types (`Schedules.daily(...)`, `FixedDelay.ofMinutes(...)`),
+  which is why `trantor-core` exposes db-scheduler to the application.
 - **Validation**: `ValidationMiddleware` runs Jakarta Bean Validation on a request before its handler,
   raising `ValidationError`. Besides the standard constraints, `trantor-primitives` has `@NullOrNotBlank` for
   the fields of a partial update, where null means "leave it as it is" and `@NotBlank` would refuse it. It
