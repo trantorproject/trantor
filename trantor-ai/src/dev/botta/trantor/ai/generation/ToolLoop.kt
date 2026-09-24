@@ -215,6 +215,8 @@ class ToolLoop(
                 run.advance(response, executions, step)
                 yield(RunEvent.StepFinished(number))
 
+                step.handoffs.winner?.let { yield(RunEvent.Handoff(step.agent, it)) }
+
                 if (step.endedBy(executions)) {
                     last = RunResult(run.steps)
                     return@iterator

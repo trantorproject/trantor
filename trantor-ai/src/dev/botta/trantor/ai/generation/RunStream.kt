@@ -18,8 +18,11 @@ interface RunStream: Iterator<RunEvent>, AutoCloseable {
     fun result(): RunResult
 }
 
-/** Only the text as it arrives, for whoever just wants to print the answer. */
-fun RunStream.textDeltas() = asSequence()
+/**
+ * Only the text as it arrives, for whoever just wants to print the answer. It reads any stream of a run, a
+ * generation's or the agents'.
+ */
+fun Iterator<RunEvent>.textDeltas() = asSequence()
     .filterIsInstance<RunEvent.Model>()
     .map { it.part }
     .filterIsInstance<StreamPart.TextDelta>()

@@ -1,6 +1,7 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.trantor.ai.generation.NextStep
+import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.Step
 import dev.botta.trantor.ai.generation.StepSetup
 import dev.botta.trantor.ai.generation.ToolLoop
@@ -45,12 +46,25 @@ class AgentRunner(
         run(agent, conversation.toList(), configure)
 
     fun run(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunResult {
-        val options = AgentRunOptions().apply(configure)
-        val run = Run(agent, teamOf(agent, options.team), options, UUID.randomUUID().toString())
-        val result = ToolLoop(run, options.maxSteps, options.context, errorHandlers.all)
-            .run(ChatRequest(conversation), options.callOptions)
+        val run = start(agent, configure)
 
-        return AgentRunResult(result, run.agents, run.id)
+        return run.resultOf(run.loop.run(ChatRequest(conversation), run.options.callOptions))
+    }
+
+    /** Runs [agent] like [run], received as it happens. See [AgentRunStream]. */
+    fun stream(agent: Agent, vararg conversation: Message, configure: AgentRunOptions.() -> Unit = {}) =
+        stream(agent, conversation.toList(), configure)
+
+    fun stream(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunStream {
+        val run = start(agent, configure)
+
+        return AgentRunStream(run.loop.stream(ChatRequest(conversation), run.options.callOptions), run::resultOf)
+    }
+
+    private fun start(agent: Agent, configure: AgentRunOptions.() -> Unit): Run {
+        val options = AgentRunOptions().apply(configure)
+
+        return Run(agent, teamOf(agent, options.team), options, UUID.randomUUID().toString())
     }
 
     /**
@@ -80,11 +94,16 @@ class AgentRunner(
     private inner class Run(
         private var agent: Agent,
         private val team: Map<String, Agent>,
-        private val options: AgentRunOptions,
+        val options: AgentRunOptions,
         val id: String,
     ): NextStep {
         /** The agent of each step so far, in order. */
-        val agents = mutableListOf<Agent>()
+        private val agents = mutableListOf<Agent>()
+
+        /** The tool loop the run goes on, asking this run what each step goes out with. */
+        val loop = ToolLoop(this, options.maxSteps, options.context, errorHandlers.all)
+
+        fun resultOf(result: RunResult) = AgentRunResult(result, agents, id)
 
         // Resolved once per agent and run, since every step of an agent calls the same model
         private val chatModels = mutableMapOf<Agent, ChatModel>()

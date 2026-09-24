@@ -25,4 +25,11 @@ sealed interface RunEvent {
 
     /** The call and its tools are over. The step itself is in the result of the run. */
     data class StepFinished(val number: Int): RunEvent
+
+    /**
+     * A tool of the step that just finished handed the conversation over: the next step goes out as [to]. It comes
+     * right after that step's [StepFinished], and only in a run of agents, since a generation has nobody to hand the
+     * conversation to. [from] is the agent the step went out as.
+     */
+    data class Handoff(val from: String?, val to: String): RunEvent
 }

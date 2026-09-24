@@ -193,6 +193,8 @@ ai.stream { user(question); tools(products) }.use { stream ->
 A `RunStream` is the same run received as it happens, as `RunEvent`s: `StepStarted`, `Model` with what
 the model produces (a `StreamPart`, as the adapter read it), `ToolStarted`, `ToolFinished` and
 `StepFinished`. A step whose calls run at the same time says they all started before any of them finished.
+A run of agents also has `Handoff(from, to)`, right after the step that handed the conversation over; a
+generation never does, since it has nobody to hand it to.
 
 `result()` consumes whatever is left and gives the `RunResult`, and closing the stream closes the call in
 flight and runs no more tools.
