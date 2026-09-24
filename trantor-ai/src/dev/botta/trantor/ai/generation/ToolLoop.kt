@@ -61,13 +61,13 @@ class ToolLoop(
             val calls = run.callsOf(response)
 
             if (calls.isEmpty()) {
-                if (run.endsWith(step)) return run.finish(response)
+                if (run.endsWith(step)) return run.finish(response, step)
 
                 run.remind(response, step)
                 continue
             }
 
-            if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response)
+            if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response, step)
 
             val executions = step.executeAll(calls, options).map { step.handoffs.settle(it) }
 
@@ -105,7 +105,7 @@ class ToolLoop(
         /** The calls the application has to run. The ones the provider ran already came answered. */
         fun callsOf(response: ChatResponse) = response.toolCalls.filterNot { it.providerExecuted }
 
-        fun finish(response: ChatResponse) = RunResult(steps + Step(response))
+        fun finish(response: ChatResponse, step: Outgoing) = RunResult(steps + Step(response, agent = step.agent))
 
         /**
          * Whether an answer without calls ends the run. It does, unless the step answers by calling an output tool
@@ -115,20 +115,20 @@ class ToolLoop(
 
         /** Keeps the answer and tells the model to answer by calling the output tool, which takes one more step. */
         fun remind(response: ChatResponse, step: Outgoing) {
-            throwIfOutOfSteps(response)
+            throwIfOutOfSteps(response, step)
 
             val reminder = Message.user("Please include your response in a call to ${step.outputTool}.")
 
-            steps.add(Step(response, reminder = reminder))
-            messages = messages + response.asMessage() + reminder
+            steps.add(Step(response, reminder = reminder, agent = step.agent))
+            messages = messages + response.asMessage(step.agent) + reminder
         }
 
         /**
          * Fails when the step that just answered was the last one allowed. It is asked before running its calls:
          * no model would read their results, and a tool with effects would have them all the same.
          */
-        fun throwIfOutOfSteps(response: ChatResponse) {
-            if (steps.size + 1 >= maxSteps) throw MaxStepsExceededError(maxSteps, finish(response))
+        fun throwIfOutOfSteps(response: ChatResponse, step: Outgoing) {
+            if (steps.size + 1 >= maxSteps) throw MaxStepsExceededError(maxSteps, finish(response, step))
         }
 
         /**
@@ -150,9 +150,10 @@ class ToolLoop(
                     executions.mapNotNull { it.failure },
                     handoff = step.handoffs.winner,
                     warnings = step.handoffs.warnings,
+                    agent = step.agent,
                 )
             )
-            messages = messages + response.asMessage() + Message.Tool(results)
+            messages = messages + response.asMessage(step.agent) + Message.Tool(results)
         }
     }
 
@@ -180,7 +181,7 @@ class ToolLoop(
 
                 if (calls.isEmpty()) {
                     if (run.endsWith(step)) {
-                        last = run.finish(response)
+                        last = run.finish(response, step)
                         yield(RunEvent.StepFinished(number))
                         return@iterator
                     }
@@ -190,7 +191,7 @@ class ToolLoop(
                     continue
                 }
 
-                if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response)
+                if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response, step)
 
                 val executions = mutableListOf<Execution>()
 
@@ -250,6 +251,7 @@ class ToolLoop(
     private inner class Outgoing(private val setup: StepSetup) {
         val model = setup.model
         val outputTool = setup.outputTool
+        val agent = setup.agent
         val handoffs = Handoffs(setup.team)
         private val toolsByName = setup.tools.associateBy { it.name }
 

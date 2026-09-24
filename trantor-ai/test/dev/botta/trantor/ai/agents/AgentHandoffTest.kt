@@ -39,16 +39,6 @@ class AgentHandoffTest {
     }
 
     @Test
-    fun `the new agent reads the whole conversation, with the transfer and its result`() {
-        supportModel.answers(listOf(call("call_1", "transfer_to_sales")))
-
-        run(support.handoffs("sales").build())
-
-        assertThat(salesModel.requests.single().messages.last())
-            .isEqualTo(Message.Tool(listOf(ToolResultPart("call_1", "transfer_to_sales", ToolOutput.Text("Transferred to sales.")))))
-    }
-
-    @Test
     fun `a tool of the application hands over with its effect, and the model reads what it answered`() {
         supportModel.answers(listOf(call("call_1", "assign")))
 

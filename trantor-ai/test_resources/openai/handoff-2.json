@@ -1,14 +1,14 @@
 {
-  "id": "resp_0e40b67556257f8a006ab46a39667487d287d7b9566a058b70",
+  "id": "resp_0d096bd639b75970006ab476414a3887d2bd4d1a23da4e3bfd",
   "object": "response",
-  "created_at": 1790208569,
+  "created_at": 1790211649,
   "status": "completed",
   "access_programs": null,
   "background": false,
   "billing": {
     "payer": "developer"
   },
-  "completed_at": 1790208572,
+  "completed_at": 1790211650,
   "error": null,
   "frequency_penalty": 0.0,
   "incomplete_details": null,
@@ -19,22 +19,11 @@
   "moderation": null,
   "output": [
     {
-      "id": "rs_0e40b67556257f8a006ab46a3c651087d2a29695204324fe71",
-      "type": "reasoning",
-      "content": [
-        
-      ],
-      "encrypted_content": "gAAAAABqtGo8HRdWZaR-ai-4bN7QCXP8eXAOJFrZFEIisN9U4iAe-UZ3b5ZzVff_bsGPN6dOxEfe-PxK5IJORhA9uqIp9ZiRk-m5h07dGI2eKqPDgnv1v6JNOVrIn-HSkbCrYheL1fHUJAB35zvfwqOWhUpNm5PsM791ULhA_in3tBXmR7VK136uiE8bwjWj05_QT25rLdcMwUtvLRUMhAxLr3RstYlVKmeOWUkozR8q-6grOqdzuedr--gFUgO-SS04Wzu8MRDM8Y9EkneV_aLkplIvS2Y_TJTQz5qFWcvYCtYXuDzSo6wgHa9B5vMDmyYDPZwYTfC21TD6yFXm_ItnFpZ13gqzIKlqJ68EdlRpe1E2q11cDnRrIjTSv8BEZiYL4zy_H54Xx9Evq7bsnwlUHM9mS7Lx02ThMOZQgHmsSJ_6hw6E6pQjrgerypeE_wi1jjlEtXP1geVjnLufNr9Dg-aNyK64oiVl0SguThFX44g1PV9y3z19uXhM5chHNdbnB_6tWaH3dvzmXBRtZwv25ySW3FbE02sNnWgA6XjEYxgxzWV-qee07TYzJ3hQBQY6Ej5GIYgj8DsGARRI10Ib1TiUMvuBHYCOGD9InBxYA2fakfYwHQT6zhCa1IQ8qdD30FQj5JMYxogdFLPbMKRe-C008ulVRkENWCl1tEk2ySD1wOc5Zm_0SqiYlTwNpUJha4oYQREL8g93MyKddvzM2u9AUCU5bjo_lLKfCmDi0p3VwGdnyUTQhy89YTb_g6ClT6VM6fWwWVFQmm38jqOE6FE07bP-QN3Lwm2rDzyXPT09RcNlzmFcdxYDYwAXlE3oSOqv_r5kUZbTyPTDAz7PWyRBK4vnoPFlNzIelXAgwOIxFtsJMqfEOxggWvVzyFKyyjtggFhQaJoYtlfQkaQdSMlCmvdyj8gg2Gt6RJfWFa_QNTgA0-RCIkUg1H80FcHfslcSR-bv3rtqQX8ZPUTGTLGl41uOEurhdWTfeM3KWuiuV3i3nAzPZlYoI9bdyrwj-UWpFVY1vyT4FOmsTGyPiiKjZKk1i00lHNW27JHi5IMyDpxIWWSZNokmK3osRrHmTPyc8ShL2CNcsx2cnyazMce9yAe4Dydng31Q9J60Wqf0jiLDku8-SovPqpAiGlF-KngbVNRg7FK8T_LKLX351lEHoz_KDFeAVJjKMgP_I5eiFeEnGrf_RQYKi3L294bTElPGOv1gEy9S9zREbUYHy8rH-6gtq8YPJJvNRdQlw07RhUnBbn4=",
-      "summary": [
-        
-      ]
-    },
-    {
-      "id": "fc_0e40b67556257f8a006ab46a3cb68487d28983f6a3db91e2c3",
+      "id": "fc_0d096bd639b75970006ab47642482087d2ae14c05d17998daf",
       "type": "function_call",
       "status": "completed",
       "arguments": "{}",
-      "call_id": "call_EjpD73PzObJIb5IYUNqlxWtd",
+      "call_id": "call_F2NNHqcpLxz7Jea9GMBGEhj3",
       "name": "transfer_to_sales"
     }
   ],
@@ -121,16 +110,16 @@
   "top_p": 1.0,
   "truncation": "disabled",
   "usage": {
-    "input_tokens": 302,
+    "input_tokens": 1325,
     "input_tokens_details": {
       "cache_write_tokens": 0,
-      "cached_tokens": 0
+      "cached_tokens": 1152
     },
-    "output_tokens": 34,
+    "output_tokens": 15,
     "output_tokens_details": {
       "reasoning_tokens": 0
     },
-    "total_tokens": 336
+    "total_tokens": 1340
   },
   "user": null,
   "metadata": {

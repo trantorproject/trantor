@@ -1,14 +1,14 @@
 {
-  "id": "resp_0e40b67556257f8a006ab46a3d828487d2a11931f9fdd77d87",
+  "id": "resp_09147dafbc92247d006ab47642bba087d2858f33a141d0c7f7",
   "object": "response",
-  "created_at": 1790208573,
+  "created_at": 1790211650,
   "status": "completed",
   "access_programs": null,
   "background": false,
   "billing": {
     "payer": "developer"
   },
-  "completed_at": 1790208574,
+  "completed_at": 1790211654,
   "error": null,
   "frequency_penalty": 0.0,
   "incomplete_details": null,
@@ -19,22 +19,26 @@
   "moderation": null,
   "output": [
     {
-      "id": "msg_0e40b67556257f8a006ab46a3e887487d2b5d2aacccb0ba3f9",
-      "type": "message",
-      "status": "completed",
+      "id": "rs_09147dafbc92247d006ab476435a9c87d2974fa50774784f00",
+      "type": "reasoning",
       "content": [
-        {
-          "type": "output_text",
-          "annotations": [
-            
-          ],
-          "logprobs": [
-            
-          ],
-          "text": "En Bariloche esta semana la temperatura promedio es de 7 °C. \n\nPara cotizar el paquete de una semana, te paso con nuestro equipo de ventas."
-        }
+        
       ],
-      "role": "assistant"
+      "encrypted_content": "gAAAAABqtHZGaDbTPy7oUIzTcmMlYu8Nlcw-LhPvemZh47S5J50ycBmuPFnNkejQHjc-ropAzUb-uREip0ATpfsWZF6NU25JGWzv_1bOgSql0EcZWVwGhOi5p6Eq1LkowT9yLHvUCLcDOQ1ns9nFMJaityah4O33iH-VwbmT_FGxqQ9cVPmhyy8eHX4_wER0q4aJWC9te6SJVU9ePn-Y8QjO70LdcUzTFDTSnpyl5UDChj1owNmTLRj-v86PerOxny8CcGc-rQlQuubwhLijmMrxzNZv4liWOsR0N7u4kobsCmsLY00GRonY0-4YCQ2OuxX_0SacJNrFEYIofa5m3ZouE2vEiL6t4x8GDjdSkeSy4k6jntbzllW2CoxIraCaTryzzXVjN7xnAfYGcgKyOcZ-6wD4pV8Vf-srHI_NTWcCvXkF4MrXy08Qp4U53DipZsykWutpXK_K5AKHQLtLYScERRYu4AEMunLTTOpbh3kRRifJWpH7h2mWFkKqgQpOg5qkwRUUrxdYNRMVgzYroJi2g1W2w8WUU6IsyPcGOVDeB40W0opCmNTDKu6e6pX9QU4w0C85FuOk0AVao2p_jTzJ3PNj2A0SjShNBGXF2sNMu_QspdbyvrDJkYLRL6f2FHfnXfklC4pXq2q5XnE15pVetpwwHD-HmV2dZxhOEPjgdWVX-y3yj8oZ9AyC0x43YYQz94nCmVAqPgvrthLGx928sQvsbH1eFTbBYRNvmy1KceM9ZTKCYoRQZY07E8432rEimskuaq9gnoCGYfS1tHy4Pcba8b_lPG2kaxPwrC5lkpv_6CuYnlYOGhi9ghcpGFMJuTACG_IFRsC985illwNJqkhroXNFeuWDOVElgBBfsaEnOWr7Dmzaz4siQkHQhBCBmEanZZbIi8RuK6dFPB_H3Bh-x_MRnxkYkDdrbx8xZrrO6aHjeCJZ40EuiNNn9iMu_jdCVIUJ-SHdGAjY8_7_AhzFJ0h8o6QdiuEbm8FeJ-y_mJEyvhsZREFPWxDggvfs7vicl3zfNtc_3vzHFK4ydSmX5wH-18NNwhY3Xh31L1lbVLglECjJ26BOlN67IelunIaJBhtqwVr0lvVLI0YStSL0r1tQIynN5mpOD0pcRodLHdM8i0AFaaW8QpLnESEfduocrHEGkDHqJ7vsUFhbcRO2eJvduZVbep-Tpv8oeN8c5k66woEBbuSMVEK6z-OEhIYCUNSi1ZhWWj06-a4FH8GQwxbmHPDMi4F1WfrA54mUKvP5eKw7uaAOKwPkSg_ob23UcDauryzlMB1-nIaCGkLamoGIgO3hpJ34qTPzOEYlTuDNsJPWNjsu3s6i1mtQNYTlCHauulWikySHVotAwBy1r9Cs8_45l6qjD44mxuj9qNSAlqULjuthjALoNdUfbZoN-PYqEoMVynwLNNzGn3Nj3R7TVQ20uUQ_JHHTQjpDGC8IuKqpRI-6vrxYlyQrSZ80YYaaLPcGFolodo_freFwjW9mH4Vthj1HeIzVA0IwjTiTPzqwCZORpcZqk5gaBcSqB_hoqRnSBaFJsJCGQVyxo72eSYY3eNpKwmOzobYvHfPDfSnRHdoZ4ETwI-2FL7fh3ZH1rDw4Ba1WYT1rNCTCjEeZypf0oZY8iHAdRUCL_MB9z3lUhNABxtVR1AI17kicJpnSLNLhVyGIcO7wQlvq7iNJPs4aR9hJVop9Cls6CBnlH7-rfDRIveEf0IuJZ6288OWsnFY2ZhsaoAK1zuRZ5m9MaPo2nusE9QVtyGGKGy4zReWdo6teIF6i_jttVLIgYde42j5D0FG9ASYzlgO0fqugMxt21wMUwSvSfg9PoLcOd5X6h5SWXMpRWedts9496kl3AfQg-j_jwH7jUEeLbZ-0z6pBdXg8QLThUkePVE2-VHiLdarqS8vYSuM7rOmVx5YlhcQM72-GmTP66gqq2FHcNMo6W7hZEmnC228mLAbw7rWFFdNmKXxET4zkAM3oeZcZEiOujz6d46XIH15j796IwI7YxzhfpDlQYBL-ElxFMMqbbgba8s1hAhu8V3IL6QYwzrdVzdodDMBXQJjGRNgXkdglD6xwEPNtjzVCS3onZi9Rpa62ePN5KVpHI0jsIcTUfpGY5dihBE-6XSDeJ0jmj0Ueei1Mcfmx2O5Cnv-aRh2_dd2-I3oDSfF9RW7BsEi7qlwSWIudGjLcwnFVKGpcDzs7tzv5ltK2MZRskQ7MQIPAei8IpNBpY-KT8gHoVyPap10nA_M7fFdziQpLYWJ4G89gTQe00mA4XSpZLtnhzyDTneMzlXseP6EFfMNeS05cdsDoM5lUnCB0R-yxf8lcRlu8OZtaxB2y00S_V6jF-MkTJ8dOBKLrqAFDF-zd_7S5qn_YLV-TQnTaDHjCBZSO_O4UEEptlpZOMOBIN7QXNayc20lwu-wlIioIf2CARsnt-prGeDZ77xCcUL4NOXS2rZfc7QnBxjbNPT8VQ5NbH46MxeAE20Tro2QYvHdGbxebwD7A4DI1a6ZPF1KGGFJBtiPG6_ijpijhLnwur3FxFxS7_YgMQnepOjhMLBksrWqc",
+      "summary": [
+        {
+          "type": "summary_text",
+          "text": "**Determining price and climate**\n\nI need to find the price for a one-week package to Bariloche. I can call for that first, but the user also asked about the climate. Since I don't have access to real-time weather data, I can provide a general description instead. Bariloche has a cool temperate climate, with mild summers and cold, snowy winters. I’ll get started by calling for the price, and then I can share that along with the typical climate details."
+        }
+      ]
+    },
+    {
+      "id": "fc_09147dafbc92247d006ab476469f9487d28dc65acd8e3c3b25",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche\"}",
+      "call_id": "call_f5e9kmPfQ0CmqZegOlOsu4FD",
+      "name": "getPrice"
     }
   ],
   "parallel_tool_calls": true,
@@ -103,16 +107,16 @@
   "top_p": 1.0,
   "truncation": "disabled",
   "usage": {
-    "input_tokens": 332,
+    "input_tokens": 184,
     "input_tokens_details": {
       "cache_write_tokens": 0,
       "cached_tokens": 0
     },
-    "output_tokens": 38,
+    "output_tokens": 239,
     "output_tokens_details": {
-      "reasoning_tokens": 0
+      "reasoning_tokens": 192
     },
-    "total_tokens": 370
+    "total_tokens": 423
   },
   "user": null,
   "metadata": {

@@ -19,33 +19,35 @@ import org.junit.jupiter.api.Test
 
 /**
  * Support handing a question over to sales, against what the providers really answered. Every request after the first
- * of each recording was accepted, so what goes on it is what the api took: the new agent's request carries the calls
- * and the reasoning of the agent before, to tools it does not have, and both providers took it.
- *
- * The recordings also show what the handoff does not solve yet: the new agent reads the turns of the one before as
- * its own (o4-mini's sales ends the run saying it will pass the question to sales). That is step 4b of the plan.
+ * of each recording was accepted, so what goes on it is what the api took. The new agent reads the turns of support
+ * told as context with its name ([OtherAgentsTurns]), so its request carries neither the calls nor the reasoning of
+ * support.
  */
 class AgentHandoffRecordedTest {
     @Nested
     inner class `A declared handoff` {
         @Test
-        fun `o4-mini takes the request of the new agent, with the calls and the reasoning of the one before`() {
-            http.answers(*fixtures("openai/handoff", 3))
+        fun `o4-mini takes the request of the new agent, with the turns of the one before told as context`() {
+            http.answers(*fixtures("openai/handoff", 4))
 
             val result = runner.run(support(openAI()).handoffs("sales").build(), question) { team(sales(openAI())) }
 
-            assertThat(result.steps.map { it.agent.name }).containsExactly("support", "support", "sales")
+            assertThat(result.steps.map { it.agent.name }).containsExactly("support", "support", "sales", "sales")
             assertThat(openAIToolNames(0)).containsExactly("getWeather", "transfer_to_sales")
             assertThat(openAIToolNames(2)).containsExactly("getPrice")
             assertThat(openAISystem(2)).isEqualTo(SALES)
-            assertThat(openAIItems(2, "function_call").map { it["name"]!!.asString() })
-                .containsExactly("getWeather", "transfer_to_sales")
-            assertThat(openAIItems(2, "reasoning")).hasSize(2)
+            assertThat(openAIItems(2, "function_call")).isEmpty()
+            assertThat(openAIItems(2, "reasoning")).isEmpty()
+            assertThat(openAIUserTexts(2)).contains(
+                OtherAgentsTurns.PREAMBLE,
+                "[support] got from getWeather: {\"celsius\":7}",
+                "[support] called transfer_to_sales with {}",
+            )
         }
 
         @Test
         fun `the handoff tool goes with a closed schema without properties, which OpenAI took as strict`() {
-            http.answers(*fixtures("openai/handoff", 3))
+            http.answers(*fixtures("openai/handoff", 4))
 
             runner.run(support(openAI()).handoffs("sales").build(), question) { team(sales(openAI())) }
 
@@ -57,16 +59,17 @@ class AgentHandoffRecordedTest {
         }
 
         @Test
-        fun `Claude Sonnet 4-5 takes it too, with the thinking of the one before, which it does not tie`() {
-            http.answers(*fixtures("anthropic/handoff", 3))
+        fun `so does Claude Sonnet 4-5`() {
+            http.answers(*fixtures("anthropic/handoff", 4))
 
             val result = runner.run(support(sonnet()).handoffs("sales").build(), question) { team(sales(sonnet())) }
 
-            assertThat(result.steps.map { it.agent.name }).containsExactly("support", "sales", "sales")
-            assertThat(anthropicToolNames(1)).containsExactly("getPrice")
-            assertThat(anthropicSystem(1)).isEqualTo(SALES)
-            assertThat(toolUsesSent(1)).containsExactly("getWeather", "transfer_to_sales")
-            assertThat(thinkingSent(1)).containsExactlyElementsOf(signaturesOf("anthropic/handoff-1"))
+            assertThat(result.steps.map { it.agent.name }).containsExactly("support", "support", "sales", "sales")
+            assertThat(anthropicToolNames(2)).containsExactly("getPrice")
+            assertThat(anthropicSystem(2)).isEqualTo(SALES)
+            assertThat(toolUsesSent(2)).isEmpty()
+            assertThat(thinkingSent(2)).isEmpty()
+            assertThat(textsSent(2)).contains(OtherAgentsTurns.PREAMBLE, "[support] called transfer_to_sales with {}")
             assertThat(result.warnings).isEmpty()
         }
     }
@@ -75,13 +78,13 @@ class AgentHandoffRecordedTest {
     inner class `A tool of the application that hands over` {
         @Test
         fun `on o4-mini the new agent reads what the tool answered`() {
-            http.answers(*fixtures("openai/handoff-tool", 3))
+            http.answers(*fixtures("openai/handoff-tool", 4))
 
             val result = runner.run(support(openAI()).tools(AssignTool()).build(), question) { team(sales(openAI())) }
 
-            assertThat(result.steps.map { it.agent.name }).containsExactly("support", "sales", "sales")
-            assertThat(openAIToolNames(1)).containsExactly("getPrice")
-            assertThat(openAIItems(1, "function_call_output").single()["output"]!!.asString()).isEqualTo("Asignada a ventas")
+            assertThat(result.steps.map { it.agent.name }).containsExactly("support", "support", "sales", "sales")
+            assertThat(openAIToolNames(2)).containsExactly("getPrice")
+            assertThat(openAIUserTexts(2)).contains("[support] got from assignToSales: Asignada a ventas")
         }
 
         @Test
@@ -92,20 +95,21 @@ class AgentHandoffRecordedTest {
 
             assertThat(result.steps.map { it.agent.name }).containsExactly("support", "sales", "sales")
             assertThat(anthropicToolNames(1)).containsExactly("getPrice")
-            assertThat(toolResultsSent(1)).contains("Asignada a ventas")
+            assertThat(textsSent(1)).contains("[support] got from assignToSales: Asignada a ventas")
         }
     }
 
     /**
      * Opus 5.5 ties each thinking block to the system prompt and the tools it was produced under, and the recording
      * forced the api to refuse a block whose prefix changed instead of dropping it. Every request was accepted and no
-     * answer came back with input transformations: the thinking of support was left out of the requests of sales,
-     * and the thinking of sales stayed, on its next step and on the next turn.
+     * answer came back with input transformations: support keeps its thinking on its second step, and it does not
+     * reach sales, whose requests tell the turns of support as context. Sales did not think in this recording; that
+     * a model keeps its own thinking when the one before it is left out is in AnthropicChatModelPerModelTest.
      */
     @Nested
     inner class `On a model that ties its thinking` {
         @Test
-        fun `the requests of the new agent leave out the thinking of the one before, and keep its own`() {
+        fun `the requests of the new agent go without the thinking of the one before`() {
             http.answers(*fixtures("anthropic/bound-handoff", 5))
             val support = support(opus()).handoffs("sales").settings { reasoning = Reasoning.effort(ReasoningEfforts.High) }
             val sales = sales(opus())
@@ -120,11 +124,9 @@ class AgentHandoffRecordedTest {
 
             assertThat(first.steps.map { it.agent.name }).containsExactly("support", "support", "sales", "sales")
             assertThat(thinkingSent(1)).containsExactlyElementsOf(signaturesOf("anthropic/bound-handoff-1"))
-            assertThat(thinkingSent(2)).isEmpty()
-            assertThat(thinkingSent(3)).containsExactlyElementsOf(signaturesOf("anthropic/bound-handoff-3"))
-            assertThat(thinkingSent(4)).containsExactlyElementsOf(signaturesOf("anthropic/bound-handoff-3"))
-            assertThat(first.warnings.map { it.message }).anyMatch { it.startsWith(LEFT_OUT) }
-            assertThat(next.warnings.map { it.message }).anyMatch { it.startsWith(LEFT_OUT) }
+            assertThat((2..4).flatMap { thinkingSent(it) }).isEmpty()
+            assertThat(textsSent(2)).contains("[support] called transfer_to_sales with {}")
+            assertThat(first.warnings + next.warnings).isEmpty()
             assertThat(next.text).contains("1.800")
         }
 
@@ -165,6 +167,10 @@ class AgentHandoffRecordedTest {
     private fun openAISystem(call: Int) =
         openAIItems(call, "message").first { it["role"]!!.asString() == "system" }["content"]!!.asString()
 
+    private fun openAIUserTexts(call: Int) = openAIItems(call, "message")
+        .filter { it["role"]!!.asString() == "user" }
+        .flatMap { it["content"]!!.asArray()!!.map { part -> part.asObject()!!["text"]!!.asString() } }
+
     private fun anthropicToolNames(call: Int) = openAIToolNames(call)
 
     private fun anthropicSystem(call: Int): String {
@@ -179,7 +185,7 @@ class AgentHandoffRecordedTest {
 
     private fun toolUsesSent(call: Int) = blocksSent(call, "tool_use").map { it["name"]!!.asString() }
 
-    private fun toolResultsSent(call: Int) = blocksSent(call, "tool_result").map { it["content"]!!.asString() }
+    private fun textsSent(call: Int) = blocksSent(call, "text").map { it["text"]!!.asString() }
 
     private fun thinkingSent(call: Int) = blocksSent(call, "thinking").map { it["signature"]!!.asString() }
 
@@ -200,7 +206,6 @@ class AgentHandoffRecordedTest {
 
     private companion object {
         const val SALES = "Sos ventas de una agencia de viajes. Usá getPrice para los precios."
-        const val LEFT_OUT = "Thinking produced under another system prompt or other tools was left out"
     }
 
     /** The tools the recordings were made with, answering what they answered then. */

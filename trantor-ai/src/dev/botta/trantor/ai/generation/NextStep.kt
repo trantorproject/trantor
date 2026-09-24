@@ -51,4 +51,6 @@ class StepSetup(
      * a generation, whose handoffs are left with a warning.
      */
     val team: Set<String>? = null,
+    /** The agent the step goes out as, which its answer is kept as written by. Null in a generation. */
+    val agent: String? = null,
 )

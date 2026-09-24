@@ -27,4 +27,6 @@ data class Step(
     val handoff: String? = null,
     /** What the run itself noticed in this step, apart from what the model call said in [ChatResponse.warnings]. */
     val warnings: List<ModelWarning> = emptyList(),
+    /** The agent the step went out as, which wrote its answer. Null in a generation. */
+    val agent: String? = null,
 )

@@ -1,22 +1,12 @@
 {
   "model": "claude-opus-5-5",
-  "id": "msg_011CfMJAjMNechfsj8Ciqppe",
+  "id": "msg_011CfMMwa86URWNBdw3Xzsdu",
   "type": "message",
   "role": "assistant",
   "content": [
     {
-      "type": "thinking",
-      "thinking": "I notice I called getWeather and transfer_to_sales, but those aren't actually in my available tools—only getPrice is. I should be upfront that I can't vouch for that weather result since it came from an unavailable tool, and now I need to actually call getPrice.\n\n",
-      "signature": "CAQS2gYKEAgSGAI4AUIIdGhpbmtpbmcSDKxLfuP9DaPdTOdcCxoM3oWJANVpHEjb77d8IjDgSfCu79QDD+bgStextoz3hNoS0WCxGA70NTKKCvG/q0m54unbrKkFeq6l3hA8Oq8q9wVnh1huP594X3T6NpkYVme9aieoOsOjeccofKUNy/sOKzhRGfew8vfstV47T1PWVvBwKTmg3rbuAAuRFiegHLPgbyrUaBUfxg7x8UWG3RlBgTtTKK7L3yZtreFto2MCs5sq3O1Vnk47KMTal17L+ia9UFV/YAoXF7YJWB34vNijpD8IYa4cov5puCIDEqaDeXfJ0yaPwDo9VBHBxxJeRn5Te72FucDnCaZtdBKsgln7a0zS9uFuG3ijoeL5abk/4ht1IR9GTUL6dteuSihcrHeJvYCe7z5p7h9ZDui4Gxi/PJAKjCUUzLdBJpfON3yDyDZxyut9AB7gDu1BgDIGis4AurgJR5keTqwfnbZClcEvProEzPl17hYYyAG8630F8r6qqmEoYFt0JYB4L99RB7AM609LZWRr3jz0TELrQ0QUeMvg34bQsUj/VU7YgpUNpgwEH8Ttqf8I1s97S3qoKXL4HvxrRxuR50m01d13Vo4Xn7USDBS6kNMYuhX0Y5FpTaDTCjF/RPe+BVEsWY35fTXBAYHl5r3x8UWzb1gLLkJQVNA6gM9eXUgRJVljZnyUTeZQI/TDh16sZmZzpB3vBb1Kk3xO/MRnbDJGM8LFp5OkLfw5IsJxfyXZ8H625cpl6q9JjKbv+HZfdLlqczC3T3qlOsk7/fjrKS3LzR8mNZ07G9wWe3IfAIs79NhQOlsgg1us5oqqYc9JlEIkqx3z6/Q9aJOUK6qOfajWdjSGApnNSw9AjpWCDtU7xB/s9l7mzduddKJGmuvjRoIA2MWXsyuDzSIwDLK8oupjDjRzWdd6X7E7T8Y09AkO5Fj9maatx2m28dDVw+3O2gwvELx0BY3Cuyu1d2SoIJJdr1lqbNru4pS5G/vejb3FIKIpo3UvcpuOV/LcOFCXHWtieXgm4xPqT7JalghhtWquIoSZvLiCsCQ2ZlgNRfV8g9B9U5ax/9skSGdAyyRw2pcQPIr1wFE+0Xb+H0DOD07Koikha5zIlkGHztVDzxoYAQ=="
-    },
-    {
-      "type": "thinking",
-      "thinking": "Aclaro que llamé por error a herramientas no disponibles (\"getWeather\" y \"transfer_to_sales\"), así que el dato del clima (7 °C) no es confiable y no hubo transferencia real. Ahora busco el precio con la herramienta correcta, \"getPrice\".\n\n",
-      "signature": "CAQS8wcKEQgSGAI4AUIJbmFycmF0aW9uEgxjTxqcSqmU27/LjnAaDHrtTGoEm8zCcKn16iIwWQSFE7mH2G7gBT3sFDttalCOUPrZvXUKsXmKOoSy/ws6w3Xt9NwQqf4JMOYzAnviKo8H78gmRjVCkPscDX38AVkvYXDqdYUnSw34jh0PhLB5wdoUpNVdnQNBfRl/fVv9JSdOkhpxQG58kMtJmaWpGHxN6imTsjNKjVzMiZL/7exi27PpdoSxJkCnscmFGKb18kojdYN5GNEgEokDPErnzzK0UDVDU7brAsuy8l8hxkXZ0DZedqsiqTMt2npdcmH4snrzG8LjJh+Th/I5anN9WUydCGUx7vHihSJHvcjCFtRvXttczuQshR9RgLk7KWCs7duHpveTOsbUmSA0AFaKYJT1EGLfBXron8Ld2i5+Ss5Nz64XFdhU+Cl3rsponqMQ2jE7zXljZoaCiaBXUrSiQ3zVlRxhuY89zklWsEpOMthsFgT2kcPHLTGhkWsoqaoflL1i3FHIcEs4yhTsSFcq1Hl3ygAuXh49mtPX3eyi+0GTwxl9uAzeBcJvPBHLLna2x3K9BB/i3OahfNHS4mBC/IysF16y8cl4azafkO79XoPt2iNcBVBtQUZ9A4CSy9BiBECB8sr80m+YIhaPQ66hi+TqESKRKuodDSiO+b5InNYBFHhcQaX22LLY/c4O+Qi5/QKAWcTRiwHSyveEESYd1YDe5mNM44cYbGD+uHMl9IZ+zMHUKkExHFxbn2RwVZM9RDFItEXFAMdFNcwrxOCaQy5F/3f6hTrl54U5XKL6FBedrtYTW/sh6Chi0Saug8JyPFWy3TY7pW33VvW+dADSuCWe34s8DtDnQrmzXquVetErqU49HoNvMoTztgUJx/8p0ThSQPjSHiNRvmsMlCbr6vTIZ7WMuNaszcMHj6+evteQYMLQvJboFnRcIsiUOixiY3T6u40oc/SzSCz8nEf/2hsni4vM2O48jRIziMT3tkknF+oigWXJ5ajQQiEWli9GROaJxISpeWHZvi1lYZ0myX8wXKYoVpAl4TGjXv7EAuCRKvRY+/291F/HcjDpTm97f8JkjEnTGzJinLD1b7H+mtsJYUzrz4A8o4BwBPxEB6xclDTh0T1qfXVnd85757Mb3FNrOzkylo42MoJgqPyYNBMN1ilY3dBhjz4kBpcGJPgNFCyAIfwr5YKfxHwkspqmskWLaJA8Sv+n7cQjnv4HPKhvtU6Y7HfaAdKAj/6AWb6Ad74ZH/ZakUFje3QuiuOXGTdEOCYdUY4TDrDnwmOi61I5p9mlda0jj6/kA2xtMOQvhHN0i6v5E4JPol9/s12ff0UYAQ=="
-    },
-    {
       "type": "tool_use",
-      "id": "toolu_01YEQ2PCJJ83jDKK61Pi1rr6",
+      "id": "toolu_016S922B23cvW4QKHRC2KMF2",
       "name": "getPrice",
       "input": {
         "city": "Bariloche, Argentina"
@@ -31,16 +21,16 @@
   "stop_sequence": null,
   "stop_details": null,
   "usage": {
-    "input_tokens": 568,
+    "input_tokens": 644,
     "cache_creation_input_tokens": 0,
     "cache_read_input_tokens": 0,
     "cache_creation": {
       "ephemeral_5m_input_tokens": 0,
       "ephemeral_1h_input_tokens": 0
     },
-    "output_tokens": 306,
+    "output_tokens": 57,
     "output_tokens_details": {
-      "thinking_tokens": 250
+      "thinking_tokens": 0
     },
     "service_tier": "standard",
     "inference_geo": "global"

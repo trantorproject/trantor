@@ -14,15 +14,17 @@ import java.security.MessageDigest
  * `system`, the `tools` and every earlier message — which Opus 5.5 and Fable 5.1 do. Anthropic answers 400 to a block
  * whose prefix changed.
  *
- * Within a conversation the prefix only grows, except when an agent hands the conversation over to another: the
- * next step goes out with other instructions and other tools, and the thinking of the one before would be refused.
- * So each block remembers a fingerprint of the system prompt and the tools it was produced under ([ThinkingStamp]),
- * and a request leaves out every block up to the last one produced under another: Anthropic takes thinking left out
- * from the start of the conversation, not from its middle, so the blocks after it stay valid and keep their
- * reasoning. The model loses the reasoning of the other agent, as it would with another model.
+ * Within a conversation the prefix only grows, except when a call goes out with another system prompt or other
+ * tools: the application changed the instructions of an agent between turns, a generation goes on with other tools,
+ * or an agent took over a history whose answers are not signed by their agent (signed ones reach it as told context,
+ * without their thinking). The thinking produced before would be refused. So each block remembers a fingerprint of
+ * the system prompt and the tools it was produced under ([ThinkingStamp]), and a request leaves out every block up
+ * to the last one produced under another: Anthropic takes thinking left out from the start of the conversation, not
+ * from its middle, so the blocks after it stay valid and keep their reasoning. The model loses the older reasoning,
+ * as it would with another model.
  *
- * Anthropic's own way out, `drop_block`, drops the failing block and every one after it, which after a handoff would
- * be all the reasoning of the new agent too.
+ * Anthropic's own way out, `drop_block`, drops the failing block and every one after it, which would be all the
+ * reasoning produced since, on every call from then on.
  */
 internal class BoundThinking(private val modelId: String, private val warnings: MappingWarnings) {
     private val sent = mutableListOf<Pair<JsonObject, String?>>()

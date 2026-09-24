@@ -77,6 +77,31 @@ class ToolLoopStepsTest {
     }
 
     @Test
+    fun `the answers of a step are kept as written by the agent it went out as`() {
+        first.answers(listOf(call("call_1", "getWeather")), listOf(TextPart("7 grados")))
+        val seen = mutableListOf<ChatRequest>()
+
+        val result = ToolLoop({ request, _ ->
+            seen.add(request)
+            StepSetup(first, request, listOf(weather), agent = "support")
+        }).run(ChatRequest("Que temperatura hay?"))
+
+        assertThat((seen[1].messages[1] as Message.Assistant).agent).isEqualTo("support")
+        assertThat(result.steps.map { it.agent }).containsExactly("support", "support")
+        assertThat(result.newMessages.filterIsInstance<Message.Assistant>().map { it.agent })
+            .containsExactly("support", "support")
+    }
+
+    @Test
+    fun `the answers of a generation have no agent`() {
+        first.answers(listOf(call("call_1", "getWeather")), listOf(TextPart("7 grados")))
+
+        val result = ToolLoop(first, listOf(weather)).run(ChatRequest("Que temperatura hay?"))
+
+        assertThat(result.newMessages.filterIsInstance<Message.Assistant>().map { it.agent }).containsOnlyNulls()
+    }
+
+    @Test
     fun `a tool is described again on every step`() {
         first.answers(listOf(call("call_1", "getWeather")), listOf(TextPart("7 grados")))
 
@@ -185,8 +210,18 @@ class ToolLoopStepsTest {
             assertThat(result.steps[1].toolResults.single().toolName).isEqualTo("final")
         }
 
-        private fun loop(maxSteps: Int = 5) = ToolLoop(
-            { request, _ -> StepSetup(first, request, listOf(weather, output), outputTool = "final") },
+        @Test
+        fun `the answer that got the reminder is kept as written by the agent too`() {
+            first.answers(listOf(TextPart("Bariloche")), listOf(city("call_1", "Bariloche")))
+
+            val result = loop(agent = "support").run(ChatRequest("Que ciudad?"))
+
+            assertThat((first.requests[1].messages[1] as Message.Assistant).agent).isEqualTo("support")
+            assertThat((result.newMessages[0] as Message.Assistant).agent).isEqualTo("support")
+        }
+
+        private fun loop(maxSteps: Int = 5, agent: String? = null) = ToolLoop(
+            { request, _ -> StepSetup(first, request, listOf(weather, output), outputTool = "final", agent = agent) },
             maxSteps,
         )
 

@@ -32,6 +32,9 @@ import java.util.UUID
  * A tool that answers [dev.botta.trantor.ai.tools.ToolResult.handoffTo] hands the conversation over to another agent
  * of the team: the step finishes with the agent that asked for its calls, and the next one goes out with the other,
  * which reads the whole conversation. The loop settles two handoffs in a step or one outside the team.
+ *
+ * Every answer is kept signed by the agent that wrote it, and an agent reads the turns of the others as context with
+ * their names, not as its own ([OtherAgentsTurns]).
  */
 class AgentRunner(
     private val models: ModelRegistry,
@@ -98,7 +101,8 @@ class AgentRunner(
             return StepSetup(
                 model = chatModels.getOrPut(agent) { agent.modelFrom(models) },
                 request = request.copy(
-                    messages = listOfNotNull(agent.instructions(run)?.let(Message::system)) + request.messages,
+                    messages = listOfNotNull(agent.instructions(run)?.let(Message::system)) +
+                        OtherAgentsTurns.toldTo(agent.name, request.messages),
                     dynamicSystem = agent.dynamicInstructions(run),
                     output = agent.output?.takeIf { it.mode == OutputMode.Native }?.let { OutputSpec.Json(it.schema) }
                         ?: OutputSpec.Text,
@@ -109,6 +113,7 @@ class AgentRunner(
                 outputTool = agent.output?.tool?.name,
                 toolContext = { call -> AgentToolContext(call.callId, call.toolName, run, agent, id, team.keys) },
                 team = team.keys,
+                agent = agent.name,
             )
         }
     }

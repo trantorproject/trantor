@@ -20,6 +20,6 @@ data class ChatResponse(
 
     val refusal by lazy { content.filterIsInstance<RefusalPart>().firstOrNull()?.text }
 
-    /** The response as an assistant message, to continue the conversation. */
-    fun asMessage() = Message.Assistant(content)
+    /** The response as an assistant message, to continue the conversation, written by [agent] if an agent did. */
+    fun asMessage(agent: String? = null) = Message.Assistant(content, agent)
 }

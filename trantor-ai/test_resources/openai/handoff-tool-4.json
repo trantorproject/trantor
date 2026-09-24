@@ -1,14 +1,14 @@
 {
-  "id": "resp_02aa12fb0d504ac9006ab4765f4ad487d2823cadc1098912ee",
+  "id": "resp_0c21f8d2153369f9006ab476635ca487d291eec72f51bfa43b",
   "object": "response",
-  "created_at": 1790211679,
+  "created_at": 1790211683,
   "status": "completed",
   "access_programs": null,
   "background": false,
   "billing": {
     "payer": "developer"
   },
-  "completed_at": 1790211679,
+  "completed_at": 1790211684,
   "error": null,
   "frequency_penalty": 0.0,
   "incomplete_details": null,
@@ -19,12 +19,22 @@
   "moderation": null,
   "output": [
     {
-      "id": "fc_02aa12fb0d504ac9006ab4765fc15887d286b31d73fd8a5777",
-      "type": "function_call",
+      "id": "msg_0c21f8d2153369f9006ab47663c48087d2b942de89783420a2",
+      "type": "message",
       "status": "completed",
-      "arguments": "{\"reason\":\"Consulta de precio paquete de una semana a Bariloche\"}",
-      "call_id": "call_9PMSWlD8T5iq8R9b0vBmb0tT",
-      "name": "assignToSales"
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "El paquete de una semana a Bariloche tiene un valor de 900 USD por persona.\n\nEn cuanto al clima, actualmente la temperatura ronda los 7 °C. Bariloche suele presentar un clima frío y variable en esta época del año, con mañanas frescas, posibles lluvias ligeras y, en ocasiones, algo de nieve en las zonas más altas. Te recomiendo traer ropa de abrigo (camperas impermeables, gorro y bufanda) y calzado adecuado para senderos húmedos."
+        }
+      ],
+      "role": "assistant"
     }
   ],
   "parallel_tool_calls": true,
@@ -70,8 +80,8 @@
   "tools": [
     {
       "type": "function",
-      "description": "The current weather of a city, in celsius",
-      "name": "getWeather",
+      "description": "The price of a one-week package to a city, per person, in dollars",
+      "name": "getPrice",
       "output_schema": null,
       "parameters": {
         "type": "object",
@@ -87,42 +97,22 @@
         ]
       },
       "strict": true
-    },
-    {
-      "type": "function",
-      "description": "Assigns the conversation to the sales team, for prices and purchases",
-      "name": "assignToSales",
-      "output_schema": null,
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "description": "Why it goes to sales"
-          }
-        },
-        "additionalProperties": false,
-        "required": [
-          "reason"
-        ]
-      },
-      "strict": true
     }
   ],
   "top_logprobs": 0,
   "top_p": 1.0,
   "truncation": "disabled",
   "usage": {
-    "input_tokens": 261,
+    "input_tokens": 430,
     "input_tokens_details": {
       "cache_write_tokens": 0,
       "cached_tokens": 0
     },
-    "output_tokens": 29,
+    "output_tokens": 110,
     "output_tokens_details": {
       "reasoning_tokens": 0
     },
-    "total_tokens": 290
+    "total_tokens": 540
   },
   "user": null,
   "metadata": {

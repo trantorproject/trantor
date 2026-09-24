@@ -1,14 +1,14 @@
 {
-  "id": "resp_0340d5cb22a6fd07006ab46a8fd61887d2a626b32c47aae1dd",
+  "id": "resp_02aa12fb0d504ac9006ab4765d678087d2a7abf2396797115e",
   "object": "response",
-  "created_at": 1790208655,
+  "created_at": 1790211677,
   "status": "completed",
   "access_programs": null,
   "background": false,
   "billing": {
     "payer": "developer"
   },
-  "completed_at": 1790208657,
+  "completed_at": 1790211678,
   "error": null,
   "frequency_penalty": 0.0,
   "incomplete_details": null,
@@ -19,23 +19,23 @@
   "moderation": null,
   "output": [
     {
-      "id": "rs_0340d5cb22a6fd07006ab46a914da087d2a6f97f1bb16be9e5",
+      "id": "rs_02aa12fb0d504ac9006ab4765dc9f887d2b3332207167aa627",
       "type": "reasoning",
       "content": [
         
       ],
-      "encrypted_content": "gAAAAABqtGqS-B6R7T4Mg9uOaEU4qGtEl4lWXX05JBX5Pp6HkD0ab1__qCm1KUyhwF-k4KJiiaFyeSyI3v-WlWVsagdO78djmPto_yMOP0VXobCVTVury66yxTD9RyRC3ToTksLe-gtSHbsar-hL_K3qwvzFGevAgr5LgLgSKBER91qpMR7N-_AFBZDDgola0aNpbu4Oma_YMyj8YszPwKP-R9MH55kq7nqECZIofbYk0NMNa8wEU-gXZ97azI7s83yc3KcpIGKTFZ1syaGn27j_kOHa0-ugvi7w8TjKiR8zMuEvhVbwfSp7CGFg7sqGyzH7M3G7HR9KMzr-xQfQkYqdYDxJdn-75-sezrl_ulgqrJE1J5O5DnxKG6AFR97JIS-h9WeDjVEpXxzLyEv8wvWEc_H3Bnpycckcagb_ol-kBRLz8LVNwYF1euYY2GQH4rK9a7IUlIoEBEMDyV_bEHZIAjF6ZNzWeE0ND_D60GzHRLt0Yd6A1o5hMr7tWjlRzQJ0-BalYQ6F1Xh4KJl9_q3HqsZBotaKe1xgyTgqvjexHIGZQ0GciOWDXx1aPd7OjwR5R_TC7eKXB6bpGIABZeVi9Mn-9XJ3DWKFh4wn71fZ17kTutCA_7N0g4JhIT11ySkfaztrsVdtTCDGcM4R2GN5UQ8s-mxywqTOCTXbYkyR9Y9XYH0zxg_YpLPR85W3GxZtLM_p9HQuyOsYMms82QSqi_aLhdkkssPs7XAPqwQVOvw8cXGbpUZrOBLC5Tf8vRnAc5x0Jli8FlnNFmYuzHZgCtQLVk9qRgJZb0gCF30I_M3fbn6LnqKqH78ZYDr3lvXKn7Eu7iqh-fS6o79NyWjwVI-i_yN-afldfwsbXKUyWo3xkx2DUPcnaYB_XzQjqeqzrJ1-kuJn9paGCmXzXuo9ngZCHClzFo3OqCw_N2J9gGCR30pQsMQP4b7giEQBJ_10Bo6JF1pQ9BTbth4OGMZqpypLbR44FO1DrTu1EbZuStyWmPy_eQPI_-n3Afrwr3Rd-3uNiO4Ds19tkP9FfmTo9GhGYDPirqTLMYcK8p9brxoSXrMTOcJxdMHIhh98B2ukK0BnTkJ_sdZ5pCaTqbpxXBEg-F1HJ55uSmEPVF8HJcYBCgbnxQl5UA2xHiXMA71KiNwGkT2nQbhFIoOcrx4BjNvgA2teBhn3Mz-NzbEWPpmZeQqTgbA4DjW89hgqaF6qk36UEXRdYSWzUpEivJzVCXYOXbppMNUVfAhOO98Skm3Nv21LBXjCr0_GPK4qM_SNvXp-b8rCVR8XecvqCY6i1KYhrJLx2hLGPEVczJHdCEAwNTnJpmShk05CGqqcGtLYmwduSL5fFdUYeAVUwUkKQkMfJ38VCrWTRPNqtZFExkOVQof6aD7B5389w4gzAfihctmBIoKdvEXKwAhujHK3mQUO5iiDHbh8fnwNQcNKIMLHC89TF3dGnxoEMYz4IR1jVTkSzugbsWz2ZwDux0mmPYUJA3EShGBZ1iIhMCtYdqgk8ghoFKmktjrCLy6ktstrimw0_3aXZgOgboqBrbHHD4ndCvJse9XasqrXabgtj_elvmOGYSosU8Mjta794DHAdGsc7wqpQuCHJHG4vFv1518QUtclBw==",
+      "encrypted_content": "gAAAAABqtHZfdtV7wFO5mX4n5Giw-WVogC-nsdKBAR2WmhsNdV_ZRiOE_BCC6_CtCe7Y32VwG3SYxZ_ZzSf3dgVE6LgtGXSZbamQQHqyuGaiKQoQAQtmP9VWgf9gPEjWNvxqgKpWO49DNtzgqtu3XXwRd6swlAOcqrFjP_kKeug7tChvpQ-Bs08o0IFjNph1ElpVYl8qgewZWrgs53F5YoePFRml7BwiTCrpnTSzdwA9oB0BIbB3wB8bGfYwyopCakSH5iFUCcVVGD7WamBd8fS3KXY_WS2VOqzRvl3JI8gx3SHDz-u4goBzmV9lfMX-TNGTdJR7p5aq91uczGgJtopN5aXRkJhC6qKvr_Le-c0vWq74w0-Q5pyNzsE7G5KXStdBFHfr3kuXYtkAPDYk8YwqM6w9Obg3WZcp4JSPTGGKm44tN4Ms1JlXH3QI6gqC7KQ0I5GrY-CKxRxU46vPSVkzi-LMRh_NSxi9BSG-MYgz4KIobFfXSNCF4Pfssg8P9aIJsbR9mtGOQXK0WGz7d0GnkjjR1hbqwM3q9Ul6P27ZDpI_zEP_07bzq-pV5ClZUZFMH2bYxS5qgYKcJgJTAs80P9Mxx2C7b86tN-hJsn2mjCjUXGOo-TRPhCbuefo4m0E7c8bF9UcDzJ90OvM5C5vZJe6pGz6JFjyk2nRGK22MX5qLNyETS-tjkQSOg_glnTfkQcNPMY70xSbytEfCA1WpzPHZ3F7ysMZO651icm8MuyMSOx1XrU-zdQQMyYnQp_nX6TO54GtmM5W-uVkjFeEJVA6Rmxg4JBlbv8qT4JwMTiYISZUJ310RaIEY02V2Se1TpG_heZanylASgLG_8892lp8jqHaEAjfMVF8N9Tn6n7sPqTQedif4WFtSUGJWEJ0z-tTfVt2IvXNa3MCR6jlJFJbCE_OQWU-b9V6c7B23VURQWuhKOWpKs59jSmqeqZuCyjK3ICzrmp1BHJVI-4JkOr3guydv8-AnL54mQptFxKl9fYxzySrRL3lmJFjo1jNgtU6GisomyRfhR-pexfrEWFu_fwPn8orfSnIvLBLSNEjxElJ_jrZof_mQvqAm8v7ho0tFYYRV7jVkvULGpXpjzBPrloIR7iqjxRYdMRJTTyYIJciBBTTZvIBEwpc62klO-xAAvEBNRNndfIBDhi89DDWiLH5B-WV6TI-eQCgyC0fjMnztGyvQPIt6V7cWJqbCabekWJf6kFiymJX9Ub47KPcKryopibYrXlq_EtIOrCo7t86hMB9bH9AW7ZrpdhODtnVpKa7RbxiCq8uRHJe6GpKK4vguVANgfH1ehIg5HVwU6-kd9MnPOGuqlIXrnEdwhLizfETK6qeH9PVSx5RVdbzzftaBoEudzznxi-fw6-bB-CBuCbKZCCRyOhOxp0wbeENhl8oHkivHVIqZE0mQKDtkV6g8As2hRnszJrA-cq3CJNEjR_cw19cZqLDxsRbuNXEEUF1C5zY2eqRH8DT0ksgf1Mxt2gtCY0u5mUj7DjZiAajOgmt6fNV6Y2fNl07QIxAFk01dbPDsQ8pDmpBF0qb3YB31xsFweHPo3dJrrF8iACxvd3FvhZLjwafjydpXoI-066dljUjwgAFz-szLyUBFADZP9FakCenOf_EH42GbNHpgLFvKeV6_LPH93YdFcxzgXqfci4oE0_VVL7DcdSuq2gotU15oRc1VUgFHNPU6HvE3dbZBscbOoxqdUZa2z4vcCs2EPlWpwHA-cQPHF-0Aq2dDcHjqJj3vHnwO9u_wz8GOHZw=",
       "summary": [
         
       ]
     },
     {
-      "id": "fc_0340d5cb22a6fd07006ab46a91d4fc87d2a9334ff5bfc78b5f",
+      "id": "fc_02aa12fb0d504ac9006ab4765ecb3487d2b1a9928079376463",
       "type": "function_call",
       "status": "completed",
-      "arguments": "{\"reason\":\"User requests price for a package to Bariloche\"}",
-      "call_id": "call_G8zE1sNeVZ0aGZ9hP938Dwem",
-      "name": "assignToSales"
+      "arguments": "{\"city\":\"Bariloche\"}",
+      "call_id": "call_nmm07jSRgdHcb6Fj6dADhbMq",
+      "name": "getWeather"
     }
   ],
   "parallel_tool_calls": true,
@@ -129,11 +129,11 @@
       "cache_write_tokens": 0,
       "cached_tokens": 0
     },
-    "output_tokens": 101,
+    "output_tokens": 117,
     "output_tokens_details": {
       "reasoning_tokens": 64
     },
-    "total_tokens": 231
+    "total_tokens": 247
   },
   "user": null,
   "metadata": {

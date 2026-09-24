@@ -1,14 +1,14 @@
 {
-  "id": "resp_0340d5cb22a6fd07006ab46a94735887d28b544129f434654c",
+  "id": "resp_0c21f8d2153369f9006ab476604dd487d2be14eab9b5b49f00",
   "object": "response",
-  "created_at": 1790208660,
+  "created_at": 1790211680,
   "status": "completed",
   "access_programs": null,
   "background": false,
   "billing": {
     "payer": "developer"
   },
-  "completed_at": 1790208663,
+  "completed_at": 1790211682,
   "error": null,
   "frequency_penalty": 0.0,
   "incomplete_details": null,
@@ -19,33 +19,23 @@
   "moderation": null,
   "output": [
     {
-      "id": "rs_0340d5cb22a6fd07006ab46a94ec6887d2bdd9a0e4c02cf0da",
+      "id": "rs_0c21f8d2153369f9006ab476610f2887d28d8190cb86489707",
       "type": "reasoning",
       "content": [
         
       ],
-      "encrypted_content": "gAAAAABqtGqXf82JyclwFVipg0tdb_fQIe8msGivqDM5WQitVVIxWA1NvI7EobUFurZ8Pvd1MjO9cF2Pna0VjFP00z2KeFyj6uR_BcIeeZD0QBfSpu-4KnIohyemu1eMCIFKmXAF0f82au1a217BCVhTjl2-VYZ9VrsDPrc3xmTSCFVP-vKyc8FKnmpqbaZJwbuiiakKnKtn4NGkNE1iqzccWrihW5O0thgHkR8uX6DAzrhI_CR1jY__uk4D_Tgitdr84Gh62sFmo2RXwMbrg7-Wa6X52z0AOOe-UbjDvbXggMyhLIYiMRIuHudQPXurxwJZgkKOCsmwIkU4hTXuz0HRj0Brq9SmNkTecQmRYX075pt5LOuEOuTiVq6O5PsZ2BUfxP8wvzb1MF9HIYfecAHBEqWl02rHCQ7CPMC_R60WCvRIYQTJQuTNvIEbaFYWJM459p_cl_v2YdzUbKRYTUqUMU1W7rQI8lyGIkFMnY0DT5k6217IKQS1LDhUH5p7RH9S-HEJQ0ID6wt4fVsBmfAEiirZlvDoqwlS7NDFoDHPQ5zXLVXe14HLX0Lj-XSy1JAi34gCLQ_3rykBzGmInC2mjhJzQ04M7QG8y05_aBp44wKASnnKhWvRpHkZ8NC6k6o6ZKnj6lsrGOv_6OMTvP_882Tu0ZASBFsLIK_R9EAZxPhRW0Ub3Mf24s-m3T0ViCAxr8D1g4euaUgadGazoorWsVW8yAS3jqNelkXoVuT-shpKAfS4YhtMECAVobvSj4SWpI9aGwsNFSS4L1MrGXRtDpO8XeSujNEj8ZtLbQI-n8hhOiUxVVnzJ90I-fsSU7vdDsPC3CLcuVEtOzitRwlSjq_Bx4MEewKeR13ZbwEaOLKjok2vYcdb3HMvZZgmd3d5vxKEHbDqs-veu7W7dVxmMUsvEBT_GRG9arJ8NV8ib09STC5_zO3ysWnwVXHp7_D-IPg0cBynomX2jScxTnR4dW_cHHdQBiqjxIpPirItIOYpLqMijzMD2nDw1RSHX1cfh7S6gIQbEK4t-AIY_FhcubeylTmtY6akktGYSD_ssOYak0wJwKjug61RaORw2vBkRCTQ-ndO7E4GUtOzGLTzrenIYgPxnrZgclEbksf2y7mhDtAPzasNLDjMF9Plfmy8E6uKvs25ZVVp70alPNc0SrBoZGUmUQOUhuNzPJtYzaK4uf4r7H8K8AkdNxZe43hbC1gGrNKEaQ0iq6CYNWzmTIOj0ChOmqvNd5H9Wwej-r6CM_hd8uE7lX_pOqZ06xisg3ucIQrCWNk8cUjMM8coa11PPW0I-BxZyERJHLUjbuDmp6iF4KznVW01L0_XPD88_GJpl7hlyH97S_QdjMCvpl_0JDYd8EcZRS53QIXUjH3Eh9pPpPYwuTSMgiUFqJiAXitw0nYj_QSNMwZgO-iefAcxWBkJL2J529NnMKUp_Y9cO31pXY_xfP31B5XNVfQBYN8VwZgFkM_YZMsiUsEXfPBSILzaa7nbYtulebk7-aSV8yFJcUWVdwYZMVRRXvUM2Q2otOI2kRxgrxW7N9ygKNNDa6RrA7bRrSudeEPNOYEI5McLijXSuY0fqfrxHYdLeBmwaVzDKGsXdtRqNVSgy9M8jnREBGT0E6TDwL6t34YB9FG5-nnmKSBjts4FeMrtj_RkJOKV7cIGM_Hspj8LFUI1m0wJ850-yAItJkvIEGeH1AxumExHQYGyKKIJtA-rsJYMTbuHpmpTLDogO4mdK9YSsZEvTjzkgnBh29n89bvapRFbs8GmMpSHkNCSqmW6CAQ2FK2rRknKU2PuAt8U1epGN8cezYkXXF6Hl-i5WCCLp-xLMmYf70yU1vfAMHiKzMOZwXzlYKCevaIvBoL8Ny_6sRI9hA==",
+      "encrypted_content": "gAAAAABqtHZjfE597ovdZSBAuqX5w4HrkRAeQEuqqqR1stVldMBE48JVvA9lcr_zbIp11kHq7Jf7yjJslMTHNrQKW-nwEJac1UkVM_xbiIK89VNnP__N4L0S36qdHBvR6SkvP152Ny8_QQpKPkwtpQiQbPW9RTDu7FeY8rJzpNlGmsfKffPbgton9aXYoxyFqDjrGBpAdb4IIl9URd4E0fN2d-ZaEP0y1jz5o7E9dy5BmP3kLrvQ5T1Q9y3zBLCRLKgOi_JkFpulpWnd_wVZnwZhf-VNX37lMgK77nfM_ayb9mpuByC0j9P7hgG-COgP5uDYWFUbr0lzmnGKHzH8F-PH942MQLHTmD-FMlIxOsRMP7xMDqoSF9MjrgUqWakI9yM7QYuhclsTEjEz0mrqkfxpwJqPjnBqALVK0xmybXV8zZ0PRfUS2N2gX6ffgh-N40LMo5Ff4WJqFlhhL3lm95OsA_0bIipTUvjbkJqViFKTwvd4QJCACUAGOiTre2jpwxmY-euTj6jZjuxbSBV8255ZAkW-SYfohOvNYfI2kr1Or6vN2JWJvRdanhFnY0fnoAN7U5G3dUWzWGqR2WWrCrJGau7cUdF5p976wk34Hs3l4XeAs4JV17ZK7bTjuVEZKKgoC-SacPITUazGR62TbrSfMFpMFwIr-T1M2W5Hh8OnXbX8pJlMrrasiuNwVAgxqd3eqp5yhGlb-2LwVWSYbINMmmFe4b4wCo2XtezGOlQZnI8dSNMUwqtKcKAC6eQXn0tn4TkEzx7K4qxS90xDiepIK8f4z0So6F6tLCa-Lq8lAUWtYfbTvUDWXNtqG9TeW02BuP-Jbs8VT87KH6n_GRwvvPQDcTEAzMJGQXSO-DRbx5FvkYzs1vp2ymfrrm12rFNiSja0x1eNnuu6bcVQAtGalOMK8GxXnf3P1DcDulYva2_Y7OGXANO_0CeN-mNd7Vg-NFu8ZeTg8UkkjrX7BBdX-jogZdrfl6XzauZNR3ccwQMqin9nMvfXWyPFSuwZ-HZBt1jkOw1HxhaI8zQxQuQMz74KtRJde4gOrevKyTe6PWPO9jqn7urXAg2bAW_b8YQ7J1csNf1i6_aWtQpezVZ_KDFHamK8uj7Av-7iXlD5UcVdZZn84niB05NXWIVyyqc3B3H-WWyNmsWORs8DDqQhHf3Fwr6aA-5Nt2NdW8qIx9R0TENR2tDXXiJsolyKk5HNS8GkMhYWkD-ymQ1wDFidVXF1dmUo4eQpUBLj3iTEatDkz5tCD2fu7bIEEpF-bovyLa7ih6EAqVAs7uUn2OcZcp5kw0cZMu69YXIVKSewL3POExvWTBKOQIEMp6-f37l1GMyc8OVh8etehsM3q3WzFoWHhzEAltH_pgB9nlEPhjVMj3nc_lDc1-TzKH-YNzEqsTnidVEwckD7hLPUyrxQv2CwQ0fz6RLT_2JW_s_3UzuVCL7__lzbWCNhOHTnH_slZneY2gyICnp_7PvUDO82FB4dX4qQwCpFSyYQ4ftWnbaKx1DDggRQYwu05ceS_D8i56ClsqtkJiht6sWln4xzEjqcR78-vsyKB6iIK5vrUORLfswrC-r1_xQGn58z3p11VWyoq9yf9VnWUf82zWXiOBg65GV9edIw2Qh7yO5gYcQAjz-8WBmCl-q0sOSgx2lKxV1Aqs_jKFKg5JJDeX-pH1PzkRYA0DX9ku2JvbUbiwuaZOuR7tQhldWRD7-Bzeg1WzSkzDHLz7IlzvQMU5cXE-GUNwbAY8X_z7JCuyWs1rowABm-q6RZ4eH2qekr8hdqVeKXG3xdIvUQKgLiMpTF6Cz6fjQPHrsSTPJKFXabwQGBtMrgyZp9ockcSvWBM37VhFv_T71n5-sE7bbil3fWg61ALLmTnWm5uuDzeGcscmjMAqPjPs7KpINbGGD6nzq1Re_GG0Sp69WtaqcO_u5K35zeQPNtFw9UhVzPcB_c1tiM8OqIc1mzkB0TSjrusoDd1it1CIdbYjYWKy-LswMm3nf8eV60ZPLynJA2lRBivide_IBcDwbu93pka6KBoDhh2iQMo8-nG1HyZAFz1d7ZXEBqbyqmG71EpQT12DZkphbT5wG7C6SQDUAeqZ4NEB5ZQSbVQ8N5X1-5Dfwz48lCAIJd0ShJK5JwYuDSTe98_BzOcCIv4hcl8T347viS19RnSs5elcwaOJn-zQDSXpWWVist9KiXqJa6ucIp8u0Tp43L3gjVm28IkS26-bQnYPqOEpXdor3wXXvL_6DOr6MwqD_8XpSFh7HkmLpRIqS6-VHYujhFrPRoOKxb6cIBIiOrGOPWqvPbVUjxvWhwvMyxuaz7Tq51Cw==",
       "summary": [
         
       ]
     },
     {
-      "id": "msg_0340d5cb22a6fd07006ab46a96ec9c87d291cc9d06e6e234ca",
-      "type": "message",
+      "id": "fc_0c21f8d2153369f9006ab47662ddd887d29645615b1b34d15d",
+      "type": "function_call",
       "status": "completed",
-      "content": [
-        {
-          "type": "output_text",
-          "annotations": [
-            
-          ],
-          "logprobs": [
-            
-          ],
-          "text": "El paquete de una semana a Bariloche sale 900 USD por persona.\n\nEn cuanto al clima, Bariloche tiene clima de montaña y patagónico:\n\n- Verano (diciembre a febrero): días templados, con máximas entre 15 °C y 25 °C; las noches pueden bajar a 5 °C–10 °C.  \n- Otoño (marzo a mayo): fresco, con temperaturas que oscilan entre 5 °C y 18 °C, y días a veces ventosos.  \n- Invierno (junio a agosto): frío, con máximas de 0 °C a 8 °C, mínimas que pueden caer por debajo de 0 °C y frecuentes nevadas especialmente en zonas altas.  \n- Primavera (septiembre a noviembre): variable, temperaturas de 5 °C a 20 °C, con días soleados y otros lluviosos.\n\nSi me dices en qué época planeas viajar, puedo darte un pronóstico más preciso."
-        }
-      ],
-      "role": "assistant"
+      "arguments": "{\"city\":\"Bariloche\"}",
+      "call_id": "call_NHiMIn7Wlzu4lMPsU8e6lURO",
+      "name": "getPrice"
     }
   ],
   "parallel_tool_calls": true,
@@ -114,16 +104,16 @@
   "top_p": 1.0,
   "truncation": "disabled",
   "usage": {
-    "input_tokens": 243,
+    "input_tokens": 198,
     "input_tokens_details": {
       "cache_write_tokens": 0,
       "cached_tokens": 0
     },
-    "output_tokens": 337,
+    "output_tokens": 218,
     "output_tokens_details": {
-      "reasoning_tokens": 64
+      "reasoning_tokens": 192
     },
-    "total_tokens": 580
+    "total_tokens": 416
   },
   "user": null,
   "metadata": {

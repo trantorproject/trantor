@@ -219,7 +219,9 @@ val loop = ToolLoop({ request, steps ->
 ```
 
 The loop keeps the rest: the conversation stays whole whatever a step sends of it, the calls of an answer run with the
-tools of the step that got it, and the tools are asked for their description again on every step.
+tools of the step that got it, and the tools are asked for their description again on every step. A `StepSetup` can
+also name the agent the step goes out as: its answer is kept signed with it, in `Message.Assistant.agent`, so that
+later an agent can tell its own turns from those of another. The application keeps it with the message.
 
 ---
 
@@ -854,28 +856,32 @@ and the dynamic part never becomes a message of the conversation.
 The one thing it asks of an application is what the signature already asks: that the parts of a message
 are stored with their metadata, as they came.
 
-**When the past does change: a handoff.** When one agent hands the conversation over to another, the
-next call goes out with other instructions and other tools, and the thinking of the agent before was
-produced under the old ones. That thinking would be refused, and there is no way around losing it: the
-new agent goes on without the reasoning of the old one, as it would with another model. What the adapter
-makes sure is that it loses nothing else.
+**When the past does change.** Sometimes a call goes out with another system prompt or other tools than
+the thinking before it was produced under: the application changed the instructions of an agent between
+two turns, a generation goes on with other tools, or one agent handed the conversation over to another in
+a history whose answers are not signed by their agent. That thinking would be refused, and there is no way
+around losing it: the model goes on without that reasoning, as it would with another model. What the
+adapter makes sure is that it loses nothing else.
+
+A handoff between agents does not get here as long as the answers are signed: the new agent reads the turns
+of the one before as context, with its name and without its thinking, so the only thinking
+a call of it carries is its own.
 
 Each thinking block also remembers a fingerprint of the system prompt and the tools it was produced
 under, in the same metadata. A call leaves out every thinking block up to the last one whose fingerprint
 is not the one of the call, with a warning, and sends the rest. It is not only the blocks that changed:
 Anthropic takes thinking left out from the start of the conversation, or from its end, but not from its
 middle, so a block that still fits goes too when one after it did not. The blocks after the last one
-that changed — the reasoning of the new agent — stay valid, and stay. A conversation that goes on with
-the new agent, in the next turn or the one after, keeps leaving out the same old blocks and keeps all of
-its own.
+that changed — the reasoning produced since — stay valid, and stay. A conversation that goes on, in the
+next turn or the one after, keeps leaving out the same old blocks and keeps all the new ones.
 
 **What the other libraries do.** Most of them let the block go instead. The option for that is
 `thinking.block_binding.prefix_mismatch_behavior`: with `"drop_block"`, Anthropic removes a block whose
 past changed, and every thinking block after it, before the model reads the call; the call goes through,
 but the model no longer sees what it reasoned there. Zed sends it on every call to those models;
 PydanticAI sends nothing, retries once with it when the 400 comes, and warns; Goose makes it a setting.
-It is not used here: after a handoff, "every thinking block after it" is all the reasoning of the new
-agent, on every call of the conversation from then on. The one case left is a context policy that drops
+It is not used here: after a change of system prompt or tools, "every thinking block after it" is all
+the reasoning produced since, on every call of the conversation from then on. The one case left is a context policy that drops
 old messages, which comes later.
 
 ---
