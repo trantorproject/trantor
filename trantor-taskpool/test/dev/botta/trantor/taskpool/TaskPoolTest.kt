@@ -12,6 +12,7 @@ import org.slf4j.MDC
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit.SECONDS
+import kotlin.system.measureTimeMillis
 
 class TaskPoolTest {
     @Nested
@@ -206,6 +207,35 @@ class TaskPoolTest {
 
             assertThat(pool.schedule { "back" }.get(5, SECONDS)).isEqualTo("back")
         }
+
+        @Test
+        fun `a task that was waiting for a free slot when it stopped is rejected, not lost`() {
+            val running = CountDownLatch(1)
+            val release = CountDownLatch(1)
+            val pool = started(TaskPoolSettings(maxConcurrentTasks = 1))
+            pool.schedule { running.countDown(); release.await(5, SECONDS) }
+            running.await(5, SECONDS)
+            val waiting = pool.schedule { "never runs" }
+            awaitUntil { pool.getMetrics().queueSize == 0 }
+
+            val stopping = Thread.ofVirtual().start { pool.stop() }
+
+            assertThatThrownBy { waiting.get(5, SECONDS) }.hasCauseInstanceOf(RejectedExecutionException::class.java)
+            release.countDown()
+            stopping.join()
+        }
+
+        @Test
+        fun `stopping waits for running tasks no longer than it was told`() {
+            val running = CountDownLatch(1)
+            val pool = started()
+            pool.schedule { running.countDown(); CountDownLatch(1).await(30, SECONDS) }
+            running.await(5, SECONDS)
+
+            val elapsed = measureTimeMillis { pool.stop(timeoutSeconds = 1) }
+
+            assertThat(elapsed).isLessThan(5_000)
+        }
     }
 
     @AfterEach
@@ -216,6 +246,14 @@ class TaskPoolTest {
 
     private fun started(settings: TaskPoolSettings = TaskPoolSettings()) =
         TaskPool(settings).also { pools.add(it) }.apply { start() }
+
+    private fun awaitUntil(condition: () -> Boolean) {
+        val deadline = System.nanoTime() + SECONDS.toNanos(5)
+        while (!condition()) {
+            check(System.nanoTime() < deadline) { "The condition was not met in time" }
+            Thread.sleep(10)
+        }
+    }
 
     private class Recording(private val name: String, private val calls: MutableList<String>): TaskPoolMiddleware {
         override fun <T> execute(next: () -> T): T {
