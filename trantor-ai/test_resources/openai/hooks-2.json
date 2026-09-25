@@ -1,0 +1,132 @@
+{
+  "id": "resp_0b5399d67d10dbe1006ab6e501ae5887d2bd23caf88b5a5041",
+  "object": "response",
+  "created_at": 1790371073,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790371075,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0b5399d67d10dbe1006ab6e502aa2c87d29b96eed171a91192",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtuUDKhl0wbhmMYV_TQK60BEykudIsOUdiCkDGmardHRH7vmiXnHgImGz0qLcz05lnveT95RUfc10_htqc2RbhnI2sDV7VU4FU6XdkqnBo2iy5Q6eaPhhjFXk6-OIoxSYqSYfHAbuMElMnCcObawMz-6YalIQbbSRGE2Igis3zk6kGAb4CuWhOtotc-LA9aPGNcDhagtAU3VD4GuX5GUpBXZA5B0iuqx2R-gsg-t4NEQZAIWZz0fAceGYJEqBN2O9CVkb-ICUM9mZtsoHgtf76QemOOLXUbz9fcsTv2xKyPxCj-jNo-Svvzm9quXGwShOu5OdhH4maFAN9F2g6wzSjAwSGqLMqWJ__G3S-QphxuTlshqtX4Tnzk6LYB6nnlPtPfnFfsy3Gu1BCjZvKHtZExXjD7JSRoCbxdDW_9Ze8sisySDDGL8xQpQdrlLNEIcIHH4LS1FqPI4kokDjbT8epRsPj3AkE5hTh-TgBe07J0tHlufnGZ6myoDoyN2VD93Lr9MURuKL6QuQFQyNEaZ2BN6Sv2dBavXPL6WTaHzchW1_5zED7e4quuF4DYEkwmiYQUya4orXM7qUwN_ceIDtcSDQsDJQDPjPl7IxKoF36Ivjww8nmQPK8MuHiOdAguwqivGyi-9xiFoR_ZBM9BhePAD2G6Ck355l4RrYGG0EMfhrP5tkLc9-qlKMPg5H5t_qyNNyWbmgaILMUXORdbbVNwDZje_ol41Rm_Uxjht_0C8mzb40aTgGgbvktbmpk01EWaPyt6k9gYGZ3GQo5tHcKSmPpZ1bMtniZ2AU4nO_M5i4r_ryPj8IDcm9qgFyVnRa90d3zInvdCCyeq6sKFQPirXZTqNKcxIGD9Rc0Gw1fHMJVbEJ6sGChKmek1JFNi-sToVH0M5uEwbfvR4j-bel_kpJZTjSZpJ6Y6D9MOSH_zzo4GnEvkUEcTOLgc03UXtNvSNVNE_mePVTqFFg7tiFylWao0tw5VHe1epsCCxnqP0I_EU7iXyJn25bTnkKghXm_gs6Gfnv3JSWxgiE7rIa1ie4mkpnuxzD6kDBrmh-11WA95kbE7u25te_oQjqXge9fDUv75_HL8mtnygcAJYK3YdYImmWTp-LFKrBAVFujWYYysBkD8o2xQkB9NKpZknOuGjp3d3dIzsFGWsh4SuTCyTEUTJ46SPX-OTAmCBXTqSifyXRoS7hsw1w1S7F6fmrZUaxXi7oeSu2BurCj9Nxe5r_ya1QJ89T5ov1SU1crHFvO-Y2d5wqOlsQjkYGHzm5ILq0",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_0b5399d67d10dbe1006ab6e502db1c87d29bd5775ee42386af",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "En este momento, en Córdoba, Argentina, la temperatura es de 7 °C."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 252,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 45,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 297
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

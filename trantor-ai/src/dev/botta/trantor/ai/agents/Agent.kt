@@ -41,6 +41,8 @@ class Agent internal constructor(
     /** The object it answers with, or null when it answers text. */
     val output: AgentOutput<*>?,
     private val values: TypedValues,
+    /** Called around the steps it runs. See [AgentHooks]. */
+    val hooks: List<AgentHooks>,
 ) {
     /** Its model: the one it was given, the reference it named, or the `default` alias. */
     fun modelFrom(models: ModelRegistry) = model(models)

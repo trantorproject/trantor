@@ -1,0 +1,122 @@
+{
+  "id": "resp_0b5399d67d10dbe1006ab6e4fe5a3087d2968dce953af5c78c",
+  "object": "response",
+  "created_at": 1790371070,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790371072,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0b5399d67d10dbe1006ab6e4ff95e487d28fa9a70d6fba851d",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtuUB9SqKrt1s-Bk-McG6bsGMRGLIzghkD4n6kBQ_bFPz1om5OVcuPC5NL25CIQXPQOmQN7wq7VNXfJxZoN3dr5e_mByhpkmhGucwViuYl-Eib6y5iO6q8XpUuMQ0jOJnVtazlrWGnHOGISI94sAzEx6u7WMEnBMZDvQIEYUW-XzhUHb-W7-9bHSNLhra8QLqlPW4jE-uZ6cgAkkeX7iuB1IoRynhYMOXhRBZ41MQJnblMdW-J7OzqevHOSXEBEf4lGeozdthjJIJNOofqieQ-oP8fmi4H8bEyofCBUCQ6fZIaNWLgK8yNLQUE64w1biCjU8psDxY0CloMhLwTxbCnlYzSPBCHkw3_vLoJxJ2mi8f6v1xUJFdmwlsODLoOHbVtqVXU_g3lruT5uU4zzPocSExIEkVwV9IAHanFwvellxf5ZbKpxzFvm7nWRuBBY_tHj7K_HveMHtbBgQUsAfsaLMSfcFFoRu2_Dg-mwvXbM2D17oQqK3n3VsSoRSfXT-lN6tAB5VssaHzP-Wp2-VNyWZIBpl68WMOqG0Pzq0go4OKnoZGT79ytAAILhW42GPSi2ZXCqBL6VbCDZXnIMxfGTeZg70W231X4WXcssy_-KtcVe4JvOu0Mjd6saeKYK2WeHQ7cvG0Y0S-hJ758yoasTuXgqr2Z6xf5ju9t-kr3HuWLtp7V6t13wi7bAJt-m1t2jea-Fn4uTTDW6atjAMiDRUgN6nfgKdtl1AaEwKbQoW7sdHmqjBpVS1-Sv7ZBzoUdlbzr3CpOSxkBOgyuS4QseYom_LAYSf4YtP_z7oe3peoy2TooFrVYJHnKEIUzNWIp2mfzz-IrDcdZbRLkFNtXOzZ-odPPOI2bO-o9Lnft2WY3vacrebFI9tsOx3gQousM5j9Du7Cm7HPG3WHjdaPN31yue3tE4UXP-TwBcejk4Gtyl2zNd4Nu0L_Gb6Lzlv3IEU1jdko6Al4aATvRjW9AO_Rg0E_-cDLbzWe4UgbDshje2zkFc-nPToBFqEejnjhzLz5MXhxp0srAvYszzgHi7jN5MMeH7TGjEyS744RSgnxTByTWJz46xLolSWp6ky5DTtj-iCk4lxFp21IqA9YAqZwxv1ZY5BNhFeEUyowlGw-V8k7Dz8-P0ryNeiVQW8UgvM29_L03yiCRU7UDUmh9GK42dnLaJEOg9d_4OmFaV5zzFTEDqGa67d4bDKh_-hokJcdiVtO0QUhscNL-bkC65nOX-ODC3Owi0giQu0NGSfCnluArUzHinLIrxhgxx2d58TKXAUDtU_0_2BOq2HIw_pGMqoSrBEzFgqPaiBKqvp8DGVHwE3SKSGuahgBg8Pot4ihT5bUH8sR3R0s4mQgJddSDrw_3i5Fci9LOPkuRzwMYHlsfYQZie00Ydz1aRD6A7hw8E1XPbkhunzYw5jOBJqYCObWn4jSDVCFyMlznxMNAYzTVO7Azrc_DvjHYXdXpSW4GVHM3h5J8rKfQEJBfrWkX4K9fAa4eQLkNz8n9sa13kwB5skMMp4yEXRUpQZn1LyNJAqINMiKI4lBEWSt8fe2ZEfUqHQkRNXEyZMmT4z6gdzyTfsVL9RxqaT4oKk1M3dkz3yuxHT4cyV2usWMDOIsBNcPRn37Offr9uct1TQ6fq8E13SZbaBZXvJHQvx7AlEh_1Es4JeqeiIH564IVyTE_Uch9pPAZPA0qBOCGlLczN-0zohzzwf6iryJQdxiQRQYGc_JJDKXhwycZw3d3tjdontlvlFOfM3Tl-41YRkDV_o94f9UdCsXz18K06SbfKp5qFVBWyFUxtAKRF23A2dW3Cp7fUi__UPUT8ewkh2UKsrdL3G-5fIfMS4FQh2kNoCBunEh15aw-WL5hXyVVqz1j8ctcZ-LVRUChoqKFju8WHzd9tn70YdItr5y6U9WvIRZ3CqA4pZlVBmEJOxw6xHqYLSFYI1aspkIed4hHSzP11tzdiO_nGFgbGt0WIVW0ozcHBYsXtPzSp4IVnRwjMPG26jdfi1Hc5F1vzTQ70m9Jjw=",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0b5399d67d10dbe1006ab6e500a11487d295e01a5c18a7ccb2",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Córdoba, Argentina\"}",
+      "call_id": "call_E3KGROTqVxvUc380t81AuKiN",
+      "name": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 82,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 156,
+    "output_tokens_details": {
+      "reasoning_tokens": 128
+    },
+    "total_tokens": 238
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

@@ -1,6 +1,9 @@
 package dev.botta.trantor.ai.agents
 
+import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.generation.NextStep
+import dev.botta.trantor.ai.generation.StepHooks
+import dev.botta.trantor.ai.generation.ToolFailure
 import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.Step
 import dev.botta.trantor.ai.generation.StepSetup
@@ -8,6 +11,9 @@ import dev.botta.trantor.ai.generation.ToolLoop
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
+import dev.botta.trantor.ai.models.chat.ChatResponse
+import dev.botta.trantor.ai.models.chat.ToolCallPart
+import dev.botta.trantor.ai.models.chat.ToolResultPart
 import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.models.chat.OutputSpec
 import dev.botta.trantor.ai.providers.ProviderOptions
@@ -40,6 +46,8 @@ import java.util.UUID
 class AgentRunner(
     private val models: ModelRegistry,
     private val errorHandlers: ToolErrorHandlers = ToolErrorHandlers(),
+    /** Called around the steps of every run, before the hooks of the agent and those of the run. */
+    private val hooks: GlobalAgentHooks = GlobalAgentHooks(),
 ) {
     /** Runs [agent] on the conversation so far, whose last message is usually what the user just said. */
     fun run(agent: Agent, vararg conversation: Message, configure: AgentRunOptions.() -> Unit = {}) =
@@ -48,7 +56,9 @@ class AgentRunner(
     fun run(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunResult {
         val run = start(agent, configure)
 
-        return run.resultOf(run.loop.run(ChatRequest(conversation), run.options.callOptions))
+        run.beforeRun(conversation)
+
+        return run.resultOf(run.loop.run(ChatRequest(conversation), run.options.callOptions)).also(run::afterRun)
     }
 
     /** Runs [agent] like [run], received as it happens. See [AgentRunStream]. */
@@ -58,7 +68,13 @@ class AgentRunner(
     fun stream(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunStream {
         val run = start(agent, configure)
 
-        return AgentRunStream(run.loop.stream(ChatRequest(conversation), run.options.callOptions), run::resultOf)
+        run.beforeRun(conversation)
+
+        return AgentRunStream(
+            run.loop.stream(ChatRequest(conversation), run.options.callOptions),
+            run::resultOf,
+            run::afterRun,
+        )
     }
 
     private fun start(agent: Agent, configure: AgentRunOptions.() -> Unit): Run {
@@ -105,6 +121,18 @@ class AgentRunner(
 
         fun resultOf(result: RunResult) = AgentRunResult(result, agents, id)
 
+        fun beforeRun(conversation: List<Message>) =
+            hooksOf(agent).forEach { it.beforeRun(contextOf(agent, 0), conversation) }
+
+        fun afterRun(result: AgentRunResult) = result.lastAgent.let { last ->
+            hooksOf(last).forEach { it.afterRun(contextOf(last, result.steps.size), result) }
+        }
+
+        /** Global first, then the agent's, then the run's. */
+        private fun hooksOf(agent: Agent) = hooks.all + agent.hooks + options.hooks
+
+        private fun contextOf(agent: Agent, step: Int) = AgentHookContext(agent, id, options.context, step)
+
         // Resolved once per agent and run, since every step of an agent calls the same model
         private val chatModels = mutableMapOf<Agent, ChatModel>()
 
@@ -114,6 +142,10 @@ class AgentRunner(
 
             val agent = agent
             val run = options.context
+            val hooks = hooksOf(agent)
+            val toolContext = { callId: String, toolName: String ->
+                AgentToolContext(callId, toolName, run, agent, id, team.keys)
+            }
 
             agents.add(agent)
 
@@ -130,10 +162,35 @@ class AgentRunner(
                 ),
                 tools = agent.tools,
                 outputTool = agent.output?.tool?.name,
-                toolContext = { call -> AgentToolContext(call.callId, call.toolName, run, agent, id, team.keys) },
+                toolContext = { call -> toolContext(call.callId, call.toolName) },
                 team = team.keys,
                 agent = agent.name,
+                hooks = hooks.takeIf { it.isNotEmpty() }
+                    ?.let { AgentStepHooks(it, contextOf(agent, steps.size + 1), toolContext) },
             )
+        }
+    }
+
+    /** The hooks of the agent of one step, as the loop calls them, each one getting what the one before returned. */
+    private class AgentStepHooks(
+        private val hooks: List<AgentHooks>,
+        private val step: AgentHookContext,
+        private val toolContext: (callId: String, toolName: String) -> AgentToolContext,
+    ): StepHooks {
+        override fun beforeModel(request: ChatRequest) = hooks.fold(request) { sent, hook -> hook.beforeModel(step, sent) }
+
+        override fun afterModel(response: ChatResponse) = hooks.forEach { it.afterModel(step, response) }
+
+        override fun beforeTool(call: ToolCallPart): JsonObject {
+            val context = toolContext(call.callId, call.toolName)
+
+            return hooks.fold(call.input) { input, hook -> hook.beforeTool(call.copy(input = input), context) }
+        }
+
+        override fun afterTool(result: ToolResultPart, failure: ToolFailure?) {
+            val context = toolContext(result.callId, result.toolName)
+
+            hooks.forEach { it.afterTool(result, failure, context) }
         }
     }
 }

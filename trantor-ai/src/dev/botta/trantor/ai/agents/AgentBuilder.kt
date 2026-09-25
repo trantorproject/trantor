@@ -21,6 +21,7 @@ class AgentBuilder internal constructor(private val name: String) {
     private val options = mutableListOf<ProviderOption>()
     private var output: AgentOutput<*>? = null
     private val values = mutableListOf<Any>()
+    private val hooks = mutableListOf<AgentHooks>()
 
     /** A model reference or an alias of the registry. Without one it is the `default` alias. */
     fun model(reference: String) = apply { model = { it.chat(reference) } }
@@ -55,6 +56,9 @@ class AgentBuilder internal constructor(private val name: String) {
     fun <T: Any> output(serializer: KSerializer<T>, mode: OutputMode = OutputMode.Native) =
         apply { output = AgentOutput(serializer, mode) }
 
+    /** Called around the steps this agent runs, after the global hooks and before those of the run. */
+    fun hooks(vararg hooks: AgentHooks) = apply { this.hooks.addAll(hooks) }
+
     /** A value of the application the agent carries, found later by its type with [Agent.get]. */
     fun with(value: Any) = apply { values.add(value) }
 
@@ -85,6 +89,7 @@ class AgentBuilder internal constructor(private val name: String) {
             options = options.toList(),
             output = output,
             values = values,
+            hooks = hooks.toList(),
         )
     }
 

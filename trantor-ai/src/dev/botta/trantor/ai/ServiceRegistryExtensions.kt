@@ -1,6 +1,7 @@
 package dev.botta.trantor.ai
 
 import dev.botta.trantor.ai.agents.AgentRunner
+import dev.botta.trantor.ai.agents.GlobalAgentHooks
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.providers.anthropic.addAnthropic
@@ -23,18 +24,34 @@ import dev.botta.trantor.di.ServiceRegistry
  * }
  * ```
  *
- * What a model may learn about a failing tool is named apart, with [addToolErrorHandlers]. An application that does
+ * What a model may learn about a failing tool is named apart, with [addToolErrorHandlers], and the hooks of every run
+ * of the agents with [addAgentHooks]. An application that does
  * not want the providers of Trantor calls [addModelRegistry] and adds its own, and one that registered its own [AI]
  * keeps it.
  */
 fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = { _, _ -> }) = apply {
     addModelRegistry()
     addToolErrorHandlers()
+    addAgentHooks()
     addOpenAI()
     addAnthropic()
     configure(configuration)
     addSingletonIfMissing<AI> { DefaultAI(it.get(), it.get()) }
-    addSingletonIfMissing<AgentRunner> { AgentRunner(it.get(), it.get()) }
+    addSingletonIfMissing<AgentRunner> { AgentRunner(it.get(), it.get(), it.get()) }
+}
+
+/**
+ * The hooks every run of the agents calls, before those of the agent and those of the run, in the order they are
+ * added:
+ *
+ * ```kotlin
+ * services.addAgentHooks { hooks, services -> hooks.add(services.create<LogTools>()) }
+ * ```
+ */
+fun ServiceRegistry.addAgentHooks(configuration: ServiceConfiguration<GlobalAgentHooks> = { _, _ -> }) = apply {
+    if (!has<GlobalAgentHooks>()) addSingleton { GlobalAgentHooks() }
+
+    configure(configuration)
 }
 
 /**

@@ -3,6 +3,9 @@
 package dev.botta.trantor.ai
 
 import dev.botta.json.Json
+import dev.botta.trantor.ai.agents.Agent
+import dev.botta.trantor.ai.agents.AgentHookContext
+import dev.botta.trantor.ai.agents.AgentHooks
 import dev.botta.trantor.ai.agents.AgentRunner
 import dev.botta.trantor.ai.errors.ModelNotFoundError
 import dev.botta.trantor.ai.models.CallOptions
@@ -401,6 +404,24 @@ class ServiceRegistryExtensionsTest {
 
             assertThat(result.steps[0].toolResults.single().output)
                 .isEqualTo(ToolOutput.Text("Not available right now"))
+        }
+
+        @Test
+        fun `the global hooks of the agents reach every run of the runner`() {
+            val model = FakeChatModel(provider = "scripted").answers(listOf(TextPart("Hola")))
+            val called = mutableListOf<String>()
+            registry.addAI()
+            registry.addAgentHooks { hooks, _ ->
+                hooks.add(object: AgentHooks {
+                    override fun beforeRun(run: AgentHookContext, conversation: List<Message>) {
+                        called.add(run.agent.name)
+                    }
+                })
+            }
+
+            provider.get<AgentRunner>().run(Agent("support").model(model).build(), Message.user("Hola"))
+
+            assertThat(called).containsExactly("support")
         }
     }
 

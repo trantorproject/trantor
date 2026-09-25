@@ -57,7 +57,7 @@ class ToolLoop(
             throwIfCancelled(options)
 
             val step = run.next()
-            val response = step.model.generate(step.request, options)
+            val response = step.model.generate(step.request, options).also { step.answered(it) }
             val calls = run.callsOf(response)
 
             if (calls.isEmpty()) {
@@ -69,7 +69,7 @@ class ToolLoop(
 
             if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response, step)
 
-            val executions = step.executeAll(calls, options).map { step.handoffs.settle(it) }
+            val executions = step.executeAll(calls, options).map { step.finished(it) }
 
             run.advance(response, executions, step)
 
@@ -175,6 +175,7 @@ class ToolLoop(
                 }
 
                 current = null
+                step.answered(response)
 
                 val calls = run.callsOf(response)
                 val number = run.steps.size + 1
@@ -198,14 +199,14 @@ class ToolLoop(
                 if (step.runInParallel(calls)) {
                     for (call in calls) yield(RunEvent.ToolStarted(call))
 
-                    executions.addAll(step.inParallel(calls, options).map { step.handoffs.settle(it) })
+                    executions.addAll(step.inParallel(calls, options).map { step.finished(it) })
 
                     for (execution in executions) yield(RunEvent.ToolFinished(execution.result, execution.failure))
                 } else {
                     for (call in calls) {
                         yield(RunEvent.ToolStarted(call))
 
-                        val execution = step.handoffs.settle(step.execute(call))
+                        val execution = step.finished(step.execute(call))
 
                         executions.add(execution)
                         yield(RunEvent.ToolFinished(execution.result, execution.failure))
@@ -255,10 +256,16 @@ class ToolLoop(
         val outputTool = setup.outputTool
         val agent = setup.agent
         val handoffs = Handoffs(setup.team)
+        private val hooks = setup.hooks ?: NoStepHooks
         private val toolsByName = setup.tools.associateBy { it.name }
 
         // Asked again on every step, so that a description that depends on the moment is up to date
-        val request = setup.request.copy(tools = setup.request.tools + setup.tools.map { it.spec() })
+        val request = hooks.beforeModel(setup.request.copy(tools = setup.request.tools + setup.tools.map { it.spec() }))
+
+        fun answered(response: ChatResponse) = hooks.afterModel(response)
+
+        /** A call that ran, with its handoff settled, as the model will read it. */
+        fun finished(execution: Execution) = handoffs.settle(execution).also { hooks.afterTool(it.result, it.failure) }
 
         /**
          * The calls of the step: at the same time when every tool of the step only reads, and one after the other
@@ -294,10 +301,12 @@ class ToolLoop(
         }
 
         fun execute(call: ToolCallPart): Execution {
+            // Out of the try: a hook that fails is a failure of the application, not of the tool
+            val input = hooks.beforeTool(call)
             val tool = toolsByName[call.toolName] ?: return unknown(call).let { failed(call, it, it.message!!) }
 
             return try {
-                val result = tool.call(call.input, contextOf(call))
+                val result = tool.call(input, contextOf(call))
                 Execution(ToolResultPart(call.callId, call.toolName, result.output), handoff = result.handoff)
             } catch (e: CancelledError) {
                 throw e

@@ -16,6 +16,7 @@ class AgentRunOptions {
     var callOptions = CallOptions()
         private set
     val team = mutableListOf<Agent>()
+    val hooks = mutableListOf<AgentHooks>()
 
     /**
      * The agents the conversation can be handed over to, besides the one the run starts with. Every handoff an agent
@@ -34,6 +35,9 @@ class AgentRunOptions {
      * after the ones of the agent, so where both set something the run wins.
      */
     fun options(vararg options: ProviderOption) = apply { providerOptions.addAll(options) }
+
+    /** Called around every step of this run, whichever agent runs it, after the global hooks and the agent's. */
+    fun hooks(vararg hooks: AgentHooks) = apply { this.hooks.addAll(hooks) }
 
     /** Timeout, cancellation and headers, which apply to every call of the run. */
     fun callOptions(options: CallOptions) = apply { callOptions = options }

@@ -223,7 +223,10 @@ val loop = ToolLoop({ request, steps ->
 The loop keeps the rest: the conversation stays whole whatever a step sends of it, the calls of an answer run with the
 tools of the step that got it, and the tools are asked for their description again on every step. A `StepSetup` can
 also name the agent the step goes out as: its answer is kept signed with it, in `Message.Assistant.agent`, so that
-later an agent can tell its own turns from those of another. The application keeps it with the message.
+later an agent can tell its own turns from those of another. The application keeps it with the message. It can
+also bring `StepHooks`, which the loop calls around the model and the tools of that step: before the call, with the
+request it can change; after it; before each tool, with args it can change; and after each tool. It is how the hooks
+of an agent reach the loop.
 
 ---
 
