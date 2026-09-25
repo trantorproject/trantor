@@ -213,6 +213,25 @@ class ThreadLocalJdbcTransactionManagerTest {
         }
     }
 
+    @Test
+    fun `a nested transactional scope keeps the outer transaction open`() {
+        transactionManager.beginTransaction()
+
+        transactionManager.transactional { }
+
+        assertThat(transactionManager.activeConnection).isNotNull
+    }
+
+    @Test
+    fun `a nested transactional scope that fails rolls back only its savepoint`() {
+        transactionManager.beginTransaction()
+
+        assertThrows<Exception> { transactionManager.transactional { throw Exception("Some error") } }
+
+        assertThat(transactionManager.activeConnection).isNotNull
+        assertThat(savePoints.rollbacked).hasSize(1)
+    }
+
     @BeforeEach
     fun beforeEach() {
         val connection = ConnectionStub(savePoints)

@@ -7,11 +7,14 @@ interface TransactionManager {
 
 inline fun <R> TransactionManager.transactional(runnable: (Transaction) -> R): R {
     val transaction = beginTransaction()
-    try {
-        val result = runnable(transaction)
-        if (!transaction.isClosed) transaction.commit()
-        return result
-    } finally {
+    // Rollback only on failure: when nested, the same transaction is still open after committing the savepoint,
+    // and rolling it back would undo the outer transaction too
+    val result = try {
+        runnable(transaction)
+    } catch (e: Throwable) {
         if (!transaction.isClosed) transaction.rollback()
+        throw e
     }
+    if (!transaction.isClosed) transaction.commit()
+    return result
 }
