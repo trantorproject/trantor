@@ -14,7 +14,7 @@ dependencies {
     api(platform("org.junit:junit-bom:6.0.2"))
     api(platform("org.assertj:assertj-bom:3.27.6"))
     api(platform("software.amazon.awssdk:bom:2.41.4"))
-    api(platform("com.squareup.okhttp3:okhttp-bom:5.3.0"))
+    api(platform("com.squareup.okhttp3:okhttp-bom:5.5.0"))
     api(platform("io.opentelemetry:opentelemetry-bom:1.66.0"))
 
     constraints {
@@ -51,6 +51,7 @@ dependencies {
         api("dev.botta.trantor:trantor-domain:$version")
         api("dev.botta.trantor:trantor-gson:$version")
         api("dev.botta.trantor:trantor-hosting:$version")
+        api("dev.botta.trantor:trantor-opentelemetry:$version")
         api("dev.botta.trantor:trantor-primitives:$version")
         api("dev.botta.trantor:trantor-queues-sqs:$version")
         api("dev.botta.trantor:trantor-taskpool:$version")
