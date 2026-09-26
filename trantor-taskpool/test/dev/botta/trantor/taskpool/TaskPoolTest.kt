@@ -3,6 +3,10 @@
 package dev.botta.trantor.taskpool
 
 import dev.botta.trantor.primitives.MdcPropagation
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanContext
+import io.opentelemetry.api.trace.TraceFlags
+import io.opentelemetry.api.trace.TraceState
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
@@ -84,6 +88,24 @@ class TaskPoolTest {
             val seen = pool.schedule { MdcPropagation.capture() }
 
             assertThat(seen.get(5, SECONDS)).isEmpty()
+        }
+    }
+
+    @Nested
+    inner class `the trace` {
+        @Test
+        fun `goes on in the task, inside the span that was current when it was scheduled`() {
+            val pool = started()
+            val request = Span.wrap(
+                SpanContext.create(
+                    "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", TraceFlags.getSampled(),
+                    TraceState.getDefault(),
+                ),
+            )
+
+            val seen = request.makeCurrent().use { pool.schedule { Span.current().spanContext } }
+
+            assertThat(seen.get(5, SECONDS)).isEqualTo(request.spanContext)
         }
     }
 

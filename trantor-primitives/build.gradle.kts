@@ -8,6 +8,7 @@ dependencies {
     api("org.apache.logging.log4j:log4j-slf4j2-impl")
     api("com.github.f4b6a3:uuid-creator")
     api("jakarta.validation:jakarta.validation-api")
+    api("io.opentelemetry:opentelemetry-api")
     testImplementation("org.hibernate.validator:hibernate-validator")
     runtimeOnly("org.fusesource.jansi:jansi")
 }

@@ -2,7 +2,7 @@ package dev.botta.trantor.taskpool
 
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.hosting.HostedService
-import dev.botta.trantor.primitives.MdcPropagation
+import dev.botta.trantor.primitives.ContextPropagation
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicLong
 
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * Tasks beyond that wait in a queue of [TaskPoolSettings.queueSize]; when the queue is full a task is rejected
  * right away, its future fails with [RejectedExecutionException] and [TaskPoolSettings.onRejectTask] is told.
- * Every task runs with the logging context that was current when it was scheduled.
+ * Every task runs with the logging context and inside the span that were current when it was scheduled.
  */
 class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): HostedService {
     private val logger = getLogger()
@@ -72,14 +72,14 @@ class TaskPool(val settings: TaskPoolSettings = TaskPoolSettings()): HostedServi
     fun <T> schedule(taskId: String? = null, task: () -> T): CompletableFuture<T> {
         if (!isRunning) error("Task pool is not started")
 
-        val contextMap = MdcPropagation.capture()
+        val context = ContextPropagation.capture()
 
         totalSubmitted.incrementAndGet()
         val future = CompletableFuture<T>()
 
         val wrappedTask = Runnable {
             try {
-                MdcPropagation.runWithContext(contextMap) {
+                ContextPropagation.runWithContext(context) {
                     val execute = applyMiddlewares(task)
                     val result = execute()
                     future.complete(result)
