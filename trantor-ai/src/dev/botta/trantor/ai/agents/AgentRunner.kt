@@ -20,6 +20,9 @@ import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.models.chat.OutputSpec
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.tools.ToolErrorHandlers
+import dev.botta.trantor.ai.telemetry.GenAISpans
+import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.context.Context
 import java.util.UUID
 
 /**
@@ -48,6 +51,13 @@ import java.util.UUID
  * Guardrails can stop a run with a [GuardrailTrippedError]: those of the input before the first call to the model,
  * those of the tools before any call of a step runs, and those of the output on the final answer, before
  * [AgentHooks.afterRun]. See [InputGuardrail], [ToolGuardrail] and [OutputGuardrail].
+ *
+ * With an [openTelemetry] that exports, a run is traced under the span that was current when it was called: an
+ * `invoke_agent {agent}` span for an agent alone, and an `invoke_workflow {agent}` span for a team, named after the
+ * agent it starts with, with an `invoke_agent` span for each stretch in which an agent had the conversation. Inside
+ * go the calls to the model, the tools and a `run_guardrail` span for each guardrail asked. A run of an agent used
+ * as a tool is never a workflow, since it is a detail of the tool that runs it. `addAI` passes the one of the
+ * container.
  */
 class AgentRunner(
     private val models: ModelRegistry,
@@ -56,7 +66,10 @@ class AgentRunner(
     private val hooks: GlobalAgentHooks = GlobalAgentHooks(),
     /** Asked in every run, before the guardrails of the agent and those of the run. */
     private val guardrails: GlobalGuardrails = GlobalGuardrails(),
+    private val openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
 ) {
+    private val spans = GenAISpans(openTelemetry)
+
     /**
      * Runs [agent] on the conversation so far, whose last message is usually what the user just said. With a
      * session, the conversation is what the session holds and then these.
@@ -65,14 +78,17 @@ class AgentRunner(
         run(agent, conversation.toList(), configure)
 
     fun run(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunResult {
-        val run = start(agent, conversation, configure)
+        val run = start(agent, conversation, configure, spans)
 
-        run.beforeRun()
-        run.checkInput()
+        return spans.agentRun(agent.name, run.isWorkflow) { span ->
+            run.span = span
+            run.beforeRun()
+            run.checkInput()
 
-        return run.resultOf(run.loop.run(ChatRequest(run.conversation), run.options.callOptions)).also {
-            run.checkOutput(it)
-            run.finish(it)
+            run.resultOf(run.steps()).also {
+                run.checkOutput(it)
+                run.finish(it)
+            }
         }
     }
 
@@ -81,17 +97,23 @@ class AgentRunner(
         stream(agent, conversation.toList(), configure)
 
     fun stream(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunStream {
-        val run = start(agent, conversation, configure)
+        // Not traced yet: its steps and its guardrails go on as they are read, maybe on other threads
+        val run = start(agent, conversation, configure, GenAISpans(OpenTelemetry.noop()))
 
         run.beforeRun()
 
         return AgentRunStream(run.loop.stream(ChatRequest(run.conversation), run.options.callOptions), run)
     }
 
-    private fun start(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit): Run {
+    private fun start(
+        agent: Agent,
+        conversation: List<Message>,
+        configure: AgentRunOptions.() -> Unit,
+        spans: GenAISpans,
+    ): Run {
         val options = AgentRunOptions().apply(configure)
 
-        return Run(agent, teamOf(agent, options.team), options, UUID.randomUUID().toString(), conversation)
+        return Run(agent, teamOf(agent, options.team), options, UUID.randomUUID().toString(), conversation, spans)
     }
 
     /**
@@ -128,8 +150,20 @@ class AgentRunner(
         val id: String,
         /** The messages the run was given, which its session keeps once it ended well. */
         private val given: List<Message>,
+        private val spans: GenAISpans,
     ): NextStep, StreamedRun {
         private val first = agent
+
+        /** A team is traced as a workflow, unless the run is that of an agent used as a tool. */
+        val isWorkflow = team.size > 1 && options.depth == 0
+
+        /** The span of the run, while it runs traced. */
+        var span: GenAISpans.OpenSpan? = null
+
+        /** In a workflow, the span of the agent that has the conversation, and the step it got it at. */
+        private var stretch: GenAISpans.OpenSpan? = null
+        private var stretchAgent: Agent? = null
+        private var stretchStart = 0
 
         /** What the run starts from: what its session holds, and then what it was given. */
         val conversation = options.session?.load().orEmpty() + given
@@ -138,7 +172,43 @@ class AgentRunner(
         private val agents = mutableListOf<Agent>()
 
         /** The tool loop the run goes on, asking this run what each step goes out with. */
-        val loop = ToolLoop(this, options.maxSteps, options.context, errorHandlers.all)
+        val loop = ToolLoop(this, options.maxSteps, options.context, errorHandlers.all, openTelemetry, false)
+
+        /** Runs the steps on the loop, and ends the span of the last agent with them. */
+        fun steps(): RunResult = try {
+            loop.run(ChatRequest(conversation), options.callOptions).also { endStretch(it.steps) }
+        } catch (e: Throwable) {
+            stretch?.fail(e)
+            stretch = null
+            throw e
+        }
+
+        /**
+         * What the spans of a step of [agent] hang from. In a workflow, the span of the agent, which a handoff ends
+         * and starts again with the other one; without one, the span of the run.
+         */
+        private fun spanParentOf(agent: Agent, model: ChatModel, steps: List<Step>): Context? {
+            val run = span ?: return null
+
+            if (!isWorkflow) {
+                if (steps.isEmpty()) run.model(model.modelId)
+                return run.context
+            }
+
+            if (agent != stretchAgent) {
+                endStretch(steps)
+                stretch = spans.agent(agent.name, run.context).also { it.model(model.modelId) }
+                stretchAgent = agent
+                stretchStart = steps.size
+            }
+
+            return stretch?.context
+        }
+
+        private fun endStretch(steps: List<Step>) {
+            stretch?.end(RunResult(steps.drop(stretchStart)).usage)
+            stretch = null
+        }
 
         override fun resultOf(result: RunResult) = AgentRunResult(result, agents, id)
 
@@ -159,7 +229,11 @@ class AgentRunner(
             val run = contextOf(first, 0)
 
             (guardrails.inputGuardrails + first.inputGuardrails + options.inputGuardrails).forEach { guardrail ->
-                when (val verdict = guardrail.check(run, conversation)) {
+                val verdict = spans.guardrail(guardrail.name, "input", "llm", null, span?.context) {
+                    guardrail.check(run, conversation)
+                }
+
+                when (verdict) {
                     GuardrailVerdict.Pass -> {}
                     is GuardrailVerdict.Trip -> throw GuardrailTrippedError(
                         guardrail.name, GuardrailKinds.Input, verdict.reason, verdict.details, first, null,
@@ -173,7 +247,11 @@ class AgentRunner(
             val run = contextOf(last, result.steps.size)
 
             outputGuardrailsOf(last).forEach { guardrail ->
-                when (val verdict = guardrail.check(run, result)) {
+                val verdict = spans.guardrail(guardrail.name, "output", "llm", null, span?.context) {
+                    guardrail.check(run, result)
+                }
+
+                when (verdict) {
                     GuardrailVerdict.Pass -> {}
                     is GuardrailVerdict.Trip -> throw GuardrailTrippedError(
                         guardrail.name, GuardrailKinds.Output, verdict.reason, verdict.details, last, result,
@@ -212,8 +290,11 @@ class AgentRunner(
 
             agents.add(agent)
 
+            val model = chatModels.getOrPut(agent) { agent.modelFrom(models) }
+            val spanParent = spanParentOf(agent, model, steps)
+
             return StepSetup(
-                model = chatModels.getOrPut(agent) { agent.modelFrom(models) },
+                model = model,
                 request = request.copy(
                     messages = listOfNotNull(agent.instructions(run)?.let(Message::system)) +
                         projected(options.contextPolicies, OtherAgentsTurns.toldTo(agent.name, request.messages), run),
@@ -234,8 +315,10 @@ class AgentRunner(
                     contextOf(agent, steps.size + 1),
                     toolContext,
                     trippedOnTool(agent, steps),
+                    spans,
+                    spanParent,
                 ),
-            )
+            ).also { it.spanParent = spanParent }
         }
 
         /**
@@ -262,6 +345,9 @@ class AgentRunner(
         private val step: AgentHookContext,
         private val toolContext: (callId: String, toolName: String) -> AgentToolContext,
         private val tripped: (String, GuardrailVerdict.Trip, ToolCallPart, ChatResponse) -> GuardrailTrippedError,
+        private val spans: GenAISpans,
+        /** What the span of each guardrail hangs from: the one of the agent of the step. */
+        private val spanParent: Context?,
     ): StepHooks {
         /** The answer of the step, which the loop always hands over before asking about its calls. */
         private lateinit var response: ChatResponse
@@ -278,7 +364,11 @@ class AgentRunner(
             val context = toolContext(call.callId, call.toolName)
 
             for (guardrail in guardrails) {
-                when (val verdict = guardrail.check(call, context)) {
+                val verdict = spans.guardrail(guardrail.name, "input", "tool_call", call.callId, spanParent) {
+                    guardrail.check(call, context)
+                }
+
+                when (verdict) {
                     GuardrailVerdict.Pass -> continue
                     is GuardrailVerdict.Trip -> throw tripped(guardrail.name, verdict, call, response)
                     is ToolGuardrailVerdict.Reject -> return ToolRefusal(

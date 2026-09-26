@@ -56,11 +56,27 @@ class ToolLoop(
         openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
     ): this(NextStep.fixed(model, tools), maxSteps, run, errorHandlers, openTelemetry)
 
+    /**
+     * A loop whose run is traced by whoever runs it, as the [dev.botta.trantor.ai.agents.AgentRunner] does: the spans
+     * of its steps hang from what each [StepSetup] says.
+     */
+    internal constructor(
+        nextStep: NextStep,
+        maxSteps: Int,
+        run: RunContext,
+        errorHandlers: List<ToolErrorHandler>,
+        openTelemetry: OpenTelemetry,
+        tracesItsRun: Boolean,
+    ): this(nextStep, maxSteps, run, errorHandlers, openTelemetry) {
+        this.tracesItsRun = tracesItsRun
+    }
+
     private val logger = getLogger()
     private val spans = GenAISpans(openTelemetry)
+    private var tracesItsRun = true
 
     fun run(request: ChatRequest, options: CallOptions = CallOptions()): RunResult =
-        spans.generation { loop(request, options) }
+        if (tracesItsRun) spans.generation { loop(request, options) } else loop(request, options)
 
     private fun loop(request: ChatRequest, options: CallOptions): RunResult {
         val run = Run(request, options)
@@ -69,8 +85,9 @@ class ToolLoop(
             throwIfCancelled(options)
 
             val step = run.next()
-            val response = spans.chat(step.model, step.request) { step.model.generate(step.request, options) }
-                .also { step.answered(it) }
+            val response = spans.chat(step.model, step.request, step.agent, step.spanParent) {
+                step.model.generate(step.request, options)
+            }.also { step.answered(it) }
             val calls = run.callsOf(response)
 
             if (calls.isEmpty()) {
@@ -274,6 +291,7 @@ class ToolLoop(
         val model = setup.model
         val outputTool = setup.outputTool
         val agent = setup.agent
+        val spanParent = setup.spanParent
         val handoffs = Handoffs(setup.team)
         private val hooks = setup.hooks ?: NoStepHooks
         private val toolsByName = setup.tools.associateBy { it.name }
@@ -341,7 +359,7 @@ class ToolLoop(
         fun execute(call: ToolCallPart): Execution {
             refusals[call.callId]?.let { return refused(call, it) }
 
-            return spans.tool(call, toolsByName[call.toolName], { run(call) }) { it.failure }
+            return spans.tool(call, toolsByName[call.toolName], agent, spanParent, { run(call) }) { it.failure }
         }
 
         private fun run(call: ToolCallPart): Execution {

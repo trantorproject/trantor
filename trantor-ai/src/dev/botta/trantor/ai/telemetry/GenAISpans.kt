@@ -1,5 +1,8 @@
 package dev.botta.trantor.ai.telemetry
 
+import dev.botta.trantor.ai.agents.AgentRunResult
+import dev.botta.trantor.ai.agents.GuardrailVerdict
+import dev.botta.trantor.ai.agents.ToolGuardrailVerdict
 import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.ToolFailure
 import dev.botta.trantor.ai.models.Usage
@@ -21,6 +24,7 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
+import io.opentelemetry.context.Context
 
 /**
  * The spans of the models and the tools, following the semantic conventions for generative AI as they are at commit
@@ -33,6 +37,10 @@ import io.opentelemetry.api.trace.Tracer
  *   provider is inside it.
  * - `execute_tool {tool}` for each call the loop runs, current while it runs, so that what the tool does is inside.
  *   A tool that fails marks its span alone: the model reads the failure and the run goes on.
+ * - For the agents: `invoke_agent {agent}` for an agent alone, and `invoke_workflow {agent}` for a team, with an
+ *   `invoke_agent {agent}` for each stretch in which an agent had the conversation. The calls and tools of an agent
+ *   say its name.
+ * - `run_guardrail {guardrail}` for each guardrail asked, which the conventions do not have yet (see [guardrail]).
  *
  * The content — instructions, messages, args and results — is not recorded.
  *
@@ -52,9 +60,17 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
         return traced(span, block) { result -> usage(result.usage) }
     }
 
-    fun chat(model: ChatModel, request: ChatRequest, block: () -> ChatResponse): ChatResponse {
-        val span = start("chat ${model.modelId}", SpanKind.CLIENT) {
+    /** A call to [model], by [agent] when an agent makes it, hanging from [parent] or from the current span. */
+    fun chat(
+        model: ChatModel,
+        request: ChatRequest,
+        agent: String?,
+        parent: Context?,
+        block: () -> ChatResponse,
+    ): ChatResponse {
+        val span = start("chat ${model.modelId}", SpanKind.CLIENT, parent) {
             setAttribute(OPERATION, "chat")
+            agent?.let { setAttribute(AGENT_NAME, it) }
             setAttribute(PROVIDER, model.provider)
             setAttribute(REQUEST_MODEL, model.modelId)
             request.settings.maxOutputTokens?.let { setAttribute(MAX_TOKENS, it.toLong()) }
@@ -74,9 +90,17 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
     }
 
     /** The call of a [tool], which is null when the model asked for one that does not exist. */
-    fun <T> tool(call: ToolCallPart, tool: Tool<*>?, block: () -> T, failureOf: (T) -> ToolFailure?): T {
-        val span = start("execute_tool ${call.toolName}", SpanKind.INTERNAL) {
+    fun <T> tool(
+        call: ToolCallPart,
+        tool: Tool<*>?,
+        agent: String?,
+        parent: Context?,
+        block: () -> T,
+        failureOf: (T) -> ToolFailure?,
+    ): T {
+        val span = start("execute_tool ${call.toolName}", SpanKind.INTERNAL, parent) {
             setAttribute(OPERATION, "execute_tool")
+            agent?.let { setAttribute(AGENT_NAME, it) }
             setAttribute(TOOL_NAME, call.toolName)
             setAttribute(TOOL_CALL_ID, call.callId)
             setAttribute(TOOL_TYPE, "function")
@@ -86,9 +110,107 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
         return traced(span, block) { result -> failureOf(result)?.let { failed(this, it.error) } }
     }
 
-    private fun start(name: String, kind: SpanKind, attributes: Span.() -> Unit): Span? {
-        val span = safely("start the span $name") { tracer?.spanBuilder(name)?.setSpanKind(kind)?.startSpan() }
-            ?: return null
+    /**
+     * A run of agents, current while it runs: `invoke_workflow {agent}` for a team, named after the agent it starts
+     * with, and `invoke_agent {agent}` for an agent alone. What the run does hangs from [OpenSpan.context].
+     */
+    fun agentRun(agent: String, workflow: Boolean, block: (OpenSpan) -> AgentRunResult): AgentRunResult {
+        val span = if (workflow) {
+            start("invoke_workflow $agent", SpanKind.INTERNAL) {
+                setAttribute(OPERATION, "invoke_workflow")
+                setAttribute(WORKFLOW_NAME, agent)
+            }
+        } else {
+            start("invoke_agent $agent", SpanKind.INTERNAL) {
+                setAttribute(OPERATION, "invoke_agent")
+                setAttribute(AGENT_NAME, agent)
+            }
+        }
+        val open = OpenSpan(span, Context.current())
+
+        return traced(span, { block(open) }) { result -> usage(result.usage) }
+    }
+
+    /**
+     * The stretch of a workflow in which [agent] has the conversation. It starts and ends between two steps, so
+     * whoever opens it ends it.
+     */
+    fun agent(agent: String, parent: Context?): OpenSpan {
+        val span = start("invoke_agent $agent", SpanKind.INTERNAL, parent) {
+            setAttribute(OPERATION, "invoke_agent")
+            setAttribute(AGENT_NAME, agent)
+        }
+
+        return OpenSpan(span, parent ?: Context.current())
+    }
+
+    /**
+     * A guardrail asked about the [target] of a run, `input` or `output`, of the kind [subtype]: `llm` for the
+     * conversation or the answer, `tool_call` for a call, whose id is [targetId]. It is current while it checks. A
+     * trip is what a guardrail is for, so its span says so without failing: the run it stopped is what fails.
+     *
+     * The conventions have no guardrail span yet. This follows the proposal in pull request 427 of
+     * open-telemetry/semantic-conventions-genai, not merged as of 2026-09-26, with its base attributes alone.
+     */
+    fun <T: ToolGuardrailVerdict> guardrail(
+        name: String,
+        target: String,
+        subtype: String,
+        targetId: String?,
+        parent: Context?,
+        check: () -> T,
+    ): T {
+        val span = start("run_guardrail $name", SpanKind.INTERNAL, parent) {
+            setAttribute(OPERATION, "run_guardrail")
+            setAttribute(GUARDRAIL_NAME, name)
+            setAttribute(GUARDRAIL_TARGET, target)
+            setAttribute(GUARDRAIL_SUBTYPE, subtype)
+            targetId?.let { setAttribute(GUARDRAIL_TARGET_ID, it) }
+        }
+
+        return traced(span, check) { verdict ->
+            when (verdict) {
+                is GuardrailVerdict.Pass -> verdict("allow", null)
+                is GuardrailVerdict.Trip -> verdict("deny", verdict.reason)
+                is ToolGuardrailVerdict.Reject -> verdict("deny", verdict.message)
+            }
+        }
+    }
+
+    // What the guardrail decided and what the run did about it: here a deny always blocks
+    private fun Span.verdict(type: String, reason: String?) {
+        setAttribute(GUARDRAIL_VERDICT, type)
+        setAttribute(GUARDRAIL_ACTION, if (type == "allow") "allow" else "block")
+        reason?.let { setAttribute(GUARDRAIL_REASON, it) }
+    }
+
+    /**
+     * A span that does not fit around a block, so whoever opened it ends it. Without a span, because the telemetry
+     * does not export or failed, it does nothing, and what goes inside hangs from whatever is current.
+     */
+    inner class OpenSpan internal constructor(private val span: Span?, parent: Context) {
+        /** What the spans inside hang from. */
+        val context: Context? = span?.takeIf { it.spanContext.isValid }?.let { parent.with(it) }
+
+        fun model(modelId: String) {
+            safely("write the span") { span?.setAttribute(REQUEST_MODEL, modelId) }
+        }
+
+        fun end(usage: Usage) {
+            safely("write the span") { span?.usage(usage) }
+            safely("end the span") { span?.end() }
+        }
+
+        fun fail(error: Throwable) {
+            safely("write the span") { span?.let { failed(it, error) } }
+            safely("end the span") { span?.end() }
+        }
+    }
+
+    private fun start(name: String, kind: SpanKind, parent: Context? = null, attributes: Span.() -> Unit): Span? {
+        val span = safely("start the span $name") {
+            tracer?.spanBuilder(name)?.setSpanKind(kind)?.apply { parent?.let { setParent(it) } }?.startSpan()
+        } ?: return null
         // Apart, so that a span whose attributes could not be written still ends
         safely("write the span $name") { span.attributes() }
 
@@ -154,6 +276,8 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
         val OPERATION = stringKey("gen_ai.operation.name")
         val PROVIDER = stringKey("gen_ai.provider.name")
         val REQUEST_MODEL = stringKey("gen_ai.request.model")
+        val AGENT_NAME = stringKey("gen_ai.agent.name")
+        val WORKFLOW_NAME = stringKey("gen_ai.workflow.name")
         val MAX_TOKENS = longKey("gen_ai.request.max_tokens")
         val TEMPERATURE = doubleKey("gen_ai.request.temperature")
         val TOP_P = doubleKey("gen_ai.request.top_p")
@@ -172,5 +296,12 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
         val TOOL_TYPE = stringKey("gen_ai.tool.type")
         val TOOL_DESCRIPTION = stringKey("gen_ai.tool.description")
         val ERROR_TYPE = stringKey("error.type")
+        val GUARDRAIL_NAME = stringKey("gen_ai.guardrail.component.name")
+        val GUARDRAIL_TARGET = stringKey("gen_ai.guardrail.target.type")
+        val GUARDRAIL_SUBTYPE = stringKey("gen_ai.guardrail.target.subtype")
+        val GUARDRAIL_TARGET_ID = stringKey("gen_ai.guardrail.target.id")
+        val GUARDRAIL_VERDICT = stringKey("gen_ai.guardrail.verdict.type")
+        val GUARDRAIL_ACTION = stringKey("gen_ai.guardrail.action.type")
+        val GUARDRAIL_REASON = stringKey("gen_ai.guardrail.verdict.reason")
     }
 }

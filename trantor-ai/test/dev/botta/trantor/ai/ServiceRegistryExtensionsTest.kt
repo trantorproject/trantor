@@ -505,6 +505,18 @@ class ServiceRegistryExtensionsTest {
 
             assertThat(telemetry.spans.map { it.name }).containsExactly("chat a-model", "invoke_agent")
         }
+
+        @Test
+        fun `and so are the runs of the agents`() {
+            val model = FakeChatModel(provider = "scripted").answers(listOf(TextPart("Hola")))
+            registry.addAI()
+            registry.addSingleton<OpenTelemetry>(telemetry.openTelemetry)
+
+            provider.get<AgentRunner>().run(Agent("support").model(model).build(), Message.user("Hola"))
+
+            assertThat(telemetry.named("chat fake-model").parentSpanId)
+                .isEqualTo(telemetry.named("invoke_agent support").spanId)
+        }
     }
 
     @BeforeEach
