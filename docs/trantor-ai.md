@@ -103,8 +103,8 @@ its result is something every provider refuses.
 
 ### The history: where it is kept and what each call sends
 
-Two things that are easy to mix up, and are kept apart: the conversation the application keeps, which only
-grows, and the part of it each call sends to the model.
+Two things that are easy to mix up, and are kept apart: the conversation the application keeps, and the part
+of it each call sends to the model.
 
 ```kotlin
 ai.generate {
@@ -115,7 +115,8 @@ ai.generate {
 }
 ```
 
-A `Session` is where the conversation is kept between runs: `load()` and `append(messages)`. The builder
+A `Session` is where the conversation is kept between runs: `load()`, `append(messages)`, and `replace(messages)`
+for a [compaction](#compacting-the-old-part). The builder
 reads it where `session(...)` is written, since the request goes in the order it is written, and once the
 run ended well the session keeps what came after it in the request and what the run added. What comes
 before it, like the system prompt, is not kept, and a run that fails keeps nothing. `InMemorySession` is
@@ -136,9 +137,63 @@ what goes first on every call, and the providers cache what goes first. A policy
 do the same. A policy that leaves a call without its result, or a result without its call, does not break
 the call: the loop takes the half left alone out, with a warning, since every provider refuses it.
 
-What really bounds how much a conversation keeps is to summarize its old part, which comes later. Two runs
-on the same session at once would read the same history and add each their own: the application runs the
-turns of a conversation one at a time.
+A policy bounds what each call sends, not what is kept; what bounds that is to [compact](#compacting-the-old-part)
+the old part. Two runs on the same session at once would read the same history and add each their own: the
+application runs the turns of a conversation one at a time.
+
+### Compacting the old part
+
+A compaction replaces the old part of the conversation with a summary of it, so that what is kept and what is
+sent stop growing. Unlike a policy, it changes the conversation itself: what it leaves is what is kept from then
+on.
+
+```kotlin
+ai.generate {
+    session(session)
+    user(question)
+    compaction(SummaryCompactor(ai.models().chat("fast")), afterTokens = 60_000)
+}
+```
+
+**When.** Once the run ended well, before it is kept, if its last call to the model went past `afterTokens`:
+its input, with what came from the cache, and its output, which is how big the next call starts. Pick it well
+below the context window of the model. A run of the agents takes the same `compaction(...)`.
+
+**What.** The conversation the run keeps: what the session had, or the history the run was given, and what it
+added. Never the system prompt written before `session(...)`, nor the instructions of an agent, which are not
+kept either. With a session it is kept with `Session.replace`, and what to do with the old rows — delete them or
+mark them replaced — is up to the application. Without one, `result.compacted.conversation` is the history to
+keep instead of the one the run was given.
+
+**How.** `SummaryCompactor(model, keepTurns = 2, instructions)` keeps the system messages the conversation starts
+with and its last `keepTurns` turns as they are — a turn starts at something the user said, so a call is never
+cut from its result — and summarizes everything between them, the summary of a compaction before included. The
+model reads the old part told line by line, who said, called and got what, and not the turns themselves: any model
+of any provider can summarize a conversation of any other, a cheap one included, which is what ADK, LangChain and
+Microsoft do. The default instructions ask to keep facts, names, numbers, dates, decisions and what is still
+pending, without a title; `instructions` replaces them, to say what matters to the application. A `Compactor` of the application
+can summarize any other way.
+
+The summary is a `Message.Summary`, which goes first, after the system messages. No policy cuts it. Every provider
+reads it as something the user tells, after a line that says it is a summary of what came before.
+
+**When it fails.** A model that writes no summary, or one cut short, and any other error, leave the run as it
+ended: the conversation is kept as always, with a warning in `result.warnings` that says why, and the next run
+tries again. A compaction never fails a run.
+
+**What it costs.** The call that wrote the summary is part of the run that compacted: `result.usage` and
+`result.estimatedCost` count it, and a model from the registry goes through the middlewares, `CostMiddleware`
+included. It reads the old part without the cache of the conversation, since it reads it told and not as it was
+sent. A stream compacts once it is read to its end, where it keeps its conversation, and not when it is closed
+before.
+
+**What is lost.** Whatever the summary did not keep, which is why the last turns stay whole. On the Claude models
+that tie their thinking to what came before it, the thinking of the turns kept is left out from then on, with a
+warning, as it is after a policy cut. Anthropic and OpenAI have compactions of their own, which keep that thinking
+and read from the cache; Trantor does not use them yet.
+
+With an `openTelemetry`, `SummaryCompactor` traces its call as a `chat` inside the span of the run, and every call
+that carries a summary says `gen_ai.conversation.compacted` (see [Telemetry](#telemetry)).
 
 ### Objects
 
@@ -544,6 +599,8 @@ agents:
 - The instructions of an agent are not messages of the conversation, so they are never kept.
 - The session keeps each answer with the agent that wrote it, which is what the next run needs to tell the turns
   of the others.
+- A `compaction(...)` runs after the output guardrails, and `afterRun` sees the result with the conversation
+  compacted.
 
 ### Streaming a run of agents
 
@@ -1116,7 +1173,7 @@ team of its own: it is a detail of the tool that runs it.
 
 | Span | What it says |
 |---|---|
-| `chat {model}` | The provider, the model asked for and the one that answered, the id of the response, why it stopped, the settings that were set, the usage, and the agent that made it |
+| `chat {model}` | The provider, the model asked for and the one that answered, the id of the response, why it stopped, the settings that were set, the usage, the agent that made it, and `gen_ai.conversation.compacted` when it went with a [summary](#compacting-the-old-part) |
 | `execute_tool {tool}` | The name, the id of the call, the description and the agent. A tool that fails marks its span alone: the model reads the failure and the run goes on |
 | `invoke_agent {agent}` | The agent, its model and the usage of its stretch |
 | `invoke_workflow {agent}` | The agent it starts with and the usage of the whole run |
