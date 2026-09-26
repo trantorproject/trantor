@@ -1,0 +1,139 @@
+{
+  "id": "resp_0e1c09012c6ca29d006ab727b2db1c87d1a90e278de6af980b",
+  "object": "response",
+  "created_at": 1790388146,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790388149,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0e1c09012c6ca29d006ab727b42c5887d18eebaeb8fc0eb5a2",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtye2wrXMydH_aKOvUpAyeWM_0v09Nge8tnsGmPGeip5pdUf5CSNNnYHF_nxABg0eGpvQKkXtm2ubSR12iqxUFANk8qxh0Libboz1d1JNZtT3FExUJ7q5tg9iqD9PHBX_wKeEyhFwv0A35GTJ2pdBWU26mjoSHUUfVsJgh4BiWuOGTem94XQIF7L-jmuqwltrjTNQFC7P9iIUxXpwdrd44xaLwf7qV-ruvxu2NHobkn3tKHN3tgD2YycQt6WMaqWr4z6vWanx1QQR3gg-9656ZxQvy2mNG1LrBrvoHX8PhtLWIok-I3Dq6aFItsui7cjPClLptBwnZkfaHYfkLNUWRKXHzozSu3_vx8AA7j8XyP8kr3Zld-HIZ3MLtQaQferlySOcr56CyGzTKw1D7EyWPice-mac1dwXkD2FP9uY7gXELl6GwBttYrrNQGK2rt3OglJ9S0vm3NtjTip4SCTfz5GVekQz1lw4c__Wc-jXU7Thu9wkunuGZuY4t-3VNb3Mi_amjeKyAZAvzmkJQPCGIpXuBK67cVUGAUp8pnS6e7po1qc6oOxjFjw_6IkKvzIL_zBAOP3483LntQIRN3U8_CiPTlxYWTaVlj0bFaJYiByCHbfeYnJvnsM_zho0wXA36dzyElgtAM8yzUY25f_bw8VHoQqZiRytQcYelia9ecQEICDxokdy-wCIX4qvsMwz_Lq3MqHztbF_A55LTMpENfww77iSQGKvxk2BPMBFXnOtk9Sjb-Gpv6Rw6RD_1lRLzVzR3juBCpcxTP3nsHI3VRjPglMX68aGR3eq3Hy_5gQ2YPg0MmgyiYIFJMGpyEN4vwpgtlPZd2duNCh5DeksepcW0NSfYqlCgkHGzeMe7FV0zib0SlSa-0F6--_S3-OgU-1VtF9Q8LkDKKbugzeYI8MHKpsjnM74X8ReP5DEVg0iOM6ce8DaeM27xCs3ZOmEKMwmweYN5_AzwX2Lye8gfSv-65EVdutVJsXsYdau-WC6TFwVWvAYCycKf5OqEXKmlhTVR-6HfLs1qiFZeSTE746yzgtxcKmrkUOdCZx89V-nY05q-4ricUk_ihTo5F1F2Ef-h0Y3H1w9W4SvAr8A0zIk8LY2BL2dZmkknH1jB84MI3mDMyFKmVYtNLM8HRsp6b_HHtLhwEuO9BMZf9JOY2xVcfxT--56Jk9UazP549NKMm0I8zizK7Hlip7kobH6MdwpWW1-LUX6lteBwbtVAeeTbLoTPUN513nBdHwVzGk9xa9GHNLLJ6RFAPjvfexyA9-hwXq0QHMo7-AprjCbCAEAJbVsQIicltawfcjV4xfJYG2VmaAE39SPupF12sVDhXpT23L-9OwJcJMinsOdEJ6jqfyEI3f-7qCJvTeD6ENw_20t1qD-E-KPGMn5UYr6kPmD5jLgGo0pWzkznr6QQpsn4R8fUljv_ixtdfWsQchBi0LNZj4hjHTJ1YKB1T2wDw17lbLPBChi33d-hvvqnIyrMzT0lDmwyB-G_L0rFFHfoyjwmsRLIJDp0FrTfvcJLJeuSu5oCWG74S-oIWUMoSSCD6hISyaDnPew7VJgTHNUFH03B8jTgSXguC7FZn8c6RhVb5X6mWmU_YchvlvCDCZXehEkSRK3pFKEjo0q25Sy0I_Qio_Gc0XEqrwLwcRO1mXF0EYJyVfoztiLbEi_vPLf5qW3m_akzbW_oMV2JTi6fW_WT281ZaBzHIYrzG7340CudauXRbXUzCs2jrG034DsPbGXokjHm-bcmhW-QjN8B2TjcTM4GBYMWZBBgqxaapXpaJKHViGDPe57YY97pJPUc5qLDrSo8MxymeGtE0O5KyjwJb7DnFYNyWig3YZRq-2GEViMAZ6m7Qa1UTL6sii-yTqkkHU7wLJRRUF6ibof6q6p12fxZcsxajcEQaDkt-fL8ZOcfNRm-b4tYvEeHZc_Qok1ORHa4aa842MCYIQiuUKRCB-SiD58ogM9q32ne-BriyHxtAUU9XEgZ5wNUY3-dWhm__8IVkF35d3s_ZGbCdbGK58b1bBfGyQq5KrdXWC_Fe-XkVHq6wTeeCZ0MfFjMDOJon4cPuHpffvlA7JdfnDU4yVmoPPvdtp1ReNmHD9CjFFQxEzoouIgUx5waw0WuBn8u0VeshREfHQhKZwwgmtPgQ7blKKai46H9DcXDm1kGzmWdnUSyWsPkrrRHYntruBmBLs2ZJWXl350jCfMzl-uDcnF7H23or4duvvGXNHmA79TcRyMAvxlIFHBSN5W7EBRx5hEfOawMcDHgm33wpfx0ZAJKF6eOSwnffTHHjCBtBFIbTjIpQ51yV8G0Kgn4C_q3-wbd-kM2apKps6iunj80EbwNJwHjV7MvALekOJr",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0e1c09012c6ca29d006ab727b5e90887d1976b1c20ad0b6b97",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche\"}",
+      "call_id": "call_4C3m0zqC5RNEf2tE4dEvKkXU",
+      "name": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "low",
+    "mode": "standard",
+    "summary": "detailed"
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "description": "Hands the conversation over to the sales agent.",
+      "name": "transfer_to_sales",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          
+        },
+        "required": [
+          
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 112,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 212,
+    "output_tokens_details": {
+      "reasoning_tokens": 128
+    },
+    "total_tokens": 324
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "id": "resp_0e1c09012c6ca29d006ab727b6732487d1be97e65a2455c8d8",
+  "object": "response",
+  "created_at": 1790388150,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790388153,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0e1c09012c6ca29d006ab727b8903487d1a7d0ea9bb441be33",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtye5wDOXWTXg5DDK4MirCDqeMPwUl6_RcfKADfeOnz31B2yxP3m9l4DGE3hSQqgHZgmQ1eSLMyfBNVVi_fKCpF44E1LhAizmf3a2ynt2dCDvbkrxFxJef5N1YKRyi7i_B1lLkzUtjyyvOoJJb43bdXv2UKADemv3zg3Yiszyl828opYzsHf832dqV4xZ2s1h1gQcyJwlwhESMBpKM3kyLQL8p6vqTzXFiw-ufXSDhxnfIqFSdNI4LcEccet6qO-mrWzzIYB0BtAURte6cyhbJQEyFB1thcEzd2pJSiaBqQrseCgAe-DrtA1JOErveuy5D-zWkmn40VAyYLWHqNvkuV_K7l7xAFlrS2tqLgmOlNtuSXGLM9tGFimGdtjXQAHDCqlETD7Hx9wO90pWrN3VFblsDrrh_yFnrMcvebet-6xl4ny5z5mdBqefnGSNDBh0ZDtzhKl939mK4cgdFmGyAUwTFfytvWqNMaCwmydI0OLp_c9yysx0tRCfMG6PjK2U2vzVPI7OOOVod5uF9tnuubWJCVPGngWXxsuIo3ZUby-WruYPqNrv5f_Md7XcHMi7QEgIlmrICZE7To3CmYYviPHVc5EnZoD7pedMplypG02hcsr58h2dE1d68awy8Zq86rjVRtiQ7L3u70_I_HfMonVbc8JlmuS2vmDPY8Hz3tVwj6jhnQfdY9tH__VxdlhfGefMCTU3cr_qcpqKzVTaYCHCAc1W4t5HdC3-F5ER7klwNQF63yHOpikNcsuZsSBqfRPkp12XPyujyNwqefqQAwkhd-bFGCi6HTvi0JiiC8c9XNmo45Iwz7T4Erx-CwcUOuW_jRfCf9t4I38o414f-SFsGN8PXThgRJ7ocavmuUzuUFUAsviNgc3rS6XY6N5XAnykfzhmnZBvER8NUhy0CzO3QvNNPT6hLCBWSdb6Ju5xosYKFKDMRIBY6n4vJOVpybzr_MgG5ppCMJbMdZJNkE30GBMeT1uX_uu3onU7i9-8xL9Rwg2VLAeQTROnBjAYM4iQSfsTBdSJCLyMwSZNSN5AgmdVUJL5RucTVbwWQAnclDOd4Y8nSaPd-tYpfC1h6sHIje5rdKwsjoU1aqLNBErMrxkVtqQgubxVd-h77Kfbqj6FDimfJE5iXudDVfHdowjY3wg7Qcj_Z3oEToWTND2HJXZcOgRfjszfXm0hN1MaSAxbQy9iMttZPDoGnxLNRBC_Euv3h2jrA4QP3pUlX4NEPiCyYS-3pbKV4WTK6mnktzvBNN4Js2U1QEvnqe_Rba_tNQ78JXXsjDFRphMR7lNLyifkQClYD-sdsk8uZsjXW_THNctODt5LCXZxPmKUdCGBDwRNJF1-lSIxzXiDmXym3g==",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0e1c09012c6ca29d006ab727b938fc87d19d851c5fec80fc57",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{}",
+      "call_id": "call_MHcKUuu9BbN7fmtiqZ3qNLDo",
+      "name": "transfer_to_sales"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "low",
+    "mode": "standard",
+    "summary": "detailed"
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "description": "Hands the conversation over to the sales agent.",
+      "name": "transfer_to_sales",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          
+        },
+        "required": [
+          
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 338,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 50,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 388
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

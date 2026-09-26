@@ -1,0 +1,32 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfREDH5CdFT34f5E6KPmF",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "Perfecto, te cuento:\n\n**Precio:** El paquete de una semana a Bariloche sale **USD 900 por persona**.\n\n**Clima:** Actualmente en Bariloche hay **7°C**, así que te recomiendo llevar ropa de abrigo.\n\n¿Te gustaría que te reserve este paquete o necesitás más información sobre qué incluye?"
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 1053,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 98,
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "diagnostics": null
+}

@@ -1,0 +1,48 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfREEwhvjDzuBaSSYCf5u",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "El usuario está preguntando dos cosas:\n1. Cuánto sale un paquete de una semana a Bariloche (esto es una consulta de precios)\n2. Qué clima hay en Bariloche\n\nSegún las instrucciones, soy el soporte de una agencia de viajes y para precios o compras debo pasar la conversación a ventas.\n\nPara la consulta del clima, puedo usar la función getWeather para Bariloche.\n\nEntonces debería:\n1. Usar getWeather para consultar el clima de Bariloche\n2. Luego transferir a ventas para la consulta de precios\n\nBariloche está en Argentina, así que debería especificar \"Bariloche, Argentina\" para la función getWeather.",
+      "signature": "EuMGCpsBCBIYAipA5oSAfHqIxRPhZRUzZFo3q0TyanoGvKFyblzXkFVhVTnLbtVG0hdy5PwoQ9wF7Mmp4VaCiMw4tIXmIpxtzHr00DIaY2xhdWRlLXNvbm5ldC00LTUtMjAyNTA5Mjk4AEIIdGhpbmtpbmdaJGFiY2QxOWUxLTFjZDItNDRmOC1hNDFkLTcxMTNiMDU0ZWFkNagB+c/c1QYSDHWLy/37qNbd+uyZlxoMLSJyHQMhjg4ZISZ/IjCKojMAj77+d4nonFAex7lQB9xuPm+LGVe1CLK6CeZmPvJVpcug2XAkjEVUBrnzZiYq9ASzNvR0iOjoN+92hSew6+Osdq/nvfaFUyM0MC9dOLbJ+tLI5X+IpvoRtiLuUcSpVttASCTUEVHwtMGWX9vWj/4VSJAj5n6Yyx6a2tmIuNlb8hbh3pODE7uX5+OHdo2fFEI5IjWZ4HRJfXM9ZxJYV9p9r1+kSCcW7Y4pVfnNKlY4sseiLTPk3BwXOdmLPISeDc2XZk1lBanQnpkU86BbSk+uZuv6rxSiJyMScuWRlijLwdq4vbi2PkfVmz6gV9YlwoFr0OENrBTFakcxmnrJsgVGPKwfW2TrVoVtXUrIoXJ9oY7Z29pYs3fW3qFQK66pnZvJ4E1KHggWicqm29FhWBQ49udoxqy6GWkxC/KfoN1wEtufhHnpKpuRg+XWLc5mbUTKy6QXZH7eHy9+Fsj4PQA0D85qkDXn01i1JAoNpyiWTcgyLA56dbeY5K5i7LvqPbyH/MB5cZTa4aYDbivki8C4jBRBVGjwlhzOl/oi0vztyAr1Q5z5Ug0+6Qcsip31TfB+mhQ+Miwo3i9rhp+ZVykRyVJTIUiYz9hFNHQaD50irAtWLZ5q1RhYMY+CcSUtv4FrSxcVVxW4yWuCjYVRtjgnNKu95Lwn7yznc6ALwNHZylsUdZbSUqV928obdSyT0VaBQMfLdN4i+kPz75Ah35FoMj2UW99TjlPqTJRhdP9DiZ3acv+eTGpDSN83sPmBq6F94KwEkl8Z/k9ekR2zkMH+6Mu6+rCk+cZjJacyFR1PuxcOglvGYRpWbbH9CcQFs5Ln+GnI1ntDMjpG7M5Q10eHyNgLqxrdPDgrInvCk4+akdb21Q/sS5EBSwyIACUWXNPi99nyGAE="
+    },
+    {
+      "type": "text",
+      "text": "Te ayudo con esa información. Primero déjame consultar el clima actual en Bariloche:"
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01N9haf8YeFYUMKCLnoVgCJj",
+      "name": "getWeather",
+      "input": {
+        "city": "Bariloche, Argentina"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 718,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 279,
+    "output_tokens_details": {
+      "thinking_tokens": 192
+    },
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "diagnostics": null
+}

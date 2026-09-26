@@ -1,0 +1,135 @@
+{
+  "id": "resp_045e1d5eb5c1fb10006ab72805f56487d181129b9bbfd65921",
+  "object": "response",
+  "created_at": 1790388230,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790388233,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_045e1d5eb5c1fb10006ab72807417487d1bbafb81c5e5b1f21",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtygJX-K-q3zt9CtEf9a5tbk4RkNEj3iJbLbZ4bkDE8TOYwYoiWoNE2k5urIhbWf0Rkc3ZdXWYdPP0yGwZb4dk3BJs7OpXJ15gmhuYTF5oP_EjdgaQMMYphpxh3wv439ANUvpw4kJjsEbUxmRBy1nPYnWB_GS3lqEKLLN8wpKM6kHEHJSCwW0Qf7Y-lTohwD3W-hOzAV_aBZuIxlzR5VHaJjA3L1rLIWHhhL-jbKmSxt_1LoXK7wVo4HHbTYeT7v_bGkFOPcIuI389xNa39re20qP6vmAuhlsz_i_u5ijLrv-aHcNNxzx9KqIj9A9JNCTPDRKbiZwqnHKzs3RQ5f7MZRJHtGt3myRliknWDbDduWLaTYgronqn-iTq1VheQRNC_ZZlG65fIxNDcQAqs2NPyYrJesQjfug4mqiHechXjW6sYbq6mRmf9SsfWU1M_nUINU3zWjO-RmMFa0n-_NQ87HdgvBZvIN7fsLadv68zqgZFkOGLPdFCEOCxIjcpZZf0zLZtldsH33AgtLtCHLaUySa2KNK3tEMQoDFMz3rGvHw8Bj4WUPylIRpSKh-ZjUwVyHZNnF5zQmxAMz2F5qaw53_-jtfQCaHM5pt4WjBLQrsaVg-meZNKQoDxXkIoqEGLVEA08g0tB00TTGx8YicNSUMXhwagzKwvDSvfK4mR95UDQNl4WpbQyGbQD8ZGfNV6GT1onvA4Hn1shO6fyt22FhqkpELblf29cvHTSnxaGMPzJEruFIp6_D4zw0b4Fc_ia_kxdz1WHFhKhiKkddsjXiPyqGgrxMMFV2erqDFtHT4HwYrhz07LjkUAcW9hQZ0z2hcB8uxOSbTqdzPNjV4OAjGZ1IyiBBZdR016eWTHsSoQUvDGRmbW2d6c4jI9rj1tvs00I5m3iDSYVR75YRpMe2v0Xy0Rt3Nu30YvCSZGzbRG9ByARloYloWkA-dE2J6V4yirXCEX3tJTtrMuEDn9mYF5XXU-WoQdyTsB2Ir9tbesPMQGqyQ8ZPvlkJue27q8liEA6r49j1qwgC-X-ZCZDF5XV95i6s-oFSESV_7BgWH6FOIaDPSzlVF2oQFUk6hX2U-CvSJEqS-ojvMJIzximXlfXwkqNyimFVW7DBdya1EcZKaG6O3gxoMPc1GdXgO4m4UE8FvKYj00Fkaz6IyhxyRNYWz4iXjVI0QprnowExt-Fbqsn_JgkxrSt5L7PHSdOk8awlxj9oKdrOgZ5YJPoxj86exPBHNd95PsB_xcUj1XOIvvZOLqsjNzDM0lcxicjSUbqcFdkWAgPPV_XBA074EMxp-f5JqIG2WbO7KRLNhJ0QJuFEdxt9L3i2jwwr6Dcm2TuDBh9wwxUS8D12RDXMGBBuFAKSnGBWGRnJ49kfKWybEG_ibsYiDhaQn55LJg23eNizHIzZ9-AWeAWCZECGoOSb9mks1uwzi-kVqil1syVnfOG5JLVI4qQP12r7nt95HCecDhWXWttWj0oE5Oy015HXem_z6SopbcXbrOa9TH8E=",
+      "summary": [
+        {
+          "type": "summary_text",
+          "text": "**Calculating total cost**\n\nThe user wants to know the price for two people, and since the price is per person, I’ll multiply the original price of $900 by 2, which gives me $1,800. I could call for more details about pricing, but since I already have the price for one, I can just compute it straightforwardly. It looks like I just need to respond with the total of $1,800 without any additional reminders."
+        }
+      ]
+    },
+    {
+      "id": "msg_045e1d5eb5c1fb10006ab72808e4c487d1869fdba8238f2e97",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "Para dos personas, el paquete de una semana a Bariloche sale 1.800 USD en total (900 USD por persona)."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "low",
+    "mode": "standard",
+    "summary": "detailed"
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The price of a one-week package to a city, per person, in dollars",
+      "name": "getPrice",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 520,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 99,
+    "output_tokens_details": {
+      "reasoning_tokens": 64
+    },
+    "total_tokens": 619
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

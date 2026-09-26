@@ -1,0 +1,125 @@
+{
+  "id": "resp_045e1d5eb5c1fb10006ab727fe2c1c87d19a4406a6c6ef50a5",
+  "object": "response",
+  "created_at": 1790388222,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790388226,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_045e1d5eb5c1fb10006ab727ff893887d1b8a53ca71b00ada8",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtygC3UXoYXvQUpkWExGK3M-AhQ3HyWF8rwISSwKmbTgajhOCgJozZHBMNcqvu4srnZeYJDzfvfwv0XM7eaDCmNQ7OY9Uj_rr0MfEg3qzRBxYyBH8a71G1pG2Ug1uRVkOeHwP6i3WNxpj4Rcmn6c-iWYMOnXKdvH2qOa7OCwWAVgOXGorlnua8k865NhBFU6kBkB2wlblSDdJ5htirjVrWOx_HyLgS0OGO7tpm6L3rSOlRoxkSqQvjMtvPFlc8BmCmXtZgbLGElhas3yaE_S_iGQ_ACtu3AGOY3iikBB0FXGAu-gq2Tt8FavjibgvoBWF3CDshx2PBx5NwQmLPJbqPSrWx4iR9wMTubMOi25Q1qxbYtgRfFMy0iDc4px03KM8dKe1qMpMjxrNFNOcfQk4PDmYeBgmP3yOMH-SOrZV8zdgQMdj0mjqy6zUDCAM5YR5xmrXQmO6giDQr0DKWeBm9bCV4iY8_EjJGGgrK3_wnDYuRkZDD9dRGrCXBp2h1zMiG6zoDa4UrfZHQuoZ1wz9-pLDJHoHKy6y0cyKhbiIYMpPX7E36tNJdUju1cCegfdmSNZNE_ENcKn79pExujXqYOl3VDV_5z-mAmv32un8vlf3WYG4QhszXsmre-MV7jEs9_w4pwFp7kr7f_1oG2Von5cshZsE1MAU3hEsRu6LtzGIF5JrGGPFIIFYhyE_GOXj2wjT4BaoLjYKbb_22tNZdUxupA_q5SgDWQGkbnCuTFgJCwQgbgpWSAKxJH3krnnUj15zlr3thsdxTj1GcTuQ6FqTnJ0OPFsc00l5AxUk7PRwJHYwHFCpoMaHH944i0LP0XD-HlX7CVFCSrNn20zE8Ktgxd3df2oKoKXBC9djyaWadDCJlKjTkBGMvzvo8iuRpQ2CP5bWDbCOhuCsOb2Xwz2n0GLzaDftIsZbSXjFNCshausUk27b5shp3aqSKTjag5YbMDb9-oPngVOGOk7L9SC8JPc0n6UYk44QauxQuRdXGeJvI1nqw12LDmShnc61Yb62Bx-Dq33DlhZ52DoBLn1LVC5lmEjAEWx1parR5597SkLQm3tEoU7nKB7QAshmwqX7kDRFkrJEBcVvmFuNRyB5YBlnYwqC_yTcPfV37Jy0aeNb7yU8pv1yFwblGrYmR37CMezH_FUJeX8uhgS7y_3FUgQWvjc2n3fz4QPuEo4aPwE8sqanVw2mOeivFQh19pg3Gbc5IVviYRZIO-y2NsW7Id_ecGEyiu58XspM0EPqSAWDCAakpIeQMuIyanHNQf76Ai8i1otN6Q3vqZRXtzUgc5e4XtPwUoId_y7o8A1hjiXNtj1rZNDE9RttPYYt9CFeyezvFpoJShf2PtTITDWr-fjIM2MCMZPN7XR5Lw5hb_QRRqYYKPSJcn8A54JehKqLALJkzTcYAS-7XQZqkbMR_nFycMcXAoSW2gK_zv8VpQhNuULgkq-OY8TjjVcSpSULDEAIYb8Z-58TESOz0c2aVwuzdcizbDjZdG3l-dN2k1czbAXITlpGGqHM4aIFFd16yEtWhT2jZyw4EVsp3-D1vTih58qR79wgxPEviXxMqsgDeLnIWwB4MsGm79-RGxRcw0ENiTy5iMLx8IOv2DZ3GraHJIhPeDHkhjr0k6VP84A3LpIglXCuJNCuPVUxM5_lMo6Q1D3ZyA5RkjQaY1Pu1dMKZ40EiJq5na7JgC_SHbtYR7PIzjOxcELZhLknuD0NpubnLMz0r6W7lLWpaOQZef76BZainVzl8hzcLQSoPu6sZlZxAY6RDIgo8N8hgDK_0SoRs7UC7ZS1tjao0GpyKloBg3BQ3350EnLghAgM5gWE1AfpxmJ1q8C7d2_sVReRT7XBcI60VT5i0kVBx8H-_0KkVEUS67SaKBzGIHmqHG7SL1M6tUvof54aVvgz7PezSZ9qvxNjIysWcoQLKL2EnBLzODUsSv50gIqQkJq_ChIa6IQ8_laBmc02nD9JqKH1oyQhRRrOugoAeDxnalqWrZYT2ZWeD1bZ3KbaYFJoHm9CHxizwyQJtbXitHPF-gc6_3a5_3sRpzzPupV2EtAImtBxrqtQYxSmwbZDf_Ino15C_KHi4KgeyMhIMNSY3lT6yWbiM3wqI4omRCvnMexoi6pVG5euPjmXI3HwmUc42T6ZC_OT2XDHEmwBSv2uMCXtF_i6sMBIDBECUBz9DTTuUZl4_-lunCP3-Tm2kqcZDIQXr9ruhBDFOuJoojSnmPfObKpoiuLyzU8x9foVRNqvJ04pE6OZpMdf96rEI-SBtRfj1XsXFNFWcaC_kVvD8W2X-xU6d9z1YhgfOcifgsa3eDoDT9ydUrcw-agvkIYvTvA=",
+      "summary": [
+        {
+          "type": "summary_text",
+          "text": "**Gathering travel info**\n\nThe user wants the price for a one-week package to Bariloche and information about the climate. I can't fetch current weather but can provide a typical climate description, noting that Bariloche has an alpine, cold winter, and mild summers. Since the user hasn't specified dates, I'll assume they mean the current climate. I'll use the price tool for the package price and follow that with a general climate description for Bariloche. Let's get started!"
+        }
+      ]
+    },
+    {
+      "id": "fc_045e1d5eb5c1fb10006ab728020fc887d18f87e1692d5b1b54",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche, Argentina\"}",
+      "call_id": "call_qYhBZfBVjKMNpPx2B6cJeCgL",
+      "name": "getPrice"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "low",
+    "mode": "standard",
+    "summary": "detailed"
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The price of a one-week package to a city, per person, in dollars",
+      "name": "getPrice",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 273,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 218,
+    "output_tokens_details": {
+      "reasoning_tokens": 192
+    },
+    "total_tokens": 491
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}
