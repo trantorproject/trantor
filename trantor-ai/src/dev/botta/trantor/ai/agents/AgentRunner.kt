@@ -292,7 +292,10 @@ class AgentRunner(
             }
         }
 
+        /** A run that paused has no answer yet: it is checked once it ends, in the run that picks it up. */
         override fun checkOutput(result: AgentRunResult) {
+            if (result.paused) return
+
             val last = result.lastAgent
             val run = contextOf(last, result.steps.size)
 

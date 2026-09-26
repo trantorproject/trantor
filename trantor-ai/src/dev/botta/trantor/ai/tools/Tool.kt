@@ -40,6 +40,17 @@ abstract class Tool<TArgs: Any>(val argsSerializer: KSerializer<TArgs>) {
     /** What a failure of [execute] does to the run. Input the model got wrong always goes back to it. */
     open val onError: ToolErrorModes = ToolErrorModes.SendToModel
 
+    /**
+     * Whether this call waits for a person to approve it before it runs. When one does, the other calls of its step
+     * run and the run ends paused, with the call in
+     * [RunResult.pending][dev.botta.trantor.ai.generation.RunResult.pending].
+     *
+     * It is asked with the args as the model sent them, before any hook changes them, which are the args the person
+     * sees; so a tool can ask only past an amount, or only for some accounts. Args that do not fit the tool are not
+     * asked about: the call goes back to the model as an error, as it would anyway. An exception fails the run.
+     */
+    open fun needsApproval(args: TArgs, context: ToolContext): Boolean = false
+
     abstract fun execute(args: TArgs, context: ToolContext): ToolResult
 
     /** What the model is told about the tool. */
@@ -52,6 +63,13 @@ abstract class Tool<TArgs: Any>(val argsSerializer: KSerializer<TArgs>) {
      * saying why, so the model can fix the call.
      */
     fun call(input: JsonObject, context: ToolContext) = execute(decode(input), context)
+
+    /** [needsApproval] with the input the model sent; false when it does not fit the args, since it will not run. */
+    internal fun asksForApproval(input: JsonObject, context: ToolContext) = try {
+        needsApproval(decode(input), context)
+    } catch (e: InvalidToolInputError) {
+        false
+    }
 
     /** The args the model sent, as the tool reads them. */
     internal fun decode(input: JsonObject): TArgs {

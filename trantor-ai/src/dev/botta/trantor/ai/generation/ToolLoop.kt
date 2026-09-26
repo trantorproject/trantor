@@ -26,6 +26,9 @@ import io.opentelemetry.context.Context
  * what lets the provider pick up where it left off. Tools the provider ran on its side are not run again: their
  * results already came in the answer.
  *
+ * A call whose tool [needs approval][Tool.needsApproval] does not run: the other calls of its step do, and the run
+ * ends paused on that step, with the call in [RunResult.pending] and without asking the model again.
+ *
  * A failing tool does not fail the run. The model gets a result marked as an error and can try something else:
  *
  * - Input that does not fit the args, or a tool that does not exist, go back with the detail, since the model can
@@ -109,11 +112,11 @@ class ToolLoop(
 
             step.check(calls)
 
-            val executions = step.executeAll(calls).map { step.finished(it) }
+            val executions = step.executeAll(step.toRun(calls)).map { step.finished(it) }
 
             run.advance(response, executions, step)
 
-            if (step.endedBy(executions)) return RunResult(run.steps)
+            if (step.paused || step.endedBy(executions)) return RunResult(run.steps)
 
             run.throwIfNoStepsLeft()
         }
@@ -198,6 +201,7 @@ class ToolLoop(
                     warnings = step.warnings,
                     agent = step.agent,
                     toolRuns = executions.mapNotNull { it.run?.let { run -> it.result.callId to run } }.toMap(),
+                    pending = step.pending,
                 )
             )
             messages = messages + response.asMessage(step.agent) + Message.Tool(results)
@@ -264,15 +268,16 @@ class ToolLoop(
                     step.check(calls)
 
                     val executions = mutableListOf<Execution>()
+                    val running = step.toRun(calls)
 
-                    if (step.runInParallel(calls)) {
-                        for (call in calls) yield(RunEvent.ToolStarted(call))
+                    if (step.runInParallel(running)) {
+                        for (call in running) yield(RunEvent.ToolStarted(call))
 
-                        executions.addAll(step.inParallel(calls).map { step.finished(it) })
+                        executions.addAll(step.inParallel(running).map { step.finished(it) })
 
                         for (execution in executions) yield(RunEvent.ToolFinished(execution.result, execution.failure))
                     } else {
-                        for (call in calls) {
+                        for (call in running) {
                             yield(RunEvent.ToolStarted(call))
 
                             val execution = step.finished(step.execute(call))
@@ -287,7 +292,7 @@ class ToolLoop(
 
                     step.handoffs.winner?.let { yield(RunEvent.Handoff(step.agent, it)) }
 
-                    if (step.endedBy(executions)) {
+                    if (step.paused || step.endedBy(executions)) {
                         finished(RunResult(run.steps))
                         return@iterator
                     }
@@ -362,13 +367,27 @@ class ToolLoop(
 
         fun answered(response: ChatResponse) = hooks.afterModel(response)
 
+        /** The calls of the step that wait for a person to approve them. They do not run, and the run ends paused. */
+        var pending = emptyList<PendingCall>()
+            private set
+
+        val paused get() = pending.isNotEmpty()
+
         /**
          * Asks about every call before any of them runs, so that a check that fails the run leaves no call of the
-         * step half done.
+         * step half done. A call the check refused is answered as refused and does not wait for approval: there is
+         * nothing to approve.
          */
         fun check(calls: List<ToolCallPart>) {
             refusals = calls.mapNotNull { call -> hooks.checkTool(call)?.let { call.callId to it } }.toMap()
+            pending = calls.filter { it.callId !in refusals && asksForApproval(it) }.map { PendingCall(it, agent) }
         }
+
+        private fun asksForApproval(call: ToolCallPart) =
+            toolsByName[call.toolName]?.asksForApproval(call.input, contextOf(call)) == true
+
+        /** The calls that run in the step: all of them but the ones waiting for approval. */
+        fun toRun(calls: List<ToolCallPart>) = calls.filter { call -> pending.none { it.call.callId == call.callId } }
 
         /** A call that ran, with its handoff settled, as the model will read it. */
         fun finished(execution: Execution) = handoffs.settle(execution).also { hooks.afterTool(it.result, it.failure) }

@@ -38,6 +38,12 @@ class AgentRunResult internal constructor(
 
     val finishReason get() = result.finishReason
 
+    /** The calls that wait for a person to approve them, each with the agent that made it. See [RunResult.pending]. */
+    val pending get() = result.pending
+
+    /** Whether the run ended waiting for a person to approve some of its calls, which are [pending]. */
+    val paused get() = result.paused
+
     /** What the run added to the conversation, for the application to keep. See [RunResult.newMessages]. */
     val newMessages get() = result.newMessages
 
@@ -56,9 +62,15 @@ class AgentRunResult internal constructor(
      * the text of the answer otherwise.
      *
      * @throws NoObjectGeneratedError when the answer is not one: the model answered without calling the output tool,
-     * or its text is not the object.
+     * or its text is not the object, or the run [paused] before answering.
      */
     fun <T: Any> output(serializer: KSerializer<T>): T {
+        if (paused) throw NoObjectGeneratedError(
+            "The run is waiting for approval of ${pending.joinToString { it.call.toolName }}, so it has no answer yet",
+            finishReason,
+            text = text,
+        )
+
         val output = lastAgent.output
 
         if (output?.mode != OutputMode.Tool) return response.objectAs(serializer)

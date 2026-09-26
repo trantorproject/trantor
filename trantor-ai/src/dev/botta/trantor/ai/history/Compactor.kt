@@ -43,8 +43,13 @@ class Compaction(val compactor: Compactor, val afterTokens: Int) {
         require(afterTokens >= 0) { "A compaction starts at no fewer than 0 tokens, not $afterTokens" }
     }
 
-    /** [result] with [conversation] compacted, when its last call went past [afterTokens]; as it was otherwise. */
+    /**
+     * [result] with [conversation] compacted, when its last call went past [afterTokens]; as it was otherwise. A run
+     * that paused is not over, so it is compacted once it ends.
+     */
     internal fun after(result: RunResult, conversation: List<Message>, options: CallOptions): RunResult {
+        if (result.paused) return result
+
         val usage = result.response.usage
         val tokens = (usage.inputTokens ?: return result) + (usage.outputTokens ?: 0)
 

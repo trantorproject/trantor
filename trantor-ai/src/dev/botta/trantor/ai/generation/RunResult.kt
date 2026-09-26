@@ -31,15 +31,29 @@ data class RunResult(
     val finishReason get() = response.finishReason
 
     /**
+     * The calls that wait for a person to approve them. When there are any, the run ended paused on its last step:
+     * the model asked for them, the other calls of that step ran, and the model was not called again.
+     */
+    val pending: List<PendingCall> get() = steps.last().pending
+
+    /** Whether the run ended waiting for a person to approve some of its calls, which are [pending]. */
+    val paused get() = pending.isNotEmpty()
+
+    /**
      * What the run added to the conversation, for the application to keep and send in the next request: every
      * answer of the model and the results of its tools, in order, without what the request already had.
      *
      * A step whose calls were not run — the one a run ran out of steps on — is left out, because a call without its
-     * result is a request the providers reject.
+     * result is a request the providers reject. The step a run paused on is kept with its calls waiting for approval
+     * and without their results, which the run that picks it up adds.
      */
     val newMessages: List<Message>
         get() = steps.flatMap { step ->
             when {
+                step.pending.isNotEmpty() -> listOfNotNull(
+                    step.response.asMessage(step.agent),
+                    Message.Tool(step.toolResults).takeIf { step.toolResults.isNotEmpty() },
+                )
                 step.toolResults.isNotEmpty() -> listOf(step.response.asMessage(step.agent), Message.Tool(step.toolResults))
                 step.reminder != null -> listOf(step.response.asMessage(step.agent), step.reminder)
                 step.response.toolCalls.any { !it.providerExecuted } -> emptyList()

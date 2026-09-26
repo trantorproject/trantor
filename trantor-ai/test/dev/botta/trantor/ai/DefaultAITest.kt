@@ -6,6 +6,7 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.MaxStepsExceededError
 import dev.botta.trantor.ai.generation.RunEvent
+import dev.botta.trantor.ai.generation.ToolLoopApprovalTest.RefundTool
 import dev.botta.trantor.ai.generation.textDeltas
 import dev.botta.trantor.ai.history.InMemorySession
 import dev.botta.trantor.ai.history.LastMessages
@@ -301,6 +302,40 @@ class DefaultAITest {
         }
 
         @Test
+        fun `a paused generation is kept, with the calls waiting for approval`() {
+            model.answers(listOf(refundCall))
+            val session = InMemorySession(earlier)
+
+            val result = ai.generate {
+                session(session)
+                user("Que temperatura hay?")
+                tools(RefundTool(approvalOver = 100))
+            }
+
+            assertThat(result.paused).isTrue()
+            assertThat(session.load()).isEqualTo(earlier + question + Message.Assistant(listOf(refundCall)))
+        }
+
+        @Test
+        fun `and it is not compacted until it ends`() {
+            model.usage = Usage(inputTokens = 900, outputTokens = 200)
+            model.answers(listOf(refundCall))
+            val session = InMemorySession(earlier)
+            val compactor = FakeCompactor()
+
+            val result = ai.generate {
+                session(session)
+                user("Que temperatura hay?")
+                tools(RefundTool(approvalOver = 100))
+                compaction(compactor, afterTokens = 1000)
+            }
+
+            assertThat(compactor.conversations).isEmpty()
+            assertThat(result.compacted).isNull()
+            assertThat(session.load()).isEqualTo(earlier + question + Message.Assistant(listOf(refundCall)))
+        }
+
+        @Test
         fun `a generation that fails keeps nothing`() {
             model.answers(listOf(weatherCall))
             val session = InMemorySession(earlier)
@@ -375,6 +410,7 @@ class DefaultAITest {
     private val ai = DefaultAI(registry)
     private val weather = WeatherTool()
     private val weatherCall = ToolCallPart("call_1", "getWeather", Json.obj("city" to "Bariloche"))
+    private val refundCall = ToolCallPart("call_1", "refund", Json.obj("amount" to 500))
 
     @Serializable
     data class Weather(val city: String, val celsius: Int)

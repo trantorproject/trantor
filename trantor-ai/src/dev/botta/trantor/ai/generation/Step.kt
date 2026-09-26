@@ -34,4 +34,9 @@ data class Step(
      * that ran as a tool. The run counts their usage and their cost as its own.
      */
     val toolRuns: Map<String, RunResult> = emptyMap(),
+    /**
+     * The calls of the step that wait for a person to approve them, and did not run. A step with any is the last of
+     * its run, which ended paused; [toolResults] has the calls of the step that did run.
+     */
+    val pending: List<PendingCall> = emptyList(),
 )
