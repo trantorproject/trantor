@@ -6,6 +6,8 @@ import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.FinishReasons
 import dev.botta.trantor.ai.models.chat.Message
+import io.opentelemetry.api.OpenTelemetry
+import dev.botta.trantor.ai.telemetry.GenAITelemetry
 
 /**
  * A [Compactor] that asks [model] for the summary: any model of any provider, a cheaper one included, which is
@@ -20,6 +22,8 @@ import dev.botta.trantor.ai.models.chat.Message
  *   have, which Anthropic rejects, and reasoning signed for another model. The price is that it reads all of it
  *   without the cache of the conversation; a summary of the provider's own reads it from the cache.
  *
+ * With an [openTelemetry] that exports, its call is a `chat` span, inside the span of the run that compacts.
+ *
  * A model that writes no summary, or one cut short, fails the compaction with [NoSummaryWrittenError], and the
  * conversation stays as it was. What is summarized is lost but for what the summary kept, which is why the last
  * turns stay whole and the instructions can say what matters to the application.
@@ -28,7 +32,10 @@ class SummaryCompactor(
     private val model: ChatModel,
     private val keepTurns: Int = 2,
     private val instructions: String = DEFAULT_INSTRUCTIONS,
+    openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
 ): Compactor {
+    private val telemetry = GenAITelemetry(openTelemetry)
+
     init {
         require(keepTurns >= 0) { "SummaryCompactor keeps no fewer than 0 turns, not $keepTurns" }
     }
@@ -43,7 +50,7 @@ class SummaryCompactor(
         if (old.all { it is Message.Summary }) return null
 
         val request = ChatRequest(Message.system(instructions), Message.user(Transcript.of(old).joinToString("\n")))
-        val response = model.generate(request, options)
+        val response = telemetry.chat(model, request, null, null) { model.generate(request, options) }
 
         if (response.text.isBlank() || response.finishReason in CUT_SHORT) {
             throw NoSummaryWrittenError(

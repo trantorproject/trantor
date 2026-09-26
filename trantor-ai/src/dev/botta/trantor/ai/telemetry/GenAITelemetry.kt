@@ -316,6 +316,9 @@ internal class GenAITelemetry(openTelemetry: OpenTelemetry, settings: AITelemetr
 
         internal fun toolCall() = toolCalls.incrementAndGet()
 
+        /** Runs [block] with this span current, without ending it. */
+        fun <T> current(block: () -> T): T = if (context == null) block() else span!!.makeCurrent().use { block() }
+
         /** Runs [block] with this span current, and ends it with what it gave back or the exception it threw. */
         fun <T> running(block: () -> T, usageOf: (T) -> Usage): T {
             try {

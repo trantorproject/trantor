@@ -1,6 +1,8 @@
 package dev.botta.trantor.ai.generation
 
 import dev.botta.trantor.ai.RunContext
+import dev.botta.trantor.ai.history.Compaction
+import dev.botta.trantor.ai.history.Compactor
 import dev.botta.trantor.ai.history.ContextPolicy
 import dev.botta.trantor.ai.history.Session
 import dev.botta.trantor.ai.models.CallOptions
@@ -48,8 +50,11 @@ class GenerateRequest {
     val contextPolicies = mutableListOf<ContextPolicy>()
     var session: Session? = null
         private set
+    var compaction: Compaction? = null
+        private set
 
-    /** Where the messages that come after the session start, which the session keeps. */
+    /** Where the conversation of the session starts in the request, and where what comes after it does. */
+    private var sessionStart = 0
     private var afterSession = 0
 
     fun model(reference: String?) = apply { model = reference }
@@ -75,6 +80,7 @@ class GenerateRequest {
         check(this.session == null) { "A generation goes on from a single session" }
 
         this.session = session
+        sessionStart = messages.size
         messages.addAll(session.load())
         afterSession = messages.size
     }
@@ -105,9 +111,26 @@ class GenerateRequest {
     /** Timeout, cancellation and headers, which apply to every call of the run. */
     fun callOptions(options: CallOptions) = apply { callOptions = options }
 
-    /** Keeps in the session, if there is one, what came after it in the request and what [result] added. */
+    /**
+     * Compacts the conversation the generation keeps once it ended well, if its last call went past [afterTokens]:
+     * what the session had and what came after it, or the whole request without one. See [Compaction].
+     */
+    fun compaction(compactor: Compactor, afterTokens: Int) = apply { compaction = Compaction(compactor, afterTokens) }
+
+    /** [result] with the conversation compacted, if the request asked for it and it went past its tokens. */
+    internal fun compacted(result: RunResult) =
+        compaction?.after(result, messages.drop(sessionStart) + result.newMessages, callOptions) ?: result
+
+    /**
+     * Keeps in the session, if there is one, what came after it in the request and what [result] added, or the
+     * conversation compacted in place of all it had.
+     */
     internal fun keep(result: RunResult) {
-        session?.append(messages.drop(afterSession) + result.newMessages)
+        val session = session ?: return
+        val compacted = result.compacted
+
+        if (compacted != null) session.replace(compacted.conversation)
+        else session.append(messages.drop(afterSession) + result.newMessages)
     }
 
     /** The request of the first step. */

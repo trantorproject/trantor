@@ -3,6 +3,8 @@ package dev.botta.trantor.ai.agents
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.generation.MaxStepsExceededError
 import dev.botta.trantor.ai.generation.ToolLoop
+import dev.botta.trantor.ai.history.Compaction
+import dev.botta.trantor.ai.history.Compactor
 import dev.botta.trantor.ai.history.ContextPolicy
 import dev.botta.trantor.ai.history.Session
 import dev.botta.trantor.ai.models.CallOptions
@@ -24,6 +26,8 @@ class AgentRunOptions {
     val toolGuardrails = mutableListOf<ToolGuardrail>()
     val contextPolicies = mutableListOf<ContextPolicy>()
     var session: Session? = null
+        private set
+    var compaction: Compaction? = null
         private set
 
     /** How many agents that run as tools this run is inside of. Set by [AgentTool], and 0 otherwise. */
@@ -70,6 +74,12 @@ class AgentRunOptions {
      * given, and once the run ended well it keeps those and what the run added. See [Session].
      */
     fun session(session: Session) = apply { this.session = session }
+
+    /**
+     * Compacts the conversation the run keeps once it ended well, if its last call went past [afterTokens]. See
+     * [Compaction].
+     */
+    fun compaction(compactor: Compactor, afterTokens: Int) = apply { compaction = Compaction(compactor, afterTokens) }
 
     /** Timeout, cancellation and headers, which apply to every call of the run. */
     fun callOptions(options: CallOptions) = apply { callOptions = options }

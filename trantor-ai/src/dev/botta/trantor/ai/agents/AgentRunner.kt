@@ -88,10 +88,10 @@ class AgentRunner(
             run.beforeRun()
             run.checkInput()
 
-            run.resultOf(run.steps()).also {
-                run.checkOutput(it)
-                run.finish(it)
-            }
+            val result = run.resultOf(run.steps())
+            run.checkOutput(result)
+
+            run.compacted(result).also { run.finish(it) }
         }
     }
 
@@ -245,15 +245,35 @@ class AgentRunner(
         fun beforeRun() = hooksOf(first).forEach { it.beforeRun(contextOf(first, 0), conversation) }
 
         /**
-         * The run ended well: the hooks hear of it, and then its session keeps what it was given and what it added.
-         * Keeping it goes last, so a run that fails anywhere before, a hook included, keeps nothing.
+         * The run ended well: the hooks hear of it, and then its session keeps what it was given and what it added, or
+         * the conversation compacted in place of all it had. Keeping it goes last, so a run that fails anywhere
+         * before, a hook included, keeps nothing.
          */
         override fun finish(result: AgentRunResult) {
             val last = result.lastAgent
+            val session = options.session
+            val compacted = result.compacted
 
             hooksOf(last).forEach { it.afterRun(contextOf(last, result.steps.size), result) }
-            options.session?.append(given + result.newMessages)
+
+            if (compacted != null) session?.replace(compacted.conversation)
+            else session?.append(given + result.newMessages)
         }
+
+        /**
+         * [result] with the conversation it keeps compacted, when the run asked for it and its last call went past
+         * the tokens. The span of the run is current meanwhile, so the call that compacts is inside it.
+         */
+        override fun compacted(result: AgentRunResult): AgentRunResult {
+            val compaction = options.compaction ?: return result
+            val compacted = current {
+                compaction.after(result.result, conversation + result.newMessages, options.callOptions)
+            }
+
+            return if (compacted === result.result) result else resultOf(compacted)
+        }
+
+        private fun <T> current(block: () -> T) = span?.current(block) ?: block()
 
         override fun checkInput() {
             val run = contextOf(first, 0)

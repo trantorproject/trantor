@@ -106,12 +106,15 @@ class AgentRunStream internal constructor(
         run.closed()
     }
 
-    /** The result of the run once it ended, checked by the output guardrails the first time it is asked for. */
-    private fun finished() = result ?: run.resultOf(stream.result()).also {
+    /**
+     * The result of the run once it ended, checked by the output guardrails and compacted the first time it is asked
+     * for.
+     */
+    private fun finished() = result ?: run.resultOf(stream.result()).let {
         run.stepsEnded(it.result)
         run.checkOutput(it)
-        result = it
-    }
+        run.compacted(it)
+    }.also { result = it }
 }
 
 /** What the stream needs of the run it reads, which the [AgentRunner] knows. */
@@ -129,6 +132,9 @@ internal interface StreamedRun {
 
     /** The run ended well: calls `afterRun` and keeps it in its session. */
     fun finish(result: AgentRunResult)
+
+    /** [result] with the conversation compacted, when the run asked for it. */
+    fun compacted(result: AgentRunResult): AgentRunResult
 
     /** The first read: the work, and the span of the run, start here. */
     fun started()

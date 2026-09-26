@@ -18,8 +18,8 @@ import dev.botta.trantor.ai.models.chat.Message
  *
  * It reads the whole conversation, and how much goes to the model is up to a [ContextPolicy], which does not touch
  * what is kept. A session over a database can read only its end if it cuts in steps, as [LastMessages] does, so that
- * what goes first does not change on every call. What really bounds how much a conversation keeps is to summarize
- * the old part of it, which is not here yet.
+ * what goes first does not change on every call. What bounds how much a conversation keeps is a [Compaction], which
+ * summarizes its old part and [replaces][replace] what the session keeps with it.
  *
  * Two runs on the same session at once read the same history and add each their own, one after the other. The
  * application runs the turns of a conversation one at a time.
@@ -30,6 +30,12 @@ interface Session {
 
     /** Adds what a run that ended well got and added, in order. */
     fun append(messages: List<Message>)
+
+    /**
+     * Keeps [messages] in place of everything it kept: the conversation a [Compaction] left, with the old part in a
+     * summary. What happens to what it kept before — deleted, or marked as replaced — is up to the application.
+     */
+    fun replace(messages: List<Message>)
 }
 
 /** A [Session] in memory, which dies with the process. */
@@ -41,6 +47,12 @@ class InMemorySession(messages: List<Message> = emptyList()): Session {
 
     @Synchronized
     override fun append(messages: List<Message>) {
+        this.messages.addAll(messages)
+    }
+
+    @Synchronized
+    override fun replace(messages: List<Message>) {
+        this.messages.clear()
         this.messages.addAll(messages)
     }
 }

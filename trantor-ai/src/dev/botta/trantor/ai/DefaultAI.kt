@@ -54,13 +54,13 @@ class DefaultAI(
     override fun stream(request: GenerateRequest): RunStream {
         val stream = loopFor(request).stream(request.toChatRequest(), request.callOptions)
 
-        return if (request.session == null) stream else KeptStream(stream, request::keep)
+        return if (request.session == null && request.compaction == null) stream else KeptStream(stream, request)
     }
 
     override fun models() = models
 
     private fun run(request: GenerateRequest, first: ChatRequest) =
-        loopFor(request).run(first, request.callOptions).also(request::keep)
+        request.compacted(loopFor(request).run(first, request.callOptions)).also(request::keep)
 
     private fun loopFor(request: GenerateRequest): ToolLoop {
         val model = request.model?.let { models.chat(it) } ?: models.chat()
@@ -73,19 +73,19 @@ class DefaultAI(
         return ToolLoop(next, request.maxSteps, request.context, errorHandlers.all, openTelemetry, telemetrySettings)
     }
 
-    /** A stream whose run is kept in its session once it is read to its end, and not when it is closed before. */
-    private class KeptStream(private val stream: RunStream, private val keep: (RunResult) -> Unit): RunStream {
-        private var kept = false
+    /**
+     * A stream whose conversation is compacted and kept in its session once it is read to its end, and not when it is
+     * closed before.
+     */
+    private class KeptStream(private val stream: RunStream, private val request: GenerateRequest): RunStream {
+        private var kept: RunResult? = null
         private var closed = false
 
         override fun hasNext(): Boolean {
             if (closed) return false
             if (stream.hasNext()) return true
 
-            if (!kept) {
-                kept = true
-                keep(stream.result())
-            }
+            if (kept == null) kept = request.compacted(stream.result()).also(request::keep)
 
             return false
         }
@@ -95,7 +95,7 @@ class DefaultAI(
         override fun result(): RunResult {
             while (hasNext()) next()
 
-            return stream.result()
+            return kept ?: stream.result()
         }
 
         override fun close() {

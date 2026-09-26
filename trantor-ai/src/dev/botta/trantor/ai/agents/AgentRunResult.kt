@@ -23,6 +23,9 @@ class AgentRunResult internal constructor(
     /** Tells this run apart from the others, and is what its tools see in their context. */
     val runId: String,
 ) {
+    /** The conversation the run keeps, compacted, when it compacted it. See [RunResult.compacted]. */
+    val compacted get() = result.compacted
+
     /** Every step, with the agent that ran it. */
     val steps = result.steps.zip(agents) { step, agent -> AgentStep(agent, step) }
 

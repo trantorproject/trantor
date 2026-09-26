@@ -22,6 +22,8 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
+import dev.botta.trantor.ai.testing.FakeCompactor
+import dev.botta.trantor.ai.models.Usage
 
 class DefaultAITest {
     @Nested
@@ -275,6 +277,27 @@ class DefaultAITest {
 
             assertThat(model.request?.messages).isEqualTo(listOf(Message.system("Sos soporte")) + earlier + question)
             assertThat(session.load()).isEqualTo(earlier + question + result.newMessages)
+        }
+
+        @Test
+        fun `with a compaction past its tokens, the session keeps the summary in place of what it had`() {
+            model.usage = Usage(inputTokens = 900, outputTokens = 200)
+            model.answers(listOf(TextPart("7 grados")))
+            val session = InMemorySession(earlier)
+            val compactor = FakeCompactor()
+
+            val result = ai.generate {
+                system("Sos soporte")
+                session(session)
+                user("Que temperatura hay?")
+                compaction(compactor, afterTokens = 1000)
+            }
+
+            // What the session keeps, and not the system prompt the request wrote before it
+            val kept = earlier + question + result.newMessages
+            assertThat(compactor.conversations.single()).isEqualTo(kept)
+            assertThat(session.load()).isEqualTo(listOf(Message.Summary("Resumen")) + kept.takeLast(2))
+            assertThat(result.usage).isEqualTo(Usage(inputTokens = 950, outputTokens = 210))
         }
 
         @Test
