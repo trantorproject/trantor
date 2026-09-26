@@ -1,8 +1,13 @@
 package dev.botta.trantor.ai.agents
 
+import dev.botta.json.Json
+import dev.botta.json.values.JsonArray
+import dev.botta.json.values.JsonObject
+import dev.botta.json.values.JsonValue
 import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.Step
+import dev.botta.trantor.ai.models.chat.ToolCallPart
 import dev.botta.trantor.ai.models.chat.objectAs
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
@@ -55,9 +60,7 @@ class AgentRunResult internal constructor(
 
         if (output?.mode != OutputMode.Tool) return response.objectAs(serializer)
 
-        val last = steps.last().step
-        val answered = last.toolResults.filter { !it.isError && it.toolName == OutputTool.NAME }.map { it.callId }
-        val call = last.response.toolCalls.firstOrNull { it.callId in answered } ?: throw NoObjectGeneratedError(
+        val call = outputCall() ?: throw NoObjectGeneratedError(
             "The model answered without calling ${OutputTool.NAME}",
             finishReason,
             text = text,
@@ -65,6 +68,25 @@ class AgentRunResult internal constructor(
 
         @Suppress("UNCHECKED_CAST")
         return output.fromArgs(call.input) as T
+    }
+
+    /**
+     * The object the last agent answered with, as JSON, for whoever does not know its type, like the agent that used
+     * this one as a tool. Null when it answers text, or when the answer is not the object.
+     */
+    internal fun outputAsJson(): JsonValue? = when (lastAgent.output?.mode) {
+        null -> null
+        OutputMode.Tool -> outputCall()?.input
+        OutputMode.Native -> runCatching { Json.parse(text) }.getOrNull()
+            ?.takeIf { it is JsonObject || it is JsonArray }
+    }
+
+    /** The call to the output tool that ended the run, in [OutputMode.Tool]. */
+    private fun outputCall(): ToolCallPart? {
+        val last = steps.last().step
+        val answered = last.toolResults.filter { !it.isError && it.toolName == OutputTool.NAME }.map { it.callId }
+
+        return last.response.toolCalls.firstOrNull { it.callId in answered }
     }
 }
 

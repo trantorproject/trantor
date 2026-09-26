@@ -4,6 +4,7 @@ import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.models.cost.CostEstimate
 import dev.botta.trantor.ai.models.chat.FinishReasons.Stop
 import dev.botta.trantor.ai.models.chat.FinishReasons.ToolCalls
 import kotlin.time.Duration.Companion.milliseconds
@@ -19,6 +20,8 @@ class FakeChatModel(
     override val modelId: String = "fake-model",
     override val provider: String = "fake",
     var usage: Usage = Usage.Unknown,
+    /** What each answer says it cost, as the CostMiddleware would leave it. */
+    var cost: CostEstimate? = null,
 ): ChatModel {
 
     val responses = ArrayDeque<ChatResponse>()
@@ -63,7 +66,7 @@ class FakeChatModel(
         ChatResponse(
             content = content,
             finishReason = finishReason,
-            info = ResponseInfo(model = modelId, provider = provider, latency = 1.milliseconds),
+            info = ResponseInfo(model = modelId, provider = provider, latency = 1.milliseconds, estimatedCost = cost),
             usage = usage,
         )
 

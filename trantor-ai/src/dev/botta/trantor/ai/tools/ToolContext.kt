@@ -1,6 +1,7 @@
 package dev.botta.trantor.ai.tools
 
 import dev.botta.trantor.ai.RunContext
+import dev.botta.trantor.ai.models.CallOptions
 
 /**
  * What a tool knows about the call it is answering. It carries only what every tool can count on, whether it runs
@@ -16,4 +17,9 @@ open class ToolContext(
     val toolName: String,
     /** What whoever started the generation passed along, like the tenant or the user it acts for. */
     val run: RunContext = RunContext(),
+    /**
+     * The timeout, the cancellation and the headers of the run, for a tool that calls a model itself: with them, a
+     * cancellation of the run stops that call too.
+     */
+    val callOptions: CallOptions = CallOptions(),
 )

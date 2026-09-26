@@ -207,7 +207,7 @@ class AgentRunner(
             val run = options.context
             val hooks = hooksOf(agent)
             val toolContext = { callId: String, toolName: String ->
-                AgentToolContext(callId, toolName, run, agent, id, team.keys)
+                AgentToolContext(callId, toolName, run, agent, id, team.keys, options.callOptions, options.depth)
             }
 
             agents.add(agent)

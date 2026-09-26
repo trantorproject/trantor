@@ -40,6 +40,20 @@ class RunResultTest {
         }
 
         @Test
+        fun `and the runs of its tools, like an agent that ran as one`() {
+            val nested = RunResult(listOf(step(usage = Usage(inputTokens = 50, outputTokens = 5))))
+
+            val result = RunResult(
+                listOf(
+                    step(usage = Usage(inputTokens = 100, outputTokens = 20), toolRuns = mapOf("call_1" to nested)),
+                    step(usage = Usage(inputTokens = 130, outputTokens = 10)),
+                ),
+            )
+
+            assertThat(result.usage).isEqualTo(Usage(inputTokens = 280, outputTokens = 35))
+        }
+
+        @Test
         fun `what no step reported stays unknown`() {
             val result = RunResult(listOf(step(usage = Usage.Unknown), step(usage = Usage.Unknown)))
 
@@ -74,6 +88,19 @@ class RunResultTest {
 
             assertThat(result.estimatedCost).isNull()
         }
+
+        @Test
+        fun `adds up the runs of its tools too, and is unknown when one of them has none`() {
+            val priced = RunResult(listOf(step(cost = cost("0.010", "0.020"))))
+            val unpriced = RunResult(listOf(step(cost = null)))
+
+            val result = RunResult(listOf(step(cost = cost("0.001", "0.004"), toolRuns = mapOf("call_1" to priced))))
+            val partial = RunResult(listOf(step(cost = cost("0.001", "0.004"), toolRuns = mapOf("call_1" to unpriced))))
+
+            assertThat(result.estimatedCost?.input).isEqualTo(Money("0.011"))
+            assertThat(result.estimatedCost?.output).isEqualTo(Money("0.024"))
+            assertThat(partial.estimatedCost).isNull()
+        }
     }
 
     @Test
@@ -100,6 +127,7 @@ class RunResultTest {
         cost: CostEstimate? = null,
         warnings: List<ModelWarning> = emptyList(),
         failures: List<ToolFailure> = emptyList(),
+        toolRuns: Map<String, RunResult> = emptyMap(),
     ) = Step(
         ChatResponse(
             content = content,
@@ -109,6 +137,7 @@ class RunResultTest {
             warnings = warnings,
         ),
         toolFailures = failures,
+        toolRuns = toolRuns,
     )
 
     private fun cost(input: String, output: String) =

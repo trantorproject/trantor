@@ -1,0 +1,142 @@
+{
+  "id": "resp_0fd1b2d8996497d2006ab718e2821487d28db77f76e62ef2ff",
+  "object": "response",
+  "created_at": 1790384354,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790384357,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0fd1b2d8996497d2006ab718e2daec87d28c304e1b05aabd9a",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtxjlpV0IMsdPzSJ-pELs0Nl_uSq3IG2Yrg_uZB0Aisr_yz-8HIqtDslCwyWkxFA-cDHR1KEbNB-tF2GKDTSbPgmPtF0QUWPO8cCLrEcq0sCxKUpoTIdjnK9DfkyMKj1F-R5oUvRTCv68bGOZliP06NiPCBQzAKn3j8iRiZUUr_tDi5az9Qxd_eOcM1keDmYzk5MGv5py9yRt_1nBGRRCML6XbJLwz1vbFfvIJ3-y5VP8fa0vQLM8fy8e03h_sP7u-wXTzt-ul7QD2v1juSpoMJ7VIUYAYMr6wos0PQzqkprFNcz7je7GLm8YKAiqs19kI9gbKpTzM9-HvuuR4xSUeKCUz0oqR7e6NRiH-GVEbS-aRCh3XlWVMHaezhX_Lhgftpqr4rDWIg6hORqJh91fjp4Ek7zo1eaRUTdm4WDUS0piPgk2oC8G8_LHwarJZTXpvlWj2TNHMX4tSpaYx6WdPEkn4jZnu8yPSN5VkWwYVDQHE7zAdRt09bEGfXz0Sxln94Ky1gH1usO4envLRV_ckFHxngZ1LQE_Eu-tbKcAl4nKk0eYVd-HdDqzc6F-eNOeoqsIwyvxtXWmGEjhpTjRou182eLED2oIyKYjQDx1_rm0hjeAdeIgj7lmCjMFce15irELAuJSKO_PukGu9BEpu86Kj-4f5WiayIUiYtsQdh8w4_w9-qFasyRbBwgrNCGivVfXuiVLhgaycE1EaD7lws7rkQQ_gmHG5d7bCS2L1f6XUb7709KP7kn0uJgKXm6VHiLtbWTfKAWqfQjVcyWXvTRTSQZuF8Cs6v9GnOFhxo8-DGctVT9sa70HYvIAhTQFvVi6qhc98o2EjTsW6abNSNHGq5Lo4o5TjxSkyfDngRZXmXUWr3x3rHtuEcuDOZK1x4YkZFvD91AhgamY_IxykFDcBljO0Rriv0Sz2D9UmMTKZZ2xlpIUt-PkEGOhmR2O28jQTfTT56mAnqjUYGI7dbd_AQTdWY-epb0EtfbobOHAdC_h09qxn4qDBKvKNEDUHzDS36WTLgl4WjJHqMH0cxsZGVpyaH1bmjI6Gi2-MVAPA2rxxUpn8bXKSUFlMy6dlI58YkpgzcnstjG4s1j3at-SOVlncQNJDQzrMteq5zHHNYwz8Z3mzaqIYPMb2VKrUmUbGYuqriAM3mpnUx1G41PwP7_ckL2mrdyeiAW7oWjpiJLdPWO1PxfhbZHGZdbNpfp_vel7Lm0Z_P0m95CBrqqw0TYGw_yxqHchhcZVVUJxUDaoe3rwN2ybqbNXYghBC7Xi_JHukVAlf4unzLiMPU5j0uP1sgmrUG2yKYxbEGuC1pU9QlNHipw-uXe1xuYu7ZyqlqPxY4czewIdD9TSZMvKSuECyDtYQ1KHpurhIG1XlwJMkWqBp0lku-BOkpBtkF99F9OvtAJaGWRmCQk1s39sSGC4IuYRQb5pyOEJRBcHCTMybGsZ5zA_aVZjPH6B7qY6xT2vuYOBFOBhx_fEGYkzPQvxeIkDNf1Tk0kLmUOBmmqykOD380A6M91-zEIzyW8Bped-sVM6VpN32YN1TE4DbWQUuQ3v2Qbl6slzo2ITOP5w70Ta7g5UIHYCLC-z06ktb6l5jgnTTAYUpbQ6p0lEHvP9HKPjP1cFFDHTQKUnHHvP43uxm215kpg3Yvz3bpvfLAp0zWQ6ca8lSr3vUBMobjIhAK04K6hXtWPGIa-DK8_1_xq4jcjv4Soko7EHaNlB2UEiezetoVur1MUQGI5VWC2fLVWa7zBB7nr6kWiGDl9H9EZfolGeUdXJZFsq8GfofFy04zzdz2gx6qF4_8eDOujj5OrrwDkhVhQ2O_KzZaxJGCKG5ThSMVvALtaek7PCNUOfOkOq-I1TRylAr8Lf9xV7sj4LkmNxEceIO3Us7ExYgR4riRKPLhIOg_y8dnDvHb01HADCtN1xbhBirKlcl_f1oY3dEQ_YntSAoPGsppNcjVTDRZeAdtcS1mohfAUzw8pbYohvT2dtQbZc8sy32-LeC_Qszqn22HZPUv-MqaetuKxef6b_0Jf5U0HAVUTLcRkIzrTunD1ucZCh-rCFv5evqUM4_OE7vfG6mmwjPazL8ydGao3HE8MNMKhKGh6GJEp5rAhl94JFsqfPejndTcjqrcJR5Kik1For5ZU-pUg6HUzkGuE91OA4CRU5mRdQ7Ym6qShO_CGbbPb5LSFHSErOdwTCD74aMDNpAu6IOFwTcwXyfJ1G0CqTLpcEO5YAERpjY-hvEQus4Lw8OgaPbqkpaprRFzn-UiecGXQCmk2krhkQ0C3kl9YX5cAFS8DhHNPhnOw5pysYM7SeKYF74LYIPDwQToFv8yS0ORyGU7aR0Fj3wosVLmPCciY_bQKFwSec2t0H6DNVScdwpifW2G4bschyc99MfsAei4L3Q8_rkWMiYtLBIym9bNftCXQCYSuIVaoHjss_gYVM4w2b3DTlp8V32HL1XRm-qUrfoX6RAQgNie7kFPUan4qh0hHJ2cLdZK2JGVDNYe04kBtkTFHDDiHONtPGYyo6xWY9c-ULv5vSyn_oloboqPWUhkNIMDY3N-7LZmcFbsIpnKcGVJzcGNqWK_INmco4G1GYl18pMOK66VtesXhWBCHJVQh9ylFAkb2njtgJ5KpWqzl_WrqnDgNHOlBtVgkubo5TM5DSmtn_2Pi9lpFrGY536J-HsuOVkAoebX0RsWSM5U8SE8XJLr7zUy5HW6qAdsyFiqKPuUENLo5cFrevvoQjRwr02Y1RlVc7TfkcZFtKPa7AsOTOCvnjXxN_-_exYrPIs1UWNJb4-wo9Kcz-xvLg_H2MHQmKqLkGSP9R0PkM_xPC8BoT4NYQmrQz4ZA9pS4Eh-eQj8zIB11hMVg5ylmK76lr4XRqIQCa83nwIOBI9znOv7irylSislyoirWhKC9BthOenl68PIlI4fLTzu94wzDWUOAeH6A4yePMT8TcVA-DO-ndDgDDuUjFl_8JV6daXBBJDAM824Duv5RXKDnd9lW0y6YebvtdWeG6-n90tk40vJxGaWXQ0WBTm4XtLyjyeuwaS42rkf_rb1XEVcknr2GYxjKPhT6Z0zXVPOJXChgUbBn8WgfhacJso75srM9L3-_YCMY2SDsJ-qrSnZTJ0GRq2LbGtEc3OAL-oOYZVwbY6lkPMR958qIOU1fBp9esNUZS_OVvMKMGkwqo7KNrXKCMCMdQnfggwaQRqNmfb7UYduM_kFlZg6G0gePr1uaOuGr3BF_xHxOpqPz_H3DSzxpaI6o68drBrCPA_XF_ykgxf4zwcJoTC-0ahTohnDDmg1JFFI91uAr8Dzhy8tH8Ht-I0_-2tEqiFMnS5RIQLjI-NbIpDzGsUpNoNDENU4zkW6WHQwQ0zP1knr7EJKO8JU3F_lc7qrZZo8hIkwcodVVncBAgbY4l0-HcT2IdiNilexgSdydVWa3bGlZkYIhPYmB9pn8LpF-FPNH_IVkoHgy5ki5tERTZy8T2RteZb_YHJODjEL555o3ScW2q8KzLahOZ_0pus17UbvTMFqYy7nuO3UxUrcfCVbWK6wPH1-1CRqdaOgDw2TAQkjBq1c0uLeKN9abYO1YZ9engp4xQjrPejul56c10jj8W0BHBF-BiJotjXFkiXn9gJ0WEwYX2actNzDFzfshwN6hOXq2M8YR8ew==",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0fd1b2d8996497d2006ab718e5594087d29e5bec47e3a475cb",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche\"}",
+      "call_id": "call_k04igvmxMigFDXxIbNVn8YVW",
+      "name": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "description": "The price of a one-week package to a city, per person, in dollars",
+      "name": "getPrice",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 132,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 445,
+    "output_tokens_details": {
+      "reasoning_tokens": 384
+    },
+    "total_tokens": 577
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "id": "resp_0fd1b2d8996497d2006ab718e5d67887d285250e8930d6c010",
+  "object": "response",
+  "created_at": 1790384357,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790384358,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0fd1b2d8996497d2006ab718e672dc87d2b67afb79db493164",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtxjmHjOkNm6vqMWU9Nf64X0GQgMXp8GgpEK39Z-grbGpbDCIllOvidAZc_cLpJpnPKylqtan7LlxUhdCazr6QVbbUADNyhu5m47gCHlFtMjB7m3vKJA2lmgCqUJa8ZBFRLWudmHtumrhnhpWVXayl-onf6vFmHfdCi8TDwg399wAh6EOLYyHX9pZqMe2XM-dP1ilID24OEWJOES7HhBpaLwwacoBZyNXzxWLiA2cinuWBLGrCYXQBdbtdHFg3AHZO3p2AQJs8nbZWFyjnTY1DUjDeXdQUA1cvhCxFWOsSwzRNMN0uIR9-9fH1bBs4kI9cU7B6NtufbgQwoGniouG8SkfJOMfM1gZM-5gws7KnciQ137k1NAvUNuE2Fora2rHfeMr2oVVqb8D3S1JXAFJlJ1H4kZn6Qm3wJIRbgvTZdyrtCzFCktNkqKuZYbn57F9jC_UFdsf82ubX5egyXeaThPwk6Mn3AffbEYPUfJWrl43icMqt5dIrWL9yxIgkWynotdgODGU35s2ty7xzvHWhVwWWV17CK9ua_LNPfxOi5xBtoLKwr7EMHB0vU_E4BZ49UWcEksmI6H7quky_v34AVrceV1aOZ3GxXzm8Ng2KWl-YxxyUIo7dlJRzmGpcCrRBzYptFEJht9jLfyqr6Gq1cRB9Lh_BAh8-pLSO4ZEpTCLyy68b9DjkoqwCElS5nAQNDpXDZrErp_SqyXq2vDzxSLU9GZJQSqKIk8kJkG455g7H4v2e1kjfOeeWwU8LOhkftcL63JFYQwfv06faXpJMsPe0vpPfG0BPpdy57jqjlceXWNJ7Rn4WtRZiHQE6YEXh91_MzEfW0wcQfF4g5kY3u0C5wUjOrLdOgEZEUkVtDhwpyNrzoSRI7CThzPSbNpHynNxjkuYo4Lrce6qMYalQOheGB8ndnypGid9UE7Y2cUJSQjGkZ0nTHRldMyZVlnRhssmd8OGmceYMvEITdqhJ9YyqPkNJLfKQ8GiCUZAW3az7Y7Bir4maK0PIvJEtRZE4sUf-sGCYSs-NtI8RH1snKn7DK_jirj99Pm3gAZBs_ozrrCqDpTLFnQnMDX8CXB4zYQMgT51DZHkREhEhuySgp54einV4GvQBrgZVE76Kcl3ad3gsYDY6sf5tT511TsgZjuG13kgelbnGW-3THqLdtxey3TiK0MS7qb_KI5atNLTT1jcIRxK8AE62IbZRYIPndzURJKCPqFBuDRQZR8wh7M0x7nSB2yI4byanMoU6SkwKxTXlZdK92PY4Q9zyRo4SjdI",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0fd1b2d8996497d2006ab718e6b36887d2b04698cab4fa98e4",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche\"}",
+      "call_id": "call_G9HaI4BL7WpTEoNvutRgo5qg",
+      "name": "getPrice"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "description": "The price of a one-week package to a city, per person, in dollars",
+      "name": "getPrice",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 591,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 46,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 637
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

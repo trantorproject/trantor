@@ -8,7 +8,8 @@ import dev.botta.trantor.ai.models.cost.CostEstimate
  * What a run left: the answer, every step it took to get there and what it all cost.
  *
  * The answer is the last step's. The usage, the estimated cost, the warnings and the tool failures are those of
- * every step, since a run with tools pays for each call to the model and not only for the one that answered.
+ * every step, since a run with tools pays for each call to the model and not only for the one that answered. The
+ * usage and the cost also count the runs a tool made on its own ([Step.toolRuns]), like an agent that ran as a tool.
  */
 data class RunResult(val steps: List<Step>) {
     /** The response of the last step, the one that answered. */
@@ -35,16 +36,25 @@ data class RunResult(val steps: List<Step>) {
             }
         }
 
-    /** The usage of every step, added up. It keeps no raw usage, which belongs to a single call. */
-    val usage get() = steps.fold(Usage.Unknown) { total, step -> total + step.response.usage }
+    /**
+     * The usage of every step and of the runs its tools made, added up. It keeps no raw usage, which belongs to a
+     * single call.
+     */
+    val usage: Usage
+        get() = steps.fold(Usage.Unknown) { total, step ->
+            step.toolRuns.values.fold(total + step.response.usage) { sum, run -> sum + run.usage }
+        }
 
     /**
-     * The estimated cost of every step, added up. Null when a step has none, since a partial sum would pass for
-     * the whole.
+     * The estimated cost of every step and of the runs its tools made, added up. Null when one of them has none,
+     * since a partial sum would pass for the whole.
      */
     val estimatedCost: CostEstimate?
         get() {
-            val costs = steps.map { it.response.info.estimatedCost ?: return null }
+            val costs = steps.flatMap { step ->
+                listOf(step.response.info.estimatedCost ?: return null) +
+                    step.toolRuns.values.map { it.estimatedCost ?: return null }
+            }
             return costs.reduce(CostEstimate::plus)
         }
 

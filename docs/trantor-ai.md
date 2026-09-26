@@ -80,8 +80,8 @@ left out), `tools`, `toolChoice`, `maxSteps`,
 ```kotlin
 result.text              // what the model answered last
 result.steps             // each call to the model, with the results of its tools
-result.usage             // added up over the steps
-result.estimatedCost     // added up too; null if any step has no estimate
+result.usage             // added up over the steps, and the runs their tools made
+result.estimatedCost     // added up too; null if any of them has no estimate
 result.newMessages       // what the run added to the conversation, to keep it
 result.toolFailures      // the exceptions of the tools that failed, for the application
 ```
@@ -169,6 +169,11 @@ the ones it has nothing for.
 `ToolContext` carries the `callId`, the `toolName` and the `RunContext` of the run, a typed bag that
 whoever launches the run fills: `context.run.require<Tenant>()`. What a tool needs from the application —
 a repository, the executor — it gets by constructor, like any other service.
+
+A tool that calls a model itself takes `context.callOptions`, the timeout, the cancellation and the headers
+of the run, so that cancelling the run stops that call too; and it answers `ToolResult.text(...).withRun(run)`
+with the run it made, which stays in the step (`step.toolRuns`) and whose usage and cost count as the run's.
+Otherwise the run spends without anyone seeing it. An agent that runs as a tool does both on its own.
 
 Tools the provider runs on its side, like a web search, are not run again: their results came in the
 answer.

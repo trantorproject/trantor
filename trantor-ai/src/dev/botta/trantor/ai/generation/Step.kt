@@ -29,4 +29,9 @@ data class Step(
     val warnings: List<ModelWarning> = emptyList(),
     /** The agent the step went out as, which wrote its answer. Null in a generation. */
     val agent: String? = null,
+    /**
+     * The runs of a model the tools of the step made to answer, by the id of their call, like the one of an agent
+     * that ran as a tool. The run counts their usage and their cost as its own.
+     */
+    val toolRuns: Map<String, RunResult> = emptyMap(),
 )

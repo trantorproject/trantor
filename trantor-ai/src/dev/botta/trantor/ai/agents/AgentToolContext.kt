@@ -1,6 +1,7 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.trantor.ai.RunContext
+import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.tools.ToolContext
 
 /** What a tool knows about its call when an agent makes it: also the agent and the run it belongs to. */
@@ -14,7 +15,13 @@ class AgentToolContext(
     val runId: String,
     /** The names of the agents it can hand the conversation over to with [dev.botta.trantor.ai.tools.ToolResult.handoffTo]. */
     val team: Set<String>,
-): ToolContext(callId, toolName, run)
+    callOptions: CallOptions = CallOptions(),
+    /**
+     * How many agents that run as tools this run is inside of: 0 for a run the application started, 1 for the run
+     * of an agent another one used as a tool, and so on. See [AgentTool].
+     */
+    val depth: Int = 0,
+): ToolContext(callId, toolName, run, callOptions)
 
 /**
  * The context of a tool that only makes sense inside an agent, like one that hands the conversation over. It fails

@@ -26,6 +26,9 @@ class AgentRunOptions {
     var session: Session? = null
         private set
 
+    /** How many agents that run as tools this run is inside of. Set by [AgentTool], and 0 otherwise. */
+    internal var depth = 0
+
     /**
      * The agents the conversation can be handed over to, besides the one the run starts with. Every handoff an agent
      * of the team declares has to be to one of them.

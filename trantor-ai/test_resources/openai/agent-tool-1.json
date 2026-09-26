@@ -1,0 +1,122 @@
+{
+  "id": "resp_02d11e86ae05b710006ab718dfb51487d2a8152dfc6d86ffe5",
+  "object": "response",
+  "created_at": 1790384351,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790384354,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_02d11e86ae05b710006ab718e04de887d29abed84a2bbf8123",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtxjiD3xRMWg3pcgdy0ZOrbIPFXOM1tVBxJaP1yaCg44wFxZ9yPj4RFCVaiFUhmXpmLrsjZNyqLfHWXCxFvS-v4HWefE3lOtSpjh1afo1oHvOj_4qkUpaMt6SwkiGpI2PkwHP5tCJ3C9esYnVZIu69w83Bx_qrbVHw2XEryfdlu2WkHN16kpCcoyZ9PHjOPWSLpNfgml_yONg3PEYL23S_tt0zG0P4vZC23jHC4b3YpV08djLhKmrarfT_yW48Ebh0mjqgmAiXlbx1ly8sbCfqpTJJfzowHO2Mj3N3vi33E0NJDdCqpscdMFFhkjpZE6jVTanqgLchQYwbF51NBWfujzra56X39zUitvktggAPu1vU7NaJbbwNlOdy2ctvklAkJR0UNQyYVPIADKkYPEjp6KOueEa8WygSJc6Xpk9SmImmjIEV4kJF_lE3gjiL5TQum93E-5ypF-dFweLlZxy8wxHy_4WG_1dn-OqeJ1G7akgiJ86qvS6U4FpWBUNI0RgFHAWQ95hLCaDHoNKuesrz3SAdxS039ojBn5gcRuQJaBA7bzGdQg3NyokB4NvkJ54XM4bI9ftHX7miSCTHzgYN2d897YH8ZSbzL9sup3hQ3jgU3_6PrKLPXdM3mNBNLhC6RezOqEZRLJN1lFXVwMcBOAlJobfdPW6kSPt0t4AFBXCP2Ir8IOGXm144XLKwb9M8l6zcp0hF_yNwfHe8MMXPrnUxmzleGlaWdsDqhCwCqYtv6Dpna7vwZDl6wPOBauDh4kojjUzBDKgDd86WP8TM1dV4ma5l7SUmb7l8alC2Vivss0XBMBOHeHzVCGOwXlViPrKCax5RYMkUG4I13Cat-E_W62OAvYFq441SyR7KZSwhPfvbRIr8vbdS8heYlpIasiE2A2w0D7zaaTkPMVXVruEzZ9wY3tzcG2GW44We01iQh0F4v_VnezUKcSB4d2I9vpbZ95y-vjo3g1yl8rIk9NGRsuPdqSUP3PrxLeQA61LbzIDGyB8LWGsZHrct0vYbmlPv6Cv3Hx3UWIQEKzX4Q-iOQPvUWOjg-xFvx2CACDno0TfewlgXFNxDHAWgP6HWo7yAyP-gDcxCD7PO47oWHhn2gvXIsu0VH05a8slITrm8iGV67Ht46O63rsIGbnOZAfiiS0tMXQWZSpJ6z8cCHkO05TG6Qsw2fLf24Oaaj6KzujuxwBEKZjj4joG-lcnHZCs-fPrlZiwEUFckRdUejkbV5fXtuUP1R9JXFzkSfcX6m0WIjeiXXDYyr2IvI5BEws0bXHDTGhH7PSL_DS08bMgloEy71eDdkJWjJJM9wrhe-tHcCxbYr_RnCBvOZTLPjQIZO74mM4wH1odEEaAYeZQI8d_bbbuPSvY_VjFqJd_Nvy7XxSwfLaLyQaZAnwtuhadJRXCynFC481qQElKb5MqpGJYFbiYmXZoq81K1DdJh4Mh8YtBhAP4qa0wEhydEf4miDQFRGGNYNdMzOzO5c2Pj68N9KMB9_g_Bi5ceZlpoqbz660f3_TDEjxWytN2-XfYDyPehIFx4mk0PJsh35JJSQ1jEZtdob6rA2jz2eOuHnN4iSBJ9ikx_LIw_FEyLxVdqBMnGiWptR6wWIO_aA7NlwLDwbyNbgazND9GELDNMV4ENBSWIE_uz66AOtq72AM_fusqsnuk3ZXDfn0P4sCqEzrFtWmCTsiVLjYUozPzAeJeCHBtrCwxmMkOxMbETqjOPakWeWsf6WDRqlr4hKWp5rXjdPetyAwaddDyNnP4KlruoFnefBO9cvXkhsffS7Mvo_0uD-koX2bOEPb7SfMHKnL4LEe-nvLSUjtzrxdz9n1q6B704Y8uchyb3olHIvJjoeEuCdCasVuFThIqJX4Jf01ajpfRm1L1QQxfWn4_C4D6F_Gk3np0mp_is1nJVwWf1VraxkqDHFvKH6GCZaS-s4iJVmSj_qtQAogzgAnp5HQV0p6kIKlEFrwZ0WAsjW8lBHULPzjRdDgi9g9VOCaTH8ehPCxHWnk73AGKLu9F1IETVfyBw303flrYw5hINOviU3mTwHZJ4nXqWB-Ka8d0Od0X-nkf8OO_1HBDA6fNqadfP8oOOIMinABj_MBTQcAgqmis3ko-3k3k_5-7Ytlq8tTMKANF4ZO5aOQ7OAz0poHe119XgY-XpgUX3v1U4drwMTmOljxBH7oZq3c5mdkJ1tJif8GHZ0w5OSUnxHXrcLbUfMeQUkLBSYUk4gxGRTvAEnX1MsratxUXhDmqh6Owfx2okCe65MiX6hRh3IL8OrP9_p-lHtTHj9dMerwlryq7XzOlfpewVvj8hWRTX-4EqYtMqqu9YcIZLIT-opfmDLDcEASc1TbBdX77ZH7VoDQilOw0K7Wf0o4gXL3HCMGHuzctoQ-sz4Vlg9cvtJrm57D6NHE2pZo5F5qolJfVihDdz7a4uFIp_r0nZFvomgD9_QSSo5pdJnmQOJ53BwRZy_6yK5cVLq7pHH_Vsspv-3n352oZfNOB5R7QTPso72ciPdrxpruv2oiMffMowqZ0GiU=",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_02d11e86ae05b710006ab718e19ea887d2b66d7eee0a78348d",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"task\":\"Obtener el clima actual y el precio de un paquete de viaje a Bariloche\"}",
+      "call_id": "call_XCu8uCZ4Ju104ZtB1rJK7a4B",
+      "name": "researcher"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "Averigua el clima actual y el precio del paquete de un destino",
+      "name": "researcher",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "What to ask of the agent. It sees nothing of this conversation, so the task has to carry everything it needs to know."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "task"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 130,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 267,
+    "output_tokens_details": {
+      "reasoning_tokens": 192
+    },
+    "total_tokens": 397
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

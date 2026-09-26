@@ -71,7 +71,7 @@ class ToolLoop(
 
             step.check(calls)
 
-            val executions = step.executeAll(calls, options).map { step.finished(it) }
+            val executions = step.executeAll(calls).map { step.finished(it) }
 
             run.advance(response, executions, step)
 
@@ -101,7 +101,7 @@ class ToolLoop(
         fun next(): Outgoing {
             throwIfCancelled(options)
 
-            return Outgoing(nextStep.setUp(request.copy(messages = messages), steps.toList()))
+            return Outgoing(nextStep.setUp(request.copy(messages = messages), steps.toList()), options)
         }
 
         /** The calls the application has to run. The ones the provider ran already came answered. */
@@ -154,6 +154,7 @@ class ToolLoop(
                     handoff = step.handoffs.winner,
                     warnings = step.warnings,
                     agent = step.agent,
+                    toolRuns = executions.mapNotNull { it.run?.let { run -> it.result.callId to run } }.toMap(),
                 )
             )
             messages = messages + response.asMessage(step.agent) + Message.Tool(results)
@@ -204,7 +205,7 @@ class ToolLoop(
                 if (step.runInParallel(calls)) {
                     for (call in calls) yield(RunEvent.ToolStarted(call))
 
-                    executions.addAll(step.inParallel(calls, options).map { step.finished(it) })
+                    executions.addAll(step.inParallel(calls).map { step.finished(it) })
 
                     for (execution in executions) yield(RunEvent.ToolFinished(execution.result, execution.failure))
                 } else {
@@ -256,7 +257,7 @@ class ToolLoop(
      * that answer its calls. The calls of an answer run with the tools of the step that got it, even when the next
      * step goes out with others.
      */
-    private inner class Outgoing(private val setup: StepSetup) {
+    private inner class Outgoing(private val setup: StepSetup, private val options: CallOptions) {
         val model = setup.model
         val outputTool = setup.outputTool
         val agent = setup.agent
@@ -302,8 +303,8 @@ class ToolLoop(
          * when any of them can write. Two calls that write could step on each other, and in order they happen the
          * way the model asked for them.
          */
-        fun executeAll(calls: List<ToolCallPart>, options: CallOptions): List<Execution> =
-            if (runInParallel(calls)) inParallel(calls, options) else calls.map { execute(it) }
+        fun executeAll(calls: List<ToolCallPart>): List<Execution> =
+            if (runInParallel(calls)) inParallel(calls) else calls.map { execute(it) }
 
         fun runInParallel(calls: List<ToolCallPart>) =
             calls.size > 1 && calls.all { toolsByName[it.toolName]?.readOnly == true }
@@ -313,7 +314,7 @@ class ToolLoop(
          * fails, and the results come back in the order of the calls and not in the order they answered. A
          * cancellation, from outside or from one of the tools, interrupts every one of them.
          */
-        fun inParallel(calls: List<ToolCallPart>, options: CallOptions): List<Execution> {
+        fun inParallel(calls: List<ToolCallPart>): List<Execution> {
             val running = calls.map { Parallel(it, this, options) }
 
             options.cancellation?.onCancel { running.forEach { it.interrupt() } }.use {
@@ -333,7 +334,11 @@ class ToolLoop(
 
             return try {
                 val result = tool.call(input, contextOf(call))
-                Execution(ToolResultPart(call.callId, call.toolName, result.output), handoff = result.handoff)
+                Execution(
+                    ToolResultPart(call.callId, call.toolName, result.output),
+                    handoff = result.handoff,
+                    run = result.run,
+                )
             } catch (e: CancelledError) {
                 throw e
             } catch (e: InterruptedException) {
@@ -352,7 +357,7 @@ class ToolLoop(
         }
 
         private fun contextOf(call: ToolCallPart) =
-            setup.toolContext?.invoke(call) ?: ToolContext(call.callId, call.toolName, run)
+            setup.toolContext?.invoke(call) ?: ToolContext(call.callId, call.toolName, run, options)
 
         private fun unknown(call: ToolCallPart) = ToolError(
             "There is no tool called ${call.toolName}. The tools are: ${toolsByName.keys.joinToString()}",
@@ -428,6 +433,8 @@ class ToolLoop(
         val failure: ToolFailure? = null,
         /** The agent the tool handed the conversation over to, before the step settles it. */
         val handoff: String? = null,
+        /** The run of a model the tool made to answer. */
+        val run: RunResult? = null,
     )
 
     /**
@@ -480,6 +487,7 @@ class ToolLoop(
         private fun refused(execution: Execution, message: String) = Execution(
             execution.result.copy(output = ToolOutput.Text(message), isError = true),
             execution.failure,
+            run = execution.run,
         )
     }
 

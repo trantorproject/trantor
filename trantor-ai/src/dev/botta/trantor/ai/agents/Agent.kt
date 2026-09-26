@@ -77,6 +77,32 @@ class Agent internal constructor(
 
     fun <T: Any> require(type: KClass<T>): T = values.require(type)
 
+    /**
+     * This agent as a tool of another: when the model calls it, the agent runs a run of its own with the task it was
+     * given, and what it answers goes back as the result of the call; the conversation stays with the agent that
+     * called it. It is the way to use a specialist without handing the conversation over to it.
+     *
+     * ```kotlin
+     * val writer = Agent("writer")
+     *     .tools(researcher.asTool(agents, "Finds the weather and the prices of a destination") { maxSteps(5) })
+     *     .build()
+     * ```
+     *
+     * See [AgentTool] for what the run of the agent gets and what it gives back.
+     *
+     * @param description what the agent is for, which is all the model knows to decide when to ask it.
+     * @param maxDepth how many agents that run as tools this one can be inside of, counting itself: past it, the call
+     * goes back to the model as an error, which is what ends a cycle of agents that use each other.
+     * @param configure the options of the run of the agent, like its limit of steps.
+     */
+    fun asTool(
+        runner: AgentRunner,
+        description: String,
+        name: String = this.name,
+        maxDepth: Int = AgentTool.DEFAULT_MAX_DEPTH,
+        configure: AgentRunOptions.() -> Unit = {},
+    ) = AgentTool(this, runner, name, description, maxDepth, configure)
+
     override fun toString() = "Agent($name)"
 
     companion object {

@@ -1,0 +1,29 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfR9R8xJCVDF6hfgXKbQ7",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "**Bariloche te espera con su magia patagónica**\n\nBariloche se presenta en estos días con una temperatura de 7°C, ideal para disfrutar de sus paisajes montañosos y su chocolate caliente junto al lago. Nuestro paquete de una semana tiene un precio de USD 900 por persona, incluyendo todo lo necesario para vivir una experiencia inolvidable en la Suiza argentina. No dejes pasar esta oportunidad de conocer uno de los destinos más encantadores de la Patagonia."
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 828,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 134,
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "diagnostics": null
+}

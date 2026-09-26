@@ -1,0 +1,152 @@
+{
+  "id": "resp_0fd1b2d8996497d2006ab718e78b0487d29c82ce94deef8b55",
+  "object": "response",
+  "created_at": 1790384359,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790384362,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0fd1b2d8996497d2006ab718e8601487d293dc8d68e3c7754b",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtxjq5lLR8F1ntQ2Famq8obnzdYRbwBDblXAN-4Rn6zWUcWXEhFAa0tdKW7CKHguSazW8IYwajgDiVjiNyIg-efwgWz_NgpZeDDbs-9hClOzSqLfgcMP3q90cqtXQUbgrjo6xEaZJUI0_r1p6uyhjkRNkYrJJXGEKxSTYoxWKX60EKwzOIEOLyicEcDUWXUdjkcE5HOlBFeeeACUerc5ZG1aTAFUafZOp5DbNPGiKqeasUV40Bl3cVm6SJ10AGLCGGnVJngTAbu0J83trN4WeGpKddeApe38YZjaGrb6fKeBzYi-NltzEWwNgCUethSCCprMhhVtGRpcfd5kK2WgVe_TiDZONDrI7ptpbIhQSbKQp445RXrvE21G7p-VD_8IycBqLlik4syUfSrUxJi0olO8AOXVDTCUMxLvpSg_99z9sfvQqSi5A4C40L_zb4PSmthxHih5noHyjC_BUTSE5QOf2ChAsRHAr7gbSoX0iP0B9oK7RupDN4kMJH5EphcPs1qHyjbdz0WVh0QCC3-z4DV1X1dBS-bpYgOHdy_C_4VaKjhg_FBLHlNXhIa38QArbJwK4phDgo5nD8ix1opgDOfFPnm7Bt57YFPJCDFfcNGYoxVX0gejuYPQFFJB9VJoh1s0QyDEPqu1Pqyi9jY5ej6PFDfj6pFDSkJlSHRhTYGcmMJK6u9mizi4tmW6V6lD6l-7NdcSkv2pue4QJOzfxf5bdaakI1F_Ah3FlFcjCH_oCRf_8dXKMCqInv1eZSjMFEGp5gFrTFr2XA4L01732yLyxRsz6cIIvurPwvLgvwBWrYu_3uV4NM3oFNLnkrrrwo-1z49Y3flprFXG4keYadSgkR1-lbCOrHx3DwRmFuzPtQMzySnlPDHPRNuizR2VfX1ULk2VqJONPP7aHMhvQv5uGUzM21Bp8lTEj9aQPGfE1wvCKKFaaV-R10dm4WgCca354D8jD8qCyDV5BhsnDdIbxL3gBsjtMV8Xkib1ijEh5iQOyHqNV6amg_fEh_y2FKx5ZoefUI5oOvFyFuYJLRENt0FlPo_HJm2cz0-jtwziDzO82-CD6MauS3cpGLxCCJ2ciKntS81v9_K5Y_QtTC2KyU5_5UZk3b5nFni_BYVQ-MIWPVe1QDvfzjCy1u3nPEdPLg0DX31n59HAF6-y46idWQ_s7hJHe4QNs-6GeD27w79Id1y5kVmCr2SYRskKB9aAJNRG7f-AXPvniEsOf8_5SsrhnJjH8Usgn4hET4PKUqB8oMrukGeUQjIQUSY7zXm3DL3hyvc6ez46mLKsiGJ44yGyO3t7VcMd0CdktKTgNGmBIzV76kxb0_u3gSbL-_qAtKk6RZdnNdntNmxpagogvFn8p9otTm6FbidHh4jd1h4xg8KLfutsvuz1Ux0u0sDU8JzHHECg_9wjV2LXYKIS_tQUn-YwyVGXvMZa-eGPMWY4=",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_0fd1b2d8996497d2006ab718e957b087d2a40a8f6066fdbf6f",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "Temperatura actual en Bariloche: 7 °C  \nPrecio de paquete de una semana por persona: 900 USD"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "description": "The price of a one-week package to a city, per person, in dollars",
+      "name": "getPrice",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 651,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 84,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 735
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

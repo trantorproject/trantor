@@ -7,7 +7,11 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
 import kotlinx.serialization.Serializable
+import dev.botta.trantor.ai.models.ResponseInfo
+import dev.botta.trantor.ai.models.Usage
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.entry
+import kotlin.time.Duration.Companion.milliseconds
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
@@ -230,6 +234,17 @@ class ToolLoopStepsTest {
         private val output = OutputTool()
     }
 
+    @Test
+    fun `a tool that ran a model of its own leaves that run in the step, and the run adds up its usage`() {
+        first.answers(listOf(call("call_1", "research")), listOf(TextPart("7 grados")))
+        val research = ResearchTool()
+
+        val result = ToolLoop(first, listOf(research)).run(ChatRequest("Que temperatura hay?"))
+
+        assertThat(result.steps[0].toolRuns).containsExactly(entry("call_1", research.ran))
+        assertThat(result.usage.outputTokens).isEqualTo(5)
+    }
+
     /**
      * What a step sends of the conversation can leave a call without its result or a result without its call, which
      * the providers reject: a context policy of the application cut between them, or a history came in broken.
@@ -330,6 +345,27 @@ class ToolLoopStepsTest {
         override val description = "The city asked for"
 
         override fun execute(args: City, context: ToolContext) = ToolResult.text("Final result processed.")
+    }
+
+    /** A tool that asks a model of its own, as an agent that runs as a tool does. */
+    class ResearchTool: Tool<City>(City.serializer()) {
+        override val name = "research"
+        override val description = "Researches a city"
+
+        val ran = RunResult(
+            listOf(
+                Step(
+                    ChatResponse(
+                        content = listOf(TextPart("7 grados")),
+                        finishReason = FinishReasons.Stop,
+                        info = ResponseInfo(model = "m", provider = "p", latency = 1.milliseconds),
+                        usage = Usage(outputTokens = 5),
+                    ),
+                ),
+            ),
+        )
+
+        override fun execute(args: City, context: ToolContext) = ToolResult.text("7 grados").withRun(ran)
     }
 
     class PriceTool: Tool<City>(City.serializer()) {

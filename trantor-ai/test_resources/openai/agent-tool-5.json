@@ -1,0 +1,132 @@
+{
+  "id": "resp_02d11e86ae05b710006ab718eb212087d2a8ba74a286157b96",
+  "object": "response",
+  "created_at": 1790384363,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790384366,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_02d11e86ae05b710006ab718eb70f087d290f75dd365b1166e",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtxjuEmQbhGNtc3fx1ymHbw2fP7kEcqI1XDurApdYzJS17cWeAXu3LBuUU9YvgbPze5XX5SnZHhyHS3SE6p6jgqg03X-q5NLsJVrUhB-PbdUZ-r9ijWatMcOHQqrpBcM6BvHlA4vlYpCRzwu8ncGutmeT2xzY9Xh-UxXnjd5gGH0KUQLUbgkQe18_dnDlw71RWMck1_0cBeVlnhcJwTLHenZ36PU3qziRodvWsuD1QE1iJmfyVa1951QY8h6a_RCvl760i9utsOI7O6HsfMu8pGxUUVGQh6a5pTyB2kjrTctl8feHbn8PTuOGNxuYHnYZQiCAGDL78QEM-BG56id5mOjUIYAlfLEEKrEipepE4oCp7KXRI-umCxj1Ld7_VUsSym3n1QWlvoyUtmzkkWmd0ivVU_pqrysRG3B3nFVXLAL6q9k2UT2PE9cwz2xenay-PU32JPAylt626_NS668pKPzx7Wu9_npB7MdU1ioSJdR_tbM03vg15j6OJA-lyibpLepaexvUvO2UxWha8ROQgI5LkQ5c82vmajT7NuPwLRMEsznUkB0rhavbkiQu6TS7qioOdxX8JCSbCJe-ETYq4W73sPXj7oevUh203l0MiHkmP2s0W_1RZ5a2ID-bHFtYwU_jl7PcSf1j2DPkcQMWuMPqBejpexGG-l9dcKmt-NqpdB1pzmcV-dTPzWyw_xfTsPhgYj4feenofKDgiG0ZwEpBGVZcDW4vejKWOd6nenmuHDDALF1ulth5Utt2xGkU5-9AiFN6kHWMx9-dd6TBIaxWyAznkw_xJ6rR7FgkHU3oZBB3ZAXx0LkBkUR6R4VY0Y4gWC98AU9TsYsRAsiu193lf_IurPpbsYgSmdzwVB-sqpJktlCOa6Ta2P30iSi7PyIB4L1DIw7ZAILFyHvqcKxdAuCKOfo7FX_Myo1eVgOk6t7Ka1Mk4dHs4XuDGoP5gEaQ2SIfCZpEE25GH81VcP2sYQzz_V92pHGO0gzcw3lyrjPzDe2xDmEc50zjMP5Gcf0K9B-u_4f_S18PptWqcbUcvYaUJdc5o6ym_xqHG8sAldLGWoYAGpOa61LpJESwyALTTjOKL43ueD8n2uUux-DPcQqrJPLh-6jh0IdFTbju52ZtW8X-NKxxT5QsRLFneJhWCirYr4b0QV7a3UHxOlxiXYdwnwQXUaLrV4uMUDnKktE4bT8xjGK724xJ1bhvrlgjv_-wjec0hqkVlUPHqG3bbAkzmbXM3SoaKWNJ1W7ATnTz3sBhpiNJxrPx7SQVBFhb1BbU8qPNkNLYMrDUgBS5Dn6_K5cZ6NiJe5Og5sqv2lh-8g2GEWGGeYDdtn4_L8uFw44GBbG89z70jWETL6zO4US8tBFuXy0gQ6aBpUPdSF6Qfs8YTZksKZ29e_IaNyjGjDhKJW4TfIz1HUBd-bM7MK9P_x68L0bcCyrKrGF8Cq2jYlt4Kbi9SD5Iknl2an57WAAbZ_KSRIjK6e1wuYXBuBI_TUpulV07GJLQjTBYG1470iiQUxgcBF6zCO9mf4kQpVNZ3TKx6QpTfbSr7D7WPM-8dNjhcb0Bab0EKOxjdNPzJPx9TfcanaiAZ7SSXJUbGTduwyJQuvYfYXrq14s2FjgTiL7-CyGxDyo-xtzs8EAyJYFHMhoLq-iZneCdLpNrj0gKXDnDqcvJ4DURsVNDn8lMDKxesXTnmtkkHBinlEaxVqhN5Lm74GjaYq6OgsYZUxUOpVrrLZhWTAI3VAPpwjQ7-UQi8oILaVbNwcxZtM7xq09pDQ5Lovm5AspvcZ7VC8UHrgWDqTOY797qTbFxJr3qqjzWdXid-qGJ4QzlLFbDu8GILqJU2_1z6WOLCH4Iv5p-crlTkOKEFMzSGx9DKL8fJLEHNLR8clZuKdQKCrJgZEJImA8W0P2R5BnNk8vKsyGxcH_SXTb4joL1Q_vULfX-llWEsFi5UGHS6y7w9qAz4ARXO6MO_uYFh3xUcuM0N_fQpy9vn44Xu9N9TAPb5ZsYHNO0u5KnUPEzTPVkl8edhksSW73cCAKKzj3y7Eucd4-TYkC9V6ghozuLpL88jmACvRPAo3GLIFFWF8tSj4LjGoa6iCxj-OIgjmjP7WVexWe9MiiqkL3MOKLICMLSjVr4OSEIS8Nv2_nw_z1FEvhJXncSe6MAwkmJj20cEyEZLGogCi8crHkHfa-f1UFHYLmpnF7AhEoBQKOKrqRk0rl8rM37qihcHE4yB9oR6tQWyZTJs7oIBiqOxxaEwK9q2fx12d7RszMeOgcvxb3Y_UxXPCJb3VEl6aWF_rTJDO3wlJqCeh77N-ldydodF224cjK5pw4EvZKCr8fLtJXr3xHYwhAaVRMe5htdwZlw2H-AyuSUfXqT9nNsOHpbbDGB3rqKFLFsge3xqksrEDWP5-Iqaml7IZyy_EOC6vWifTjHMG5lxNT5GueeXqfkEmMm_jNgGwLBVdrvGp5NjpfpdfF9a8SdnjWQqA_c5SfAnJKdYsENxQQJLLjsKMYZJcnWBlGR98vxiHJaC7CEbboMVYqtDjh8_xbItKhxANg5yn_JBAwfzAA2n3CXga5OkByiuspC9fj-HW0m72ZE5eCc7bSXgclNE4xh7ZW_T-s5fFkdpN_swIAcqT9r0vwQYscB6UXK_Cy_FuaLu_Lcs6yrgnUY-r6MP5XzQGWX4aSwyAThYJG9CWlIfQrlf3a1_26p05ixCb_HhYXsH8Z2TWHIKasXBJIYHIj7e7tvj_9H0LgS0g8UTUmimzfBI7-SqzVm2NYJM6lreGj508uZb6mq9C_W4zz_OWqHydwtlGTH5-ZtgynTyAP5plKRctkbri-TsIXf7gZqjECLJKwtiY29c9llTutyC_nTY0BMpbcCphnjBWVoxf3SBA3SBdyc_cIAYmW0UpUPZboWbPjZlO1849Gzswra2Sob3ICA5asC_i7tAfLbwoPaqPE6e-VLCpPyo-h7W-mUINNv_h0t56LyXRUYpkLBejmzEpxahaphG-c2cP240bSxF4Dntqfk0SFTkkIMmqP7qmVerfs7SVpJW-7XrHlZHGMolnLdqWFMBJq58ClZjcs6RROoYpnlRDprUxrcyVhawAHxwmUrIGChKlHg76eKGqwYDfosbOcsE7WAlDiJA03Zha3XNHtAN09jWZTAi5ONsbwFAt1TUJj6_gF3PP2K10vLboYVgnMQ1Ryv-SnRK0xyLPNTcAz0DvCvx3tovnB5_p0Kq1eybFuhk--ncxcNnn_EkWhgezWomzc8IhAUlRfFGqNbjmI-Mtp6keOZdRkZO6uLB2Tp_REw0dobdegPq6mdFQEL7aVj3ClE9bQO5wEX9INEnmNfyMZscHlf8Jj3LelQex8Bs38vT-IS3ox6fK3CB1i9XKoCQeyXRyn--9YWwVrbvrd6_cDmNxcvztnoXyRfYwskqjFDi-lN5kIg7YTUaCsDEdWAsbBCbB-fcnuHc6dMvw_uVuswk8cTtQeWp4tAleZCn9iwkkKALRNmsvCqaKDwvIZeztEZ67HOV9RPWLefdtngsunjZuai4Z-29gqlufff1BHq66NLR_AnsC8r2h9EZRHw0Gt0eAWTnQwNv7MevWTYk2PzgxTpnDUqnAPfzd_pesEVbQzcr40L0aPxeTPTys1NRLgKBu7Gon6r81eWP5d7T9DlvU92D-J1KAEGuoWYgokdaQBU2598PY3s6R5wn80iBG4d",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_02d11e86ae05b710006ab718edb98887d2b6bd8e10b167fdd6",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "Con una temperatura actual de 7 °C, Bariloche se viste de otoño invitándote a recorrer sus paisajes cordilleranos.  \nNuestro paquete de una semana por persona, a solo 900 USD, incluye hospedaje en un hotel de montaña, traslados y excursiones imperdibles.  \nNo pierdas la oportunidad de explorar el Cerro Catedral, navegar el lago Nahuel Huapi y saborear la tradicional cocina patagónica."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "Averigua el clima actual y el precio del paquete de un destino",
+      "name": "researcher",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "What to ask of the agent. It sees nothing of this conversation, so the task has to carry everything it needs to know."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "task"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 431,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 536,
+    "output_tokens_details": {
+      "reasoning_tokens": 384
+    },
+    "total_tokens": 967
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}
