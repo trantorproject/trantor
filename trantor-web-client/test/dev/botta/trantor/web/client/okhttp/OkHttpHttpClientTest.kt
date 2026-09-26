@@ -3,6 +3,7 @@
 package dev.botta.trantor.web.client.okhttp
 
 import dev.botta.trantor.web.client.HttpClientError
+import dev.botta.trantor.web.client.HttpMethods
 import dev.botta.trantor.web.client.HttpRequest
 import dev.botta.trantor.web.client.MultipartBody
 import mockwebserver3.MockResponse
@@ -12,6 +13,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.slf4j.MDC
 import java.util.concurrent.TimeUnit
 
 class OkHttpHttpClientTest {
@@ -215,9 +217,49 @@ class OkHttpHttpClientTest {
         assertThat(response.body).isEqualTo("moved body")
     }
 
+    @Test
+    fun `the correlation id of the logs goes as X-Request-Id, so the next service logs under the same one`() {
+        server.enqueue(MockResponse(code = 200, body = ""))
+        MDC.put("cid", "abc123")
+
+        client.get(url("/greeting"))
+
+        assertThat(server.takeRequest().headers["X-Request-Id"]).isEqualTo("abc123")
+    }
+
+    @Test
+    fun `an X-Request-Id the caller set is the one that goes`() {
+        server.enqueue(MockResponse(code = 200, body = ""))
+        MDC.put("cid", "abc123")
+
+        client.get(url("/greeting"), mapOf("X-Request-Id" to "from-the-caller"))
+
+        assertThat(server.takeRequest().headers.values("X-Request-Id")).containsExactly("from-the-caller")
+    }
+
+    @Test
+    fun `without a correlation id no X-Request-Id goes`() {
+        server.enqueue(MockResponse(code = 200, body = ""))
+
+        client.get(url("/greeting"))
+
+        assertThat(server.takeRequest().headers["X-Request-Id"]).isNull()
+    }
+
+    @Test
+    fun `a stream sends the correlation id too`() {
+        server.enqueue(MockResponse(code = 200, body = "data: hola\n\n"))
+        MDC.put("cid", "abc123")
+
+        client.stream(HttpMethods.Get, HttpRequest(url("/events"))).use { }
+
+        assertThat(server.takeRequest().headers["X-Request-Id"]).isEqualTo("abc123")
+    }
+
     @AfterEach
     fun tearDown() {
         server.close()
+        MDC.clear()
     }
 
     private fun url(path: String) = server.url(path).toString()

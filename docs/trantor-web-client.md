@@ -66,6 +66,10 @@ response, not an exception; a call that gets no answer throws `HttpClientError`,
 A body is a `String`, sent as `application/json` unless the request says another `Content-Type`, or a
 `MultipartBody` for forms with files.
 
+Every call carries the correlation id of the logs (`cid` in the MDC) as `X-Request-Id`, which is where a
+Trantor server reads it, so the next service logs under the same one. A request that sets its own
+`X-Request-Id` keeps it.
+
 ---
 
 ## Streams

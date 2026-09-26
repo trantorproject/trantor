@@ -7,6 +7,7 @@ import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.source
+import org.slf4j.MDC
 import java.util.concurrent.TimeUnit
 import okhttp3.MultipartBody as OkMultipartBody
 
@@ -107,6 +108,11 @@ class OkHttpHttpClient(
         request.headers.forEach { (k, v) ->
             builder.addHeader(k, v)
         }
+        // The correlation id of the logs goes on in the next service, which reads it as the Trantor server does
+        val correlationId = MDC.get("cid")
+        if (correlationId != null && request.headers.keys.none { it.equals(REQUEST_ID, ignoreCase = true) }) {
+            builder.addHeader(REQUEST_ID, correlationId)
+        }
 
         val body = when (request.body) {
             null -> null
@@ -183,5 +189,9 @@ class OkHttpHttpClient(
         } else {
             logger.info(sb.toString())
         }
+    }
+
+    private companion object {
+        const val REQUEST_ID = "X-Request-Id"
     }
 }
