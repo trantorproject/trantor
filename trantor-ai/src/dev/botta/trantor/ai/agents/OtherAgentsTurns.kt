@@ -1,7 +1,7 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.trantor.ai.models.chat.*
-import dev.botta.trantor.ai.tools.ToolOutput
+import dev.botta.trantor.ai.history.Transcript
 
 /**
  * How an agent reads the turns other agents of its team took in the conversation: as context, with their names, and
@@ -61,24 +61,5 @@ internal object OtherAgentsTurns {
         return told
     }
 
-    private fun linesOf(agent: String, parts: List<Part>) = parts.mapNotNull { part ->
-        when (part) {
-            is TextPart -> "[$agent] said: ${part.text}"
-            is RefusalPart -> "[$agent] refused: ${part.text}"
-            is ToolCallPart -> "[$agent] called ${part.toolName} with ${part.input}"
-            is ToolResultPart -> resultLine(agent, part)
-            is ProviderPart -> "[$agent] used ${part.type}: ${part.raw}"
-            is ReasoningPart -> null
-        }
-    }
-
-    private fun resultLine(agent: String, result: ToolResultPart): String {
-        val output = when (val output = result.output) {
-            is ToolOutput.Text -> output.value
-            is ToolOutput.Json -> output.value.toString()
-        }
-
-        return if (result.isError) "[$agent] got an error from ${result.toolName}: $output"
-        else "[$agent] got from ${result.toolName}: $output"
-    }
+    private fun linesOf(agent: String, parts: List<Part>) = Transcript.linesOf(agent, parts)
 }
