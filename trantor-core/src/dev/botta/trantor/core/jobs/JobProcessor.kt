@@ -5,16 +5,19 @@ import dev.botta.trantor.core.jobs.serialization.*
 import dev.botta.trantor.core.queues.*
 import dev.botta.trantor.hosting.HostedService
 import dev.botta.trantor.primitives.logging.getLogger
+import io.opentelemetry.api.OpenTelemetry
 import kotlin.reflect.KClass
 
+/** Runs the jobs that arrive on [queue] with their handlers, as a hosted service. */
 class JobProcessor(
     private val handlerRegistry: JobHandlerRegistry,
     private val serializer: JobSerializer,
     private val queue: MessageQueue,
     maxConcurrentWorkers: Int = 4,
+    openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
 ): HostedService {
     private val logger = getLogger()
-    private val messageProcessor = MessageQueueProcessor(queue, ::onMessage, maxConcurrentWorkers)
+    private val messageProcessor = MessageQueueProcessor(queue, ::onMessage, maxConcurrentWorkers, openTelemetry)
 
     override val name: String get() = "JobProcessor(${queue.name})"
 

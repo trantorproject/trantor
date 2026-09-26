@@ -7,7 +7,12 @@ import dev.botta.trantor.core.queues.*
 import dev.botta.trantor.core.tx.NullTransactionManager
 import dev.botta.trantor.core.tx.Transaction
 import dev.botta.trantor.core.tx.TransactionManager
+import dev.botta.trantor.core.testing.TestTelemetry
 import dev.botta.trantor.serialization.gson.GsonSerializer
+import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.common.AttributeKey.stringKey
+import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.api.trace.StatusCode
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
@@ -115,6 +120,66 @@ class DefaultJobDispatcherTest {
     }
 
     @Nested
+    inner class `the trace` {
+        @Test
+        fun `sending is a producer span, child of the span that dispatched the job`() {
+            val request = telemetry.tracer.spanBuilder("POST /signups").startSpan()
+
+            request.makeCurrent().use { dispatcher(openTelemetry = telemetry.openTelemetry).dispatch(SendEmail()) }
+
+            val send = telemetry.single(SpanKind.PRODUCER)
+            assertThat(send.name).isEqualTo("send emails")
+            assertThat(send.parentSpanId).isEqualTo(request.spanContext.spanId)
+            assertThat(send.attributes[stringKey("messaging.system")]).isEqualTo("test_queue")
+            assertThat(send.attributes[stringKey("messaging.destination.name")]).isEqualTo("emails")
+            assertThat(send.attributes[stringKey("messaging.operation.name")]).isEqualTo("send")
+            assertThat(send.attributes[stringKey("messaging.operation.type")]).isEqualTo("send")
+            assertThat(send.attributes[stringKey("trantor.message.type")]).isEqualTo("SendEmail")
+        }
+
+        @Test
+        fun `travels in the message, as the context of the send span`() {
+            dispatcher(openTelemetry = telemetry.openTelemetry).dispatch(SendEmail())
+
+            val send = telemetry.single(SpanKind.PRODUCER).spanContext
+            assertThat(emails.enqueued.first().first.traceContext["traceparent"])
+                .isEqualTo("00-${send.traceId}-${send.spanId}-${send.traceFlags.asHex()}")
+        }
+
+        @Test
+        fun `of a job sent on commit is still the one of whoever dispatched it`() {
+            val transactions = FakeTransactionManager().apply { begin() }
+            val request = telemetry.tracer.spanBuilder("POST /signups").startSpan()
+
+            request.makeCurrent().use {
+                dispatcher(transactions, openTelemetry = telemetry.openTelemetry).dispatch(SendEmail())
+            }
+            transactions.commit()
+
+            assertThat(telemetry.single(SpanKind.PRODUCER).parentSpanId).isEqualTo(request.spanContext.spanId)
+        }
+
+        @Test
+        fun `fails the send span when the queue does not take the message`() {
+            emails.failure = IllegalStateException("The queue is down")
+
+            assertThatThrownBy { dispatcher(openTelemetry = telemetry.openTelemetry).dispatch(SendEmail()) }
+                .hasMessage("The queue is down")
+
+            val send = telemetry.single(SpanKind.PRODUCER)
+            assertThat(send.status.statusCode).isEqualTo(StatusCode.ERROR)
+            assertThat(send.attributes[stringKey("error.type")]).isEqualTo("java.lang.IllegalStateException")
+        }
+
+        @Test
+        fun `is not in the message without an OpenTelemetry`() {
+            dispatcher().dispatch(SendEmail())
+
+            assertThat(emails.enqueued.first().first.traceContext).isEmpty()
+        }
+    }
+
+    @Nested
     inner class `registering a handler` {
         @Test
         fun `makes the job known to the serializer, or it could not be read back`() {
@@ -141,7 +206,8 @@ class DefaultJobDispatcherTest {
     private fun dispatcher(
         transactions: TransactionManager = NullTransactionManager(),
         afterCommit: Boolean = true,
-    ) = DefaultJobDispatcher(queues, handlers, serializer, transactions, afterCommit)
+        openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+    ) = DefaultJobDispatcher(queues, handlers, serializer, transactions, afterCommit, openTelemetry)
 
     private class SendEmail(val to: String = ""): Job()
 
@@ -150,9 +216,12 @@ class DefaultJobDispatcherTest {
     }
 
     private class RecordingQueue(override val name: String): MessageQueue {
+        override val system = "test_queue"
         val enqueued = mutableListOf<Pair<Message, EnqueueOptions>>()
+        var failure: Throwable? = null
 
         override fun enqueue(message: Message, options: EnqueueOptions) {
+            failure?.let { throw it }
             enqueued.add(message to options)
         }
 
@@ -213,6 +282,7 @@ class DefaultJobDispatcherTest {
     }
 
     private val emails = RecordingQueue("emails")
+    private val telemetry = TestTelemetry()
     private val reports = RecordingQueue("reports")
     private val queues = JobQueueRegistry().apply {
         addQueue("emails", emails)

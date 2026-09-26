@@ -15,12 +15,15 @@ import dev.botta.trantor.core.jobs.*
 import dev.botta.trantor.core.jobs.serialization.DefaultJobSerializer
 import dev.botta.trantor.core.jobs.serialization.JobSerializer
 import dev.botta.trantor.core.queues.*
+import dev.botta.trantor.core.testing.TestTelemetry
+import dev.botta.trantor.core.testing.WaitingQueue
 import dev.botta.trantor.core.tx.NullTransaction
 import dev.botta.trantor.core.tx.NullTransactionManager
 import dev.botta.trantor.core.tx.TransactionManager
 import dev.botta.trantor.core.tx.TransactionsModule
 import dev.botta.trantor.di.DefaultServiceProvider
 import dev.botta.trantor.di.ServiceRegistry
+import dev.botta.trantor.hosting.HostedService
 import dev.botta.trantor.hosting.addModule
 import dev.botta.trantor.primitives.events.Event
 import dev.botta.trantor.primitives.events.EventDispatcher
@@ -29,6 +32,8 @@ import dev.botta.trantor.primitives.events.EventListener
 import dev.botta.trantor.primitives.events.serialization.EventSerializer
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
+import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.trace.SpanKind
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -88,6 +93,24 @@ class ModulesTest {
             JobsModule().initialize(services, config)
 
             assertThat(services.get<JobQueueRegistry>().getQueue("emails")).isNotNull()
+        }
+
+        @Test
+        fun `send and process with the OpenTelemetry of the container`() {
+            val telemetry = TestTelemetry()
+            registry.addSingleton<OpenTelemetry>(telemetry.openTelemetry)
+            registry.addTheModulesAnApplicationGets()
+            registry.addJobProcessor("emails")
+            val services = provider()
+            services.get<JobQueueRegistry>().addQueue("emails", WaitingQueue("emails"))
+            services.get<JobDispatcher>().registerHandler(Ping::class, JobHandler { })
+            val processor = services.getAll<HostedService>().single().apply { start() }
+
+            services.get<JobDispatcher>().dispatch(Ping())
+
+            assertThat(telemetry.await(SpanKind.CONSUMER).parentSpanId)
+                .isEqualTo(telemetry.single(SpanKind.PRODUCER).spanId)
+            processor.stop(2)
         }
     }
 
@@ -158,6 +181,12 @@ class ModulesTest {
         override fun <T: Event> on(eventType: kotlin.reflect.KClass<T>, listener: EventListener<T>) {}
     }
 
+    private class Ping: Job()
+
+    private fun <T: Job> JobHandler(execute: (T) -> Unit) = object: JobHandler<T> {
+        override fun execute(job: T) = execute(job)
+    }
+
     private class OwnTransactionManager: TransactionManager {
         override val activeTransaction = null
 
@@ -169,6 +198,8 @@ class ModulesTest {
     }
 
     private class FakeQueue(override val name: String): MessageQueue {
+        override val system = "test_queue"
+
         override fun enqueue(message: Message, options: EnqueueOptions) {}
 
         override fun poll() = emptyList<ReceivedMessage>()

@@ -4,17 +4,26 @@ import dev.botta.trantor.core.queues.errors.*
 import dev.botta.trantor.hosting.HostedService
 import dev.botta.trantor.primitives.CorrelationIdGenerator
 import dev.botta.trantor.primitives.logging.getLogger
+import io.opentelemetry.api.OpenTelemetry
 import org.slf4j.MDC
 import java.lang.Thread.sleep
 import java.util.*
 import java.util.concurrent.*
 
+/**
+ * Polls a [MessageQueue] and hands each message to [onMessage] on a virtual thread, at most
+ * [maxConcurrentWorkers] at a time. A message is deleted once it was handled, and left for a retry when the handler
+ * throws. Each message is handled with the correlation id it travelled with, and inside a `process` span that goes
+ * on from the trace that sent it.
+ */
 class MessageQueueProcessor(
     private val queue: MessageQueue,
     private val onMessage: (ReceivedMessage) -> Unit,
     private val maxConcurrentWorkers: Int = 4,
+    openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
 ): HostedService {
     private val logger = getLogger()
+    private val spans = QueueSpans(openTelemetry)
     @Volatile
     private var running = false
     private lateinit var pollerThread: Thread
@@ -95,7 +104,7 @@ class MessageQueueProcessor(
 
     private fun processMessage(message: ReceivedMessage) {
         try {
-            onMessage(message)
+            spans.process(queue, message) { onMessage(message) }
             queue.delete(message)
         } catch (e: Throwable) {
             logger.error("Queue '${queue.name}' error processing message id=${message.id} type=${message.message.type}", e)

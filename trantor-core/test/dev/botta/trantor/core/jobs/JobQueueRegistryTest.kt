@@ -175,6 +175,8 @@ class JobQueueRegistryTest {
     }
 
     private class FakeQueue(override val name: String): MessageQueue {
+        override val system = "test_queue"
+
         override fun enqueue(message: Message, options: EnqueueOptions) {}
 
         override fun poll() = emptyList<ReceivedMessage>()

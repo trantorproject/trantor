@@ -15,6 +15,12 @@ package dev.botta.trantor.core.queues
 interface MessageQueue {
     val name: String
 
+    /**
+     * The messaging system behind the queue, as the OpenTelemetry conventions name it in `messaging.system`:
+     * `aws_sqs`, `rabbitmq`, `kafka`... A queue of its own names itself.
+     */
+    val system: String
+
     fun enqueue(message: Message, options: EnqueueOptions = EnqueueOptions())
     fun poll(): List<ReceivedMessage>
     fun clear()

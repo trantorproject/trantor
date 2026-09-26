@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * its own and would otherwise spin on an empty queue.
  */
 class WaitingQueue(override val name: String = "emails"): MessageQueue {
+    override val system = "test_queue"
     val deleted = ConcurrentLinkedQueue<ReceivedMessage>()
     val polled = AtomicInteger()
 
@@ -36,7 +37,10 @@ class WaitingQueue(override val name: String = "emails"): MessageQueue {
         return deleted.size
     }
 
-    override fun enqueue(message: Message, options: EnqueueOptions) {}
+    /** What is enqueued arrives, as it would on a real queue. */
+    override fun enqueue(message: Message, options: EnqueueOptions) {
+        arrive(FakeReceivedMessage("id-${ids.incrementAndGet()}", message))
+    }
 
     override fun poll(): List<ReceivedMessage> {
         polled.incrementAndGet()

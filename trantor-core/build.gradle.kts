@@ -7,6 +7,7 @@ dependencies {
     api("com.github.kagkarlsson:db-scheduler")
     implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("org.hibernate.validator:hibernate-validator")
+    testImplementation("io.opentelemetry:opentelemetry-sdk-testing")
 }
 
 extra.set("POM_NAME", "Trantor Core")

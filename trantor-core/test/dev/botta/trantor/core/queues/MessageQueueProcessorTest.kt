@@ -3,7 +3,14 @@
 package dev.botta.trantor.core.queues
 
 import dev.botta.trantor.core.testing.FakeReceivedMessage
+import dev.botta.trantor.core.testing.TestTelemetry
 import dev.botta.trantor.core.testing.WaitingQueue
+import io.opentelemetry.api.common.AttributeKey.stringKey
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanContext
+import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.context.Context
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -139,6 +146,64 @@ class MessageQueueProcessorTest {
     }
 
     @Nested
+    inner class `the trace` {
+        @Test
+        fun `processing is a consumer span, child of the send span of the message and linked to it`() {
+            val handled = CountDownLatch(1)
+            val send = telemetry.tracer.spanBuilder("send emails").startSpan()
+            processorFor { handled.countDown() }.start()
+
+            queue.arrive(FakeReceivedMessage("id-7", Message("SendEmail", "{}", traceContext = contextOf(send))))
+            handled.await(5, SECONDS)
+
+            val process = telemetry.await(SpanKind.CONSUMER)
+            assertThat(process.name).isEqualTo("process emails")
+            assertThat(process.traceId).isEqualTo(send.spanContext.traceId)
+            assertThat(process.parentSpanId).isEqualTo(send.spanContext.spanId)
+            assertThat(process.links.map { it.spanContext.spanId }).containsExactly(send.spanContext.spanId)
+            assertThat(process.attributes[stringKey("messaging.system")]).isEqualTo("test_queue")
+            assertThat(process.attributes[stringKey("messaging.destination.name")]).isEqualTo("emails")
+            assertThat(process.attributes[stringKey("messaging.operation.name")]).isEqualTo("process")
+            assertThat(process.attributes[stringKey("messaging.operation.type")]).isEqualTo("process")
+            assertThat(process.attributes[stringKey("messaging.message.id")]).isEqualTo("id-7")
+            assertThat(process.attributes[stringKey("trantor.message.type")]).isEqualTo("SendEmail")
+        }
+
+        @Test
+        fun `is current while the message is handled, so what the handler does hangs from it`() {
+            val seen = LinkedBlockingQueue<SpanContext>()
+            processorFor { seen.add(Span.current().spanContext) }.start()
+
+            queue.arrive(messageOf("SendEmail"))
+
+            assertThat(seen.poll(5, SECONDS)).isEqualTo(telemetry.await(SpanKind.CONSUMER).spanContext)
+        }
+
+        @Test
+        fun `of a message that fails is failed, naming the exception`() {
+            processorFor { error("boom") }.start()
+
+            queue.arrive(messageOf("SendEmail"))
+
+            val process = telemetry.await(SpanKind.CONSUMER)
+            assertThat(process.status.statusCode).isEqualTo(StatusCode.ERROR)
+            assertThat(process.attributes[stringKey("error.type")]).isEqualTo("java.lang.IllegalStateException")
+            assertThat(process.events.map { it.name }).containsExactly("exception")
+        }
+
+        @Test
+        fun `of a message that brought none starts a new one`() {
+            processorFor { }.start()
+
+            queue.arrive(messageOf("SendEmail"))
+
+            val process = telemetry.await(SpanKind.CONSUMER)
+            assertThat(process.parentSpanContext.isValid).isFalse()
+            assertThat(process.links).isEmpty()
+        }
+    }
+
+    @Nested
     inner class `stopping` {
         @Test
         fun `it takes no more messages`() {
@@ -166,12 +231,19 @@ class MessageQueueProcessorTest {
     private fun processorFor(
         maxConcurrentWorkers: Int = 4,
         onMessage: (ReceivedMessage) -> Unit,
-    ) = MessageQueueProcessor(queue, onMessage, maxConcurrentWorkers).also { processors.add(it) }
+    ) = MessageQueueProcessor(queue, onMessage, maxConcurrentWorkers, telemetry.openTelemetry)
+        .also { processors.add(it) }
+
+    private fun contextOf(span: Span) = mutableMapOf<String, String>().apply {
+        telemetry.openTelemetry.propagators.textMapPropagator
+            .inject(Context.root().with(span), this) { carrier, key, value -> carrier!![key] = value }
+    }
 
     private fun messageOf(type: String, cid: String? = null) =
         FakeReceivedMessage("id-${ids.incrementAndGet()}", Message(type, "{}", cid))
 
     private val ids = AtomicInteger()
+    private val telemetry = TestTelemetry()
     private val processors = mutableListOf<MessageQueueProcessor>()
     private val queue = WaitingQueue("emails")
 }

@@ -20,6 +20,8 @@ class SqsQueue(
     private val serializer: JsonSerializer,
     private val settings: SqsQueueSettings = SqsQueueSettings(),
 ): MessageQueue {
+    /** The name OpenTelemetry gives to SQS. */
+    override val system = "aws_sqs"
     private val logger = getLogger()
     val isFifo = name.endsWith(".fifo")
 
