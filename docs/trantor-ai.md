@@ -40,6 +40,14 @@ The api key is **not** in the configuration file. It comes from `OPENAI_API_KEY`
 failure happens on the first call, with a message saying what to set — not at startup, so an application
 that never calls OpenAI never needs the key.
 
+The providers call through the `HttpClient` of the application (see
+[trantor-web-client](trantor-web-client.md)), and add it when there is none: one pool of connections for
+everybody, and the calls to OpenAI and Anthropic are traced like any other. A model can think for a while
+before its first word, so how long a call waits in silence is a setting of the provider, `readTimeout`
+(two minutes by default), which every call sets on its own. The `requestTimeout` of the client does not
+apply, and the whole call is bounded by the `timeout` of `CallOptions`. A client the application registers
+instead has to stream, as the one of Trantor does.
+
 ---
 
 ## The facade and the tool loop
@@ -1060,7 +1068,7 @@ services.addAnthropic { anthropic, _ -> anthropic.cache = AnthropicCache(system 
 ```
 
 The key comes from `ANTHROPIC_API_KEY`, and `AnthropicConfig` also holds `baseUrl`, the pinned
-`anthropic-version`, a list of `betas` sent as `anthropic-beta` and `defaultMaxTokens`.
+`anthropic-version`, a list of `betas` sent as `anthropic-beta`, `defaultMaxTokens` and `readTimeout`.
 
 The Messages API is shaped differently from the Responses API, and most of the adapter is that:
 

@@ -297,6 +297,25 @@ class OpenAIChatModelTest {
     }
 
     @Test
+    fun `waits for a model that goes silent as long as its config says, whatever the http client says`() {
+        httpClient.body = fixture("text-simple")
+        val model = OpenAIChatModel("gpt-4.1-mini", OpenAIConfig(apiKey = "sk-test", readTimeout = 300_000), httpClient)
+
+        model.generate(ChatRequest(Message.user("Hola")))
+
+        assertThat(httpClient.options?.readTimeout).isEqualTo(300_000)
+    }
+
+    @Test
+    fun `and two minutes when the config says nothing`() {
+        httpClient.body = fixture("text-simple")
+
+        model.generate(ChatRequest(Message.user("Hola")))
+
+        assertThat(httpClient.options?.readTimeout).isEqualTo(120_000)
+    }
+
+    @Test
     fun `sends extra headers of the call`() {
         httpClient.body = fixture("text-simple")
 

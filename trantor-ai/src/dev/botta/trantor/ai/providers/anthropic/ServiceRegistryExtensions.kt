@@ -6,6 +6,8 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceRegistry
+import dev.botta.trantor.web.client.HttpClient
+import dev.botta.trantor.web.client.addHttpClient
 
 /**
  * Adds Anthropic to the registry, so that `anthropic/<model>` and any alias pointing at it can be resolved.
@@ -15,6 +17,10 @@ import dev.botta.trantor.di.ServiceRegistry
  * ```kotlin
  * services.addAnthropic { config, services -> config.betas = listOf("context-1m-2025-08-07") }
  * ```
+ *
+ * Its models call through the [HttpClient] of the application, which this adds when there is none, so they share
+ * its connections and are traced along with every other call. The client has to stream, as the one of Trantor
+ * does. How long a model may go silent is [AnthropicConfig.readTimeout], not a setting of the client.
  */
 fun ServiceRegistry.addAnthropic(configuration: ServiceConfiguration<AnthropicConfig> = { _, _ -> }) = apply {
     addAnthropicConfig()
@@ -24,7 +30,8 @@ fun ServiceRegistry.addAnthropic(configuration: ServiceConfiguration<AnthropicCo
 
     addModelRegistry()
     addModelCatalog { catalog, _ -> catalog.addAnthropicModels() }
-    addSingleton { AnthropicProvider(it.get<AnthropicConfig>(), it.get<ModelCatalog>()) }
+    if (!has<HttpClient>()) addHttpClient()
+    addSingleton { AnthropicProvider(it.get<AnthropicConfig>(), it.get<ModelCatalog>(), it.get<HttpClient>()) }
     configure<ModelRegistry> { models, services -> models.addProvider(services.get<AnthropicProvider>()) }
 }
 

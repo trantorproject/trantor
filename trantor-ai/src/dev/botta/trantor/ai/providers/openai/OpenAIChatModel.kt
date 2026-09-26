@@ -7,8 +7,7 @@ import dev.botta.trantor.ai.models.CancellationLink
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.web.client.*
-import dev.botta.trantor.web.client.okhttp.OkHttpHttpClient
-import dev.botta.trantor.web.client.okhttp.OkHttpHttpClientConfig
+import dev.botta.trantor.ai.providers.defaultHttpClient
 import kotlin.time.TimeSource
 
 /**
@@ -83,7 +82,10 @@ class OpenAIChatModel(
 
     private fun call(body: String, options: CallOptions, link: CancellationLink): HttpStreamResponse {
         val httpRequest = HttpRequest("${config.baseUrl}/responses", body, headers(options))
-        val streamOptions = StreamOptions(totalTimeout = options.timeout?.inWholeMilliseconds?.toInt())
+        val streamOptions = StreamOptions(
+            readTimeout = config.readTimeout,
+            totalTimeout = options.timeout?.inWholeMilliseconds?.toInt(),
+        )
 
         return link.attach(httpClient.stream(HttpMethods.Post, httpRequest, streamOptions))
     }
@@ -102,16 +104,5 @@ class OpenAIChatModel(
         config.organization?.let { put("OpenAI-Organization", it) }
         config.project?.let { put("OpenAI-Project", it) }
         putAll(options.headers)
-    }
-
-    companion object {
-        /**
-         * Shared by every model built without one, so that several models don't end up with a connection pool each.
-         * Its timeouts are the ones a generation needs: a model can take a while to answer, and a long answer is not
-         * a reason to cut the call as long as it keeps coming.
-         */
-        private val defaultHttpClient: HttpClient by lazy {
-            OkHttpHttpClient(OkHttpHttpClientConfig(idleTimeout = 120_000, requestTimeout = 0))
-        }
     }
 }

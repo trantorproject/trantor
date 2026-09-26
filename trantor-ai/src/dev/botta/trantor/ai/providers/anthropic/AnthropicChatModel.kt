@@ -7,8 +7,7 @@ import dev.botta.trantor.ai.models.CancellationLink
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.web.client.*
-import dev.botta.trantor.web.client.okhttp.OkHttpHttpClient
-import dev.botta.trantor.web.client.okhttp.OkHttpHttpClientConfig
+import dev.botta.trantor.ai.providers.defaultHttpClient
 import kotlin.time.TimeSource
 
 /**
@@ -85,7 +84,10 @@ class AnthropicChatModel(
 
     private fun call(mapped: MappedRequest, options: CallOptions, link: CancellationLink): HttpStreamResponse {
         val httpRequest = HttpRequest("${config.baseUrl}/messages", mapped.body.toString(), headers(mapped, options))
-        val streamOptions = StreamOptions(totalTimeout = options.timeout?.inWholeMilliseconds?.toInt())
+        val streamOptions = StreamOptions(
+            readTimeout = config.readTimeout,
+            totalTimeout = options.timeout?.inWholeMilliseconds?.toInt(),
+        )
 
         return link.attach(httpClient.stream(HttpMethods.Post, httpRequest, streamOptions))
     }
@@ -107,16 +109,5 @@ class AnthropicChatModel(
         (config.betas + mapped.betas).distinct().takeIf { it.isNotEmpty() }
             ?.let { put("anthropic-beta", it.joinToString(",")) }
         putAll(options.headers)
-    }
-
-    companion object {
-        /**
-         * Shared by every model built without one, so that several models don't end up with a connection pool each.
-         * Its timeouts are the ones a generation needs: a model can take a while to answer, and a long answer is not
-         * a reason to cut the call as long as it keeps coming.
-         */
-        private val defaultHttpClient: HttpClient by lazy {
-            OkHttpHttpClient(OkHttpHttpClientConfig(idleTimeout = 120_000, requestTimeout = 0))
-        }
     }
 }

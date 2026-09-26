@@ -18,8 +18,15 @@ data class OpenAIConfig(
      * nothing here beyond being able to look a call up later.
      */
     var store: Boolean? = null,
+    /**
+     * The longest a call waits for the model without receiving a byte, in milliseconds. A model can think for a
+     * while before its first word, so this is longer than what the http client of the application waits for
+     * anything else. It is set on every call, and the client is shared all the same.
+     */
+    var readTimeout: Int = DEFAULT_READ_TIMEOUT,
 ) {
     companion object {
+        const val DEFAULT_READ_TIMEOUT = 120_000
         const val DEFAULT_BASE_URL = "https://api.openai.com/v1"
     }
 }

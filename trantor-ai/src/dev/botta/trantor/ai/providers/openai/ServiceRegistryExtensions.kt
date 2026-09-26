@@ -6,6 +6,8 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceRegistry
+import dev.botta.trantor.web.client.HttpClient
+import dev.botta.trantor.web.client.addHttpClient
 
 /**
  * Adds OpenAI to the registry, so that `openai/<model>` and any alias pointing at it can be resolved.
@@ -15,6 +17,10 @@ import dev.botta.trantor.di.ServiceRegistry
  * ```kotlin
  * services.addOpenAI { config, services -> config.organization = "org-7" }
  * ```
+ *
+ * Its models call through the [HttpClient] of the application, which this adds when there is none, so they share
+ * its connections and are traced along with every other call. The client has to stream, as the one of Trantor
+ * does. How long a model may go silent is [OpenAIConfig.readTimeout], not a setting of the client.
  */
 fun ServiceRegistry.addOpenAI(configuration: ServiceConfiguration<OpenAIConfig> = { _, _ -> }) = apply {
     addOpenAIConfig()
@@ -24,7 +30,8 @@ fun ServiceRegistry.addOpenAI(configuration: ServiceConfiguration<OpenAIConfig> 
 
     addModelRegistry()
     addModelCatalog { catalog, _ -> catalog.addOpenAIModels() }
-    addSingleton { OpenAIProvider(it.get<OpenAIConfig>(), it.get<ModelCatalog>()) }
+    if (!has<HttpClient>()) addHttpClient()
+    addSingleton { OpenAIProvider(it.get<OpenAIConfig>(), it.get<ModelCatalog>(), it.get<HttpClient>()) }
     configure<ModelRegistry> { models, services -> models.addProvider(services.get<OpenAIProvider>()) }
 }
 

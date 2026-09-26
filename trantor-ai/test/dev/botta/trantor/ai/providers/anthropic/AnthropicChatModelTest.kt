@@ -288,6 +288,22 @@ class AnthropicChatModelTest {
     }
 
     @Test
+    fun `waits for a model that goes silent as long as its config says, whatever the http client says`() {
+        val model = modelWith(AnthropicConfig(apiKey = "sk-ant-test", readTimeout = 300_000))
+
+        model.generate(ChatRequest(Message.user("Hola")))
+
+        assertThat(httpClient.options?.readTimeout).isEqualTo(300_000)
+    }
+
+    @Test
+    fun `and two minutes when the config says nothing`() {
+        model.generate(ChatRequest(Message.user("Hola")))
+
+        assertThat(httpClient.options?.readTimeout).isEqualTo(120_000)
+    }
+
+    @Test
     fun `sends extra headers of the call`() {
         model.generate(ChatRequest(Message.user("Hola")), CallOptions(headers = mapOf("X-Tenant" to "crafty")))
 

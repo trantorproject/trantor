@@ -26,6 +26,7 @@ import dev.botta.trantor.ai.providers.anthropic.addAnthropic
 import dev.botta.trantor.ai.providers.openai.OpenAIConfig
 import dev.botta.trantor.ai.providers.openai.addOpenAI
 import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolOutput
@@ -37,6 +38,7 @@ import dev.botta.trantor.di.ServiceRegistry
 import dev.botta.trantor.domain.Money
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
+import dev.botta.trantor.web.client.HttpClient
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -251,6 +253,24 @@ class ServiceRegistryExtensionsTest {
         }
 
         @Test
+        fun `calls through the http client of the application`() {
+            val http = FakeHttpClient(body = javaClass.getResource("/openai/text-simple.json")!!.readText())
+            registry.addSingleton<HttpClient>(http)
+            registry.addOpenAI { openAI, _ -> openAI.apiKey = "sk-test" }
+
+            models().chat("openai/gpt-4.1-mini").generate(ChatRequest("Hola"))
+
+            assertThat(http.request?.url).isEqualTo("${OpenAIConfig.DEFAULT_BASE_URL}/responses")
+        }
+
+        @Test
+        fun `brings the http client of the application along when there is none`() {
+            registry.addOpenAI()
+
+            assertThat(provider.get<HttpClient>()).isNotNull()
+        }
+
+        @Test
         fun `lives together with another provider`() {
             registry.addOpenAI()
             registry.addFakeProvider()
@@ -341,6 +361,25 @@ class ServiceRegistryExtensionsTest {
 
             assertThat(provider.get<AnthropicConfig>().betas)
                 .containsExactly("context-1m-2025-08-07", "another-one")
+        }
+
+        @Test
+        fun `calls through the http client of the application`() {
+            // An empty object is an answer the mapper reads without complaining
+            val http = FakeHttpClient()
+            registry.addSingleton<HttpClient>(http)
+            registry.addAnthropic { anthropic, _ -> anthropic.apiKey = "sk-ant-test" }
+
+            models().chat("anthropic/claude-sonnet-4-5").generate(ChatRequest("Hola"))
+
+            assertThat(http.request?.url).isEqualTo("${AnthropicConfig.DEFAULT_BASE_URL}/messages")
+        }
+
+        @Test
+        fun `brings the http client of the application along when there is none`() {
+            registry.addAnthropic()
+
+            assertThat(provider.get<HttpClient>()).isNotNull()
         }
 
         @Test

@@ -11,11 +11,11 @@ import io.opentelemetry.api.OpenTelemetry
  * the implementation that also streams, and when there is an `OpenTelemetry` in the container every call is traced,
  * whether it was registered before or after.
  *
- * A client with a [key] has its own settings, in `httpClient.<key>`, for the calls that need other timeouts, and
- * is resolved with `services.get<HttpClient>(key)`:
+ * A client with a [key] has its own settings and connections, in `httpClient.<key>`, for the calls that need a
+ * different one, and is resolved with `services.get<HttpClient>(key)`:
  *
  * ```kotlin
- * services.addHttpClient("ai") { settings, _ -> settings.requestTimeout = 0 }
+ * services.addHttpClient("payments") { settings, _ -> settings.connectTimeout = 2000 }
  * ```
  *
  * A client registered before, with the same key, is kept.

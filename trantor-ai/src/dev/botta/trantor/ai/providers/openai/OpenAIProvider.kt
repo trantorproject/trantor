@@ -5,6 +5,7 @@ import dev.botta.trantor.ai.models.chat.Part
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.ProviderMetadata
+import dev.botta.trantor.ai.providers.defaultHttpClient
 import dev.botta.trantor.web.client.HttpClient
 
 /** Name of the provider, shared by the model and its mappers. */
@@ -26,13 +27,9 @@ internal val Part.wasInsideAMessage get() = metadata[OPENAI_PROVIDER]?.get("inMe
 class OpenAIProvider(
     private val config: OpenAIConfig = OpenAIConfig(),
     private val catalog: ModelCatalog = ModelCatalog().addOpenAIModels(),
-    private val httpClient: HttpClient? = null,
+    private val httpClient: HttpClient = defaultHttpClient,
 ): AIProvider {
     override val name = OPENAI_PROVIDER
 
-    override fun chatModel(modelId: String) = if (httpClient == null) {
-        OpenAIChatModel(modelId, config, catalog = catalog)
-    } else {
-        OpenAIChatModel(modelId, config, httpClient, catalog)
-    }
+    override fun chatModel(modelId: String) = OpenAIChatModel(modelId, config, httpClient, catalog)
 }
