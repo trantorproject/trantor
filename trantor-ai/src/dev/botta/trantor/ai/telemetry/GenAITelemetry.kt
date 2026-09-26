@@ -14,23 +14,24 @@ import dev.botta.trantor.ai.models.chat.OutputSpec
 import dev.botta.trantor.ai.models.chat.ToolCallPart
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.primitives.TrantorBuildInfo
-import dev.botta.trantor.primitives.logging.getLogger
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.common.AttributeKey.booleanKey
 import io.opentelemetry.api.common.AttributeKey.doubleKey
 import io.opentelemetry.api.common.AttributeKey.longKey
 import io.opentelemetry.api.common.AttributeKey.stringArrayKey
 import io.opentelemetry.api.common.AttributeKey.stringKey
+import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * The spans of the models and the tools, following the semantic conventions for generative AI as they are at commit
- * `e57c543` of open-telemetry/semantic-conventions-genai (2026-09-24). They are all in Development and still change
- * often, so every name they give is written here and nowhere else.
+ * The spans and the metrics of the models and the tools, following the semantic conventions for generative AI as
+ * they are at commit `e57c543` of open-telemetry/semantic-conventions-genai (2026-09-24). They are all in Development
+ * and still change often, so every name they give is written here and in [GenAIMetrics], and nowhere else.
  *
  * - `invoke_agent` for a whole generation: it is an agent without a name, which is how other libraries report
  *   theirs, and it adds up the usage of its calls.
@@ -48,23 +49,22 @@ import io.opentelemetry.context.Context
  * at once, and the ones a stream leaves open when it is closed end then, without failing.
  *
  * The content — instructions, messages, tools, args and results — is recorded only when [settings] ask for it, in
- * the shape [GenAIContent] gives it.
+ * the shape [GenAIContent] gives it. The metrics are measured at the same points, by [GenAIMetrics].
  *
- * Telemetry never fails what it watches. A span that cannot be started or written is logged, and the work goes on
+ * Telemetry never fails what it watches. A span or a metric that cannot be written is logged, and the work goes on
  * without it.
  */
-internal class GenAISpans(openTelemetry: OpenTelemetry, settings: AITelemetrySettings = AITelemetrySettings()) {
-    private val logger = getLogger()
+internal class GenAITelemetry(openTelemetry: OpenTelemetry, settings: AITelemetrySettings = AITelemetrySettings()) {
     private val content = if (settings.captureContent) GenAIContent(settings.maxContentLength) else null
+    private val metrics = GenAIMetrics(openTelemetry)
     private val tracer: Tracer? =
         safely("get a tracer") { openTelemetry.getTracer(INSTRUMENTATION, TrantorBuildInfo.version) }
 
-    fun generation(block: () -> RunResult): RunResult {
-        val span = start("invoke_agent", SpanKind.INTERNAL) {
-            setAttribute(OPERATION, "invoke_agent")
-        }
+    /** A generation, current while it runs. What it does hangs from, and counts in, the span it gives [block]. */
+    fun generation(block: (OpenSpan) -> RunResult): RunResult {
+        val generation = openGeneration(Context.current())
 
-        return traced(span, block) { result -> usage(result.usage) }
+        return generation.running({ block(generation) }) { it.usage }
     }
 
     /** A generation received as it happens, which ends when its stream does, hanging from [parent]. */
@@ -73,25 +73,47 @@ internal class GenAISpans(openTelemetry: OpenTelemetry, settings: AITelemetrySet
             setAttribute(OPERATION, "invoke_agent")
         }
 
-        return OpenSpan(span, parent)
+        return OpenSpan(span, parent, Invocations.Generation, null)
     }
 
-    /** A call to [model], by [agent] when an agent makes it, hanging from [parent] or from the current span. */
+    /**
+     * A call to [model], by [agent] when an agent makes it, counted in [invocation] and hanging from it, or from the
+     * current span without one.
+     */
     fun chat(
         model: ChatModel,
         request: ChatRequest,
         agent: String?,
-        parent: Context?,
+        invocation: OpenSpan?,
         block: () -> ChatResponse,
     ): ChatResponse {
-        val span = startChat(model, request, agent, parent, streamed = false)
+        val span = startChat(model, request, agent, invocation?.context, streamed = false)
+        val startedAt = System.nanoTime()
+        invocation?.inferenceCall()
 
-        return traced(span, block) { response -> response(response, agent) }
+        try {
+            return traced(span, block) { response -> response(response, agent) }.also {
+                metrics.chat(callAttributes(model, it), secondsSince(startedAt), it.usage, null)
+            }
+        } catch (e: Throwable) {
+            metrics.chat(callAttributes(model, null), secondsSince(startedAt), null, e)
+            throw e
+        }
     }
 
     /** A call to [model] whose answer is received as it happens, which ends when its stream does. */
-    fun openChat(model: ChatModel, request: ChatRequest, agent: String?, parent: Context?) =
-        ChatSpan(startChat(model, request, agent, parent, streamed = true), agent)
+    fun openChat(model: ChatModel, request: ChatRequest, agent: String?, invocation: OpenSpan?): ChatSpan {
+        invocation?.inferenceCall()
+
+        return ChatSpan(startChat(model, request, agent, invocation?.context, streamed = true), model, agent)
+    }
+
+    private fun callAttributes(model: ChatModel, response: ChatResponse?) = Attributes.builder()
+        .put(OPERATION, "chat")
+        .put(PROVIDER, model.provider)
+        .put(REQUEST_MODEL, model.modelId)
+        .apply { response?.let { put(RESPONSE_MODEL, it.info.model) } }
+        .build()
 
     private fun startChat(model: ChatModel, request: ChatRequest, agent: String?, parent: Context?, streamed: Boolean) =
         start("chat ${model.modelId}", SpanKind.CLIENT, parent) {
@@ -123,17 +145,42 @@ internal class GenAISpans(openTelemetry: OpenTelemetry, settings: AITelemetrySet
     }
 
     /**
-     * The call of a [tool], which is null when the model asked for one that does not exist. Its content is the args
-     * the tool ran with, after the hooks, and what the model reads of it.
+     * The call of a [tool], which is null when the model asked for one that does not exist, counted in [invocation].
+     * Its content is the args the tool ran with, after the hooks, and what the model reads of it.
      */
     fun tool(
         call: ToolCallPart,
         tool: Tool<*>?,
         agent: String?,
-        parent: Context?,
+        invocation: OpenSpan?,
         block: () -> ToolLoop.Execution,
     ): ToolLoop.Execution {
-        val span = start("execute_tool ${call.toolName}", SpanKind.INTERNAL, parent) {
+        val attributes = Attributes.builder()
+            .put(TOOL_NAME, call.toolName)
+            .put(TOOL_TYPE, "function")
+            .apply { agent?.let { put(AGENT_NAME, it) } }
+            .build()
+        val startedAt = System.nanoTime()
+        invocation?.toolCall()
+
+        try {
+            return traced(call, tool, agent, invocation, block).also {
+                metrics.tool(attributes, secondsSince(startedAt), it.failure?.error)
+            }
+        } catch (e: Throwable) {
+            metrics.tool(attributes, secondsSince(startedAt), e)
+            throw e
+        }
+    }
+
+    private fun traced(
+        call: ToolCallPart,
+        tool: Tool<*>?,
+        agent: String?,
+        invocation: OpenSpan?,
+        block: () -> ToolLoop.Execution,
+    ): ToolLoop.Execution {
+        val span = start("execute_tool ${call.toolName}", SpanKind.INTERNAL, invocation?.context) {
             setAttribute(OPERATION, "execute_tool")
             agent?.let { setAttribute(AGENT_NAME, it) }
             setAttribute(TOOL_NAME, call.toolName)
@@ -156,15 +203,18 @@ internal class GenAISpans(openTelemetry: OpenTelemetry, settings: AITelemetrySet
      * with, and `invoke_agent {agent}` for an agent alone. What the run does hangs from [OpenSpan.context].
      */
     fun agentRun(agent: String, workflow: Boolean, block: (OpenSpan) -> AgentRunResult): AgentRunResult {
-        val span = startAgentRun(agent, workflow, null)
-        val open = OpenSpan(span, Context.current())
+        val run = openAgentRun(agent, workflow, Context.current())
 
-        return traced(span, { block(open) }) { result -> usage(result.usage) }
+        return run.running({ block(run) }) { it.usage }
     }
 
     /** A run of agents received as it happens, which ends when its stream does, hanging from [parent]. */
-    fun openAgentRun(agent: String, workflow: Boolean, parent: Context) =
-        OpenSpan(startAgentRun(agent, workflow, parent), parent)
+    fun openAgentRun(agent: String, workflow: Boolean, parent: Context) = OpenSpan(
+        startAgentRun(agent, workflow, parent),
+        parent,
+        if (workflow) Invocations.Workflow else Invocations.Agent,
+        agent,
+    )
 
     private fun startAgentRun(agent: String, workflow: Boolean, parent: Context?) = if (workflow) {
         start("invoke_workflow $agent", SpanKind.INTERNAL, parent) {
@@ -188,7 +238,7 @@ internal class GenAISpans(openTelemetry: OpenTelemetry, settings: AITelemetrySet
             setAttribute(AGENT_NAME, agent)
         }
 
-        return OpenSpan(span, parent ?: Context.current())
+        return OpenSpan(span, parent ?: Context.current(), Invocations.Agent, agent)
     }
 
     /**
@@ -232,44 +282,98 @@ internal class GenAISpans(openTelemetry: OpenTelemetry, settings: AITelemetrySet
     }
 
     /**
-     * A span that does not fit around a block, so whoever opened it ends it, once: what comes after the first end is
-     * ignored, so a stream read to its end and then closed does not end it twice. Without a span, because the
-     * telemetry does not export or failed, it does nothing, and what goes inside hangs from whatever is current.
+     * The span of an invocation — a generation, an agent or a workflow — which whoever opened it ends, once: what
+     * comes after the first end is ignored, so a stream read to its end and then closed does not end it twice. It
+     * counts the calls to the model and the tools made in it, for its metrics, which are measured when it ends.
+     * Without a span, because the telemetry does not export or failed, what goes inside hangs from whatever is
+     * current.
      */
-    inner class OpenSpan internal constructor(private val span: Span?, parent: Context) {
+    inner class OpenSpan internal constructor(
+        private val span: Span?,
+        parent: Context,
+        private val kind: Invocations,
+        private val name: String?,
+    ) {
+        private val startedAt = System.nanoTime()
+        // The tools of a step may run at the same time
+        private val inferenceCalls = AtomicInteger()
+        private val toolCalls = AtomicInteger()
+        private var model: String? = null
         private var ended = false
 
         /** What the spans inside hang from. */
         val context: Context? = span?.takeIf { it.spanContext.isValid }?.let { parent.with(it) }
 
         fun model(modelId: String) {
+            model = modelId
             safely("write the span") { span?.setAttribute(REQUEST_MODEL, modelId) }
         }
 
+        internal fun inferenceCall() = inferenceCalls.incrementAndGet()
+
+        internal fun toolCall() = toolCalls.incrementAndGet()
+
+        /** Runs [block] with this span current, and ends it with what it gave back or the exception it threw. */
+        fun <T> running(block: () -> T, usageOf: (T) -> Usage): T {
+            try {
+                val result = if (context == null) block() else span!!.makeCurrent().use { block() }
+                end(usageOf(result))
+                return result
+            } catch (e: Throwable) {
+                fail(e)
+                throw e
+            }
+        }
+
         /** Ends it well, with what it used when it got that far. */
-        fun end(usage: Usage?) = ending {
-            usage?.let { safely("write the span") { span?.usage(it) } }
-        }
+        fun end(usage: Usage?) = ending(null) { usage?.let { span?.usage(it) } }
 
-        fun fail(error: Throwable) = ending {
-            safely("write the span") { span?.let { failed(it, error) } }
-        }
+        fun fail(error: Throwable) = ending(error) { span?.let { failed(it, error) } }
 
-        private fun ending(write: () -> Unit) {
+        /** Closed before it finished, as a stream nobody reads to its end: the span ends, and nothing is measured. */
+        fun cut() {
             if (ended) return
             ended = true
-            write()
             safely("end the span") { span?.end() }
         }
+
+        private fun ending(error: Throwable?, write: () -> Unit) {
+            if (ended) return
+            ended = true
+            safely("write the span", write)
+            safely("end the span") { span?.end() }
+            measure(error)
+        }
+
+        private fun measure(error: Throwable?) {
+            val seconds = secondsSince(startedAt)
+
+            if (kind == Invocations.Workflow) {
+                metrics.workflow(Attributes.of(WORKFLOW_NAME, name ?: ""), seconds, error)
+                return
+            }
+
+            val attributes = Attributes.builder()
+                .apply { name?.let { put(AGENT_NAME, it) } }
+                .apply { model?.let { put(REQUEST_MODEL, it) } }
+                .build()
+            metrics.agent(attributes, seconds, inferenceCalls.get(), toolCalls.get(), error)
+        }
     }
+
+    internal enum class Invocations { Generation, Agent, Workflow }
 
     /**
      * The span of a call whose answer is received as it happens. It is current only while the model opens the
      * stream, so that the http call is inside it; between one part and the next, whoever reads is current.
      */
-    inner class ChatSpan internal constructor(private val span: Span?, private val agent: String?) {
+    inner class ChatSpan internal constructor(
+        private val span: Span?,
+        private val model: ChatModel,
+        private val agent: String?,
+    ) {
         private val issuedAt = System.nanoTime()
-        private var chunked = false
+        private var lastChunkAt: Long? = null
         private var ended = false
 
         /** Runs [open] with this span current, failing it if [open] fails. */
@@ -284,20 +388,39 @@ internal class GenAISpans(openTelemetry: OpenTelemetry, settings: AITelemetrySet
             }
         }
 
-        /** A part arrived. The first one says how long it took, from the moment the call was made. */
+        /**
+         * A part arrived. The first one says how long it took from the moment the call was made, and each one after it
+         * how long it took from the one before.
+         */
         fun chunk() {
-            if (chunked) return
-            chunked = true
-            safely("write the span") { span?.setAttribute(TIME_TO_FIRST_CHUNK, (System.nanoTime() - issuedAt) / 1e9) }
+            val now = System.nanoTime()
+            val last = lastChunkAt
+            lastChunkAt = now
+
+            if (last != null) {
+                metrics.nextChunk(callAttributes(model, null), (now - last) / 1e9)
+                return
+            }
+
+            val seconds = (now - issuedAt) / 1e9
+            safely("write the span") { span?.setAttribute(TIME_TO_FIRST_CHUNK, seconds) }
+            metrics.firstChunk(callAttributes(model, null), seconds)
         }
 
-        fun end(response: ChatResponse) = ending { span?.response(response, agent) }
+        fun end(response: ChatResponse) = ending {
+            span?.response(response, agent)
+            metrics.chat(callAttributes(model, response), secondsSince(issuedAt), response.usage, null)
+        }
 
-        fun fail(error: Throwable) = ending { span?.let { failed(it, error) } }
+        fun fail(error: Throwable) = ending {
+            span?.let { failed(it, error) }
+            metrics.chat(callAttributes(model, null), secondsSince(issuedAt), null, error)
+        }
 
         /**
          * The stream was closed before its answer came. Whoever read it chose to stop, so it is not an error, but the
-         * reason the model stopped never came, which the conventions say as `error`.
+         * reason the model stopped never came, which the conventions say as `error`. A call that did not finish is
+         * not measured.
          */
         fun cut() = ending { span?.setAttribute(FINISH_REASONS, listOf("error")) }
 
@@ -365,12 +488,7 @@ internal class GenAISpans(openTelemetry: OpenTelemetry, settings: AITelemetrySet
         FinishReasons.Other -> response.rawFinishReason ?: "other"
     }
 
-    private fun <T> safely(what: String, block: () -> T): T? = try {
-        block()
-    } catch (e: Exception) {
-        logger.warn("Could not $what for the telemetry of the models, going on without it", e)
-        null
-    }
+    private fun secondsSince(startedAt: Long) = (System.nanoTime() - startedAt) / 1e9
 
     private companion object {
         const val INSTRUMENTATION = "dev.botta.trantor.ai"

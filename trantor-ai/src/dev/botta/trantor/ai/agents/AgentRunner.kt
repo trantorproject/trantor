@@ -21,7 +21,7 @@ import dev.botta.trantor.ai.models.chat.OutputSpec
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.tools.ToolErrorHandlers
 import dev.botta.trantor.ai.telemetry.AITelemetrySettings
-import dev.botta.trantor.ai.telemetry.GenAISpans
+import dev.botta.trantor.ai.telemetry.GenAITelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.context.Context
 import java.util.UUID
@@ -71,7 +71,7 @@ class AgentRunner(
     /** Whether the spans carry what was said, which they do not unless asked. */
     private val telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
 ) {
-    private val spans = GenAISpans(openTelemetry, telemetrySettings)
+    private val telemetry = GenAITelemetry(openTelemetry, telemetrySettings)
 
     /**
      * Runs [agent] on the conversation so far, whose last message is usually what the user just said. With a
@@ -81,9 +81,9 @@ class AgentRunner(
         run(agent, conversation.toList(), configure)
 
     fun run(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunResult {
-        val run = start(agent, conversation, configure, spans)
+        val run = start(agent, conversation, configure, telemetry)
 
-        return spans.agentRun(agent.name, run.isWorkflow) { span ->
+        return telemetry.agentRun(agent.name, run.isWorkflow) { span ->
             run.span = span
             run.beforeRun()
             run.checkInput()
@@ -100,7 +100,7 @@ class AgentRunner(
         stream(agent, conversation.toList(), configure)
 
     fun stream(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunStream {
-        val run = start(agent, conversation, configure, spans)
+        val run = start(agent, conversation, configure, telemetry)
 
         run.beforeRun()
 
@@ -111,11 +111,11 @@ class AgentRunner(
         agent: Agent,
         conversation: List<Message>,
         configure: AgentRunOptions.() -> Unit,
-        spans: GenAISpans,
+        telemetry: GenAITelemetry,
     ): Run {
         val options = AgentRunOptions().apply(configure)
 
-        return Run(agent, teamOf(agent, options.team), options, UUID.randomUUID().toString(), conversation, spans)
+        return Run(agent, teamOf(agent, options.team), options, UUID.randomUUID().toString(), conversation, telemetry)
     }
 
     /**
@@ -152,7 +152,7 @@ class AgentRunner(
         val id: String,
         /** The messages the run was given, which its session keeps once it ended well. */
         private val given: List<Message>,
-        private val spans: GenAISpans,
+        private val telemetry: GenAITelemetry,
     ): NextStep, StreamedRun {
         private val first = agent
 
@@ -160,13 +160,13 @@ class AgentRunner(
         val isWorkflow = team.size > 1 && options.depth == 0
 
         /** The span of the run, while it runs traced. */
-        var span: GenAISpans.OpenSpan? = null
+        var span: GenAITelemetry.OpenSpan? = null
 
         /** The context of whoever asked for the run, which a stream hangs from wherever it is read. */
         private val caller = Context.current()
 
         /** In a workflow, the span of the agent that has the conversation, and the step it got it at. */
-        private var stretch: GenAISpans.OpenSpan? = null
+        private var stretch: GenAITelemetry.OpenSpan? = null
         private var stretchAgent: Agent? = null
         private var stretchStart = 0
 
@@ -191,25 +191,26 @@ class AgentRunner(
         }
 
         /**
-         * What the spans of a step of [agent] hang from. In a workflow, the span of the agent, which a handoff ends
-         * and starts again with the other one; without one, the span of the run.
+         * The invocation a step of [agent] is part of, which its spans hang from and its calls count in. In a
+         * workflow, the span of the agent, which a handoff ends and starts again with the other one; without one,
+         * the span of the run.
          */
-        private fun spanParentOf(agent: Agent, model: ChatModel, steps: List<Step>): Context? {
+        private fun invocationOf(agent: Agent, model: ChatModel, steps: List<Step>): GenAITelemetry.OpenSpan? {
             val run = span ?: return null
 
             if (!isWorkflow) {
                 if (steps.isEmpty()) run.model(model.modelId)
-                return run.context
+                return run
             }
 
             if (agent != stretchAgent) {
                 endStretch(steps)
-                stretch = spans.agent(agent.name, run.context).also { it.model(model.modelId) }
+                stretch = telemetry.agent(agent.name, run.context).also { it.model(model.modelId) }
                 stretchAgent = agent
                 stretchStart = steps.size
             }
 
-            return stretch?.context
+            return stretch
         }
 
         private fun endStretch(steps: List<Step>) {
@@ -220,7 +221,7 @@ class AgentRunner(
         override fun resultOf(result: RunResult) = AgentRunResult(result, agents, id)
 
         override fun started() {
-            span = spans.openAgentRun(first.name, isWorkflow, caller)
+            span = telemetry.openAgentRun(first.name, isWorkflow, caller)
         }
 
         override fun stepsEnded(result: RunResult) = endStretch(result.steps)
@@ -236,9 +237,9 @@ class AgentRunner(
         }
 
         override fun closed() {
-            stretch?.end(null)
+            stretch?.cut()
             stretch = null
-            span?.end(null)
+            span?.cut()
         }
 
         fun beforeRun() = hooksOf(first).forEach { it.beforeRun(contextOf(first, 0), conversation) }
@@ -258,7 +259,7 @@ class AgentRunner(
             val run = contextOf(first, 0)
 
             (guardrails.inputGuardrails + first.inputGuardrails + options.inputGuardrails).forEach { guardrail ->
-                val verdict = spans.guardrail(guardrail.name, "input", "llm", null, span?.context) {
+                val verdict = telemetry.guardrail(guardrail.name, "input", "llm", null, span?.context) {
                     guardrail.check(run, conversation)
                 }
 
@@ -276,7 +277,7 @@ class AgentRunner(
             val run = contextOf(last, result.steps.size)
 
             outputGuardrailsOf(last).forEach { guardrail ->
-                val verdict = spans.guardrail(guardrail.name, "output", "llm", null, span?.context) {
+                val verdict = telemetry.guardrail(guardrail.name, "output", "llm", null, span?.context) {
                     guardrail.check(run, result)
                 }
 
@@ -320,7 +321,7 @@ class AgentRunner(
             agents.add(agent)
 
             val model = chatModels.getOrPut(agent) { agent.modelFrom(models) }
-            val spanParent = spanParentOf(agent, model, steps)
+            val invocation = invocationOf(agent, model, steps)
 
             return StepSetup(
                 model = model,
@@ -344,10 +345,10 @@ class AgentRunner(
                     contextOf(agent, steps.size + 1),
                     toolContext,
                     trippedOnTool(agent, steps),
-                    spans,
-                    spanParent,
+                    telemetry,
+                    invocation?.context,
                 ),
-            ).also { it.spanParent = spanParent }
+            ).also { it.invocation = invocation }
         }
 
         /**
@@ -374,7 +375,7 @@ class AgentRunner(
         private val step: AgentHookContext,
         private val toolContext: (callId: String, toolName: String) -> AgentToolContext,
         private val tripped: (String, GuardrailVerdict.Trip, ToolCallPart, ChatResponse) -> GuardrailTrippedError,
-        private val spans: GenAISpans,
+        private val telemetry: GenAITelemetry,
         /** What the span of each guardrail hangs from: the one of the agent of the step. */
         private val spanParent: Context?,
     ): StepHooks {
@@ -393,7 +394,7 @@ class AgentRunner(
             val context = toolContext(call.callId, call.toolName)
 
             for (guardrail in guardrails) {
-                val verdict = spans.guardrail(guardrail.name, "input", "tool_call", call.callId, spanParent) {
+                val verdict = telemetry.guardrail(guardrail.name, "input", "tool_call", call.callId, spanParent) {
                     guardrail.check(call, context)
                 }
 

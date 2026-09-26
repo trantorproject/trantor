@@ -9,7 +9,7 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.ai.telemetry.AITelemetrySettings
-import dev.botta.trantor.ai.telemetry.GenAISpans
+import dev.botta.trantor.ai.telemetry.GenAITelemetry
 import dev.botta.trantor.primitives.ContextPropagation
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.context.Context
@@ -80,20 +80,20 @@ class ToolLoop(
     }
 
     private val logger = getLogger()
-    private val spans = GenAISpans(openTelemetry, telemetrySettings)
+    private val telemetry = GenAITelemetry(openTelemetry, telemetrySettings)
     private var tracesItsRun = true
 
     fun run(request: ChatRequest, options: CallOptions = CallOptions()): RunResult =
-        if (tracesItsRun) spans.generation { loop(request, options) } else loop(request, options)
+        if (tracesItsRun) telemetry.generation { loop(request, options, it) } else loop(request, options, null)
 
-    private fun loop(request: ChatRequest, options: CallOptions): RunResult {
+    private fun loop(request: ChatRequest, options: CallOptions, generation: GenAITelemetry.OpenSpan?): RunResult {
         val run = Run(request, options)
 
         while (true) {
             throwIfCancelled(options)
 
-            val step = run.next()
-            val response = spans.chat(step.model, step.request, step.agent, step.spanParent) {
+            val step = run.next(generation)
+            val response = telemetry.chat(step.model, step.request, step.agent, step.invocation) {
                 step.model.generate(step.request, options)
             }.also { step.answered(it) }
             val calls = run.callsOf(response)
@@ -136,15 +136,15 @@ class ToolLoop(
         private var messages = request.messages
 
         /**
-         * What the next step goes out with, set up with everything the run has said so far. Its spans hang from
-         * [spansParent] unless its setup says otherwise, and from the current span without either.
+         * What the next step goes out with, set up with everything the run has said so far. It is part of the
+         * invocation its setup says, or of [generation].
          */
-        fun next(spansParent: Context? = null): Outgoing {
+        fun next(generation: GenAITelemetry.OpenSpan?): Outgoing {
             throwIfCancelled(options)
 
             val setup = nextStep.setUp(request.copy(messages = messages), steps.toList())
 
-            return Outgoing(setup, options, setup.spanParent ?: spansParent)
+            return Outgoing(setup, options, setup.invocation ?: generation)
         }
 
         /** The calls the application has to run. The ones the provider ran already came answered. */
@@ -216,21 +216,21 @@ class ToolLoop(
         private var closed = false
 
         private val parent = Context.current()
-        private var generation: GenAISpans.OpenSpan? = null
-        private var chat: GenAISpans.ChatSpan? = null
+        private var generation: GenAITelemetry.OpenSpan? = null
+        private var chat: GenAITelemetry.ChatSpan? = null
 
         private val events = iterator {
             // The work starts with the first read, and so does the span of the run
-            if (tracesItsRun) generation = spans.openGeneration(parent)
-            val stepsParent = generation?.context ?: parent
+            if (tracesItsRun) generation = telemetry.openGeneration(parent)
 
             try {
                 while (true) {
-                    val step = run.next(stepsParent)
+                    val step = run.next(generation)
 
                     yield(RunEvent.StepStarted(run.steps.size + 1))
 
-                    val chat = spans.openChat(step.model, step.request, step.agent, step.spanParent).also { chat = it }
+                    val chat = telemetry.openChat(step.model, step.request, step.agent, step.invocation)
+                        .also { chat = it }
                     val stream = chat.opening { step.model.stream(step.request, options) }.also { current = it }
                     val response = stream.use {
                         for (part in it) {
@@ -324,7 +324,7 @@ class ToolLoop(
             current = null
             // What already ended stays as it ended
             chat?.cut()
-            generation?.end(null)
+            generation?.cut()
         }
     }
 
@@ -336,8 +336,8 @@ class ToolLoop(
     private inner class Outgoing(
         private val setup: StepSetup,
         private val options: CallOptions,
-        /** What the spans of the step hang from. Null is the current span. */
-        val spanParent: Context?,
+        /** The invocation the step is part of, which its spans hang from and its calls count in. */
+        val invocation: GenAITelemetry.OpenSpan?,
     ) {
         val model = setup.model
         val outputTool = setup.outputTool
@@ -409,7 +409,7 @@ class ToolLoop(
         fun execute(call: ToolCallPart): Execution {
             refusals[call.callId]?.let { return refused(call, it) }
 
-            return spans.tool(call, toolsByName[call.toolName], agent, spanParent) { run(call) }
+            return telemetry.tool(call, toolsByName[call.toolName], agent, invocation) { run(call) }
         }
 
         private fun run(call: ToolCallPart): Execution {

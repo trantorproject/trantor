@@ -5,7 +5,7 @@ import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.ToolCallPart
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
-import io.opentelemetry.context.Context
+import dev.botta.trantor.ai.telemetry.GenAITelemetry
 
 /**
  * Decides what each step of a [ToolLoop] goes out with. The loop asks before every step, so that each one can go out
@@ -57,6 +57,9 @@ class StepSetup(
     /** What the loop calls around the model and the tools of the step. */
     val hooks: StepHooks? = null,
 ) {
-    /** What the spans of the step hang from, when whoever runs the loop traces the run. Null is the current span. */
-    internal var spanParent: Context? = null
+    /**
+     * The invocation the step is part of — the agent or the stretch of an agent — when whoever runs the loop traces
+     * the run: the spans of the step hang from it, and its calls count in it.
+     */
+    internal var invocation: GenAITelemetry.OpenSpan? = null
 }

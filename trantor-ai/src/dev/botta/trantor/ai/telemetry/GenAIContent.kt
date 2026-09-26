@@ -19,7 +19,7 @@ import dev.botta.trantor.ai.tools.ToolSpec
 
 /**
  * What was said, as JSON in the shape the conventions give it: the models of `docs/gen-ai/non-normative/models.py`
- * at the same commit as [GenAISpans]. The Java API has no structured attributes on spans yet, and for that case the
+ * at the same commit as [GenAITelemetry]. The Java API has no structured attributes on spans yet, and for that case the
  * conventions ask for the JSON as a string.
  *
  * - The `System` messages and the dynamic instructions are the system instructions, and not part of the input.

@@ -1,16 +1,21 @@
 package dev.botta.trantor.ai.testing
 
 import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.metrics.SdkMeterProvider
+import io.opentelemetry.sdk.metrics.data.MetricData
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
 
-/** An OpenTelemetry that keeps every span as it ends. */
+/** An OpenTelemetry that keeps every span as it ends, and every metric until it is asked for. */
 class TestTelemetry {
     val exporter: InMemorySpanExporter = InMemorySpanExporter.create()
+    private val metricReader = InMemoryMetricReader.create()
     val openTelemetry: OpenTelemetrySdk = OpenTelemetrySdk.builder()
         .setTracerProvider(SdkTracerProvider.builder().addSpanProcessor(SimpleSpanProcessor.create(exporter)).build())
+        .setMeterProvider(SdkMeterProvider.builder().registerMetricReader(metricReader).build())
         .build()
     val tracer = openTelemetry.getTracer("test")
 
@@ -18,4 +23,8 @@ class TestTelemetry {
     val spans: List<SpanData> get() = exporter.finishedSpanItems
 
     fun named(name: String) = spans.single { it.name == name }
+
+    val metrics: Collection<MetricData> get() = metricReader.collectAllMetrics()
+
+    fun metric(name: String) = metrics.single { it.name == name }
 }
