@@ -13,6 +13,7 @@ dependencies {
 
 dependencies {
     testImplementation(project(":trantor-gson"))
+    testImplementation("io.opentelemetry:opentelemetry-sdk-testing")
 }
 
 extra.set("POM_NAME", "Trantor AI")

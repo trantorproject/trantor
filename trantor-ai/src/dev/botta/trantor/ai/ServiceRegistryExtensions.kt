@@ -10,6 +10,7 @@ import dev.botta.trantor.ai.providers.openai.addOpenAI
 import dev.botta.trantor.ai.tools.ToolErrorHandlers
 import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceRegistry
+import io.opentelemetry.api.OpenTelemetry
 
 /**
  * Registers everything an application needs to use models: [AI], the [AgentRunner], the [ModelRegistry] and the
@@ -28,6 +29,8 @@ import dev.botta.trantor.di.ServiceRegistry
  * What a model may learn about a failing tool is named apart, with [addToolErrorHandlers], and the hooks and the
  * guardrails of every run of the agents with [addAgentHooks] and [addGuardrails]. An application that does not want
  * the providers of Trantor calls [addModelRegistry] and adds its own, and one that registered its own [AI] keeps it.
+ *
+ * When there is an `OpenTelemetry` in the container, registered before or after, the generations are traced with it.
  */
 fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = { _, _ -> }) = apply {
     addModelRegistry()
@@ -37,7 +40,7 @@ fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = {
     addOpenAI()
     addAnthropic()
     configure(configuration)
-    addSingletonIfMissing<AI> { DefaultAI(it.get(), it.get()) }
+    addSingletonIfMissing<AI> { DefaultAI(it.get(), it.get(), it.getOrDefault<OpenTelemetry> { OpenTelemetry.noop() }) }
     addSingletonIfMissing<AgentRunner> { AgentRunner(it.get(), it.get(), it.get(), it.get()) }
 }
 

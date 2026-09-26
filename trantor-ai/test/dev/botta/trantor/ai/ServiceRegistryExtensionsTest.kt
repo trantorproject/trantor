@@ -27,6 +27,7 @@ import dev.botta.trantor.ai.providers.openai.OpenAIConfig
 import dev.botta.trantor.ai.providers.openai.addOpenAI
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.ai.testing.TestTelemetry
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolOutput
@@ -39,6 +40,7 @@ import dev.botta.trantor.domain.Money
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
 import dev.botta.trantor.web.client.HttpClient
+import io.opentelemetry.api.OpenTelemetry
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -480,6 +482,31 @@ class ServiceRegistryExtensionsTest {
         }
     }
 
+    @Nested
+    inner class `tracing` {
+        @Test
+        fun `the generations are traced with the OpenTelemetry of the container`() {
+            registry.addSingleton<OpenTelemetry>(telemetry.openTelemetry)
+            registry.addAI()
+            registry.addFakeProvider()
+
+            provider.get<AI>().text("Hola", "fake/a-model")
+
+            assertThat(telemetry.named("chat a-model").parentSpanId).isEqualTo(telemetry.named("invoke_agent").spanId)
+        }
+
+        @Test
+        fun `registered after addAI too`() {
+            registry.addAI()
+            registry.addFakeProvider()
+            registry.addSingleton<OpenTelemetry>(telemetry.openTelemetry)
+
+            provider.get<AI>().text("Hola", "fake/a-model")
+
+            assertThat(telemetry.spans.map { it.name }).containsExactly("chat a-model", "invoke_agent")
+        }
+    }
+
     @BeforeEach
     fun forgetWhatTheMiddlewaresSaw() {
         Counting.calls = 0
@@ -554,6 +581,7 @@ class ServiceRegistryExtensionsTest {
         }
     }
 
+    private val telemetry = TestTelemetry()
     private val config = ConfigManager()
 
     // The host registers it; addConfig needs it to read a section into a settings class

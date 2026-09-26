@@ -7,6 +7,8 @@ import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.primitives.logging.getLogger
+import dev.botta.trantor.ai.telemetry.GenAISpans
+import io.opentelemetry.api.OpenTelemetry
 
 /**
  * Calls the model, runs the tools it asks for and calls it again with their results, until it answers without
@@ -38,6 +40,11 @@ class ToolLoop(
     private val run: RunContext = RunContext(),
     /** Asked in order for a safe message about an exception of a tool; the first that answers wins. */
     private val errorHandlers: List<ToolErrorHandler> = emptyList(),
+    /**
+     * What traces the run: an `invoke_agent` span with a `chat` span for each call to the model and an `execute_tool`
+     * span for each tool. Without an SDK behind it, it costs nothing.
+     */
+    openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
 ) {
     /** A loop whose every step goes out with the same model and tools, as a generation does. */
     constructor(
@@ -46,18 +53,24 @@ class ToolLoop(
         maxSteps: Int = DEFAULT_MAX_STEPS,
         run: RunContext = RunContext(),
         errorHandlers: List<ToolErrorHandler> = emptyList(),
-    ): this(NextStep.fixed(model, tools), maxSteps, run, errorHandlers)
+        openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+    ): this(NextStep.fixed(model, tools), maxSteps, run, errorHandlers, openTelemetry)
 
     private val logger = getLogger()
+    private val spans = GenAISpans(openTelemetry)
 
-    fun run(request: ChatRequest, options: CallOptions = CallOptions()): RunResult {
+    fun run(request: ChatRequest, options: CallOptions = CallOptions()): RunResult =
+        spans.generation { loop(request, options) }
+
+    private fun loop(request: ChatRequest, options: CallOptions): RunResult {
         val run = Run(request, options)
 
         while (true) {
             throwIfCancelled(options)
 
             val step = run.next()
-            val response = step.model.generate(step.request, options).also { step.answered(it) }
+            val response = spans.chat(step.model, step.request) { step.model.generate(step.request, options) }
+                .also { step.answered(it) }
             val calls = run.callsOf(response)
 
             if (calls.isEmpty()) {
@@ -328,6 +341,10 @@ class ToolLoop(
         fun execute(call: ToolCallPart): Execution {
             refusals[call.callId]?.let { return refused(call, it) }
 
+            return spans.tool(call, toolsByName[call.toolName], { run(call) }) { it.failure }
+        }
+
+        private fun run(call: ToolCallPart): Execution {
             // Out of the try: a hook that fails is a failure of the application, not of the tool
             val input = hooks.beforeTool(call)
             val tool = toolsByName[call.toolName] ?: return unknown(call).let { failed(call, it, it.message!!) }
