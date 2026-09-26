@@ -38,7 +38,7 @@ which is the canonical example.
 | `trantor-domain` | Domain building blocks: `Aggregate`, `Id`, `Money`, `Email`, domain errors, `Ensure`. |
 | `trantor-data` | JDBC, Hikari, jOOQ, transaction managers. |
 | `trantor-web` | HTTP server on Javalin: routes, controllers, error handlers, websockets. |
-| `trantor-web-client` | HTTP client abstraction with OkHttp and Jetty backends, plus SSE. |
+| `trantor-web-client` | HTTP client abstraction on OkHttp, plus SSE. `addHttpClient()` registers one for the application. |
 | `trantor-ai` | LLM access: `ChatModel`, `ModelRegistry`, middlewares, provider adapters. |
 | `trantor-gson` | `JsonSerializer` on Gson, with the Kotlin-aware adapters. |
 | `trantor-aws`, `trantor-queues-sqs` | AWS integration and the SQS queue driver. |

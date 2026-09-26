@@ -114,9 +114,9 @@ The web layer uses:
 
 ### trantor-web-client
 
-HTTP client implementation built on **Jetty**.
+HTTP client abstraction, `HttpClient`, with its implementation on **OkHttp**, streaming and SSE included.
 
-Used for making HTTP requests from Trantor applications.
+`addHttpClient()` registers one for the whole application, read from the `httpClient` section.
 
 ---
 
