@@ -15,26 +15,32 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
 import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentelemetry.context.propagation.TextMapPropagator
 import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.metrics.SdkMeterProvider
+import io.opentelemetry.sdk.metrics.export.MetricExporter
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import io.opentelemetry.sdk.trace.samplers.Sampler
+import java.time.Duration
 
 /**
- * Registers an [OpenTelemetry] that sends the spans of the application over OTLP, to a collector or straight to
- * a backend. Only the endpoint and the headers change from one backend to another:
+ * Registers an [OpenTelemetry] that sends the spans and the metrics of the application over OTLP, to a collector or
+ * straight to a backend. Only the endpoint and the headers change from one backend to another:
  *
  * ```kotlin
  * services.addOpenTelemetry { settings, _ -> settings.endpoint = "https://otlp.example.com" }
  * ```
  *
  * The SDK is built the first time something asks for it, and the parts of Trantor that trace ask for it when they
- * are created. Spans wait in a batch and leave every few seconds; the rest leaves when the host stops, after every
- * hosted service stopped, so the last requests and jobs are not lost.
+ * are created. Spans wait in a batch and leave every few seconds, and metrics every
+ * [OpenTelemetrySettings.metricExportInterval]; the rest leaves when the host stops, after every hosted service
+ * stopped, so the last requests and jobs are not lost.
  *
  * An [OpenTelemetry] registered before is kept: that is how an application uses the OpenTelemetry Java agent, by
- * registering `GlobalOpenTelemetry.get()`. A [SpanExporter] registered before replaces the OTLP one.
+ * registering `GlobalOpenTelemetry.get()`. A [SpanExporter] or a [MetricExporter] registered before replaces the
+ * OTLP one.
  */
 fun ServiceRegistry.addOpenTelemetry(configuration: ServiceConfiguration<OpenTelemetrySettings> = { _, _ -> }) =
     apply {
@@ -43,13 +49,16 @@ fun ServiceRegistry.addOpenTelemetry(configuration: ServiceConfiguration<OpenTel
 
         if (has<OpenTelemetry>()) return@apply
 
-        addSingletonIfMissing<SpanExporter> { OtlpExporters.create(it.get<OpenTelemetrySettings>()) }
+        addSingletonIfMissing<SpanExporter> { OtlpExporters.spanExporter(it.get<OpenTelemetrySettings>()) }
+        addSingletonIfMissing<MetricExporter> { OtlpExporters.metricExporter(it.get<OpenTelemetrySettings>()) }
         addSingleton<OpenTelemetry> { createOpenTelemetry(it) }
     }
 
 private fun createOpenTelemetry(services: ServiceProvider): OpenTelemetry {
     val settings = services.get<OpenTelemetrySettings>()
     if (!settings.enabled) return OpenTelemetry.noop()
+
+    val resource = resourceOf(settings, services.get<HostEnvironment>())
 
     val sdk = OpenTelemetrySdk.builder()
         // The default of OTEL_PROPAGATORS. The builder has none, and without them the trace stops at every service
@@ -63,9 +72,19 @@ private fun createOpenTelemetry(services: ServiceProvider): OpenTelemetry {
         )
         .setTracerProvider(
             SdkTracerProvider.builder()
-                .setResource(resourceOf(settings, services.get<HostEnvironment>()))
+                .setResource(resource)
                 .setSampler(Sampler.parentBased(Sampler.traceIdRatioBased(settings.samplingRatio)))
                 .addSpanProcessor(BatchSpanProcessor.builder(services.get<SpanExporter>()).build())
+                .build(),
+        )
+        .setMeterProvider(
+            SdkMeterProvider.builder()
+                .setResource(resource)
+                .registerMetricReader(
+                    PeriodicMetricReader.builder(services.get<MetricExporter>())
+                        .setInterval(Duration.ofMillis(settings.metricExportInterval.toLong()))
+                        .build(),
+                )
                 .build(),
         )
         .build()

@@ -10,14 +10,14 @@ import java.net.URLDecoder
  * OpenTelemetry elsewhere keeps working here. The configuration wins over the variable.
  */
 data class OpenTelemetrySettings(
-    /** `false` registers the no-op `OpenTelemetry`: spans are opened and cost nothing. `OTEL_SDK_DISABLED`. */
+    /** `false` registers the no-op `OpenTelemetry`: spans and metrics cost nothing. `OTEL_SDK_DISABLED`. */
     var enabled: Boolean = Env["OTEL_SDK_DISABLED"]?.lowercase() != "true",
     /** The `service.name` of every span. `null` is the `appName` of the host. `OTEL_SERVICE_NAME`. */
     var serviceName: String? = Env["OTEL_SERVICE_NAME"],
     /**
      * The base URL of the collector or the backend, as `OTEL_EXPORTER_OTLP_ENDPOINT`: over HTTP the spans go to
-     * `v1/traces` under it. `null` is a collector on this machine, `http://localhost:4318` over HTTP and
-     * `http://localhost:4317` over gRPC.
+     * `v1/traces` under it, and the metrics to `v1/metrics`. `null` is a collector on this machine,
+     * `http://localhost:4318` over HTTP and `http://localhost:4317` over gRPC.
      */
     var endpoint: String? = Env["OTEL_EXPORTER_OTLP_ENDPOINT"],
     /** One of [OtlpProtocols]. `OTEL_EXPORTER_OTLP_PROTOCOL`. */
@@ -32,6 +32,12 @@ data class OpenTelemetrySettings(
      * forms do not fit in one setting.
      */
     var samplingRatio: Double = 1.0,
+    /**
+     * How often the metrics leave, in milliseconds; what is left leaves when the host stops. Metrics are sums and
+     * histograms kept in memory, so an interval does not lose anything, it only decides how fresh the backend is.
+     * `OTEL_METRIC_EXPORT_INTERVAL`, and a minute without it, as the spec says.
+     */
+    var metricExportInterval: Int = Env["OTEL_METRIC_EXPORT_INTERVAL"]?.toIntOrNull() ?: 60_000,
     /**
      * Also makes it the `GlobalOpenTelemetry`, for the libraries that look for it there. Trantor itself never
      * does: it takes the one in the container.

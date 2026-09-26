@@ -37,19 +37,22 @@ class OpenTelemetrySettingsTest {
     }
 
     @Nested
-    inner class `the endpoint the spans go to` {
+    inner class `the endpoint the spans and the metrics go to` {
         @Test
-        fun `over HTTP is the one of the traces under the base`() {
+        fun `over HTTP is the one of each signal under the base`() {
             val settings = OpenTelemetrySettings(endpoint = "http://collector:4318/mycollector/")
 
-            assertThat(OtlpExporters.endpointOf(settings)).isEqualTo("http://collector:4318/mycollector/v1/traces")
+            assertThat(OtlpExporters.endpointOf(settings, "traces"))
+                .isEqualTo("http://collector:4318/mycollector/v1/traces")
+            assertThat(OtlpExporters.endpointOf(settings, "metrics"))
+                .isEqualTo("http://collector:4318/mycollector/v1/metrics")
         }
 
         @Test
         fun `over gRPC is the base itself`() {
             val settings = OpenTelemetrySettings(endpoint = "http://collector:4317", protocol = OtlpProtocols.GRPC)
 
-            assertThat(OtlpExporters.endpointOf(settings)).isEqualTo("http://collector:4317")
+            assertThat(OtlpExporters.endpointOf(settings, "metrics")).isEqualTo("http://collector:4317")
         }
 
         @Test
@@ -57,8 +60,8 @@ class OpenTelemetrySettingsTest {
             val http = OpenTelemetrySettings(endpoint = null, protocol = OtlpProtocols.HTTP_PROTOBUF)
             val grpc = OpenTelemetrySettings(endpoint = null, protocol = OtlpProtocols.GRPC)
 
-            assertThat(OtlpExporters.endpointOf(http)).isEqualTo("http://localhost:4318/v1/traces")
-            assertThat(OtlpExporters.endpointOf(grpc)).isEqualTo("http://localhost:4317")
+            assertThat(OtlpExporters.endpointOf(http, "traces")).isEqualTo("http://localhost:4318/v1/traces")
+            assertThat(OtlpExporters.endpointOf(grpc, "traces")).isEqualTo("http://localhost:4317")
         }
     }
 
@@ -66,7 +69,7 @@ class OpenTelemetrySettingsTest {
     fun `a protocol the exporter does not speak fails, saying which ones it does`() {
         val settings = OpenTelemetrySettings(protocol = "http/json")
 
-        assertThatThrownBy { OtlpExporters.create(settings) }
+        assertThatThrownBy { OtlpExporters.spanExporter(settings) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("http/json")
             .hasMessageContaining("grpc")

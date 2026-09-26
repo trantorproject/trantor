@@ -5,6 +5,7 @@ package dev.botta.trantor.opentelemetry
 import dev.botta.trantor.config.providers.addMemoryCollection
 import dev.botta.trantor.di.ServiceRegistry
 import dev.botta.trantor.hosting.Host
+import dev.botta.trantor.opentelemetry.testing.RecordingMetricExporter
 import dev.botta.trantor.opentelemetry.testing.RecordingSpanExporter
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
@@ -17,6 +18,7 @@ import io.opentelemetry.api.trace.TraceFlags
 import io.opentelemetry.api.trace.TraceState
 import io.opentelemetry.context.Context
 import io.opentelemetry.context.propagation.TextMapGetter
+import io.opentelemetry.sdk.metrics.export.MetricExporter
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -77,6 +79,32 @@ class ServiceRegistryExtensionsTest {
             host.stop()
 
             assertThat(exporter.spans.single().resource.getAttribute(SERVICE_NAME)).isEqualTo("billing-worker")
+        }
+    }
+
+    @Nested
+    inner class `the metrics` {
+        @Test
+        fun `wait for the interval, and stopping the host sends what is left, named after the application`() {
+            val host = started()
+
+            count(host, "invoices.created")
+
+            assertThat(metricExporter.metrics).isEmpty()
+            host.stop()
+            val metric = metricExporter.metrics.single { it.name == "invoices.created" }
+            assertThat(metric.resource.getAttribute(SERVICE_NAME)).isEqualTo("billing")
+            assertThat(metricExporter.isShutdown).isTrue()
+        }
+
+        @Test
+        fun `leave every interval the configuration says`() {
+            val host = started(config = mapOf("openTelemetry.metricExportInterval" to "50"))
+
+            count(host, "invoices.created")
+
+            await { metricExporter.metrics.any { it.name == "invoices.created" } }
+            assertThat(metricExporter.isShutdown).isFalse()
         }
     }
 
@@ -231,6 +259,7 @@ class ServiceRegistryExtensionsTest {
         builder.config.addMemoryCollection(config)
         builder.services.addSingleton<JsonSerializer>(GsonSerializer())
         builder.services.addSingleton<SpanExporter>(exporter)
+        builder.services.addSingleton<MetricExporter>(metricExporter)
         builder.services.register()
 
         return builder.build().also { hosts.add(it) }.apply { start() }
@@ -243,6 +272,17 @@ class ServiceRegistryExtensionsTest {
         return span.spanContext.isSampled
     }
 
+    private fun count(host: Host, name: String) =
+        host.services.get<OpenTelemetry>().getMeter("test").counterBuilder(name).build().add(1)
+
+    private fun await(condition: () -> Boolean) {
+        val deadline = System.nanoTime() + 5_000_000_000
+        while (!condition()) {
+            check(System.nanoTime() < deadline) { "It did not happen in 5 seconds" }
+            Thread.sleep(10)
+        }
+    }
+
     private object MapGetter: TextMapGetter<Map<String, String>> {
         override fun keys(carrier: Map<String, String>) = carrier.keys
 
@@ -250,6 +290,7 @@ class ServiceRegistryExtensionsTest {
     }
 
     private val exporter = RecordingSpanExporter()
+    private val metricExporter = RecordingMetricExporter()
     private val hosts = mutableListOf<Host>()
 
     private companion object {

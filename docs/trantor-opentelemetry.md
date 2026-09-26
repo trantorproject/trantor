@@ -1,7 +1,8 @@
 # trantor-opentelemetry
 
-Traces of what an application does — the requests it serves, the calls it makes, the jobs it runs — sent over
-OTLP to whatever backend reads them: Jaeger, Grafana Tempo, Honeycomb, Datadog, an OpenTelemetry Collector.
+Traces of what an application does — the requests it serves, the calls it makes, the jobs it runs — and its
+metrics, sent over OTLP to whatever backend reads them: Jaeger, Grafana Tempo, Prometheus, Honeycomb, Datadog, an
+OpenTelemetry Collector.
 
 Trantor is split the way OpenTelemetry itself is:
 
@@ -38,11 +39,12 @@ over the variable.
 |---|---|---|
 | `enabled` | `true` (`OTEL_SDK_DISABLED`) | `false` registers the no-op `OpenTelemetry`: spans are opened and go nowhere |
 | `serviceName` | the `appName` of the host (`OTEL_SERVICE_NAME`) | The `service.name` of every span |
-| `endpoint` | a collector on this machine (`OTEL_EXPORTER_OTLP_ENDPOINT`) | The base URL: over HTTP the spans go to `v1/traces` under it |
+| `endpoint` | a collector on this machine (`OTEL_EXPORTER_OTLP_ENDPOINT`) | The base URL: over HTTP the spans go to `v1/traces` under it, and the metrics to `v1/metrics` |
 | `protocol` | `http/protobuf` (`OTEL_EXPORTER_OTLP_PROTOCOL`) | Or `grpc` |
 | `headers` | none (`OTEL_EXPORTER_OTLP_HEADERS`) | Sent with every export: where most backends take their key |
 | `resourceAttributes` | none (`OTEL_RESOURCE_ATTRIBUTES`) | Added next to `service.name` and `deployment.environment.name` |
 | `samplingRatio` | `1.0` | The fraction of the traces that start here to keep |
+| `metricExportInterval` | `60000` (`OTEL_METRIC_EXPORT_INTERVAL`) | How often the metrics leave, in milliseconds |
 | `registerGlobal` | `true` | Also make it the `GlobalOpenTelemetry`, for libraries that look there |
 
 To change them in code:
@@ -57,6 +59,12 @@ To try it locally, Jaeger takes OTLP over both protocols and shows the traces at
 docker run -d --name jaeger -p 16686:16686 -p 4317:4317 -p 4318:4318 jaegertracing/jaeger:latest
 ```
 
+Jaeger takes no metrics. `grafana/otel-lgtm` takes both, and shows them in Grafana at `http://localhost:3000`:
+
+```bash
+docker run -d --name lgtm -p 3000:3000 -p 4317:4317 -p 4318:4318 grafana/otel-lgtm:latest
+```
+
 **Sampling** keeps the decision of the caller: a trace that arrives sampled from another service stays sampled
 here, whatever the ratio, so a trace is never cut in half. `OTEL_TRACES_SAMPLER` is not read.
 
@@ -64,7 +72,12 @@ here, whatever the ratio, so a trace is never cut in half. `OTEL_TRACES_SAMPLER`
 service stopped, so the last requests and jobs are not lost. It is not a hosted service itself for that reason:
 hosted services stop in the reverse order they were registered.
 
-Only traces for now: no metrics and no logs over OTLP. Logs carry the ids of the trace instead (see below).
+**Metrics are kept in memory** — sums and histograms — and leave every `metricExportInterval`, so the interval
+only decides how fresh the backend is. What is left leaves when the host stops, with the spans. A `MetricExporter`
+registered before replaces the OTLP one, as a `SpanExporter` does. Trantor itself only measures its calls to the
+models for now (see [trantor-ai](trantor-ai.md)); the HTTP and queue metrics are still to come.
+
+No logs over OTLP: logs carry the ids of the trace instead (see below).
 
 ---
 
