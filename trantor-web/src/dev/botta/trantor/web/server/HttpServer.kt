@@ -6,18 +6,32 @@ import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.web.server.logs.HttpRequestLogger
 import dev.botta.trantor.web.server.stats.*
+import dev.botta.trantor.web.server.tracing.*
 import io.javalin.Javalin
 import io.javalin.config.*
 import io.javalin.http.Context
+import io.opentelemetry.api.OpenTelemetry
+import jakarta.servlet.DispatcherType
 import org.apache.logging.log4j.core.config.Configurator
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.StatisticsHandler
+import org.eclipse.jetty.servlet.FilterHolder
 import org.eclipse.jetty.util.thread.QueuedThreadPool
 import org.slf4j.MDC
 import java.time.Duration
 import java.util.*
 
-class HttpServer(private val settings: HttpServerSettings): RouteRegistrant, HostedService {
+/**
+ * The HTTP server of the application, on Javalin and Jetty, started and stopped with the host.
+ *
+ * Every request carries a correlation id in `X-Request-Id`, the one the client sent or a new one, which is also the
+ * `cid` of its logs. With an [openTelemetry] that exports, every request is also a `SERVER` span that goes on from
+ * the `traceparent` of the caller; the no-op one, the default, costs nothing.
+ */
+class HttpServer(
+    private val settings: HttpServerSettings,
+    private val openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+): RouteRegistrant, HostedService {
     private val logger = getLogger()
     private val javalin: Javalin
     private val routeRegister: RouteRegister
@@ -39,6 +53,9 @@ class HttpServer(private val settings: HttpServerSettings): RouteRegistrant, Hos
             javalinConfig.startupWatcherEnabled = false
             settings.configureJavalin(javalinConfig)
             configureJetty(javalinConfig.jetty)
+            javalinConfig.jetty.modifyServletContextHandler {
+                it.addFilter(FilterHolder(ServerSpanFilter(openTelemetry)), "/*", EnumSet.of(DispatcherType.REQUEST))
+            }
         }
         routeRegister = JavalinRouteRegister(javalin)
         setupMdc()
@@ -87,6 +104,8 @@ class HttpServer(private val settings: HttpServerSettings): RouteRegistrant, Hos
     }
 
     private fun logRequest(ctx: Context, executionTimeMs: Float) {
+        // The end of the request for Javalin, sync or async, and the first moment the route is known for sure
+        ServerSpans.routed(ctx)
         requestLogger.handle(ctx, executionTimeMs)
         MDC.clear()
     }
@@ -104,6 +123,7 @@ class HttpServer(private val settings: HttpServerSettings): RouteRegistrant, Hos
 
     fun <T: Exception> addErrorHandler(errorHandler: HttpErrorHandler<T>) {
         javalin.exception(errorHandler.errorType) { error: T, ctx: Context ->
+            ServerSpans.handled(ctx, error)
             errorHandler.handle(error, ctx, logger)
         }
     }

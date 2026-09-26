@@ -10,6 +10,10 @@ import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.common.AttributeKey.stringKey
 import io.opentelemetry.api.common.Attributes
+import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
+import io.opentelemetry.context.propagation.ContextPropagators
+import io.opentelemetry.context.propagation.TextMapPropagator
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider
@@ -48,6 +52,15 @@ private fun createOpenTelemetry(services: ServiceProvider): OpenTelemetry {
     if (!settings.enabled) return OpenTelemetry.noop()
 
     val sdk = OpenTelemetrySdk.builder()
+        // The default of OTEL_PROPAGATORS. The builder has none, and without them the trace stops at every service
+        .setPropagators(
+            ContextPropagators.create(
+                TextMapPropagator.composite(
+                    W3CTraceContextPropagator.getInstance(),
+                    W3CBaggagePropagator.getInstance(),
+                ),
+            ),
+        )
         .setTracerProvider(
             SdkTracerProvider.builder()
                 .setResource(resourceOf(settings, services.get<HostEnvironment>()))

@@ -4,6 +4,7 @@ dependencies {
     api("io.javalin:javalin")
     implementation("org.eclipse.jetty:jetty-client")
     implementation("org.fusesource.jansi:jansi")
+    testImplementation("io.opentelemetry:opentelemetry-sdk-testing")
 }
 
 extra.set("POM_NAME", "Trantor Web")

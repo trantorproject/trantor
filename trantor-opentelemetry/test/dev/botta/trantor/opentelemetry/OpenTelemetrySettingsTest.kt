@@ -25,7 +25,8 @@ class OpenTelemetrySettingsTest {
 
         @Test
         fun `ignores spaces around the pairs and what is not a pair`() {
-            assertThat(parseKeyValues(" team = payments , nonsense,,")).containsExactlyEntriesOf(mapOf("team" to "payments"))
+            assertThat(parseKeyValues(" team = payments , nonsense,,"))
+                .containsExactlyEntriesOf(mapOf("team" to "payments"))
         }
 
         @Test

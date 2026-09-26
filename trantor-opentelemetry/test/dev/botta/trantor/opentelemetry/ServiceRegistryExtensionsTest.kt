@@ -16,6 +16,7 @@ import io.opentelemetry.api.trace.SpanContext
 import io.opentelemetry.api.trace.TraceFlags
 import io.opentelemetry.api.trace.TraceState
 import io.opentelemetry.context.Context
+import io.opentelemetry.context.propagation.TextMapGetter
 import io.opentelemetry.sdk.trace.export.SpanExporter
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -68,7 +69,9 @@ class ServiceRegistryExtensionsTest {
 
         @Test
         fun `carry what the application set in code`() {
-            val host = started(register = { addOpenTelemetry { settings, _ -> settings.serviceName = "billing-worker" } })
+            val host = started(
+                register = { addOpenTelemetry { settings, _ -> settings.serviceName = "billing-worker" } },
+            )
 
             span(host, "process invoices")
             host.stop()
@@ -146,6 +149,37 @@ class ServiceRegistryExtensionsTest {
     }
 
     @Nested
+    inner class `between services` {
+        @Test
+        fun `the trace travels in the W3C traceparent header`() {
+            val host = started()
+            val propagator = host.services.get<OpenTelemetry>().propagators.textMapPropagator
+            val span = host.services.get<OpenTelemetry>().getTracer("test").spanBuilder("GET /invoices").startSpan()
+            val headers = mutableMapOf<String, String>()
+
+            span.makeCurrent().use {
+                propagator.inject(Context.current(), headers) { carrier, key, value -> carrier!![key] = value }
+            }
+
+            // The flags are the span's own: besides sampled, the SDK marks the trace id as random (W3C level 2)
+            assertThat(headers["traceparent"]).isEqualTo(
+                "00-${span.spanContext.traceId}-${span.spanContext.spanId}-${span.spanContext.traceFlags.asHex()}",
+            )
+        }
+
+        @Test
+        fun `and is read back from it`() {
+            val host = started()
+            val propagator = host.services.get<OpenTelemetry>().propagators.textMapPropagator
+            val headers = mapOf("traceparent" to "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")
+
+            val context = propagator.extract(Context.root(), headers, MapGetter)
+
+            assertThat(Span.fromContext(context).spanContext.traceId).isEqualTo("4bf92f3577b34da6a3ce929d0e0e4736")
+        }
+    }
+
+    @Nested
     inner class `the global` {
         @Test
         fun `is the one of the container, for the libraries that look for it there`() {
@@ -166,8 +200,8 @@ class ServiceRegistryExtensionsTest {
             val sampled = span(host, "GET /invoices")
 
             assertThat(sampled).isTrue()
-            assertThat(GlobalOpenTelemetry.getTracer("some-library").spanBuilder("query").startSpan().spanContext.isValid)
-                .isFalse()
+            val global = GlobalOpenTelemetry.getTracer("some-library").spanBuilder("query").startSpan()
+            assertThat(global.spanContext.isValid).isFalse()
         }
 
         @Test
@@ -207,6 +241,12 @@ class ServiceRegistryExtensionsTest {
         val span = host.services.get<OpenTelemetry>().getTracer("test").spanBuilder(name).startSpan()
         span.end()
         return span.spanContext.isSampled
+    }
+
+    private object MapGetter: TextMapGetter<Map<String, String>> {
+        override fun keys(carrier: Map<String, String>) = carrier.keys
+
+        override fun get(carrier: Map<String, String>?, key: String) = carrier?.get(key)
     }
 
     private val exporter = RecordingSpanExporter()
