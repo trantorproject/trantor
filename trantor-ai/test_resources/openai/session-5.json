@@ -1,0 +1,122 @@
+{
+  "id": "resp_0089ab6adf19eead006ab71216538087d28e8ea762a32ff697",
+  "object": "response",
+  "created_at": 1790382614,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790382615,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0089ab6adf19eead006ab71216aee887d2899ab436c2f37b6c",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtxIXxRoZt82EG-868b1Hb3zKY_otK3SE-vO3oq7ffYn_uqasSnXPeojpLDF8F7XvUyO_UADC4_OOeXUPsvp0PBaXHNKooEPPgu3_Wt4cj39epRaV8zO582ZGfJY0nTaNaGmJ8B46ozE0ZwOFzOeYwlo9rTSp8tx-YR2avBW5ovaleUpW1tIxAIlXNont5_JcQtLTOB4cLNqZ8BlYr0I3mOeZfQNVeI4ScyDgOLTxFyY4XDhEbIwlxQrNAbWHURceyfwzqUUYIGQ39fvMzzGERlfoWeJ9gqnTr0cVc_pFJ67Vi-QJ7a4-MShnz0uNfm7fg2pTBT_zP2ZUatnIxrEDE8X4kH8QtDvnPzIpxH5skP6ZXYXoqRPoCcC-aPZho92nUcEcHipgalkDvBK3Waj30fxnKjz4W8nW24TZObVw7YD7r12v4K5LiJ0T78N7abeTkFxXjcIrm--EY_apojbjqPb4zrKZpw_jsnkrnC2cnheS3jtWDqRWLivJSQKLbVreJhm29t5qqr_85FpBCnyrHBNVAcug39-nAuuRDknQ--bJC94ddD7Sg61n_sB0wR_pBO5x9XPs2m4IC6RYr5VSVgF5bZhbCxeJ8QJrJ35JQCSZLq6mdt7gj032CsS5IpMqNla0ZCDgaLOU5n1JAw40JSXjOHwAbRHuGBcwirCbJlpmzoDUDwmB0T6_z0ynjEpyJdlBVRO1SkIxs3p6ErjhzE8I7ZL78unDKuI19qCPKBVn5_gqtCvGjbdgYig8WmGW7zQKOue3QRmsTR64AE1iETIsRHx_8BxXBrZejNN42LsTUpUj2lov9g3_YeaxP-7a4Ya6M3olv7vxWPwSXSiXLj3qG_pUffbxEmogrcFo2A31LAPvTvYs6zpKcjYggKKSe28nz8Ua05Wje0c5iSl13BruaRRq9ImCm5czbH1MdNFywxvxXO_tIqx94JTHs5vuSgZmj_s9Fgx_hhPcyguJRNjAp2fXoRo9tocE71hoX-WoMaaAjZchBPo1dZgSle0V1-W5HQJIJuOnkkU4lkJ6ObhCIbGKxwIBYNkxnFXwFfGR6xTNFRg4r5mg0PlVZAU0OL-4JYEGnVoKma3_S1_ueu1mRudKrczdmFE4qJkpCF52FxyTtxeeWXURJnjqw5oDf3L_IwPJprHIEjknOYi_TjNPv54wIgH4ZMoCi1VSyX9C7259DPm9OM4hI13r75XcCXk-Vdav6CPp6j9Je9AwUI-vU4eI_Z5L7cGz0EZSouAAYp8bM-pPmJSWOOfd3ygZdlUOEgeAIE15DVwP1H3PlWFhiemJsFmTduhyhNQaUHQUFlkzdtbiShqAOylQbUj0Sakvn6slM11rCcHbysVz4SmCXtAqbTvHCybj0tS1u-DENxqt-J-sJcj29pgEVl_njYRTJMih67pPxLmMxNG43wnVqBjwbpQy-Lm38HrCRvLx1dsGzHZfWIZhsve807Fv1m6BhGp6zMOpNKLOgPKyWSzntqN_r2LiVyDI8TcMkOExqG4q-RjM23r5j3DXG6RorX1LiW5dd3M8TzhBRO5nV3EJJUJvWmG6Fc8__lA2mHke5KoFFIfHXyBeaHr86wyjAnZvKziS5tGrHUgIvhPjBOeFUjglZp-8inZqkcUdWvTISnSHKymW-7hUBym9wTGxBuc24Zxa1QFfaRECMkCetYF1L--8187Jwt9NZuLPPw6LGQKpWXlE0uwITiDim_JMoNtuUqsjdnuLutatqQIus-QPAKDMBrgZ3mq0d8lLner55Q97AA3oyl0BGXCk1kw5I_xq",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0089ab6adf19eead006ab7121755dc87d296cf8cc256f99fd3",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Mendoza\"}",
+      "call_id": "call_6DAHnLWF34lhi0kNxAM1j0Kc",
+      "name": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": "trantor-session-recording",
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 4997,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4736
+    },
+    "output_tokens": 118,
+    "output_tokens_details": {
+      "reasoning_tokens": 64
+    },
+    "total_tokens": 5115
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

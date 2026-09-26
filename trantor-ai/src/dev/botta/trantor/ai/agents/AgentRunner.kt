@@ -8,6 +8,7 @@ import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.Step
 import dev.botta.trantor.ai.generation.StepSetup
 import dev.botta.trantor.ai.generation.ToolRefusal
+import dev.botta.trantor.ai.history.projected
 import dev.botta.trantor.ai.generation.ToolLoop
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.ChatModel
@@ -56,7 +57,10 @@ class AgentRunner(
     /** Asked in every run, before the guardrails of the agent and those of the run. */
     private val guardrails: GlobalGuardrails = GlobalGuardrails(),
 ) {
-    /** Runs [agent] on the conversation so far, whose last message is usually what the user just said. */
+    /**
+     * Runs [agent] on the conversation so far, whose last message is usually what the user just said. With a
+     * session, the conversation is what the session holds and then these.
+     */
     fun run(agent: Agent, vararg conversation: Message, configure: AgentRunOptions.() -> Unit = {}) =
         run(agent, conversation.toList(), configure)
 
@@ -66,9 +70,9 @@ class AgentRunner(
         run.beforeRun()
         run.checkInput()
 
-        return run.resultOf(run.loop.run(ChatRequest(conversation), run.options.callOptions)).also {
+        return run.resultOf(run.loop.run(ChatRequest(run.conversation), run.options.callOptions)).also {
             run.checkOutput(it)
-            run.afterRun(it)
+            run.finish(it)
         }
     }
 
@@ -81,7 +85,7 @@ class AgentRunner(
 
         run.beforeRun()
 
-        return AgentRunStream(run.loop.stream(ChatRequest(conversation), run.options.callOptions), run)
+        return AgentRunStream(run.loop.stream(ChatRequest(run.conversation), run.options.callOptions), run)
     }
 
     private fun start(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit): Run {
@@ -122,10 +126,13 @@ class AgentRunner(
         private val team: Map<String, Agent>,
         val options: AgentRunOptions,
         val id: String,
-        /** What the run got, before any step. */
-        private val conversation: List<Message>,
+        /** The messages the run was given, which its session keeps once it ended well. */
+        private val given: List<Message>,
     ): NextStep, StreamedRun {
         private val first = agent
+
+        /** What the run starts from: what its session holds, and then what it was given. */
+        val conversation = options.session?.load().orEmpty() + given
 
         /** The agent of each step so far, in order. */
         private val agents = mutableListOf<Agent>()
@@ -137,8 +144,15 @@ class AgentRunner(
 
         fun beforeRun() = hooksOf(first).forEach { it.beforeRun(contextOf(first, 0), conversation) }
 
-        override fun afterRun(result: AgentRunResult) = result.lastAgent.let { last ->
+        /**
+         * The run ended well: the hooks hear of it, and then its session keeps what it was given and what it added.
+         * Keeping it goes last, so a run that fails anywhere before, a hook included, keeps nothing.
+         */
+        override fun finish(result: AgentRunResult) {
+            val last = result.lastAgent
+
             hooksOf(last).forEach { it.afterRun(contextOf(last, result.steps.size), result) }
+            options.session?.append(given + result.newMessages)
         }
 
         override fun checkInput() {
@@ -202,7 +216,7 @@ class AgentRunner(
                 model = chatModels.getOrPut(agent) { agent.modelFrom(models) },
                 request = request.copy(
                     messages = listOfNotNull(agent.instructions(run)?.let(Message::system)) +
-                        OtherAgentsTurns.toldTo(agent.name, request.messages),
+                        projected(options.contextPolicies, OtherAgentsTurns.toldTo(agent.name, request.messages), run),
                     dynamicSystem = agent.dynamicInstructions(run),
                     output = agent.output?.takeIf { it.mode == OutputMode.Native }?.let { OutputSpec.Json(it.schema) }
                         ?: OutputSpec.Text,

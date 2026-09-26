@@ -3,6 +3,8 @@ package dev.botta.trantor.ai.agents
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.generation.MaxStepsExceededError
 import dev.botta.trantor.ai.generation.ToolLoop
+import dev.botta.trantor.ai.history.ContextPolicy
+import dev.botta.trantor.ai.history.Session
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.providers.ProviderOption
 
@@ -20,6 +22,9 @@ class AgentRunOptions {
     val inputGuardrails = mutableListOf<InputGuardrail>()
     val outputGuardrails = mutableListOf<OutputGuardrail>()
     val toolGuardrails = mutableListOf<ToolGuardrail>()
+    val contextPolicies = mutableListOf<ContextPolicy>()
+    var session: Session? = null
+        private set
 
     /**
      * The agents the conversation can be handed over to, besides the one the run starts with. Every handoff an agent
@@ -50,6 +55,18 @@ class AgentRunOptions {
 
     /** Checks every call of this run, whichever agent asks for it, after the global ones and the agent's. */
     fun toolGuardrails(vararg guardrails: ToolGuardrail) = apply { toolGuardrails.addAll(guardrails) }
+
+    /**
+     * What part of the conversation each call of the run sends, in the order given; the conversation itself stays
+     * whole. See [ContextPolicy].
+     */
+    fun contextPolicy(vararg policies: ContextPolicy) = apply { contextPolicies.addAll(policies) }
+
+    /**
+     * Where the conversation is kept: the run goes on from it, after what it holds come the messages the run was
+     * given, and once the run ended well it keeps those and what the run added. See [Session].
+     */
+    fun session(session: Session) = apply { this.session = session }
 
     /** Timeout, cancellation and headers, which apply to every call of the run. */
     fun callOptions(options: CallOptions) = apply { callOptions = options }

@@ -7,6 +7,8 @@ import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.MaxStepsExceededError
 import dev.botta.trantor.ai.generation.RunEvent
 import dev.botta.trantor.ai.generation.textDeltas
+import dev.botta.trantor.ai.history.InMemorySession
+import dev.botta.trantor.ai.history.LastMessages
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.*
@@ -242,6 +244,98 @@ class DefaultAITest {
             assertThat(events.filterIsInstance<RunEvent.ToolStarted>().single().call.toolName).isEqualTo("getWeather")
             assertThat(weather.cities).containsExactly("Bariloche")
         }
+    }
+
+    @Nested
+    inner class `the history` {
+        @Test
+        fun `a generation sends what its context policy leaves, and the system messages it starts with always go`() {
+            model.answers(listOf(TextPart("7 grados")))
+
+            ai.generate {
+                system("Sos soporte")
+                messages(earlier)
+                user("Que temperatura hay?")
+                contextPolicy(LastMessages(1, step = 1))
+            }
+
+            assertThat(model.request?.messages).containsExactly(Message.system("Sos soporte"), question)
+        }
+
+        @Test
+        fun `with a session, it reads it where it is named, and keeps what comes after it and what the run added`() {
+            model.answers(listOf(TextPart("7 grados")))
+            val session = InMemorySession(earlier)
+
+            val result = ai.generate {
+                system("Sos soporte")
+                session(session)
+                user("Que temperatura hay?")
+            }
+
+            assertThat(model.request?.messages).isEqualTo(listOf(Message.system("Sos soporte")) + earlier + question)
+            assertThat(session.load()).isEqualTo(earlier + question + result.newMessages)
+        }
+
+        @Test
+        fun `a generation that fails keeps nothing`() {
+            model.answers(listOf(weatherCall))
+            val session = InMemorySession(earlier)
+
+            assertThatThrownBy {
+                ai.generate {
+                    session(session)
+                    user("Que temperatura hay?")
+                    tools(weather)
+                    maxSteps(1)
+                }
+            }
+
+            assertThat(session.load()).isEqualTo(earlier)
+        }
+
+        @Test
+        fun `an object keeps it too`() {
+            model.answers(listOf(TextPart("""{"city":"Bariloche","celsius":7}""")))
+            val session = InMemorySession()
+
+            ai.generate<Weather> {
+                session(session)
+                user("Que temperatura hay?")
+            }
+
+            assertThat(session.load()).hasSize(2)
+        }
+
+        @Test
+        fun `a stream keeps it once read to its end`() {
+            model.streams(listOf(StreamPart.TextDelta("7 grados")))
+            model.answers(listOf(TextPart("7 grados")))
+            val session = InMemorySession(earlier)
+
+            val result = ai.stream {
+                session(session)
+                user("Que temperatura hay?")
+            }.use { it.result() }
+
+            assertThat(session.load()).isEqualTo(earlier + question + result.newMessages)
+        }
+
+        @Test
+        fun `and one closed before keeps nothing`() {
+            model.streams(listOf(StreamPart.TextDelta("7 grados")))
+            val session = InMemorySession(earlier)
+
+            ai.stream {
+                session(session)
+                user("Que temperatura hay?")
+            }.use { it.next() }
+
+            assertThat(session.load()).isEqualTo(earlier)
+        }
+
+        private val earlier = listOf(Message.user("Hola"), Message.assistant("Hola!"))
+        private val question = Message.user("Que temperatura hay?")
     }
 
     @Test

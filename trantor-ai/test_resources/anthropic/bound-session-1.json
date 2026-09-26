@@ -1,0 +1,42 @@
+{
+  "model": "claude-opus-5-5",
+  "id": "msg_011CfR7D6Hk1zXiNWTb71AGY",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "tool_use",
+      "id": "toolu_0144Waucd6q5jVyM9HUkKdA4",
+      "name": "getWeather",
+      "input": {
+        "city": "San Carlos de Bariloche, Argentina"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 4,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 8234,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 63,
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "input_transformations": [
+    
+  ],
+  "diagnostics": null
+}

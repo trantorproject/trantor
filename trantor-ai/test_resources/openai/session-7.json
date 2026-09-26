@@ -1,0 +1,132 @@
+{
+  "id": "resp_0089ab6adf19eead006ab71218aa9887d29c0121acd208080b",
+  "object": "response",
+  "created_at": 1790382616,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790382619,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0089ab6adf19eead006ab71219041087d2b677fc6f965c78b4",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtxIbg2bDfMO7xYO7g-bQAsR3md0PRKlPFTOqawX2jfHtHddtTASSFsK5Blj6oEwlCDkrGq-j-OcJ7ZsUiX7iy69Vrbd20BeEKAfPS1jt1V3vKqyCir7MH5VTEEvVfajHgbkZSg1MO9GvNcP0NXQXkh86yVRIUjam7blJJBKwH3RegSmQC5PQwVpfQBn8rkMtdi4Ux1k7F116q71aRGZAUsYInEHixbJHF6BJtqDqt1AMVgBTKKO8hVUPwr4nAocGH2H3TnROacXiEc5tl6obO8bLtglVdIs2TornlRPdu7X9Q_3eAZCoUQL3MFDEty9_1aCWAK3cAByZi_dfd_e6pcQxkKsJnb3nX-0FHyn5oDVuBV82HK6_Vf4u0pA4qU7xKHZrqyzsVZIf38bPzYj9XNiB544duF0kuH7cb56HLEZihORCDX8KY8zKnoeabVneV3BB02pqJPT4EhJHkvFqiBqtzyuTc6-TafqaD7mG8fus00Pw_D24SwOIF45Vq_5WzZp_uKwYgLzWWvehZkhGc36jo8BqBdKBhq8OF94IvMp2wpl91W0NNFSS7kdTZC-poIdZbKSQNP3JW3WSuVL-CeI3PEDwlDpwwe21R57Fv_wL0R33JkP_3JHm71vL4CeciRtbD654PXHRD9knS-kHsDJXGiz-HaWmC_b-ayAE-Rz_wyN3EJwKZeHSHWbKre02-VhkJq_R65Pv3LfWWeJMsaGm-eHsIvi2kBDaHqYHzL2dqEgOGPewmXTvM7LyarnSJ2GitUkC-azBn0Hf25z3uTjCpC-enyQfwKz-8j27uGF7ru9FZEVN_HQtA_DXTWYjPfZWxekN1W6rM8csCC9NaooAqmrRs3sVDSS4QFHMksn3vjhK4xpzAoIn-4EmfCbao-H1nxERF-BonhUDHnlU2tM6GS-mhHSjzC756kHjRdhgOWQeP_SILLObV0oAEG7sqR-uum87g1s1FAJWdQWDd-c2ofrEDF91pBU0OUb6JZoCpCNXcqXiteSPmigUaj9PsUKNj09xQxJ8XjrfTh-9xt3uTgRco8u9rN54rIB2vKaz2xWd57af-UjYWU-3CnODMbt3IXPBxcZSiog8GZV8gflXM08XJqLyUOaEOauzsZoJnX-1hJF53p9_NYA0p4EGUSlNiCyee38lfIGQWWMAkGYkUOVFlfO_r6akp5LWsgCeIX8nm99AH3VoyyVsCfVp7XaRU-ijgvz-K_gd_7xhrPi1CWGZrlpBhW634Pf40fkLYFdEEqAxOYDVEks9tWpNRISqBLZWKbRvc7QEFgNJ8bdF351H348p_LYGsl2ghQiZExbZcReAJCba4InhtLxP_Po5SudmPxnBQJ1ASIlwFqyLgbCZbX5Eq1dlJkI-kcxaWd-y5szWvB7vdgI4b92Pw1Sq2Zw6wij1Yid-AvyipPBOyEX7jxylAH3BoWalOHsWPsysSI7OQSuTtgCqQb2YGbb8xLRfpaLDRub2mdTY4vgM0nor81W_PiAZIUkSWvOeN-o9Jb3Aq12gjIeZj9aiVql8KmKI31qiFV71J56rnZ26dUQjneFrigrkDUFsedYs3iWhpfRQyFJyJbBH_XwHxKWV_urrhTy5QNZnG8H7qS87k-vTzoBThCZOiA21M53as96LbApA0ZWId_UGtUuyceKYYnvDEUnanuDNQENjbhrlsJ9Zi2zX63I1-BRElHeEqTX5lQ_8m86TEzk3oPTetROsAIY4uMkO8WUmWgarI66jpTKut-f_JAPRn9dGlTbjaKvk4VxICQrjS1gk8AWI7emafmlsVMqgz-bW0Wx87z1wljioQ53mqvpvoELlrkRmfiR61mZzSEnKXagTHCPsz6dTGJudrZQzB29lhYUfwWab9UMIE00e7XxxqkQWA3JYwZBHCq3UmqhreKEzFtJE2y8-_fQseyQhiBlhzzXbL0Dm1csZap8iTwndAJ5YQyrWqsA_HaOma7LvxinhdLceaMYbGHxZ4lmFfsgVA8KGDzhWsW9Qi50Y11NndNWn2NDnJ8YttdaiC2fxix00Lvtn2s1YjRj4OR9N0vZId-8sdnAPWwmA6RoSZpTqpczKwew7eHHmiovSHu17Wu2gRZPM39_pPHgsl6lkkayqjaX6YM4yZJN-PaulwAVVTmdVXea8EG0NMTLpKPM0yljIOabh9o2wU-XEx0cIaD5h6ze7AVl_nNVTOqdYFVLpTWDZbiRSrH8HpZ4IoaFcufazptpa9YwGfmlEf4i0UuP_f0OQjE1Nuuwd_QhsFQskh4Sbbmb2I2z5No94D09nThZOQ-aNeAcybCqL_oOYUuRzDOMioMbqC6VZeYhWJ4Q3HgMBGjNv24-1Up1HxEbRkSvJygDOAdKzZ8g3uWsZwXMOd9YQ9dJGWDBK84poL9044fTLsGz6SLqH6hdLkOSZdVwnRRMHreyQ8O7sLMo8Hr5GaLy4eIgLTNWqId8HkipIwoO376WYqbn2tS5FhX8Ze_MXF52ARCRdljrjP87xmlMEY2hbTJ0E4uhD5lNQwwl8n-KgejSkBdEYzaCV_ZLksgHRI5fWejX_6sSKaqFv2CDc8Xl_a1Zl5ChO0YqYIPm8LjDeyi9_2bAjttGO4FBhWOAgw54XJKjbIKg_h3NpZxBz4JON_jY3vZX43AFqbK1IXfIKTLcMCkA7Wc5PnoO5xYD845QZ1WEo5Q8uSxyh4mUhefN6rG3NlVqxatpvl87qfLFE24ft2k2ZZx-E554X9jWbYlybaaXekk77cnsfVlJIZpxHyG325wv7Fe6pRouFB45dt5Z5C4BPKF3dCSNLHqYQUI-pDMjUIBLSg0MZmBY1Rur19aGmSrfKCwrCaa9ulHfTFOa93ENsOSPzGj1gJT4tifYx_9OjaKBONRFdM087nW3ZmbYkJKPHWni9qi2mYb7hX-p4IwjMgjb8GbY94E1oSvf5r7KSzVU-nGt9G7IDOV6ckR19wjMpgEqKmfIR__mprdNFJze_xDDIl_q_VqiC_bvfpwKN6ouV2krgfkRsfvzm9pN0-0mpyD-axUqlSKYhAXAO6qF8sgs37dhfK37A_j9ccQEt8yEigG0Nm-kEKcFnva5FveoXwRuKtlCS-WCQVXc3faXc6p46Cb8w6pq-EGawGrjJCJnhFGWJxR5XYthI-qxbKZqC1Kv39PYMH8Ynyd0rQwKjXCq-kdhtV6grJ0q6KUwj8tvBWRgxO-TRDM7e_AKMNbQKXpYiZRALkmhju8nGhlrHjRUgxr70SnS4VXF6vMk18JT9VJqyH_IuHwHkkVitMRkrd6rr8s8x6T-gtKE8usQ=",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_0089ab6adf19eead006ab7121b1b6c87d2aabb00e6e6d65652",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "Te conviene ir a Mendoza. Aunque ambos marcan 7 °C ahora, Mendoza tiene clima más seco y alta insolación, de modo que el sol calienta más y la sensación térmica es más amable. En Córdoba, la humedad eleva la sensación de frío."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": "trantor-session-recording",
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 5012,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4736
+    },
+    "output_tokens": 413,
+    "output_tokens_details": {
+      "reasoning_tokens": 320
+    },
+    "total_tokens": 5425
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

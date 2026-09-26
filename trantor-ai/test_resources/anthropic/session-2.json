@@ -1,0 +1,29 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfR7B4TZ9N79p3Hm5HNXg",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "El clima en Bariloche está a 7°C."
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 5,
+    "cache_creation_input_tokens": 73,
+    "cache_read_input_tokens": 7065,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 73,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 17,
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "diagnostics": null
+}

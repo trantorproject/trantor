@@ -90,6 +90,45 @@ result.toolFailures      // the exceptions of the tools that failed, for the app
 the results of the tools. A step whose calls were not run is left out of it, because a tool call without
 its result is something every provider refuses.
 
+### The history: where it is kept and what each call sends
+
+Two things that are easy to mix up, and are kept apart: the conversation the application keeps, which only
+grows, and the part of it each call sends to the model.
+
+```kotlin
+ai.generate {
+    system("Sos el asistente de una ferretería")
+    session(session)
+    user(question)
+    contextPolicy(DropOldToolResults(keep = 10), LastMessages(40))
+}
+```
+
+A `Session` is where the conversation is kept between runs: `load()` and `append(messages)`. The builder
+reads it where `session(...)` is written, since the request goes in the order it is written, and once the
+run ended well the session keeps what came after it in the request and what the run added. What comes
+before it, like the system prompt, is not kept, and a run that fails keeps nothing. `InMemorySession` is
+for tests and prototypes; an application implements `Session` over its own tables, keeping each message
+whole, metadata included. The dynamic part of the instructions is not a message, so it never gets there.
+
+A session reads the whole conversation. How much of it goes to the model is up to a `ContextPolicy`, a
+function from the conversation to what one call sends, asked before every call, a run with tools included.
+It never touches what is kept. The system messages the conversation starts with always go, and a policy
+gets the rest; several go in the order given.
+
+- `LastMessages(max, step)` sends the last `max` messages at most, starting at something the user said.
+- `DropOldToolResults(keep, step)` sends the old results of the tools as a short note and the last ones
+  whole.
+
+Both move `step` messages or results at a time, not one: a window that moves with every message changes
+what goes first on every call, and the providers cache what goes first. A policy of the application should
+do the same. A policy that leaves a call without its result, or a result without its call, does not break
+the call: the loop takes the half left alone out, with a warning, since every provider refuses it.
+
+What really bounds how much a conversation keeps is to summarize its old part, which comes later. Two runs
+on the same session at once would read the same history and add each their own: the application runs the
+turns of a conversation one at a time.
+
 ### Objects
 
 ```kotlin
@@ -864,20 +903,22 @@ and the dynamic part never becomes a message of the conversation.
 The one thing it asks of an application is what the signature already asks: that the parts of a message
 are stored with their metadata, as they came.
 
-**When the past does change.** Sometimes a call goes out with another system prompt or other tools than
-the thinking before it was produced under: the application changed the instructions of an agent between
-two turns, a generation goes on with other tools, or one agent handed the conversation over to another in
-a history whose answers are not signed by their agent. That thinking would be refused, and there is no way
-around losing it: the model goes on without that reasoning, as it would with another model. What the
-adapter makes sure is that it loses nothing else.
+**When the past does change.** Sometimes a call goes out with something before a thinking block that is
+not what it was produced after: the application changed the instructions of an agent between two turns, a
+generation goes on with other tools, one agent handed the conversation over to another in a history whose
+answers are not signed by their agent, or a context policy sent less than the whole conversation — it took
+the oldest messages out, or shortened old tool results, which Anthropic counts as an edit too. That
+thinking would be refused, and there is no way around losing it: the model goes on without that
+reasoning, as it would with another model. What the adapter makes sure is that it loses nothing else.
 
 A handoff between agents does not get here as long as the answers are signed: the new agent reads the turns
 of the one before as context, with its name and without its thinking, so the only thinking
 a call of it carries is its own.
 
-Each thinking block also remembers a fingerprint of the system prompt and the tools it was produced
-under, in the same metadata. A call leaves out every thinking block up to the last one whose fingerprint
-is not the one of the call, with a warning, and sends the rest. It is not only the blocks that changed:
+Each thinking block also remembers a fingerprint of what came before it, in the same metadata: the system
+prompt, the tools and the messages, without the cache marks, which can move, and without the thinking,
+which can be left out from the start. A call leaves out every thinking block up to the last one whose
+fingerprint is not what comes before it now, with a warning, and sends the rest. It is not only the blocks that changed:
 Anthropic takes thinking left out from the start of the conversation, or from its end, but not from its
 middle, so a block that still fits goes too when one after it did not. The blocks after the last one
 that changed — the reasoning produced since — stay valid, and stay. A conversation that goes on, in the
@@ -888,9 +929,9 @@ next turn or the one after, keeps leaving out the same old blocks and keeps all 
 past changed, and every thinking block after it, before the model reads the call; the call goes through,
 but the model no longer sees what it reasoned there. Zed sends it on every call to those models;
 PydanticAI sends nothing, retries once with it when the 400 comes, and warns; Goose makes it a setting.
-It is not used here: after a change of system prompt or tools, "every thinking block after it" is all
-the reasoning produced since, on every call of the conversation from then on. The one case left is a context policy that drops
-old messages, which comes later.
+It is not used here: after a change of system prompt or tools, or a cut of a context policy, "every
+thinking block after it" is all the reasoning produced since, on every call of the conversation from then
+on.
 
 ---
 

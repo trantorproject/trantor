@@ -74,7 +74,7 @@ class AgentRunStream internal constructor(
                 }
             }
 
-            run.afterRun(finished())
+            run.finish(finished())
         } catch (e: GuardrailTrippedError) {
             yield(RunEvent.GuardrailTripped(e.guardrail, e.reason))
             throw e
@@ -117,5 +117,6 @@ internal interface StreamedRun {
     /** Throws [GuardrailTrippedError] when an output guardrail trips. */
     fun checkOutput(result: AgentRunResult)
 
-    fun afterRun(result: AgentRunResult)
+    /** The run ended well: calls `afterRun` and keeps it in its session. */
+    fun finish(result: AgentRunResult)
 }

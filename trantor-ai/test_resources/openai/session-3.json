@@ -1,0 +1,122 @@
+{
+  "id": "resp_0089ab6adf19eead006ab7121366b087d29c3461a5cd55b1b4",
+  "object": "response",
+  "created_at": 1790382611,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790382612,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0089ab6adf19eead006ab71214009c87d2a4e3bd05789fe38d",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtxIUIyFM8jg01ImVZC3xWEeNkWV71hl6rdo9bi-egZSfyJx6tEQK-Yqieym1kSfngVq1ycwfwRhpCBD-HqM2CdjTrwJaQ99o6CqAKkTXBhit8D1b5_9CaPjyTiyffUPK3liIWJwyZXYWkgH11qw9agbG7HN3-_6Qx-uKcIwlW-c2tFxi718--i1Kpd7MszIrWLSRNJL4aB9QPPr2Lky-pBzgLhCtliT1z5JX-1NNZu-f9kixwx1l3hyTXCSJHS6HKlgfdXozPTf3Nzyi3sUYhdgp-nQVsaV6qk18cpv47nWhitFT87bdK_GG14LKDzmbGE1bgwlaY3V0FEwtKj1JYOQdIMwo9EiIWLYrNBSwE3FjDTITghKcw9_WjWY-gRu6S2Ov6l20iUPLhGEj-nmUmsMmaeXWoiyR8B6XgW-1FrBYKqLt6b8H01Xr9OAKpBQAIgt9aAS-x_pKUesBb627N_Wz57i4PxM4sHtTH1tEyJUI5wp3Zj8K2hLuOhEG7LtbVlq-6e2MlcgSQhQ8QT4wQ_AxxAmTX_nOhpuxeLS7Z9r-9-iFuLo1pdSojusJB8FeDpJcyWcJcqe0gTf9q8_tAvWaWMah7YdM6EZgV7IZ6E3_pgMj_2PtUbEJtvJRWx49fAHVW5ohwHbhQdDCuxvXZ2GgdvdcJzB3v_wQ6l1xPG3PlBqVVvaACKMH-iU7X0t6XL7Cml0RG4YUxsKDRLPphVZI_siuDtJzx0JCge9IBCTpu8mTFPswQ1W37VsJ3xcdk_22UHQdm1mghJl-hWgVhLgRgF5U_gFay-oJicgSNemnbg_8XzpW5SDQw11Q770U7GlW_RGZ2Mys6NvWykTQo9wBltuais69f_AM5OSzw1Y_aF8D7aOftdpo3IaP_D4zzLO_Q1AyM94bdKUozskdEnSjS2MHfBh20ilIkk9saEaq2KGnTJayGaOCwYr2ab7neL7VUayQOabL6WExtav_bXITd8ZLPhnbg-TXV9_9RnEJwCAfoRtwR7-4OhqXxwQ5APfrMdhIFvOT6cEVOUH6KQSkPvuTFRF2PMcy3bPor_-6SUG6tou-Vi1ZQj_HbMSoqdyoVrSbtSquuJYEUCG746cQnaWhOvLQb039JzgFA3S5VmCkoItuE8FQapFWci_PbiNbB7HIeZlV_DPvOehNKCRaWG_jehfzEOWCsOcLvdrIRAwLJO0zAqpyXkAuWkD96eodM-HQ9un4EAIFSvszF_DqZqMze1ANTfvnW8CxB0UyeYPANG2WtKUicJM5QOk-bg-1ppM4xsgHw60NXAq0e08FWnBZ2t9JrnGfsadLGq1GNyimxD3b3P3TZfAJ6etjt_0iq5U3Gol22h45zPQt7N6ZtL7esoj9svVaHHVzcNRiVX9Hqbc2-hm8bJ5G6MTqqR-rZ1TToqlHk6IP8jwJSdJNtkzG5cmQoPYAIt6OW3BVkHxX8bXT-9eAzl4aTE_NK0sYJSbiKXV1B-AvU1tTnVcnnN0EQFmxNWqm5PcfuJ9IsXDXryjPeIvT3wxzmyN_-U4enAmKaaHS8LDqNEad5khdxeBQyXlxc6BweJcQ1tzWuvITVTiLpe1UnTQeLDzh3VhX5LXT-DuN3Q7RkPGzxnLvq1HMGDsoiy0OmkBo6e7gypZPs-fJ_DhlMG509F3x39P9aYDYoyKlHNif7CMMq1GXkNSq-zPx9cWPTzOve5ZXQBQS4j8i27dlsVG0xpQaf8a6yCPVLOC9mGfaChFGXKUoKcUi6n8TiqN-VjPlLIUTFAKBdJa8xJLFoFH4isHKOz3qbvEhMKK_6UfMWgz2EeBHfVIEmZ6fmj5qXYvNpZquYto=",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0089ab6adf19eead006ab71214b76c87d29e411a41efba9f4f",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Córdoba\"}",
+      "call_id": "call_dPsos82hF0j9cpYhD1faDPVf",
+      "name": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": "trantor-session-recording",
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 4942,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4736
+    },
+    "output_tokens": 131,
+    "output_tokens_details": {
+      "reasoning_tokens": 64
+    },
+    "total_tokens": 5073
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

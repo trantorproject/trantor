@@ -2,9 +2,13 @@ package dev.botta.trantor.ai
 
 import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.GenerateRequest
+import dev.botta.trantor.ai.generation.NextStep
 import dev.botta.trantor.ai.generation.ObjectResult
 import dev.botta.trantor.ai.generation.RunResult
+import dev.botta.trantor.ai.generation.RunStream
+import dev.botta.trantor.ai.generation.StepSetup
 import dev.botta.trantor.ai.generation.ToolLoop
+import dev.botta.trantor.ai.history.projected
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.ChatRequest
@@ -14,7 +18,10 @@ import dev.botta.trantor.ai.schemas.JsonSchemas
 import dev.botta.trantor.ai.tools.ToolErrorHandlers
 import kotlinx.serialization.KSerializer
 
-/** [AI] over the models of the [ModelRegistry], running every generation on the [ToolLoop]. */
+/**
+ * [AI] over the models of the [ModelRegistry], running every generation on the [ToolLoop]. Each step sends what the
+ * context policies of the request leave of the conversation, and a run that ended well is kept in its session.
+ */
 class DefaultAI(
     private val models: ModelRegistry,
     private val errorHandlers: ToolErrorHandlers = ToolErrorHandlers(),
@@ -36,17 +43,56 @@ class DefaultAI(
         }
     }
 
-    override fun stream(request: GenerateRequest) =
-        loopFor(request).stream(request.toChatRequest(), request.callOptions)
+    override fun stream(request: GenerateRequest): RunStream {
+        val stream = loopFor(request).stream(request.toChatRequest(), request.callOptions)
+
+        return if (request.session == null) stream else KeptStream(stream, request::keep)
+    }
 
     override fun models() = models
 
     private fun run(request: GenerateRequest, first: ChatRequest) =
-        loopFor(request).run(first, request.callOptions)
+        loopFor(request).run(first, request.callOptions).also(request::keep)
 
     private fun loopFor(request: GenerateRequest): ToolLoop {
         val model = request.model?.let { models.chat(it) } ?: models.chat()
+        val tools = request.tools.toList()
+        val policies = request.contextPolicies.toList()
+        val next = NextStep { chat, _ ->
+            StepSetup(model, chat.copy(messages = projected(policies, chat.messages, request.context)), tools)
+        }
 
-        return ToolLoop(model, request.tools.toList(), request.maxSteps, request.context, errorHandlers.all)
+        return ToolLoop(next, request.maxSteps, request.context, errorHandlers.all)
+    }
+
+    /** A stream whose run is kept in its session once it is read to its end, and not when it is closed before. */
+    private class KeptStream(private val stream: RunStream, private val keep: (RunResult) -> Unit): RunStream {
+        private var kept = false
+        private var closed = false
+
+        override fun hasNext(): Boolean {
+            if (closed) return false
+            if (stream.hasNext()) return true
+
+            if (!kept) {
+                kept = true
+                keep(stream.result())
+            }
+
+            return false
+        }
+
+        override fun next() = stream.next()
+
+        override fun result(): RunResult {
+            while (hasNext()) next()
+
+            return stream.result()
+        }
+
+        override fun close() {
+            closed = true
+            stream.close()
+        }
     }
 }

@@ -55,11 +55,11 @@ class ToolLoopStepsTest {
 
         ToolLoop({ request, _ ->
             seen.add(request.messages.size)
-            StepSetup(first, request.copy(messages = request.messages.takeLast(1)), listOf(weather))
+            StepSetup(first, request.copy(messages = request.messages.drop(1)), listOf(weather))
         }).run(ChatRequest(Message.user("Hola"), Message.user("Que temperatura hay?")))
 
         assertThat(seen).containsExactly(2, 4)
-        assertThat(first.requests.map { it.messages.size }).containsExactly(1, 1)
+        assertThat(first.requests.map { it.messages.size }).containsExactly(1, 3)
     }
 
     @Test
@@ -228,6 +228,77 @@ class ToolLoopStepsTest {
         private fun city(callId: String, city: String) = ToolCallPart(callId, "final", Json.obj("city" to city))
 
         private val output = OutputTool()
+    }
+
+    /**
+     * What a step sends of the conversation can leave a call without its result or a result without its call, which
+     * the providers reject: a context policy of the application cut between them, or a history came in broken.
+     */
+    @Nested
+    inner class `The calls and results a step sends` {
+        @Test
+        fun `a call whose result was left out goes without it, with a warning`() {
+            first.answers(listOf(TextPart("Hola")))
+            val history = listOf(question, Message.Assistant(listOf(TextPart("Me fijo"), call("call_1", "getWeather"))))
+
+            val result = sending(history)
+
+            assertThat(first.requests.single().messages)
+                .containsExactly(question, Message.Assistant(listOf(TextPart("Me fijo"))))
+            assertThat(result.warnings.map { it.message }).containsExactly(
+                "What the step sent had the call call_1 to getWeather without its result, so the call was left out",
+            )
+        }
+
+        @Test
+        fun `a result whose call was left out goes without it, and so does a message left empty`() {
+            first.answers(listOf(TextPart("Hola")))
+            val history = listOf(Message.toolResult(result("call_1")), question)
+
+            val result = sending(history)
+
+            assertThat(first.requests.single().messages).containsExactly(question)
+            assertThat(result.warnings.map { it.message }).containsExactly(
+                "What the step sent had the result of call_1 to getWeather without its call, so the result was " +
+                    "left out",
+            )
+        }
+
+        @Test
+        fun `a call the provider ran carries its result within the answer, so it goes as it is`() {
+            first.answers(listOf(TextPart("Hola")))
+            val searched = ToolCallPart("ws_1", "web_search", Json.obj(), providerExecuted = true)
+            val history = listOf(question, Message.Assistant(listOf(searched, TextPart("Encontré esto"))), question)
+
+            val result = sending(history)
+
+            assertThat(first.requests.single().messages).isEqualTo(history)
+            assertThat(result.warnings).isEmpty()
+        }
+
+        @Test
+        fun `whole pairs go as they are`() {
+            first.answers(listOf(TextPart("Hola")))
+            val history = listOf(
+                question,
+                Message.Assistant(listOf(call("call_1", "getWeather"))),
+                Message.toolResult(result("call_1")),
+                question,
+            )
+
+            val result = sending(history)
+
+            assertThat(first.requests.single().messages).isEqualTo(history)
+            assertThat(result.warnings).isEmpty()
+        }
+
+        private fun sending(history: List<Message>) =
+            ToolLoop({ request, _ -> StepSetup(first, request.copy(messages = history), listOf(weather)) })
+                .run(ChatRequest(question))
+
+        private fun result(callId: String) = ToolResultPart(callId, "getWeather", ToolOutput.Text("7 grados"))
+
+        private val question = Message.user("Que temperatura hay?")
     }
 
     private fun ChatRequest.toolNames() = tools.map { (it as FunctionToolSpec).name }

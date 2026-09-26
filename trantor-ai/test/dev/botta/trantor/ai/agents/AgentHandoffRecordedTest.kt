@@ -100,7 +100,7 @@ class AgentHandoffRecordedTest {
     }
 
     /**
-     * Opus 5.5 ties each thinking block to the system prompt and the tools it was produced under, and the recording
+     * Opus 5.5 ties each thinking block to the system prompt, the tools and the messages before it, and the recording
      * forced the api to refuse a block whose prefix changed instead of dropping it. Every request was accepted and no
      * answer came back with input transformations: support keeps its thinking on its second step, and it does not
      * reach sales, whose requests tell the turns of support as context. Sales did not think in this recording; that

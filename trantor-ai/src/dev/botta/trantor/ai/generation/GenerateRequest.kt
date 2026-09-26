@@ -1,6 +1,8 @@
 package dev.botta.trantor.ai.generation
 
 import dev.botta.trantor.ai.RunContext
+import dev.botta.trantor.ai.history.ContextPolicy
+import dev.botta.trantor.ai.history.Session
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.ProviderOption
@@ -43,6 +45,12 @@ class GenerateRequest {
         private set
     var dynamicSystem: String? = null
         private set
+    val contextPolicies = mutableListOf<ContextPolicy>()
+    var session: Session? = null
+        private set
+
+    /** Where the messages that come after the session start, which the session keeps. */
+    private var afterSession = 0
 
     fun model(reference: String?) = apply { model = reference }
 
@@ -57,6 +65,25 @@ class GenerateRequest {
 
     /** The conversation so far, as the application kept it. */
     fun messages(history: List<Message>) = apply { messages.addAll(history) }
+
+    /**
+     * The conversation [session] keeps, read here and placed where this is called, since the request is written in
+     * the order it is sent. Once the run ended well, the session keeps what comes after this in the request and what
+     * the run added; what comes before, like the system prompt, is not kept. See [Session].
+     */
+    fun session(session: Session) = apply {
+        check(this.session == null) { "A generation goes on from a single session" }
+
+        this.session = session
+        messages.addAll(session.load())
+        afterSession = messages.size
+    }
+
+    /**
+     * What part of the conversation each call sends, in the order given; the conversation itself stays whole. The
+     * system messages it starts with always go. See [ContextPolicy].
+     */
+    fun contextPolicy(vararg policies: ContextPolicy) = apply { contextPolicies.addAll(policies) }
 
     fun tools(vararg tools: Tool<*>) = apply { this.tools.addAll(tools) }
 
@@ -77,6 +104,11 @@ class GenerateRequest {
 
     /** Timeout, cancellation and headers, which apply to every call of the run. */
     fun callOptions(options: CallOptions) = apply { callOptions = options }
+
+    /** Keeps in the session, if there is one, what came after it in the request and what [result] added. */
+    internal fun keep(result: RunResult) {
+        session?.append(messages.drop(afterSession) + result.newMessages)
+    }
 
     /** The request of the first step. */
     fun toChatRequest() = ChatRequest(

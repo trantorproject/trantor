@@ -107,7 +107,8 @@ class ToolLoop(
         /** The calls the application has to run. The ones the provider ran already came answered. */
         fun callsOf(response: ChatResponse) = response.toolCalls.filterNot { it.providerExecuted }
 
-        fun finish(response: ChatResponse, step: Outgoing) = RunResult(steps + Step(response, agent = step.agent))
+        fun finish(response: ChatResponse, step: Outgoing) =
+            RunResult(steps + Step(response, warnings = step.warnings, agent = step.agent))
 
         /**
          * Whether an answer without calls ends the run. It does, unless the step answers by calling an output tool
@@ -121,7 +122,7 @@ class ToolLoop(
 
             val reminder = Message.user("Please include your response in a call to ${step.outputTool}.")
 
-            steps.add(Step(response, reminder = reminder, agent = step.agent))
+            steps.add(Step(response, reminder = reminder, warnings = step.warnings, agent = step.agent))
             messages = messages + response.asMessage(step.agent) + reminder
         }
 
@@ -266,11 +267,16 @@ class ToolLoop(
         /** The calls of the step that will not run, by id, with what the model reads instead. */
         private var refusals = emptyMap<String, ToolRefusal>()
 
-        // Asked again on every step, so that a description that depends on the moment is up to date
-        val request = hooks.beforeModel(setup.request.copy(tools = setup.request.tools + setup.tools.map { it.spec() }))
+        /** The messages of the step with every call and its result together, as the providers take them. */
+        private val paired = ToolPairs.matched(setup.request.messages)
 
-        /** What the run noticed in the step: its handoffs, and the calls it did not run. */
-        val warnings get() = handoffs.warnings + refusals.values.map { ModelWarning(it.warning) }
+        // Asked again on every step, so that a description that depends on the moment is up to date
+        val request = hooks.beforeModel(
+            setup.request.copy(messages = paired.first, tools = setup.request.tools + setup.tools.map { it.spec() }),
+        )
+
+        /** What the run noticed in the step: the halves of a pair it did not send, its handoffs, the calls not run. */
+        val warnings get() = paired.second + handoffs.warnings + refusals.values.map { ModelWarning(it.warning) }
 
         fun answered(response: ChatResponse) = hooks.afterModel(response)
 

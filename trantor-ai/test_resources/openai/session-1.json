@@ -1,0 +1,122 @@
+{
+  "id": "resp_0089ab6adf19eead006ab7120f1e8c87d29113012e317532d2",
+  "object": "response",
+  "created_at": 1790382607,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790382610,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0089ab6adf19eead006ab71210346487d28a4d2e61ae1f8846",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtxISXLLRizv5jePcYhuIXTIwiAlHJTjp8TN8_d7kNmuTu76njaMerwDeoloTYhhMQZbV4V8Bnja3RNpRWBzCcSK0f_7Q9_nEc42F53e-6gcI7d7O6LFIAKC2VagopuiOQeFveJWQWufogBcVXiEPGrpM6PL3xpQ1VGDT8ndw6Lf7iBFrZ7u83Vo8MS4o5sl3pJGhedDXphYn7Cl7q78x1fWY2STmV-vj9oj4-sser9ZteiYfI3h2UVurPowBM3uiKm34BFmxO0YJ7K9bN_9kg_4lmKPUWmEBfJJuxz0TsZlEqhAjIYvawtgMlrNroEu-mAa66dTb57zEHARnTPwa5OPKT1G-9Li7ZRZ8rQHlyRv5_uFTK1fcwo43P7IKcA8XKkrcNMY_zzgiilkkitriPd6HEgrL12bjd5ZUINcYk1sp0rFNIwmA4QVv4Q1jrHENKdj5hakXqfpJbu-YNBByGeJljMvXMni8TkDXGQTX_y_zb2yy6l48XxgI7mAawvjaKMlezNWe7D75aC2nXlnm03GMT4SRrcR-NGk43Ukq5L0qf9bxl_JqVE4GpOKZsVvoNfzlF4r_NHmWqb3hFt-ZlddZEssWfV5HxZ3QtqvBbaYW8YVwhMYiNvzwVA5m8a3-1OXjSbIz4L8kGk2aHVn6DMVuyvUi5ytnbbEtByK89Bd3KUU9qy0hB_DCST4RIGRHnVMmp_LVkbTGaj9mDbkaYhA5vOxRJbIfdRo7Ogza9xdk9q5oIQB_INJPhQEYtWlWYu0-UFd_Lc2dAMdCRtllcj4G7RoUllgyW0XuzNBn-SoyNqvJUBgvLMvJxbkGjmlqj88QlnkMJW-9bslVdF2jIXLMKikIi9jgW9GK-0h1LLc-1n0tkWC6AQQBmY_g-UFHM_IOOnQvo4PNNEmIUgLSWgFRs3aO6_DaAZZT2HAuNbi5ITkPtPCnpoC9Cz8PsTUseaHsBOhC71htwVnclDqVhVDeGf-sshG0ORnjn1BURh2w_DWCRjhqwQwFdMXKK6XTsz29Yh34yYpwcsJE9j4ikmUrxdqb-ok8PZtWTsBpVr2fqAARX0g-dF0Pft_UhYrXYAlhwiOHakx3i03LLDKdBlET5ttybHTAb_wBdpwo37JdEaLlnKrvgGAsQIQQ36MktZHVxE2ebyM98SFONvYbKnv83NJkvvKjR3LV53iXoLxxY9kHR5GlRN5rIAZssMA9ZciXgf7wUIrSS8isCtklGHu8kwxs-RWdz1cXDNMCaf1KqqgGPr-WrykAv1lFQBp0efLr27W9AbseJaZoHSOIxcwCE-6vh5-_3muphopWJaeQgxX7PvNR-bln9T8NHuXRvDthPDKhQ6Om7FwTNtgMe1VTSOC_Cop7ENmyMcxqhBXZcH41iKqG1a99TiI2SHnj_FQ4iH0-31Lg2uSeGTZvpH2kmbR3hTZTrGSf6H_zIZXu3iiEcfWSRDOoeDik7EoN-rhhwPk6EJ7jEPRq7ntiCzjzNhkPM93VNNRPMAajhVuAXv_HluN3PEnejKSTETYCU1AodigBoUv8IR8VSpEY0-JVN8EqUPsvn8fdbV24ZEEk9qn_kTRwtOTb7m_pW9gesKsDEKdiVRzhOACIrpngdJGCA2npr1E7TQUMHWThtrygPHfo6BB6Armf38wvnxdnMFFXw3mBd1dL-fKo-Mh4Rky5gfwTtZA_Ruq-tMPIMdQ-cPLtR8i-x1abDVu0sndT9EWTF7YA9olR50Kx07A83v4tLq94m5Jbl0i66DJX0QM0d1kOmIeLqTHJRrKnDQAwjkjRoKqdeTPTEO1M4C-axynMai0MwWNaYdbQdLWM82NV1qPj_WBN2VGltajYKXhfjWpEal5TdJRsuzDqxIZnYT8C9ELbep4SPAqL2cuvFMS8DTrz2tsYykzJSuYJJxWGstmXZDl5wW_Aw7xhLvwmtSQ0owTG3xd5xTN_imAhpoOnSsHBv9ESX2qEtggbuBP7P4skvPvTw0FEzxH4kHmbOTT5XRZWaq80_g7-rZypRZjrSBV4Y6TLfGz11RTH4XH15AnDbBlDok3LONOBtkAV3t2Wb9mOnuVFhSsjbr837o50Bj7ajIOSpdqnAROn5-H52VkRAHGFf3sXjEFHXmZZocggDy_8hvs7N-S0aYTix584GiL9dR-IxvoI4MXmo4hoSWy8F2eP3iFcLvYUEHoQUUOSdFYEEyMW2bj9jqXJu-rYq2oTJyDy1wQnz49VQF1c3oIFttwD2hx5o6DA1HxUhngEMv4tIqAYJrrOBHozVCLcbmEKnuAfKHUkUJagLjwCSpcFYpnsh6Q_5OopIG_ZLqEUUCSQgLupbbVeGsD5o1oChLqWGZkrF-n8rIhRRAw_QwD9RhyPf_dlExn8TTBxLnbjwJh8st0v0Em_BqmtzZpqxuYq_Nspz9TPr-7LUTyb1KqXebJcgovoutjqH1wMHVtoC2Nhr82EXayNwhpPElNheWkZapA6UZU3eeRy4075eD3YQ95hV3M-vSNOwbp9piVj066fLfiWzBp5RE5rWCziouj1F-VPPXRSPh8H9WcieSfQxnp2JHfBGSh6R6eZt6GXw14euYJz5_NLWi8mKccubHs1Kt00WPp7NE19Zwn68Dul7rg_9r76vsIYjXxeO2OTqWCaa6b1PSjiFZXrP0h5IvqfUUEqDm4lP79GFk2h1dOd8DfzmuhYR6nExZ7NGqbT5cveQ_9i3EYZHcoBy2_US3j32BTgq7n-75xs-kzr0INisFxB6ySB1NaikQYgdXll1TOb_YRjBh0mMlGUoy2vy87AW6NL1O6JA74OpLk1MNu6Ym3ZnLQv4HTubKeXOWpEEqf1CAXs6S7L3pNu_H2Kjy_D23D-xFn7oJltok8EY_k6lasxKtQU0M3CbA6qSG8vI_kIzyAuqK4QXuXqPQRpgAsL6RYkqRrwiN1ZQO1LLaSrkIItKRQ5X5jKpRQtNUhAFysZQls1WbiWNkRlndPB8_ksigYhnTOdCsdED-8XKzLEkZ1-LTOCW6HSxw1g7rWnNDC4NwKAXIn9Uwt8sBR2oj4pi2YEsiXv8d0wVfCEsefJAMzH57F5aIpF2P__U1fQ5Q==",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_0089ab6adf19eead006ab712121c5087d2bb1e435adbf59c3a",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche\"}",
+      "call_id": "call_ZwC2fxhgBHAVEFHwh5Jlpo05",
+      "name": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": "trantor-session-recording",
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 4884,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 4736
+    },
+    "output_tokens": 329,
+    "output_tokens_details": {
+      "reasoning_tokens": 256
+    },
+    "total_tokens": 5213
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

@@ -9,6 +9,7 @@ import dev.botta.trantor.ai.schemas.JsonSchemas
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.FunctionToolSpec
 import dev.botta.trantor.ai.tools.ToolChoice
+import dev.botta.trantor.ai.tools.ToolOutput
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -649,7 +650,7 @@ class AnthropicChatModelPerModelTest {
             assertThat(sentBody()["messages"]!!.asArray()!!.last().toString()).doesNotContain("clear_at")
             assertThat(httpClient.request?.headers).doesNotContainKey("anthropic-beta")
             assertThat(stampOf(answer.content)).isNull()
-            assertThat(setupOf(answer.content)).isNull()
+            assertThat(prefixOf(answer.content)).isNull()
         }
 
         @Test
@@ -664,13 +665,21 @@ class AnthropicChatModelPerModelTest {
         }
 
         @Test
-        fun `the thinking of the answer remembers the system prompt and tools it was produced under`() {
+        fun `the thinking of the answer remembers the system prompt, the tools and the messages before it`() {
             httpClient.body = fixture("bound-thinking-2")
 
-            val answer = generateWith("claude-opus-5-5", request(history = listOf(Message.system("Sos soporte"), question)))
-            val other = generateWith("claude-opus-5-5", request(history = listOf(Message.system("Sos ventas"), question)))
+            val support = Message.system("Sos soporte")
+            val answer = generateWith("claude-opus-5-5", request(history = listOf(support, question)))
+            val sales = Message.system("Sos ventas")
+            val otherSystem = generateWith("claude-opus-5-5", request(history = listOf(sales, question)))
+            val otherMessages = generateWith(
+                "claude-opus-5-5",
+                request(history = listOf(support, Message.user("Hola"), question)),
+            )
 
-            assertThat(setupOf(answer.content)).isNotBlank().isNotEqualTo(setupOf(other.content))
+            assertThat(prefixOf(answer.content)).isNotBlank()
+                .isNotEqualTo(prefixOf(otherSystem.content))
+                .isNotEqualTo(prefixOf(otherMessages.content))
         }
 
         @Test
@@ -692,8 +701,8 @@ class AnthropicChatModelPerModelTest {
 
             assertThat(blockTypesOf("assistant")).containsExactly(listOf("text"), listOf("text"))
             assertThat(result.warnings.map { it.message }).contains(
-                "Thinking produced under another system prompt or other tools was left out: claude-opus-5-5 ties " +
-                    "each thinking block to what came before it, and would refuse it",
+                "Thinking produced after a system prompt, tools or messages that have changed since was left out: " +
+                    "claude-opus-5-5 ties each thinking block to what came before it, and would refuse it",
             )
         }
 
@@ -752,6 +761,58 @@ class AnthropicChatModelPerModelTest {
         }
 
         @Test
+        fun `thinking after messages taken out of the start is left out, as a context policy that cuts does`() {
+            httpClient.body = fixture("bound-thinking-2")
+            val first = generateWith("claude-opus-5-5", request())
+            val second = generateWith(
+                "claude-opus-5-5",
+                request(history = listOf(question, first.asMessage(), Message.user("Y en Lima?"))),
+            )
+            val cut = listOf(Message.user("Y en Lima?"), second.asMessage(), Message.user("Y en Quito?"))
+
+            val result = generateWith("claude-opus-5-5", request(history = cut))
+
+            assertThat(blockTypesOf("assistant")).containsExactly(listOf("text"))
+            assertThat(result.warnings.map { it.message }.single()).startsWith("Thinking produced after")
+        }
+
+        @Test
+        fun `and the thinking produced after the cut stays`() {
+            httpClient.body = fixture("bound-thinking-2")
+            val first = generateWith("claude-opus-5-5", request())
+            val second = generateWith(
+                "claude-opus-5-5",
+                request(history = listOf(question, first.asMessage(), Message.user("Y en Lima?"))),
+            )
+            val cut = listOf(Message.user("Y en Lima?"), second.asMessage(), Message.user("Y en Quito?"))
+            val third = generateWith("claude-opus-5-5", request(history = cut))
+
+            generateWith("claude-opus-5-5", request(history = cut + third.asMessage() + Message.user("Y en Cusco?")))
+
+            assertThat(blockTypesOf("assistant")).containsExactly(listOf("text"), listOf("thinking", "text"))
+        }
+
+        @Test
+        fun `thinking after a tool result that was shortened is left out too`() {
+            httpClient.body = fixture("bound-thinking-2")
+            val call = Message.Assistant(listOf(ToolCallPart("toolu_1", "getWeather", Json.obj("city" to "Bariloche"))))
+            fun resultOf(text: String) =
+                Message.Tool(listOf(ToolResultPart("toolu_1", "getWeather", ToolOutput.Text(text))))
+            val answer = generateWith(
+                "claude-opus-5-5",
+                request(history = listOf(question, call, resultOf("Hacen 7 grados, con viento del oeste"))),
+            )
+            val history = listOf(
+                question, call, resultOf("This result was removed to save context."), answer.asMessage(),
+                Message.user("Y en Lima?"),
+            )
+
+            generateWith("claude-opus-5-5", request(history = history))
+
+            assertThat(blockTypesOf("assistant")).containsExactly(listOf("tool_use"), listOf("text"))
+        }
+
+        @Test
         fun `the same system prompt and tools keep all of it`() {
             httpClient.body = fixture("bound-thinking-2")
             val before = generateWith("claude-opus-5-5", request())
@@ -770,8 +831,8 @@ class AnthropicChatModelPerModelTest {
             .filter { it["role"]?.asString() == role }
             .map { message -> message["content"]!!.asArray()!!.map { it.asObject()!!["type"]?.asString() } }
 
-        private fun setupOf(parts: List<Part>) = parts.filterIsInstance<ReasoningPart>().single()
-            .metadata["anthropic"]?.get("setup")?.asString()
+        private fun prefixOf(parts: List<Part>) = parts.filterIsInstance<ReasoningPart>().single()
+            .metadata["anthropic"]?.get("prefix")?.asString()
 
         private val weatherSpec = FunctionToolSpec(
             name = "getWeather",
