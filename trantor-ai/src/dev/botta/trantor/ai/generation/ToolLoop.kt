@@ -1,5 +1,6 @@
 package dev.botta.trantor.ai.generation
 
+import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
@@ -7,6 +8,7 @@ import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.primitives.logging.getLogger
+import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import dev.botta.trantor.ai.telemetry.GenAISpans
 import dev.botta.trantor.primitives.ContextPropagation
 import io.opentelemetry.api.OpenTelemetry
@@ -47,6 +49,8 @@ class ToolLoop(
      * span for each tool. Without an SDK behind it, it costs nothing.
      */
     openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+    /** Whether those spans carry what was said, which they do not unless asked. */
+    telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
 ) {
     /** A loop whose every step goes out with the same model and tools, as a generation does. */
     constructor(
@@ -56,7 +60,8 @@ class ToolLoop(
         run: RunContext = RunContext(),
         errorHandlers: List<ToolErrorHandler> = emptyList(),
         openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
-    ): this(NextStep.fixed(model, tools), maxSteps, run, errorHandlers, openTelemetry)
+        telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
+    ): this(NextStep.fixed(model, tools), maxSteps, run, errorHandlers, openTelemetry, telemetrySettings)
 
     /**
      * A loop whose run is traced by whoever runs it, as the [dev.botta.trantor.ai.agents.AgentRunner] does: the spans
@@ -68,13 +73,14 @@ class ToolLoop(
         run: RunContext,
         errorHandlers: List<ToolErrorHandler>,
         openTelemetry: OpenTelemetry,
+        telemetrySettings: AITelemetrySettings,
         tracesItsRun: Boolean,
-    ): this(nextStep, maxSteps, run, errorHandlers, openTelemetry) {
+    ): this(nextStep, maxSteps, run, errorHandlers, openTelemetry, telemetrySettings) {
         this.tracesItsRun = tracesItsRun
     }
 
     private val logger = getLogger()
-    private val spans = GenAISpans(openTelemetry)
+    private val spans = GenAISpans(openTelemetry, telemetrySettings)
     private var tracesItsRun = true
 
     fun run(request: ChatRequest, options: CallOptions = CallOptions()): RunResult =
@@ -403,13 +409,13 @@ class ToolLoop(
         fun execute(call: ToolCallPart): Execution {
             refusals[call.callId]?.let { return refused(call, it) }
 
-            return spans.tool(call, toolsByName[call.toolName], agent, spanParent, { run(call) }) { it.failure }
+            return spans.tool(call, toolsByName[call.toolName], agent, spanParent) { run(call) }
         }
 
         private fun run(call: ToolCallPart): Execution {
             // Out of the try: a hook that fails is a failure of the application, not of the tool
             val input = hooks.beforeTool(call)
-            val tool = toolsByName[call.toolName] ?: return unknown(call).let { failed(call, it, it.message!!) }
+            val tool = toolsByName[call.toolName] ?: return unknown(call).let { failed(call, it, it.message!!, input) }
 
             return try {
                 val result = tool.call(input, contextOf(call))
@@ -417,6 +423,7 @@ class ToolLoop(
                     ToolResultPart(call.callId, call.toolName, result.output),
                     handoff = result.handoff,
                     run = result.run,
+                    input = input,
                 )
             } catch (e: CancelledError) {
                 throw e
@@ -424,14 +431,14 @@ class ToolLoop(
                 Thread.currentThread().interrupt()
                 throw CancelledError("The thread was interrupted while ${call.toolName} ran", e)
             } catch (e: InvalidToolInputError) {
-                failed(call, e, e.message!!)
+                failed(call, e, e.message!!, input)
             } catch (e: ToolError) {
-                failed(call, e, e.message!!)
+                failed(call, e, e.message!!, input)
             } catch (e: Exception) {
                 if (tool.onError == ToolErrorModes.FailRun) throw e
 
                 logger.error("Tool ${call.toolName} failed on call ${call.callId}: ${e.message}", e)
-                failed(call, e, errorHandlers.firstNotNullOfOrNull { it.handle(e, call) } ?: GENERIC_FAILURE)
+                failed(call, e, errorHandlers.firstNotNullOfOrNull { it.handle(e, call) } ?: GENERIC_FAILURE, input)
             }
         }
 
@@ -505,9 +512,10 @@ class ToolLoop(
     private fun refused(call: ToolCallPart, refusal: ToolRefusal) =
         Execution(ToolResultPart(call.callId, call.toolName, ToolOutput.Text(refusal.message), isError = true))
 
-    private fun failed(call: ToolCallPart, error: Throwable, message: String) = Execution(
+    private fun failed(call: ToolCallPart, error: Throwable, message: String, input: JsonObject? = null) = Execution(
         ToolResultPart(call.callId, call.toolName, ToolOutput.Text(message), isError = true),
         ToolFailure(call.callId, call.toolName, error),
+        input = input,
     )
 
     class Execution(
@@ -517,6 +525,8 @@ class ToolLoop(
         val handoff: String? = null,
         /** The run of a model the tool made to answer. */
         val run: RunResult? = null,
+        /** The args the tool ran with, after the hooks. Null when it did not get that far. */
+        val input: JsonObject? = null,
     )
 
     /**

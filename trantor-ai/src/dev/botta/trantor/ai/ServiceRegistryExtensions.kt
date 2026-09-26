@@ -7,6 +7,7 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.providers.anthropic.addAnthropic
 import dev.botta.trantor.ai.providers.openai.addOpenAI
+import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import dev.botta.trantor.ai.tools.ToolErrorHandlers
 import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceProvider
@@ -32,7 +33,8 @@ import io.opentelemetry.api.OpenTelemetry
  * the providers of Trantor calls [addModelRegistry] and adds its own, and one that registered its own [AI] keeps it.
  *
  * When there is an `OpenTelemetry` in the container, registered before or after, the generations and the runs of the
- * agents are traced with it.
+ * agents are traced with it, and [AITelemetrySettings] from the `ai.telemetry` section say whether the traces carry
+ * what was said.
  */
 fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = { _, _ -> }) = apply {
     addModelRegistry()
@@ -42,8 +44,11 @@ fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = {
     addOpenAI()
     addAnthropic()
     configure(configuration)
-    addSingletonIfMissing<AI> { DefaultAI(it.get(), it.get(), it.openTelemetry()) }
-    addSingletonIfMissing<AgentRunner> { AgentRunner(it.get(), it.get(), it.get(), it.get(), it.openTelemetry()) }
+    if (!has<AITelemetrySettings>()) addConfig<AITelemetrySettings>("ai.telemetry")
+    addSingletonIfMissing<AI> { DefaultAI(it.get(), it.get(), it.openTelemetry(), it.get()) }
+    addSingletonIfMissing<AgentRunner> {
+        AgentRunner(it.get(), it.get(), it.get(), it.get(), it.openTelemetry(), it.get())
+    }
 }
 
 /**

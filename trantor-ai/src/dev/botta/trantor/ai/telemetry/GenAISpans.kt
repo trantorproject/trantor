@@ -4,7 +4,7 @@ import dev.botta.trantor.ai.agents.AgentRunResult
 import dev.botta.trantor.ai.agents.GuardrailVerdict
 import dev.botta.trantor.ai.agents.ToolGuardrailVerdict
 import dev.botta.trantor.ai.generation.RunResult
-import dev.botta.trantor.ai.generation.ToolFailure
+import dev.botta.trantor.ai.generation.ToolLoop
 import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
@@ -47,13 +47,15 @@ import io.opentelemetry.context.Context
  * of whoever reads that runs, and nothing of the run may be current there. They are current only around what runs
  * at once, and the ones a stream leaves open when it is closed end then, without failing.
  *
- * The content — instructions, messages, args and results — is not recorded.
+ * The content — instructions, messages, tools, args and results — is recorded only when [settings] ask for it, in
+ * the shape [GenAIContent] gives it.
  *
  * Telemetry never fails what it watches. A span that cannot be started or written is logged, and the work goes on
  * without it.
  */
-internal class GenAISpans(openTelemetry: OpenTelemetry) {
+internal class GenAISpans(openTelemetry: OpenTelemetry, settings: AITelemetrySettings = AITelemetrySettings()) {
     private val logger = getLogger()
+    private val content = if (settings.captureContent) GenAIContent(settings.maxContentLength) else null
     private val tracer: Tracer? =
         safely("get a tracer") { openTelemetry.getTracer(INSTRUMENTATION, TrantorBuildInfo.version) }
 
@@ -84,12 +86,12 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
     ): ChatResponse {
         val span = startChat(model, request, agent, parent, streamed = false)
 
-        return traced(span, block) { response -> response(response) }
+        return traced(span, block) { response -> response(response, agent) }
     }
 
     /** A call to [model] whose answer is received as it happens, which ends when its stream does. */
     fun openChat(model: ChatModel, request: ChatRequest, agent: String?, parent: Context?) =
-        ChatSpan(startChat(model, request, agent, parent, streamed = true))
+        ChatSpan(startChat(model, request, agent, parent, streamed = true), agent)
 
     private fun startChat(model: ChatModel, request: ChatRequest, agent: String?, parent: Context?, streamed: Boolean) =
         start("chat ${model.modelId}", SpanKind.CLIENT, parent) {
@@ -105,24 +107,32 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
             if (request.output is OutputSpec.Json) setAttribute(OUTPUT_TYPE, "json")
             // Only when it is streamed: unset means it was not
             if (streamed) setAttribute(STREAM, true)
+            content?.let {
+                it.systemInstructions(request)?.let { instructions -> setAttribute(SYSTEM_INSTRUCTIONS, instructions) }
+                setAttribute(INPUT_MESSAGES, it.inputMessages(request))
+                it.toolDefinitions(request.tools)?.let { definitions -> setAttribute(TOOL_DEFINITIONS, definitions) }
+            }
         }
 
-    private fun Span.response(response: ChatResponse) {
+    private fun Span.response(response: ChatResponse, agent: String?) {
         response.info.id?.let { setAttribute(RESPONSE_ID, it) }
         setAttribute(RESPONSE_MODEL, response.info.model)
         setAttribute(FINISH_REASONS, listOf(finishReason(response)))
         usage(response.usage)
+        content?.let { setAttribute(OUTPUT_MESSAGES, it.outputMessages(response, agent)) }
     }
 
-    /** The call of a [tool], which is null when the model asked for one that does not exist. */
-    fun <T> tool(
+    /**
+     * The call of a [tool], which is null when the model asked for one that does not exist. Its content is the args
+     * the tool ran with, after the hooks, and what the model reads of it.
+     */
+    fun tool(
         call: ToolCallPart,
         tool: Tool<*>?,
         agent: String?,
         parent: Context?,
-        block: () -> T,
-        failureOf: (T) -> ToolFailure?,
-    ): T {
+        block: () -> ToolLoop.Execution,
+    ): ToolLoop.Execution {
         val span = start("execute_tool ${call.toolName}", SpanKind.INTERNAL, parent) {
             setAttribute(OPERATION, "execute_tool")
             agent?.let { setAttribute(AGENT_NAME, it) }
@@ -132,7 +142,13 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
             tool?.let { setAttribute(TOOL_DESCRIPTION, it.description) }
         }
 
-        return traced(span, block) { result -> failureOf(result)?.let { failed(this, it.error) } }
+        return traced(span, block) { execution ->
+            execution.failure?.let { failed(this, it.error) }
+            content?.let {
+                setAttribute(TOOL_CALL_ARGUMENTS, it.arguments(execution.input ?: call.input))
+                setAttribute(TOOL_CALL_RESULT, it.result(execution.result.output))
+            }
+        }
     }
 
     /**
@@ -251,7 +267,7 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
      * The span of a call whose answer is received as it happens. It is current only while the model opens the
      * stream, so that the http call is inside it; between one part and the next, whoever reads is current.
      */
-    inner class ChatSpan internal constructor(private val span: Span?) {
+    inner class ChatSpan internal constructor(private val span: Span?, private val agent: String?) {
         private val issuedAt = System.nanoTime()
         private var chunked = false
         private var ended = false
@@ -275,7 +291,7 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
             safely("write the span") { span?.setAttribute(TIME_TO_FIRST_CHUNK, (System.nanoTime() - issuedAt) / 1e9) }
         }
 
-        fun end(response: ChatResponse) = ending { span?.response(response) }
+        fun end(response: ChatResponse) = ending { span?.response(response, agent) }
 
         fun fail(error: Throwable) = ending { span?.let { failed(it, error) } }
 
@@ -338,11 +354,11 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
         usage.reasoningTokens?.let { setAttribute(REASONING_TOKENS, it.toLong()) }
     }
 
-    // The conventions give no list of values; these are the ones of the OpenAI chat api, which its examples use
+    // The values the conventions give in the models of their messages; a refusal and the rest are ours
     private fun finishReason(response: ChatResponse) = when (response.finishReason) {
         FinishReasons.Stop -> "stop"
         FinishReasons.Length -> "length"
-        FinishReasons.ToolCalls -> "tool_calls"
+        FinishReasons.ToolCalls -> "tool_call"
         FinishReasons.ContentFilter -> "content_filter"
         FinishReasons.Refusal -> "refusal"
         FinishReasons.Error -> "error"
@@ -384,6 +400,12 @@ internal class GenAISpans(openTelemetry: OpenTelemetry) {
         val TOOL_TYPE = stringKey("gen_ai.tool.type")
         val TOOL_DESCRIPTION = stringKey("gen_ai.tool.description")
         val ERROR_TYPE = stringKey("error.type")
+        val SYSTEM_INSTRUCTIONS = stringKey("gen_ai.system_instructions")
+        val INPUT_MESSAGES = stringKey("gen_ai.input.messages")
+        val OUTPUT_MESSAGES = stringKey("gen_ai.output.messages")
+        val TOOL_DEFINITIONS = stringKey("gen_ai.tool.definitions")
+        val TOOL_CALL_ARGUMENTS = stringKey("gen_ai.tool.call.arguments")
+        val TOOL_CALL_RESULT = stringKey("gen_ai.tool.call.result")
         val GUARDRAIL_NAME = stringKey("gen_ai.guardrail.component.name")
         val GUARDRAIL_TARGET = stringKey("gen_ai.guardrail.target.type")
         val GUARDRAIL_SUBTYPE = stringKey("gen_ai.guardrail.target.subtype")

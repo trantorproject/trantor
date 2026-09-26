@@ -16,6 +16,7 @@ import dev.botta.trantor.ai.models.chat.OutputSpec
 import dev.botta.trantor.ai.models.chat.objectAs
 import dev.botta.trantor.ai.schemas.JsonSchemas
 import dev.botta.trantor.ai.tools.ToolErrorHandlers
+import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import io.opentelemetry.api.OpenTelemetry
 import kotlinx.serialization.KSerializer
 
@@ -30,6 +31,8 @@ class DefaultAI(
     private val models: ModelRegistry,
     private val errorHandlers: ToolErrorHandlers = ToolErrorHandlers(),
     private val openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+    /** Whether the spans carry what was said, which they do not unless asked. */
+    private val telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
 ): AI {
     override fun text(prompt: String, model: String?, options: CallOptions) =
         generate(GenerateRequest().model(model).user(prompt).callOptions(options)).text
@@ -67,7 +70,7 @@ class DefaultAI(
             StepSetup(model, chat.copy(messages = projected(policies, chat.messages, request.context)), tools)
         }
 
-        return ToolLoop(next, request.maxSteps, request.context, errorHandlers.all, openTelemetry)
+        return ToolLoop(next, request.maxSteps, request.context, errorHandlers.all, openTelemetry, telemetrySettings)
     }
 
     /** A stream whose run is kept in its session once it is read to its end, and not when it is closed before. */

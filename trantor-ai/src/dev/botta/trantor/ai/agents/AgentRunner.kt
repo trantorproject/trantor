@@ -20,6 +20,7 @@ import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.models.chat.OutputSpec
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.tools.ToolErrorHandlers
+import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import dev.botta.trantor.ai.telemetry.GenAISpans
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.context.Context
@@ -67,8 +68,10 @@ class AgentRunner(
     /** Asked in every run, before the guardrails of the agent and those of the run. */
     private val guardrails: GlobalGuardrails = GlobalGuardrails(),
     private val openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+    /** Whether the spans carry what was said, which they do not unless asked. */
+    private val telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
 ) {
-    private val spans = GenAISpans(openTelemetry)
+    private val spans = GenAISpans(openTelemetry, telemetrySettings)
 
     /**
      * Runs [agent] on the conversation so far, whose last message is usually what the user just said. With a
@@ -174,7 +177,9 @@ class AgentRunner(
         private val agents = mutableListOf<Agent>()
 
         /** The tool loop the run goes on, asking this run what each step goes out with. */
-        val loop = ToolLoop(this, options.maxSteps, options.context, errorHandlers.all, openTelemetry, false)
+        val loop = ToolLoop(
+            this, options.maxSteps, options.context, errorHandlers.all, openTelemetry, telemetrySettings, false,
+        )
 
         /** Runs the steps on the loop, and ends the span of the last agent with them. */
         fun steps(): RunResult = try {

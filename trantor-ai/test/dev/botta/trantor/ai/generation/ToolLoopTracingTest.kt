@@ -179,7 +179,7 @@ class ToolLoopTracingTest {
             loop().run(ChatRequest("Que temperatura hay en Bariloche?"))
 
             val first = telemetry.spans.filter { it.name == "chat gpt-4.1-mini" }.minBy { it.startEpochNanos }
-            assertThat(first.attributes[stringArrayKey("gen_ai.response.finish_reasons")]).containsExactly("tool_calls")
+            assertThat(first.attributes[stringArrayKey("gen_ai.response.finish_reasons")]).containsExactly("tool_call")
         }
     }
 
@@ -286,7 +286,7 @@ class ToolLoopTracingTest {
                 .containsExactly("chat gpt-4.1-mini", "execute_tool getWeather", "chat gpt-4.1-mini")
             val chat = steps.first()
             assertThat(chat.attributes[booleanKey("gen_ai.request.stream")]).isTrue()
-            assertThat(chat.attributes[stringArrayKey("gen_ai.response.finish_reasons")]).containsExactly("tool_calls")
+            assertThat(chat.attributes[stringArrayKey("gen_ai.response.finish_reasons")]).containsExactly("tool_call")
             assertThat(chat.attributes[longKey("gen_ai.usage.input_tokens")]).isEqualTo(100)
             assertThat(generation.attributes[longKey("gen_ai.usage.input_tokens")]).isEqualTo(200)
         }

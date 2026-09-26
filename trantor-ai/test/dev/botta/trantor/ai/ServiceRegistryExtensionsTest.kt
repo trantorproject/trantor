@@ -41,6 +41,7 @@ import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.serialization.gson.GsonSerializer
 import dev.botta.trantor.web.client.HttpClient
 import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.common.AttributeKey.stringKey
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -504,6 +505,19 @@ class ServiceRegistryExtensionsTest {
             provider.get<AI>().text("Hola", "fake/a-model")
 
             assertThat(telemetry.spans.map { it.name }).containsExactly("chat a-model", "invoke_agent")
+        }
+
+        @Test
+        fun `with the content of the calls when the ai telemetry section asks for it`() {
+            config.addMemoryCollection("ai.telemetry.captureContent" to "true")
+            registry.addAI()
+            registry.addFakeProvider()
+            registry.addSingleton<OpenTelemetry>(telemetry.openTelemetry)
+
+            provider.get<AI>().text("Hola", "fake/a-model")
+
+            assertThat(telemetry.named("chat a-model").attributes[stringKey("gen_ai.input.messages")])
+                .isEqualTo("""[{"role":"user","parts":[{"type":"text","content":"Hola"}]}]""")
         }
 
         @Test
