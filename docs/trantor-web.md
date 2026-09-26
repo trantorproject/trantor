@@ -28,6 +28,10 @@ services.configure<HttpServerSettings> { settings, _ ->
 }
 ```
 
+When there is an `OpenTelemetry` in the container, every request is a `SERVER` span named after its route
+(`GET /orders/{id}`), which goes on from the trace of the caller. See
+[trantor-opentelemetry](trantor-opentelemetry.md).
+
 ---
 
 ## Routes and controllers

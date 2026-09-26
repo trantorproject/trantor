@@ -148,6 +148,16 @@ This component is implemented as a **HostedService**, meaning it is tied to the 
 
 ---
 
+## Observability
+
+### trantor-opentelemetry
+
+`addOpenTelemetry()` builds the OpenTelemetry SDK and sends traces over OTLP, to a collector or straight to a
+backend. The server, the HTTP client and the jobs trace with the OpenTelemetry API, which lives in
+`trantor-primitives` and costs nothing without this module. See [trantor-opentelemetry](trantor-opentelemetry.md).
+
+---
+
 ## AI
 
 ### trantor-ai

@@ -78,12 +78,20 @@ services.addJobProcessor(queueName = "emails", maxConcurrentWorkers = 4)
 **Dispatch waits for the commit** (`jobs.afterCommit`, default `true`): a job enqueued inside a
 transaction is only pushed once that transaction commits, so a rolled back change never produces work.
 
+**A job goes on in the trace of whoever dispatched it.** It carries the correlation id and, when there is an
+`OpenTelemetry` in the container, the trace: sending it is a `send {queue}` span and running it a
+`process {queue}` span, child of the first. See [trantor-opentelemetry](trantor-opentelemetry.md).
+
 ---
 
 ## Queues
 
-`MessageQueue` is the abstraction — enqueue, poll, delete, clear, size. A `QueueFactory` builds one from
-configuration, which is how a driver plugs in (`trantor-queues-sqs` is the one that ships).
+`MessageQueue` is the abstraction — enqueue, poll, delete, clear, size, and the `system` it runs on, as
+OpenTelemetry names it (`aws_sqs`). A `QueueFactory` builds one from configuration, which is how a driver plugs
+in (`trantor-queues-sqs` is the one that ships).
+
+A `Message` is a type, a body, the correlation id and the trace context of whoever sent it. A driver stores the
+whole message, so both travel without the driver knowing.
 
 ```json
 {

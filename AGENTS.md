@@ -34,6 +34,7 @@ which is the canonical example.
 | `trantor-di` | The service container: `ServiceRegistry`, `ServiceProvider`, lifetimes, value resolvers. |
 | `trantor-config` | Stacked configuration providers, sections, case-insensitive paths. |
 | `trantor-hosting` | `Host`, `HostBuilder`, `HostedService`, `Module`. Application lifecycle. |
+| `trantor-opentelemetry` | `addOpenTelemetry()`: the OpenTelemetry SDK and the OTLP exporter. Trantor traces with the API, which is in primitives. |
 | `trantor-core` | Application services: application pipeline, auth, broadcast, cache, events, jobs, queues, scheduling, transactions. |
 | `trantor-domain` | Domain building blocks: `Aggregate`, `Id`, `Money`, `Email`, domain errors, `Ensure`. |
 | `trantor-data` | JDBC, Hikari, jOOQ, transaction managers. |
