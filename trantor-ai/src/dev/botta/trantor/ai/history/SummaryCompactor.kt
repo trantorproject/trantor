@@ -78,7 +78,7 @@ class SummaryCompactor(
         const val DEFAULT_INSTRUCTIONS = "Summarize the conversation below so that it can go on without it. Keep " +
             "every fact, name, number, date and decision, what the user asked for and what is still pending, and " +
             "what the tools returned that still matters. Leave out greetings and small talk. Write it in the " +
-            "language of the conversation, and answer with the summary alone."
+            "language of the conversation, and answer with the summary alone, without a title or headings."
 
         private val CUT_SHORT =
             setOf(FinishReasons.Length, FinishReasons.ContentFilter, FinishReasons.Refusal, FinishReasons.Error)
