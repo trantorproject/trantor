@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 import okhttp3.MultipartBody as OkMultipartBody
 
 class OkHttpHttpClient(
-    private val config: OkHttpHttpClientConfig = OkHttpHttpClientConfig()
+    val config: OkHttpHttpClientConfig = OkHttpHttpClientConfig()
 ): HttpClient() {
     private val logger = getLogger()
 

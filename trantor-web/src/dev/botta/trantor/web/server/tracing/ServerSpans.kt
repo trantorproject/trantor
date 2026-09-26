@@ -1,6 +1,7 @@
 package dev.botta.trantor.web.server.tracing
 
 import dev.botta.trantor.primitives.TrantorBuildInfo
+import dev.botta.trantor.primitives.telemetry.UrlRedaction
 import io.javalin.http.Context
 import io.javalin.http.HandlerType
 import io.opentelemetry.api.OpenTelemetry
@@ -63,7 +64,7 @@ internal class ServerSpanFilter(openTelemetry: OpenTelemetry): Filter {
             .setAttribute(stringKey("network.protocol.version"), req.protocol.substringAfter("HTTP/"))
 
         if (method == null) builder.setAttribute(stringKey("http.request.method_original"), req.method)
-        req.queryString?.let { builder.setAttribute(stringKey("url.query"), redacted(it)) }
+        req.queryString?.let { builder.setAttribute(stringKey("url.query"), UrlRedaction.query(it)) }
         req.getHeader("User-Agent")?.let { builder.setAttribute(stringKey("user_agent.original"), it) }
 
         return builder.startSpan()
@@ -86,12 +87,6 @@ internal class ServerSpanFilter(openTelemetry: OpenTelemetry): Filter {
         span.setStatus(StatusCode.ERROR)
         span.setAttribute(stringKey("error.type"), type)
         exception?.let { span.recordException(it) }
-    }
-
-    /** The values of the keys the conventions list as signatures and credentials become `REDACTED`. */
-    private fun redacted(query: String) = query.split("&").joinToString("&") { pair ->
-        val key = pair.substringBefore("=")
-        if (key in SENSITIVE_QUERY_KEYS && "=" in pair) "$key=REDACTED" else pair
     }
 
     /**
@@ -137,11 +132,6 @@ internal class ServerSpanFilter(openTelemetry: OpenTelemetry): Filter {
 
     private companion object {
         const val INSTRUMENTATION = "dev.botta.trantor.web"
-
-        val SENSITIVE_QUERY_KEYS = setOf(
-            "X-Amz-Signature", "X-Amz-Credential", "X-Amz-Security-Token", "AWSAccessKeyId", "Signature", "sig",
-            "X-Goog-Signature",
-        )
     }
 }
 
