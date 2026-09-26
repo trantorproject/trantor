@@ -7,6 +7,7 @@ import dev.botta.trantor.ai.generation.ToolFailure
 import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.Step
 import dev.botta.trantor.ai.generation.StepSetup
+import dev.botta.trantor.ai.generation.ToolRefusal
 import dev.botta.trantor.ai.generation.ToolLoop
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.ChatModel
@@ -42,23 +43,33 @@ import java.util.UUID
  *
  * Every answer is kept signed by the agent that wrote it, and an agent reads the turns of the others as context with
  * their names, not as its own ([OtherAgentsTurns]).
+ *
+ * Guardrails can stop a run with a [GuardrailTrippedError]: those of the input before the first call to the model,
+ * those of the tools before any call of a step runs, and those of the output on the final answer, before
+ * [AgentHooks.afterRun]. See [InputGuardrail], [ToolGuardrail] and [OutputGuardrail].
  */
 class AgentRunner(
     private val models: ModelRegistry,
     private val errorHandlers: ToolErrorHandlers = ToolErrorHandlers(),
     /** Called around the steps of every run, before the hooks of the agent and those of the run. */
     private val hooks: GlobalAgentHooks = GlobalAgentHooks(),
+    /** Asked in every run, before the guardrails of the agent and those of the run. */
+    private val guardrails: GlobalGuardrails = GlobalGuardrails(),
 ) {
     /** Runs [agent] on the conversation so far, whose last message is usually what the user just said. */
     fun run(agent: Agent, vararg conversation: Message, configure: AgentRunOptions.() -> Unit = {}) =
         run(agent, conversation.toList(), configure)
 
     fun run(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunResult {
-        val run = start(agent, configure)
+        val run = start(agent, conversation, configure)
 
-        run.beforeRun(conversation)
+        run.beforeRun()
+        run.checkInput()
 
-        return run.resultOf(run.loop.run(ChatRequest(conversation), run.options.callOptions)).also(run::afterRun)
+        return run.resultOf(run.loop.run(ChatRequest(conversation), run.options.callOptions)).also {
+            run.checkOutput(it)
+            run.afterRun(it)
+        }
     }
 
     /** Runs [agent] like [run], received as it happens. See [AgentRunStream]. */
@@ -66,21 +77,17 @@ class AgentRunner(
         stream(agent, conversation.toList(), configure)
 
     fun stream(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunStream {
-        val run = start(agent, configure)
+        val run = start(agent, conversation, configure)
 
-        run.beforeRun(conversation)
+        run.beforeRun()
 
-        return AgentRunStream(
-            run.loop.stream(ChatRequest(conversation), run.options.callOptions),
-            run::resultOf,
-            run::afterRun,
-        )
+        return AgentRunStream(run.loop.stream(ChatRequest(conversation), run.options.callOptions), run)
     }
 
-    private fun start(agent: Agent, configure: AgentRunOptions.() -> Unit): Run {
+    private fun start(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit): Run {
         val options = AgentRunOptions().apply(configure)
 
-        return Run(agent, teamOf(agent, options.team), options, UUID.randomUUID().toString())
+        return Run(agent, teamOf(agent, options.team), options, UUID.randomUUID().toString(), conversation)
     }
 
     /**
@@ -106,30 +113,72 @@ class AgentRunner(
         return team
     }
 
-    /** One run of the agents: which agent each step goes out with, and what that agent makes of the request. */
+    /**
+     * One run of the agents: which agent each step goes out with, what that agent makes of the request, and the
+     * hooks and guardrails around it.
+     */
     private inner class Run(
         private var agent: Agent,
         private val team: Map<String, Agent>,
         val options: AgentRunOptions,
         val id: String,
-    ): NextStep {
+        /** What the run got, before any step. */
+        private val conversation: List<Message>,
+    ): NextStep, StreamedRun {
+        private val first = agent
+
         /** The agent of each step so far, in order. */
         private val agents = mutableListOf<Agent>()
 
         /** The tool loop the run goes on, asking this run what each step goes out with. */
         val loop = ToolLoop(this, options.maxSteps, options.context, errorHandlers.all)
 
-        fun resultOf(result: RunResult) = AgentRunResult(result, agents, id)
+        override fun resultOf(result: RunResult) = AgentRunResult(result, agents, id)
 
-        fun beforeRun(conversation: List<Message>) =
-            hooksOf(agent).forEach { it.beforeRun(contextOf(agent, 0), conversation) }
+        fun beforeRun() = hooksOf(first).forEach { it.beforeRun(contextOf(first, 0), conversation) }
 
-        fun afterRun(result: AgentRunResult) = result.lastAgent.let { last ->
+        override fun afterRun(result: AgentRunResult) = result.lastAgent.let { last ->
             hooksOf(last).forEach { it.afterRun(contextOf(last, result.steps.size), result) }
         }
 
-        /** Global first, then the agent's, then the run's. */
+        override fun checkInput() {
+            val run = contextOf(first, 0)
+
+            (guardrails.inputGuardrails + first.inputGuardrails + options.inputGuardrails).forEach { guardrail ->
+                when (val verdict = guardrail.check(run, conversation)) {
+                    GuardrailVerdict.Pass -> {}
+                    is GuardrailVerdict.Trip -> throw GuardrailTrippedError(
+                        guardrail.name, GuardrailKinds.Input, verdict.reason, verdict.details, first, null,
+                    )
+                }
+            }
+        }
+
+        override fun checkOutput(result: AgentRunResult) {
+            val last = result.lastAgent
+            val run = contextOf(last, result.steps.size)
+
+            outputGuardrailsOf(last).forEach { guardrail ->
+                when (val verdict = guardrail.check(run, result)) {
+                    GuardrailVerdict.Pass -> {}
+                    is GuardrailVerdict.Trip -> throw GuardrailTrippedError(
+                        guardrail.name, GuardrailKinds.Output, verdict.reason, verdict.details, last, result,
+                    )
+                }
+            }
+        }
+
+        // The agent of the step going out, which is the one that answers if the step turns out to be the last
+        override fun holdsText() = outputGuardrailsOf(agent).any { it.holdsText }
+
+        /** Global first, then the agent's, then the run's; the guardrails go in the same order. */
         private fun hooksOf(agent: Agent) = hooks.all + agent.hooks + options.hooks
+
+        private fun outputGuardrailsOf(agent: Agent) =
+            guardrails.outputGuardrails + agent.outputGuardrails + options.outputGuardrails
+
+        private fun toolGuardrailsOf(agent: Agent) =
+            guardrails.toolGuardrails + agent.toolGuardrails + options.toolGuardrails
 
         private fun contextOf(agent: Agent, step: Int) = AgentHookContext(agent, id, options.context, step)
 
@@ -165,21 +214,69 @@ class AgentRunner(
                 toolContext = { call -> toolContext(call.callId, call.toolName) },
                 team = team.keys,
                 agent = agent.name,
-                hooks = hooks.takeIf { it.isNotEmpty() }
-                    ?.let { AgentStepHooks(it, contextOf(agent, steps.size + 1), toolContext) },
+                hooks = AgentStepHooks(
+                    hooks,
+                    toolGuardrailsOf(agent),
+                    contextOf(agent, steps.size + 1),
+                    toolContext,
+                    trippedOnTool(agent, steps),
+                ),
             )
         }
+
+        /**
+         * The error of a tool guardrail that tripped. The run left the steps before and this one, whose calls did not
+         * run.
+         */
+        private fun trippedOnTool(agent: Agent, steps: List<Step>) =
+            { guardrail: String, verdict: GuardrailVerdict.Trip, call: ToolCallPart, response: ChatResponse ->
+                val result = resultOf(RunResult(steps + Step(response, agent = agent.name)))
+
+                GuardrailTrippedError(
+                    guardrail, GuardrailKinds.Tool, verdict.reason, verdict.details, agent, result, call,
+                )
+            }
     }
 
-    /** The hooks of the agent of one step, as the loop calls them, each one getting what the one before returned. */
+    /**
+     * The hooks and the tool guardrails of the agent of one step, as the loop calls them, each hook getting what the
+     * one before returned.
+     */
     private class AgentStepHooks(
         private val hooks: List<AgentHooks>,
+        private val guardrails: List<ToolGuardrail>,
         private val step: AgentHookContext,
         private val toolContext: (callId: String, toolName: String) -> AgentToolContext,
+        private val tripped: (String, GuardrailVerdict.Trip, ToolCallPart, ChatResponse) -> GuardrailTrippedError,
     ): StepHooks {
+        /** The answer of the step, which the loop always hands over before asking about its calls. */
+        private lateinit var response: ChatResponse
+
         override fun beforeModel(request: ChatRequest) = hooks.fold(request) { sent, hook -> hook.beforeModel(step, sent) }
 
-        override fun afterModel(response: ChatResponse) = hooks.forEach { it.afterModel(step, response) }
+        override fun afterModel(response: ChatResponse) {
+            this.response = response
+            hooks.forEach { it.afterModel(step, response) }
+        }
+
+        /** The first guardrail that does not pass decides, and the ones after it are not asked. */
+        override fun checkTool(call: ToolCallPart): ToolRefusal? {
+            val context = toolContext(call.callId, call.toolName)
+
+            for (guardrail in guardrails) {
+                when (val verdict = guardrail.check(call, context)) {
+                    GuardrailVerdict.Pass -> continue
+                    is GuardrailVerdict.Trip -> throw tripped(guardrail.name, verdict, call, response)
+                    is ToolGuardrailVerdict.Reject -> return ToolRefusal(
+                        verdict.message,
+                        "The guardrail ${guardrail.name} rejected ${call.toolName} on call ${call.callId}, which did " +
+                            "not run: ${verdict.message}",
+                    )
+                }
+            }
+
+            return null
+        }
 
         override fun beforeTool(call: ToolCallPart): JsonObject {
             val context = toolContext(call.callId, call.toolName)

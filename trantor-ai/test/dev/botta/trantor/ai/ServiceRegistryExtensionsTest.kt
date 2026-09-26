@@ -7,6 +7,9 @@ import dev.botta.trantor.ai.agents.Agent
 import dev.botta.trantor.ai.agents.AgentHookContext
 import dev.botta.trantor.ai.agents.AgentHooks
 import dev.botta.trantor.ai.agents.AgentRunner
+import dev.botta.trantor.ai.agents.GuardrailTrippedError
+import dev.botta.trantor.ai.agents.GuardrailVerdict
+import dev.botta.trantor.ai.agents.InputGuardrail
 import dev.botta.trantor.ai.errors.ModelNotFoundError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
@@ -422,6 +425,19 @@ class ServiceRegistryExtensionsTest {
             provider.get<AgentRunner>().run(Agent("support").model(model).build(), Message.user("Hola"))
 
             assertThat(called).containsExactly("support")
+        }
+
+        @Test
+        fun `the global guardrails reach every run of the runner`() {
+            val model = FakeChatModel(provider = "scripted").answers(listOf(TextPart("Hola")))
+            registry.addAI()
+            registry.addGuardrails { guardrails, _ ->
+                guardrails.input(InputGuardrail("closed") { _, _ -> GuardrailVerdict.Trip("We are closed") })
+            }
+
+            assertThatThrownBy { provider.get<AgentRunner>().run(Agent("support").model(model).build(), Message.user("Hola")) }
+                .isInstanceOf(GuardrailTrippedError::class.java)
+                .hasMessageContaining("We are closed")
         }
     }
 

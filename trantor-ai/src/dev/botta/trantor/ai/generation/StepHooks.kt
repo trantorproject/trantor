@@ -20,6 +20,13 @@ interface StepHooks {
     fun afterModel(response: ChatResponse) {}
 
     /**
+     * Asked for every call of the step before any of them runs, with the call as the model made it. A [ToolRefusal]
+     * answers that call to the model as an error instead of running it, and the other calls run. An exception fails
+     * the run before any call of the step ran, so none of them had any effect.
+     */
+    fun checkTool(call: ToolCallPart): ToolRefusal? = null
+
+    /**
      * The args a call goes to its tool with. What it returns is decoded like the model's own, so args the tool does
      * not take go back to the model as an error. The call the model made stays as it made it.
      */
@@ -28,6 +35,9 @@ interface StepHooks {
     /** What the model will read of the call, once its handoff, if it made one, was settled. */
     fun afterTool(result: ToolResultPart, failure: ToolFailure?) {}
 }
+
+/** A call the step does not run: the model reads [message] as its error, and the run keeps [warning]. */
+class ToolRefusal(val message: String, val warning: String)
 
 /** The hooks that change nothing, for a step that brings none. */
 internal object NoStepHooks: StepHooks

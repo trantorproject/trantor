@@ -17,6 +17,9 @@ class AgentRunOptions {
         private set
     val team = mutableListOf<Agent>()
     val hooks = mutableListOf<AgentHooks>()
+    val inputGuardrails = mutableListOf<InputGuardrail>()
+    val outputGuardrails = mutableListOf<OutputGuardrail>()
+    val toolGuardrails = mutableListOf<ToolGuardrail>()
 
     /**
      * The agents the conversation can be handed over to, besides the one the run starts with. Every handoff an agent
@@ -38,6 +41,15 @@ class AgentRunOptions {
 
     /** Called around every step of this run, whichever agent runs it, after the global hooks and the agent's. */
     fun hooks(vararg hooks: AgentHooks) = apply { this.hooks.addAll(hooks) }
+
+    /** Checks the conversation of this run, after the global ones and those of the agent it starts with. */
+    fun inputGuardrails(vararg guardrails: InputGuardrail) = apply { inputGuardrails.addAll(guardrails) }
+
+    /** Checks the final answer of this run, after the global ones and those of the agent that answered. */
+    fun outputGuardrails(vararg guardrails: OutputGuardrail) = apply { outputGuardrails.addAll(guardrails) }
+
+    /** Checks every call of this run, whichever agent asks for it, after the global ones and the agent's. */
+    fun toolGuardrails(vararg guardrails: ToolGuardrail) = apply { toolGuardrails.addAll(guardrails) }
 
     /** Timeout, cancellation and headers, which apply to every call of the run. */
     fun callOptions(options: CallOptions) = apply { callOptions = options }

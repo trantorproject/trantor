@@ -1,0 +1,132 @@
+{
+  "id": "resp_00852cc5ba2d5954006ab709916b6487d2898c6430e29f8ccf",
+  "object": "response",
+  "created_at": 1790380433,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790380434,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_00852cc5ba2d5954006ab70991cab887d29bdda593dc7f504c",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtwmSaEAHkYZPD7MYPv0dWTdcz_DqReVfrUz5s_fMWzWIONeBgxaCcu35-RrFwEPkWXj7LOc5Py_f4UIKvbgaJ5EOILONEn2RK6bTFfcy6XjYV7OrFFXNqeF3OGXEZH_-fJrqB-OIzZb-jRjwdvMXxgOMCMKitEcZjdMLWvqOYcy1_T8Tfu8k073-IML-tMZP4hNOEI2LgnDf5-J7DRdwQBruAVVs0iYxfQokOyUEjb26FftHoeW7DR29xRVU5zwe_hJXaNybzDlIIkNYH_-ptc-_uTkwV9kKpzjcfJft8btcyLZzh0uMTzjE1cWzs48XhArCfFg11U4uDwUZ8PCFTVEBMRMqJ1DVlJ4NXpn2HSV0hwW_VTBkGNUk3lgJ2cwxP5PvmaAynMkbLUg6fVoGB1_PI2-J80aaYhbjbeWGFRuE1Xq7QKSn7u_WkF-tAQnOrMrP9uvPY3bFNlBOs3s7ECgutrAZCS44dd2BWZcIqiRaNMeJODsHH5vebIrifpZcGwTIaDyqyPe9ZkEHF0nJcgV_E7ULtdtMHv-kbF46EPXQFY2ITX1WvryppxI5bNZae-faNm-8t-nineaOeoIemg2QDc2P4R4VDgWQgp5ytHtBVOWPEaBKYI7ZaMtkBV47rVxtGFSCLINd44NP_uTngF0u5vLsZ19Drh4cgYh_mkhYFLTV8cBrm_t-RXFYBjB7s2TCbA0DcBPnvD2weDgTL1alYixWmlL2V3-xgaPAh1neTPSdCM1d6LAo6r9j-x_ouDoHKrZkdv8TdgiOZsGqvfCSKbj1lothCL9RlExfndV9TXPcJTphgRuMyuG78t80wZEVFH_frcGnjxzfl6MeUA9d8Ph_UPmKti7zJR9Zc0_maTfydBidK9c6PWbROtx9ArBITCOn1xCzUf-jPi_zQZgxL4sjRRFecc8Zob8ZtBENzjF4_8pyE0-YCcLGq9KAiy56NKf1WldvA533f4SGf81rs2S7p7EjJqZwlT0RTSvs7zyGC_NaBgozOIesmgRZHRetqKlwwb3uIKh3oPyA_bJYlWCFaTQUmWvjPwwAAejDbd60erqLNahv6ezkiqBXxyMR2Dvt1c36ltXJfeTWR53VdgQXS05CDY1BZai5Fz6G43sxUfQbz-S08McA833M7-p7Nqsh6kJTYvUqRYUhnwggcXODZszdHtxUXVdiPzVL9q4pJlCgdeGx5fGz5m166TmfmL7z4Jb0TIwTus8o2GELe9mcpjnMtVa7AuuyimrC3RZyngMO8IAAlFgmDE9KA1KfPSGNY7yeekNiD4VJ1QzUKSDK5r0nM1Pzq13mB1cxtDMzh9txVb8G4VgDgmIUppp62eiUKB3Wx7gMzh-9E_bd58zk-HK0GWnD4St2PVypAUgz2F5sFjlLvkBepDUkW2Gb6kEEAoFU27aIy4b_W0pijbdW6lQi5RWlP3-vS2tm6NQ1YGD5LpU98TLCApdhCk41-1DLbN-oxsHrvFhok_osKSVL_892tyHTtZfBL6Wcv91HTCllnj5H3kd_dRHKMklF8K2fOtonRXUOFvU-rKnzwDRT1RwUGvbHn5uLPsIXd9_kTvbDPD6PHezYSYQDB-rW73cXAcK3z8e7I6rNim9lbr1uafUa9peWtnecPm6DDVoyyl1vCsR1J9t7idEHpbIV",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_00852cc5ba2d5954006ab7099294bc87d2b8bb6af2ebf4770c",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "{\"aboutTravel\":false,\"reason\":\"El usuario solicita un poema sobre gatos, sin relación con viajes.\"}"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "json_schema",
+      "description": null,
+      "name": "response",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "aboutTravel": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "aboutTravel",
+          "reason"
+        ]
+      },
+      "strict": true
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 85,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 113,
+    "output_tokens_details": {
+      "reasoning_tokens": 64
+    },
+    "total_tokens": 198
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

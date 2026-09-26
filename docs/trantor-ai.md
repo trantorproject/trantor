@@ -193,8 +193,9 @@ ai.stream { user(question); tools(products) }.use { stream ->
 A `RunStream` is the same run received as it happens, as `RunEvent`s: `StepStarted`, `Model` with what
 the model produces (a `StreamPart`, as the adapter read it), `ToolStarted`, `ToolFinished` and
 `StepFinished`. A step whose calls run at the same time says they all started before any of them finished.
-A run of agents also has `Handoff(from, to)`, right after the step that handed the conversation over; a
-generation never does, since it has nobody to hand it to.
+A run of agents also has `Handoff(from, to)`, right after the step that handed the conversation over, and
+`GuardrailTripped(guardrail, reason)` as its last event when a guardrail stops it; a generation has neither, since
+it has nobody to hand the conversation to and no guardrails.
 
 `result()` consumes whatever is left and gives the `RunResult`, and closing the stream closes the call in
 flight and runs no more tools.
@@ -225,8 +226,10 @@ tools of the step that got it, and the tools are asked for their description aga
 also name the agent the step goes out as: its answer is kept signed with it, in `Message.Assistant.agent`, so that
 later an agent can tell its own turns from those of another. The application keeps it with the message. It can
 also bring `StepHooks`, which the loop calls around the model and the tools of that step: before the call, with the
-request it can change; after it; before each tool, with args it can change; and after each tool. It is how the hooks
-of an agent reach the loop.
+request it can change; after it; before each tool, with args it can change; and after each tool. Before any call of
+the step runs, it is also asked about each of them, as the model made it: it can refuse one, which the model then
+reads as an error and the run keeps as a warning, or throw, which fails the run with no call of the step half done.
+It is how the hooks and the tool guardrails of an agent reach the loop.
 
 ---
 

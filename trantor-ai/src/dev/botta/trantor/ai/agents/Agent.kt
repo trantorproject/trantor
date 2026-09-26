@@ -43,6 +43,12 @@ class Agent internal constructor(
     private val values: TypedValues,
     /** Called around the steps it runs. See [AgentHooks]. */
     val hooks: List<AgentHooks>,
+    /** Checks the conversation of a run that starts with it. See [InputGuardrail]. */
+    val inputGuardrails: List<InputGuardrail>,
+    /** Checks its final answer. See [OutputGuardrail]. */
+    val outputGuardrails: List<OutputGuardrail>,
+    /** Checks the calls of the steps it runs. See [ToolGuardrail]. */
+    val toolGuardrails: List<ToolGuardrail>,
 ) {
     /** Its model: the one it was given, the reference it named, or the `default` alias. */
     fun modelFrom(models: ModelRegistry) = model(models)

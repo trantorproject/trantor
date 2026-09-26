@@ -1,0 +1,132 @@
+{
+  "id": "resp_03496a2dac8730b6006ab709839f4c87d2893a37672993464a",
+  "object": "response",
+  "created_at": 1790380419,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790380421,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_03496a2dac8730b6006ab70984610087d2adb4bc3769d3b0ad",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABqtwmFdNageQgvEC6RuHsPNU73r_DpwoVnopsZh9emag2WKB3patEYakugK7v8IB3xqdbZ-JlkPSCzUG5UhLmbU1oIEe4ProvbC0ktgqVGrIG3fvLqgVQefWmR_uYr9Suvw6QqTQovMK632yrmtMsGhpuZ-JcCm57U7edJlZ1f0HoGBsZWX1JTasID9_QvxFG59QqkqNQF6u5Ri0UU_aQJEdaARV2eHBHL1I1vp5SUsRJVbOoGJW0DXUojO6UlKG1y9MM6s2qRAj5CUZZ7saT-nACTE7nvQYZtnq0mhCi3c1Js7dX1elWtVKDEfNnlv5EbJ1gAJ6zuPJlxG5p6pLYnaZigzDDyaugkjL667RVUgYavt1d04qK2DPsAtN-ppOl9RAP5MPKPt2gBgORSVPKS4y2MFRsLoWp-A_cS2kaVQfn1KeNPsTagHer_sArNUs2MARPfohZ8WRD3dQ_chXEsplL5Z3k12KCQjE2Q2uNCWCJAsA8FKiwyckcKraUD-bAJ_X-IiPNqXD17Qx7Y65sFriCSxpqCJLceXUgIwb868YdSlTwe1keTZehqDgCLVv2_IGB977EXE7gsdPtWrHmBqgAZF3FQpNk-isOLSZ0E56Fy9elEy_JGHeh4_gKrylgXVU5s7YA8Uccf2qW75sPzRY4ehfgpIzTT4C-Choqv5QVpV4Q_mc2muN-kvaLqk3dzdnlBqHnSfOvslWliYX8qKhE5R1YMMu-m_PrOTXUMYqj1N55sFBC-fqAaZzT1qGJu9KaWDbhUJ3JQZ3UYQq7gvaW7kWVk98SJT3tfrWzxbeQWDxRyF031qfCPFW-hYAAUbALVW4Zvix76z-X7bLagB9bwr3ZOnFO_RAk_U1WJeLCE2xe4bnnrojNeSSIRzugDsNL3bEYVaxHI0UTBCYf7dma9iolh6khMSphlzsct7VqGzIiCOsX61Id0_doPQA_qOQ-kDRyr0qcitIAUItRUM4CcuBBk5N7EamSIjDvGUpw8UA9Yf0o4a2zpNOje7dHgSyp2LTFi63tHocQEANY_UwoZhuoKHwQILt2Sx2N_qeWhnKSUWMqdnnQvtuchiW2188Bu7w5h87GMV-fNWG9RbEQUJgpO5ynR8jrOTTI-Bro0SGOsNZb_6hti8rehbD6ostFPxq4iyGeXJ0p592WnsbGlZc2Q5ie3IfW3eqnEpuijYrg-YKGSyeRHOcun8jO4ol0o7_ZDQwyqHjEGi3t881mUej-BC6XaSdJsvkTOHjP-JMF1ggxMOgIX4B6YyLVO1qn8ApR8XsA80eET_QrVjfE4O0-kohncasgLPCwluERm45qM8dwMiRAnfq7E7QCK2t4YpQvPEaZC1aXNKb7z9IlIKMMeR7NvWOdFW07bNT1Ar8NKNEgjrOZCUbFhJh-9DHKotgEd0ErGnifIcxGBGkEmA3-P1XjUKygIcnE9MKHbLfz8lBoaUdCNGTAyxK6UYPAcvjxzdPs7aqYmg1AReXY-RtohxM5XGFm0mzDSqyjq7Sds9haouL8mpvg3kfz3Ils76yy3rux1jECMKS_H3zkdaxCfyJsGnU202j7efp3wAO79HIg_syTcpT5O9RznuUK_1oad2WtqGqEQGahmrJ9mi7SbvueInaH6YoQUsQ-nTiBZLus-fpcPP0lDlunUNvRxj2pmo8jgxGsQd_xIC5rtqhQbfclp29_B0xn3_8A5fVxWfdLEdenDDDFsTDSAI9_HupHkFWpHn2via_1C6UJ9OjYNNHadH9CghQBrbDOUhK98jdCstbxxEE493a0IG9rTI833JLyIzPxkMVbBXYY1FDX_eUJqoCl8c85rjqjT-wQy7Ttkm2xYV6PhS1uSYM1kQSLr8grGG9zlw5vUSaprMzvGtXSPfTB6g5u5rw1-By0TfUrayNAbpkm0DxKUURK1ARU5inCpvsSMC2fVJfkxOGyhoD02Hfn31g4fJ7I2_8rI-wmAEu_qWjG8EV3v0ivEomfBO7NcjRIqSmF6mnHHd-DPnN1tjlMzPvBaBRId8advt7t1RfSReZHEySQ5ToNe",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_03496a2dac8730b6006ab70985231487d2b81b03aad873c8a8",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "{\"aboutTravel\":true,\"reason\":\"El usuario pregunta por el clima en un destino turístico (Bariloche).\"}"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "json_schema",
+      "description": null,
+      "name": "response",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "aboutTravel": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "aboutTravel",
+          "reason"
+        ]
+      },
+      "strict": true
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 86,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 173,
+    "output_tokens_details": {
+      "reasoning_tokens": 128
+    },
+    "total_tokens": 259
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

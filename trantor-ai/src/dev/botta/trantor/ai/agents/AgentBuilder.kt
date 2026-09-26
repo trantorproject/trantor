@@ -22,6 +22,9 @@ class AgentBuilder internal constructor(private val name: String) {
     private var output: AgentOutput<*>? = null
     private val values = mutableListOf<Any>()
     private val hooks = mutableListOf<AgentHooks>()
+    private val inputGuardrails = mutableListOf<InputGuardrail>()
+    private val outputGuardrails = mutableListOf<OutputGuardrail>()
+    private val toolGuardrails = mutableListOf<ToolGuardrail>()
 
     /** A model reference or an alias of the registry. Without one it is the `default` alias. */
     fun model(reference: String) = apply { model = { it.chat(reference) } }
@@ -59,6 +62,15 @@ class AgentBuilder internal constructor(private val name: String) {
     /** Called around the steps this agent runs, after the global hooks and before those of the run. */
     fun hooks(vararg hooks: AgentHooks) = apply { this.hooks.addAll(hooks) }
 
+    /** Checks the conversation of a run that starts with this agent. See [InputGuardrail]. */
+    fun inputGuardrails(vararg guardrails: InputGuardrail) = apply { inputGuardrails.addAll(guardrails) }
+
+    /** Checks the final answer when this agent is the one that answers. See [OutputGuardrail]. */
+    fun outputGuardrails(vararg guardrails: OutputGuardrail) = apply { outputGuardrails.addAll(guardrails) }
+
+    /** Checks the calls of the steps this agent runs. See [ToolGuardrail]. */
+    fun toolGuardrails(vararg guardrails: ToolGuardrail) = apply { toolGuardrails.addAll(guardrails) }
+
     /** A value of the application the agent carries, found later by its type with [Agent.get]. */
     fun with(value: Any) = apply { values.add(value) }
 
@@ -90,6 +102,9 @@ class AgentBuilder internal constructor(private val name: String) {
             output = output,
             values = values,
             hooks = hooks.toList(),
+            inputGuardrails = inputGuardrails.toList(),
+            outputGuardrails = outputGuardrails.toList(),
+            toolGuardrails = toolGuardrails.toList(),
         )
     }
 

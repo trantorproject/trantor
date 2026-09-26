@@ -69,6 +69,8 @@ class ToolLoop(
 
             if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response, step)
 
+            step.check(calls)
+
             val executions = step.executeAll(calls, options).map { step.finished(it) }
 
             run.advance(response, executions, step)
@@ -149,7 +151,7 @@ class ToolLoop(
                     results,
                     executions.mapNotNull { it.failure },
                     handoff = step.handoffs.winner,
-                    warnings = step.handoffs.warnings,
+                    warnings = step.warnings,
                     agent = step.agent,
                 )
             )
@@ -193,6 +195,8 @@ class ToolLoop(
                 }
 
                 if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response, step)
+
+                step.check(calls)
 
                 val executions = mutableListOf<Execution>()
 
@@ -259,25 +263,39 @@ class ToolLoop(
         private val hooks = setup.hooks ?: NoStepHooks
         private val toolsByName = setup.tools.associateBy { it.name }
 
+        /** The calls of the step that will not run, by id, with what the model reads instead. */
+        private var refusals = emptyMap<String, ToolRefusal>()
+
         // Asked again on every step, so that a description that depends on the moment is up to date
         val request = hooks.beforeModel(setup.request.copy(tools = setup.request.tools + setup.tools.map { it.spec() }))
 
+        /** What the run noticed in the step: its handoffs, and the calls it did not run. */
+        val warnings get() = handoffs.warnings + refusals.values.map { ModelWarning(it.warning) }
+
         fun answered(response: ChatResponse) = hooks.afterModel(response)
+
+        /**
+         * Asks about every call before any of them runs, so that a check that fails the run leaves no call of the
+         * step half done.
+         */
+        fun check(calls: List<ToolCallPart>) {
+            refusals = calls.mapNotNull { call -> hooks.checkTool(call)?.let { call.callId to it } }.toMap()
+        }
 
         /** A call that ran, with its handoff settled, as the model will read it. */
         fun finished(execution: Execution) = handoffs.settle(execution).also { hooks.afterTool(it.result, it.failure) }
 
-        /**
-         * The calls of the step: at the same time when every tool of the step only reads, and one after the other
-         * when any of them can write. Two calls that write could step on each other, and in order they happen the
-         * way the model asked for them.
-         */
         /** Whether the answer calls the output tool, which ends the run if the call is right. */
         fun mayEndWith(calls: List<ToolCallPart>) = calls.any { it.toolName == outputTool }
 
         fun endedBy(executions: List<Execution>) =
             executions.any { it.result.toolName == outputTool && !it.result.isError }
 
+        /**
+         * The calls of the step: at the same time when every tool of the step only reads, and one after the other
+         * when any of them can write. Two calls that write could step on each other, and in order they happen the
+         * way the model asked for them.
+         */
         fun executeAll(calls: List<ToolCallPart>, options: CallOptions): List<Execution> =
             if (runInParallel(calls)) inParallel(calls, options) else calls.map { execute(it) }
 
@@ -301,6 +319,8 @@ class ToolLoop(
         }
 
         fun execute(call: ToolCallPart): Execution {
+            refusals[call.callId]?.let { return refused(call, it) }
+
             // Out of the try: a hook that fails is a failure of the application, not of the tool
             val input = hooks.beforeTool(call)
             val tool = toolsByName[call.toolName] ?: return unknown(call).let { failed(call, it, it.message!!) }
@@ -387,6 +407,10 @@ class ToolLoop(
             return execution!!
         }
     }
+
+    // Nothing failed: the call did not run, and the model reads why
+    private fun refused(call: ToolCallPart, refusal: ToolRefusal) =
+        Execution(ToolResultPart(call.callId, call.toolName, ToolOutput.Text(refusal.message), isError = true))
 
     private fun failed(call: ToolCallPart, error: Throwable, message: String) = Execution(
         ToolResultPart(call.callId, call.toolName, ToolOutput.Text(message), isError = true),

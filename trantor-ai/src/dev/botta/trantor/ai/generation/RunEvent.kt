@@ -32,4 +32,11 @@ sealed interface RunEvent {
      * conversation to. [from] is the agent the step went out as.
      */
     data class Handoff(val from: String?, val to: String): RunEvent
+
+    /**
+     * A guardrail of the agents stopped the run: the stream ends with this event, and reading on throws the
+     * `GuardrailTrippedError`, which has everything else. It comes so that a UI can say the answer was blocked instead
+     * of showing a generic error. [guardrail] is its name.
+     */
+    data class GuardrailTripped(val guardrail: String, val reason: String): RunEvent
 }
