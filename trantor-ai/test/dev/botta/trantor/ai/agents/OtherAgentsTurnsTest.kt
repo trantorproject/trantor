@@ -114,6 +114,13 @@ class OtherAgentsTurnsTest {
     }
 
     @Test
+    fun `a summary of the conversation goes as it is`() {
+        val summary = Message.Summary("Nico viaja a Bariloche en julio")
+
+        assertThat(OtherAgentsTurns.toldTo("sales", listOf(summary, question))).containsExactly(summary, question)
+    }
+
+    @Test
     fun `turns that no agent signed go as they are`() {
         // Written by a generation, or kept before the conversation had agents: there is no telling whose they are
         val history = listOf(question, Message.assistant("Hola"), next)

@@ -275,6 +275,8 @@ internal class OpenAIRequestMapper(
             is Message.User -> toMessageItems("user", message.parts)
             is Message.Assistant -> toMessageItems("assistant", message.parts)
             is Message.Tool -> message.results.map { toToolResultItem(it) }
+            is Message.Summary -> message.toldByTheUser()?.let { toMessageItems("user", it.parts) }
+                ?: emptyList<JsonObject>().also { warnings.add(ModelWarning(UNREADABLE_SUMMARY)) }
         }
 
         /**

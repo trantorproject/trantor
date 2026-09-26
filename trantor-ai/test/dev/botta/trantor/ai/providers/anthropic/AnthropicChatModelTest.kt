@@ -16,6 +16,7 @@ import java.io.InterruptedIOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
+import dev.botta.trantor.ai.providers.ProviderMetadata
 
 /**
  * What the adapter sends. What it reads back is tested against recorded answers: asserting here on a body written
@@ -98,6 +99,29 @@ class AnthropicChatModelTest {
             """[{"role":"user","content":[{"type":"text","text":"Hola"},""" +
                 """{"type":"text","text":"Te hago una pregunta"}]}]""",
         )
+    }
+
+    @Test
+    fun `sends a summary of the conversation as something the user tells, joined to the turn that follows`() {
+        model.generate(ChatRequest(Message.Summary("Nico viaja a Bariloche en julio"), Message.user("Cuando viajo?")))
+
+        assertThat(sentBody()["messages"].toString()).isEqualTo(
+            """[{"role":"user","content":[{"type":"text","text":"${Message.Summary.PREAMBLE}"},""" +
+                """{"type":"text","text":"Nico viaja a Bariloche en julio"},""" +
+                """{"type":"text","text":"Cuando viajo?"}]}]""",
+        )
+    }
+
+    @Test
+    fun `leaves out a summary it cannot read, and says so`() {
+        val opaque = Message.Summary(null, ProviderMetadata.of("openai", Json.obj("encrypted" to "abc")))
+
+        val response = model.generate(ChatRequest(opaque, Message.user("Cuando viajo?")))
+
+        assertThat(sentBody()["messages"].toString())
+            .isEqualTo("""[{"role":"user","content":[{"type":"text","text":"Cuando viajo?"}]}]""")
+        assertThat(response.warnings.map { it.message })
+            .containsExactly("A summary with no text to read was left out, so the model does not have it")
     }
 
     @Test

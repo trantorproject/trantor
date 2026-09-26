@@ -70,6 +70,16 @@ class ContentCaptureTest {
         }
 
         @Test
+        fun `has a summary of the conversation as the compaction the conventions have a part for`() {
+            loop().run(ChatRequest(Message.Summary("Nico viaja en julio"), Message.user("Cuando viajo?")))
+
+            assertThat(chat().attributes[INPUT]).isEqualTo(
+                """[{"role":"assistant","parts":[{"type":"compaction","content":"Nico viaja en julio"}]},""" +
+                    """{"role":"user","parts":[{"type":"text","content":"Cuando viajo?"}]}]""",
+            )
+        }
+
+        @Test
         fun `has what the model answered, with the reasoning it let read and not the one it signed`() {
             model.answers(
                 listOf(

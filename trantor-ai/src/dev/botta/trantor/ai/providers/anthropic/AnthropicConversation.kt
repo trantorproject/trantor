@@ -134,6 +134,10 @@ internal class AnthropicConversation(
 
         messages.forEachIndexed { index, message ->
             if (message is Message.Assistant) placement.before(message)?.let { addSystem(result, it) }
+            if (message is Message.Summary && message.text == null) {
+                warnings.add(ModelWarning(UNREADABLE_SUMMARY))
+                return@forEachIndexed
+            }
 
             val role = roleOf(message, isTheSystemPrompt = index == firstSystem) ?: return@forEachIndexed
 
@@ -195,6 +199,8 @@ internal class AnthropicConversation(
         is Message.Assistant -> "assistant"
         // A tool result is something the model is told, so Anthropic reads it as a turn of the user
         is Message.Tool -> "user"
+        // Told by the user, which joins it to the turn that follows
+        is Message.Summary -> "user"
     }
 
     private fun toContent(message: Message): List<JsonObject> = when (message) {
@@ -202,6 +208,7 @@ internal class AnthropicConversation(
         is Message.User -> message.parts.mapNotNull { toBlock(it) }
         is Message.Assistant -> message.parts.mapNotNull { toBlock(it) }
         is Message.Tool -> message.results.mapNotNull { toBlock(it) }
+        is Message.Summary -> message.toldByTheUser()?.parts.orEmpty().mapNotNull { toBlock(it) }
     }
 
     private fun toBlock(part: Part): JsonObject? = when (part) {

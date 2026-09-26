@@ -126,6 +126,17 @@ class ToolLoopTracingTest {
         }
 
         @Test
+        fun `says the conversation was compacted when it goes with a summary, and nothing when it does not`() {
+            loop().run(ChatRequest(Message.Summary("Nico viaja en julio"), Message.user("Cuando viajo?")))
+            loop().run(ChatRequest("Cuando viajo?"))
+
+            // In the order they ended: the two runs go one after the other, and two starts can share a timestamp
+            val chats = telemetry.spans.filter { it.name == "chat gpt-4.1-mini" }
+            assertThat(chats.map { it.attributes[booleanKey("gen_ai.conversation.compacted")] })
+                .containsExactly(true, null)
+        }
+
+        @Test
         fun `leaves out the settings the request did not set`() {
             loop().run(ChatRequest("Hola"))
 

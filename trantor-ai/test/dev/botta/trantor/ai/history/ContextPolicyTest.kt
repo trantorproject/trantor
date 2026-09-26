@@ -102,6 +102,18 @@ class ContextPolicyTest {
     }
 
     @Test
+    fun `no policy cuts the summary the conversation starts with, nor the system messages before it`() {
+        val summary = Message.Summary("Nico viaja a Bariloche en julio")
+        val conversation = listOf(Message.system("Sos soporte"), summary) +
+            (1..6).flatMap { listOf(Message.user("Pregunta $it"), Message.assistant("Respuesta $it")) }
+
+        val sent = projected(listOf(LastMessages(2, step = 2)), conversation, RunContext())
+
+        assertThat(sent.take(2)).containsExactly(Message.system("Sos soporte"), summary)
+        assertThat(sent.drop(2)).containsExactly(Message.user("Pregunta 6"), Message.assistant("Respuesta 6"))
+    }
+
+    @Test
     fun `KeepAll sends it all`() {
         val conversation = turns(10)
 

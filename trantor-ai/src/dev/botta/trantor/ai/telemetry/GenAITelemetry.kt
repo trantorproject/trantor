@@ -10,6 +10,7 @@ import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.ChatResponse
 import dev.botta.trantor.ai.models.chat.FinishReasons
+import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.models.chat.OutputSpec
 import dev.botta.trantor.ai.models.chat.ToolCallPart
 import dev.botta.trantor.ai.tools.Tool
@@ -129,6 +130,8 @@ internal class GenAITelemetry(openTelemetry: OpenTelemetry, settings: AITelemetr
             if (request.output is OutputSpec.Json) setAttribute(OUTPUT_TYPE, "json")
             // Only when it is streamed: unset means it was not
             if (streamed) setAttribute(STREAM, true)
+            // Only when it is known, as the conventions ask: never false
+            if (request.messages.any { it is Message.Summary }) setAttribute(COMPACTED, true)
             content?.let {
                 it.systemInstructions(request)?.let { instructions -> setAttribute(SYSTEM_INSTRUCTIONS, instructions) }
                 setAttribute(INPUT_MESSAGES, it.inputMessages(request))
@@ -504,6 +507,7 @@ internal class GenAITelemetry(openTelemetry: OpenTelemetry, settings: AITelemetr
         val STOP_SEQUENCES = stringArrayKey("gen_ai.request.stop_sequences")
         val OUTPUT_TYPE = stringKey("gen_ai.output.type")
         val STREAM = booleanKey("gen_ai.request.stream")
+        val COMPACTED = booleanKey("gen_ai.conversation.compacted")
         val TIME_TO_FIRST_CHUNK = doubleKey("gen_ai.response.time_to_first_chunk")
         val RESPONSE_ID = stringKey("gen_ai.response.id")
         val RESPONSE_MODEL = stringKey("gen_ai.response.model")

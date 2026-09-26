@@ -17,6 +17,7 @@ import java.io.InterruptedIOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
+import dev.botta.trantor.ai.providers.ProviderMetadata
 
 class OpenAIChatModelTest {
     @Test
@@ -101,6 +102,31 @@ class OpenAIChatModelTest {
         assertThat(sentBody()["max_output_tokens"]?.asInt()).isEqualTo(100)
         assertThat(sentBody()["temperature"]?.asDouble()).isEqualTo(0.2)
         assertThat(sentBody()["top_p"]?.asDouble()).isEqualTo(0.9)
+    }
+
+    @Test
+    fun `sends a summary of the conversation as something the user tells, where it is`() {
+        httpClient.body = fixture("text-simple")
+
+        model.generate(ChatRequest(Message.Summary("Nico viaja a Bariloche en julio"), Message.user("Cuando viajo?")))
+
+        assertThat(sentBody()["input"]?.asArray()?.get(0).toString()).isEqualTo(
+            """{"type":"message","role":"user","content":[""" +
+                """{"type":"input_text","text":"${Message.Summary.PREAMBLE}"},""" +
+                """{"type":"input_text","text":"Nico viaja a Bariloche en julio"}]}""",
+        )
+    }
+
+    @Test
+    fun `leaves out a summary it cannot read, and says so`() {
+        httpClient.body = fixture("text-simple")
+        val opaque = Message.Summary(null, ProviderMetadata.of("other", Json.obj("encrypted" to "abc")))
+
+        val response = model.generate(ChatRequest(opaque, Message.user("Cuando viajo?")))
+
+        assertThat(sentBody()["input"]?.asArray()).hasSize(1)
+        assertThat(response.warnings.map { it.message })
+            .containsExactly("A summary with no text to read was left out, so the model does not have it")
     }
 
     @Test

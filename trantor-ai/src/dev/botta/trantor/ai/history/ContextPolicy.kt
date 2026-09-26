@@ -16,8 +16,9 @@ import dev.botta.trantor.ai.models.chat.Message
  * ```
  *
  * Several go in the order they are given, each one getting what the one before sent. The system messages the
- * conversation starts with, and the instructions of an agent, are not theirs to cut: they always go, and a policy
- * gets the rest. In a run of agents, the turns of the other agents come already told as context with their names.
+ * conversation starts with, the [summary][Message.Summary] that follows them, and the instructions of an agent, are
+ * not theirs to cut: they always go, and a policy gets the rest. In a run of agents, the turns of the other agents
+ * come already told as context with their names.
  *
  * A policy can leave a call without its result or a result without its call. The loop takes the half left alone
  * out, with a warning, since the providers reject it.
@@ -39,11 +40,15 @@ object KeepAll: ContextPolicy {
     override fun project(messages: List<Message>, run: RunContext) = messages
 }
 
-/** [policies] in order, on what the conversation has after the system messages it starts with, which always go. */
+/**
+ * [policies] in order, on what the conversation has after the system messages it starts with and the summary that
+ * follows them, which always go.
+ */
 internal fun projected(policies: List<ContextPolicy>, messages: List<Message>, run: RunContext): List<Message> {
     if (policies.isEmpty()) return messages
 
-    val leading = messages.takeWhile { it is Message.System }
+    val system = messages.takeWhile { it is Message.System }
+    val leading = system + messages.drop(system.size).take(1).filterIsInstance<Message.Summary>()
 
     return leading + policies.fold(messages.drop(leading.size)) { sent, policy -> policy.project(sent, run) }
 }

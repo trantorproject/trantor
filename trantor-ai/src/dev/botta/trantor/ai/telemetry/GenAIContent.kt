@@ -24,6 +24,7 @@ import dev.botta.trantor.ai.tools.ToolSpec
  *
  * - The `System` messages and the dynamic instructions are the system instructions, and not part of the input.
  * - A turn of an agent carries its name, which the conventions call the name of the participant.
+ * - A summary of the conversation is a compaction, with its text when it has one to read.
  * - Reasoning goes only when the model let it be read. What it signed or encrypted means nothing to a reader, and
  *   is never written.
  * - A part the conventions have no type for goes with a type of its own: a refusal with its text, and a part of a
@@ -62,6 +63,13 @@ internal class GenAIContent(private val maxLength: Int?) {
         is Message.User -> message("user", message.parts, null)
         is Message.Assistant -> message("assistant", message.parts, message.agent)
         is Message.Tool -> message("tool", message.results, null)
+        // What the conventions call a compaction, in the place of what it summarizes
+        is Message.Summary -> Json.obj(
+            "role" to "assistant",
+            "parts" to Json.array(
+                listOf(Json.obj(listOfNotNull("type" to "compaction", message.text?.let { "content" to cut(it) }))),
+            ),
+        )
     }
 
     private fun message(role: String, parts: List<Part>, name: String?) = Json.obj(
