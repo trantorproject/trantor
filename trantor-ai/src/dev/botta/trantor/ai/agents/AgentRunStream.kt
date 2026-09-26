@@ -37,6 +37,7 @@ class AgentRunStream internal constructor(
 
     private val events = iterator {
         try {
+            run.started()
             run.checkInput()
 
             val held = mutableListOf<RunEvent>()
@@ -74,9 +75,16 @@ class AgentRunStream internal constructor(
                 }
             }
 
-            run.finish(finished())
+            finished().also {
+                run.finish(it)
+                run.ended(it)
+            }
         } catch (e: GuardrailTrippedError) {
+            run.failed(e)
             yield(RunEvent.GuardrailTripped(e.guardrail, e.reason))
+            throw e
+        } catch (e: Throwable) {
+            run.failed(e)
             throw e
         }
     }
@@ -95,10 +103,12 @@ class AgentRunStream internal constructor(
     override fun close() {
         closed = true
         stream.close()
+        run.closed()
     }
 
     /** The result of the run once it ended, checked by the output guardrails the first time it is asked for. */
     private fun finished() = result ?: run.resultOf(stream.result()).also {
+        run.stepsEnded(it.result)
         run.checkOutput(it)
         result = it
     }
@@ -119,4 +129,19 @@ internal interface StreamedRun {
 
     /** The run ended well: calls `afterRun` and keeps it in its session. */
     fun finish(result: AgentRunResult)
+
+    /** The first read: the work, and the span of the run, start here. */
+    fun started()
+
+    /** The loop is over, and so is the span of the agent that had the conversation last. */
+    fun stepsEnded(result: RunResult)
+
+    /** The span of the run ends well, after [finish]. */
+    fun ended(result: AgentRunResult)
+
+    /** The span of the run, and that of the agent in it, end with [error]. */
+    fun failed(error: Throwable)
+
+    /** Whoever read the stream closed it: the spans left open end, and those that ended stay as they ended. */
+    fun closed()
 }

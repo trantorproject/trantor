@@ -32,6 +32,9 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
+import io.opentelemetry.api.common.AttributeKey.booleanKey
+import org.slf4j.MDC
+import java.util.Collections
 
 class ToolLoopTracingTest {
     @Nested
@@ -238,13 +241,149 @@ class ToolLoopTracingTest {
         }
     }
 
+    @Nested
+    inner class `tools at the same time` {
+        @Test
+        fun `hang from the generation, and what each one does hangs from its own span`() {
+            model.answers(twoCityCalls(), listOf(TextPart("Frio")))
+
+            ToolLoop(model, listOf(cities), openTelemetry = telemetry.openTelemetry).run(ChatRequest("Hola"))
+
+            val generation = telemetry.named("invoke_agent")
+            val tools = telemetry.spans.filter { it.name == "execute_tool getCity" }
+            assertThat(tools).hasSize(2).allMatch { it.parentSpanId == generation.spanId }
+            assertThat(cities.currentSpans).containsExactlyInAnyOrderElementsOf(tools.map { it.spanContext })
+        }
+
+        @Test
+        fun `log with the correlation id of whoever started the generation`() {
+            model.answers(twoCityCalls(), listOf(TextPart("Frio")))
+
+            try {
+                MDC.put("cid", "req-7")
+                ToolLoop(model, listOf(cities)).run(ChatRequest("Hola"))
+            } finally {
+                MDC.remove("cid")
+            }
+
+            assertThat(cities.correlationIds).containsExactly("req-7", "req-7")
+        }
+    }
+
+    @Nested
+    inner class `a stream` {
+        @Test
+        fun `read to its end leaves what a run leaves, and says it was streamed`() {
+            model.usage = Usage(inputTokens = 100, outputTokens = 20)
+            model.streams(listOf(StreamPart.PartDone(weatherCall())), listOf(StreamPart.TextDelta("7 grados")))
+            model.answers(listOf(weatherCall()), listOf(TextPart("7 grados")))
+
+            loop().stream(ChatRequest("Que temperatura hay?")).use { it.result() }
+
+            val generation = telemetry.named("invoke_agent")
+            val steps = telemetry.spans.filter { it.parentSpanId == generation.spanId }.sortedBy { it.startEpochNanos }
+            assertThat(steps.map { it.name })
+                .containsExactly("chat gpt-4.1-mini", "execute_tool getWeather", "chat gpt-4.1-mini")
+            val chat = steps.first()
+            assertThat(chat.attributes[booleanKey("gen_ai.request.stream")]).isTrue()
+            assertThat(chat.attributes[stringArrayKey("gen_ai.response.finish_reasons")]).containsExactly("tool_calls")
+            assertThat(chat.attributes[longKey("gen_ai.usage.input_tokens")]).isEqualTo(100)
+            assertThat(generation.attributes[longKey("gen_ai.usage.input_tokens")]).isEqualTo(200)
+        }
+
+        @Test
+        fun `says how long the first chunk took`() {
+            model.streams(listOf(StreamPart.TextDelta("Hola")))
+
+            loop().stream(ChatRequest("Hola")).use { it.result() }
+
+            val chat = telemetry.named("chat gpt-4.1-mini")
+            assertThat(chat.attributes[doubleKey("gen_ai.response.time_to_first_chunk")]).isNotNull().isNotNegative()
+        }
+
+        @Test
+        fun `hangs from the span that was current when it was asked for, wherever it is read`() {
+            val request = telemetry.tracer.spanBuilder("POST /chats").startSpan()
+            val stream = request.makeCurrent().use { loop().stream(ChatRequest("Hola")) }
+
+            val reader = Thread { stream.use { it.result() } }.apply { start() }
+            reader.join()
+            request.end()
+
+            assertThat(telemetry.named("invoke_agent").parentSpanId).isEqualTo(request.spanContext.spanId)
+        }
+
+        @Test
+        fun `leaves the span of whoever reads it current between one event and the next`() {
+            model.streams(listOf(StreamPart.TextDelta("Ho"), StreamPart.TextDelta("la")))
+            val reader = telemetry.tracer.spanBuilder("sse").startSpan()
+            val seen = mutableListOf<SpanContext>()
+
+            reader.makeCurrent().use {
+                loop().stream(ChatRequest("Hola")).use { stream ->
+                    stream.forEach { _ -> seen.add(Span.current().spanContext) }
+                }
+            }
+            reader.end()
+
+            assertThat(seen).isNotEmpty().containsOnly(reader.spanContext)
+        }
+
+        @Test
+        fun `makes the chat span current while the model opens its stream, so the http call is inside it`() {
+            val watching = SpanWatchingModel(model)
+
+            ToolLoop(watching, emptyList(), openTelemetry = telemetry.openTelemetry)
+                .stream(ChatRequest("Hola"))
+                .use { it.result() }
+
+            assertThat(watching.current).isEqualTo(telemetry.named("chat gpt-4.1-mini").spanContext)
+        }
+
+        @Test
+        fun `closed halfway ends every span it opened, without failing, and the chat never got its finish reason`() {
+            model.streams(listOf(StreamPart.TextDelta("Ho"), StreamPart.TextDelta("la")))
+
+            loop().stream(ChatRequest("Hola")).use { stream ->
+                stream.next()
+                stream.next()
+            }
+
+            val chat = telemetry.named("chat gpt-4.1-mini")
+            assertThat(chat.status.statusCode).isEqualTo(StatusCode.UNSET)
+            assertThat(chat.attributes[stringArrayKey("gen_ai.response.finish_reasons")]).containsExactly("error")
+            assertThat(telemetry.named("invoke_agent").status.statusCode).isEqualTo(StatusCode.UNSET)
+        }
+
+        @Test
+        fun `whose model fails halfway marks the chat and the generation`() {
+            val broken = BrokenStreamModel(ProviderUnavailableError("openai"))
+
+            assertThatThrownBy {
+                ToolLoop(broken, emptyList(), openTelemetry = telemetry.openTelemetry)
+                    .stream(ChatRequest("Hola"))
+                    .use { it.result() }
+            }.isInstanceOf(ProviderUnavailableError::class.java)
+
+            listOf("chat gpt-4.1-mini", "invoke_agent").forEach { name ->
+                assertThat(telemetry.named(name).status.statusCode).isEqualTo(StatusCode.ERROR)
+            }
+        }
+    }
+
     private fun loop() = ToolLoop(model, listOf(weather), openTelemetry = telemetry.openTelemetry)
 
     private fun weatherCall() = ToolCallPart("call_1", "getWeather", Json.obj("city" to "Bariloche"))
 
+    private fun twoCityCalls() = listOf(
+        ToolCallPart("call_1", "getCity", Json.obj("city" to "Bariloche")),
+        ToolCallPart("call_2", "getCity", Json.obj("city" to "Ushuaia")),
+    )
+
     private val telemetry = TestTelemetry()
     private val model = FakeChatModel(modelId = "gpt-4.1-mini", provider = "openai")
     private val weather = WeatherTool()
+    private val cities = CityTool()
 
     /** Keeps the span that was current while it was asked, and answers as [model] does. */
     private class SpanWatchingModel(private val model: ChatModel): ChatModel by model {
@@ -255,6 +394,56 @@ class ToolLoopTracingTest {
 
             return model.generate(request, options)
         }
+
+        override fun stream(request: ChatRequest, options: CallOptions): ChatStream {
+            current = Span.current().spanContext
+
+            return model.stream(request, options)
+        }
+    }
+
+    /** Opens its stream, gives one part and fails, as a connection that drops in the middle of an answer. */
+    private class BrokenStreamModel(private val error: Throwable): ChatModel {
+        override val modelId = "gpt-4.1-mini"
+        override val provider = "openai"
+
+        override fun generate(request: ChatRequest, options: CallOptions): ChatResponse = throw error
+
+        override fun stream(request: ChatRequest, options: CallOptions): ChatStream = object: ChatStream {
+            private var given = false
+
+            override fun hasNext() = true
+
+            override fun next(): StreamPart {
+                if (given) throw error
+                given = true
+                return StreamPart.TextDelta("Ho")
+            }
+
+            override fun response(): ChatResponse = throw error
+
+            override fun close() {}
+        }
+    }
+
+    /** A tool that only reads, so two calls of a step run at the same time, each one on its own thread. */
+    private class CityTool: Tool<CityTool.Args>(Args.serializer()) {
+        override val name = "getCity"
+        override val description = "A city"
+        override val readOnly = true
+
+        val currentSpans: MutableList<SpanContext> = Collections.synchronizedList(mutableListOf())
+        val correlationIds: MutableList<String?> = Collections.synchronizedList(mutableListOf())
+
+        override fun execute(args: Args, context: ToolContext): ToolResult {
+            currentSpans.add(Span.current().spanContext)
+            correlationIds.add(MDC.get("cid"))
+
+            return ToolResult.text("Frio en ${args.city}")
+        }
+
+        @Serializable
+        data class Args(val city: String)
     }
 
     private class FailingModel(private val error: Throwable): ChatModel {

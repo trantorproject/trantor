@@ -24,6 +24,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanContext
+import java.util.Collections
 
 class AgentRunnerTracingTest {
     @Nested
@@ -255,6 +258,67 @@ class AgentRunnerTracingTest {
         }
     }
 
+    @Nested
+    inner class `tools at the same time` {
+        @Test
+        fun `hang from the agent that asked for them, and what each one does hangs from its own span`() {
+            val bariloche = call("call_1", "getCity", Json.obj("city" to "Bariloche"))
+            val ushuaia = call("call_2", "getCity", Json.obj("city" to "Ushuaia"))
+            supportModel.answers(listOf(bariloche, ushuaia), listOf(TextPart("Frio")))
+
+            runner.run(support.tools(cities).build(), question)
+
+            val tools = telemetry.spans.filter { it.name == "execute_tool getCity" }
+            assertThat(tools).hasSize(2).allMatch { it.parentSpanId == telemetry.named("invoke_agent support").spanId }
+            assertThat(cities.currentSpans).containsExactlyInAnyOrderElementsOf(tools.map { it.spanContext })
+        }
+    }
+
+    @Nested
+    inner class `a stream` {
+        @Test
+        fun `read to its end leaves what a run leaves`() {
+            supportModel.answers(listOf(call("call_1", "transfer_to_sales")))
+
+            runner.stream(support.inputGuardrails(passing("onTopic")).handoffs("sales").build(), question) {
+                team(sales)
+            }.use { it.result() }
+
+            val workflow = telemetry.named("invoke_workflow support")
+            assertThat(namesOf(childrenOf(workflow)))
+                .containsExactly("run_guardrail onTopic", "invoke_agent support", "invoke_agent sales")
+            assertThat(namesOf(childrenOf(telemetry.named("invoke_agent support"))))
+                .containsExactly("chat support-model", "execute_tool transfer_to_sales")
+            assertThat(namesOf(childrenOf(telemetry.named("invoke_agent sales")))).containsExactly("chat sales-model")
+        }
+
+        @Test
+        fun `stopped by a guardrail of the input fails the run`() {
+            val closed = InputGuardrail("closed") { _, _ -> GuardrailVerdict.Trip("We are closed") }
+
+            assertThatThrownBy {
+                runner.stream(support.inputGuardrails(closed).build(), question).use { it.result() }
+            }.isInstanceOf(GuardrailTrippedError::class.java)
+
+            assertThat(telemetry.named("run_guardrail closed").attributes[VERDICT]).isEqualTo("deny")
+            assertThat(telemetry.named("invoke_agent support").status.statusCode).isEqualTo(StatusCode.ERROR)
+        }
+
+        @Test
+        fun `closed halfway ends the agent and the workflow, without failing`() {
+            supportModel.streams(listOf(StreamPart.TextDelta("Ho"), StreamPart.TextDelta("la")))
+
+            runner.stream(support.handoffs("sales").build(), question) { team(sales) }.use { stream ->
+                stream.next()
+                stream.next()
+            }
+
+            listOf("chat support-model", "invoke_agent support", "invoke_workflow support").forEach { name ->
+                assertThat(telemetry.named(name).status.statusCode).isEqualTo(StatusCode.UNSET)
+            }
+        }
+    }
+
     private fun childrenOf(parent: SpanData) =
         telemetry.spans.filter { it.parentSpanId == parent.spanId }.sortedBy { it.startEpochNanos }
 
@@ -271,6 +335,7 @@ class AgentRunnerTracingTest {
     private val supportModel = FakeChatModel(modelId = "support-model")
     private val salesModel = FakeChatModel(modelId = "sales-model")
     private val weather = WeatherTool()
+    private val cities = CityTool()
     private val support = Agent("support").model(supportModel)
     private val sales = Agent("sales").model(salesModel).build()
     private val question = Message.user("Cuanto sale?")
@@ -292,6 +357,24 @@ class AgentRunnerTracingTest {
 
         @Serializable
         class Args
+    }
+
+    /** A tool that only reads, so two calls of a step run at the same time, each one on its own thread. */
+    private class CityTool: Tool<CityTool.Args>(Args.serializer()) {
+        override val name = "getCity"
+        override val description = "A city"
+        override val readOnly = true
+
+        val currentSpans: MutableList<SpanContext> = Collections.synchronizedList(mutableListOf())
+
+        override fun execute(args: Args, context: ToolContext): ToolResult {
+            currentSpans.add(Span.current().spanContext)
+
+            return ToolResult.text("Frio en ${args.city}")
+        }
+
+        @Serializable
+        data class Args(val city: String)
     }
 
     private companion object {

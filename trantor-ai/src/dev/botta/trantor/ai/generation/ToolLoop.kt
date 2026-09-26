@@ -8,7 +8,9 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.ai.telemetry.GenAISpans
+import dev.botta.trantor.primitives.ContextPropagation
 import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.context.Context
 
 /**
  * Calls the model, runs the tools it asks for and calls it again with their results, until it answers without
@@ -127,11 +129,16 @@ class ToolLoop(
         /** The whole conversation, whatever each step sent of it. */
         private var messages = request.messages
 
-        /** What the next step goes out with, set up with everything the run has said so far. */
-        fun next(): Outgoing {
+        /**
+         * What the next step goes out with, set up with everything the run has said so far. Its spans hang from
+         * [spansParent] unless its setup says otherwise, and from the current span without either.
+         */
+        fun next(spansParent: Context? = null): Outgoing {
             throwIfCancelled(options)
 
-            return Outgoing(nextStep.setUp(request.copy(messages = messages), steps.toList()), options)
+            val setup = nextStep.setUp(request.copy(messages = messages), steps.toList())
+
+            return Outgoing(setup, options, setup.spanParent ?: spansParent)
         }
 
         /** The calls the application has to run. The ones the provider ran already came answered. */
@@ -191,79 +198,109 @@ class ToolLoop(
         }
     }
 
+    /**
+     * The loop as it is read. Nothing of it is current between one event and the next, since that is the code of
+     * whoever reads: its spans hang from the one that was current when the stream was asked for, and are current only
+     * around what runs at once, like the model opening its stream or a tool. Closing it ends the spans it left open,
+     * since an iterator nobody reads again never gets to its end.
+     */
     private inner class Streamed(request: ChatRequest, private val options: CallOptions): RunStream {
         private val run = Run(request, options)
         private var current: ChatStream? = null
         private var closed = false
 
+        private val parent = Context.current()
+        private var generation: GenAISpans.OpenSpan? = null
+        private var chat: GenAISpans.ChatSpan? = null
+
         private val events = iterator {
-            while (true) {
-                val step = run.next()
+            // The work starts with the first read, and so does the span of the run
+            if (tracesItsRun) generation = spans.openGeneration(parent)
+            val stepsParent = generation?.context ?: parent
 
-                yield(RunEvent.StepStarted(run.steps.size + 1))
+            try {
+                while (true) {
+                    val step = run.next(stepsParent)
 
-                val stream = step.model.stream(step.request, options).also { current = it }
-                val response = stream.use {
-                    for (part in it) yield(RunEvent.Model(part))
-                    it.response()
-                }
+                    yield(RunEvent.StepStarted(run.steps.size + 1))
 
-                current = null
-                step.answered(response)
+                    val chat = spans.openChat(step.model, step.request, step.agent, step.spanParent).also { chat = it }
+                    val stream = chat.opening { step.model.stream(step.request, options) }.also { current = it }
+                    val response = stream.use {
+                        for (part in it) {
+                            chat.chunk()
+                            yield(RunEvent.Model(part))
+                        }
+                        it.response()
+                    }
 
-                val calls = run.callsOf(response)
-                val number = run.steps.size + 1
+                    chat.end(response)
+                    current = null
+                    step.answered(response)
 
-                if (calls.isEmpty()) {
-                    if (run.endsWith(step)) {
-                        last = run.finish(response, step)
+                    val calls = run.callsOf(response)
+                    val number = run.steps.size + 1
+
+                    if (calls.isEmpty()) {
+                        if (run.endsWith(step)) {
+                            finished(run.finish(response, step))
+                            yield(RunEvent.StepFinished(number))
+                            return@iterator
+                        }
+
+                        run.remind(response, step)
                         yield(RunEvent.StepFinished(number))
+                        continue
+                    }
+
+                    if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response, step)
+
+                    step.check(calls)
+
+                    val executions = mutableListOf<Execution>()
+
+                    if (step.runInParallel(calls)) {
+                        for (call in calls) yield(RunEvent.ToolStarted(call))
+
+                        executions.addAll(step.inParallel(calls).map { step.finished(it) })
+
+                        for (execution in executions) yield(RunEvent.ToolFinished(execution.result, execution.failure))
+                    } else {
+                        for (call in calls) {
+                            yield(RunEvent.ToolStarted(call))
+
+                            val execution = step.finished(step.execute(call))
+
+                            executions.add(execution)
+                            yield(RunEvent.ToolFinished(execution.result, execution.failure))
+                        }
+                    }
+
+                    run.advance(response, executions, step)
+                    yield(RunEvent.StepFinished(number))
+
+                    step.handoffs.winner?.let { yield(RunEvent.Handoff(step.agent, it)) }
+
+                    if (step.endedBy(executions)) {
+                        finished(RunResult(run.steps))
                         return@iterator
                     }
 
-                    run.remind(response, step)
-                    yield(RunEvent.StepFinished(number))
-                    continue
+                    run.throwIfNoStepsLeft()
                 }
-
-                if (!step.mayEndWith(calls)) run.throwIfOutOfSteps(response, step)
-
-                step.check(calls)
-
-                val executions = mutableListOf<Execution>()
-
-                if (step.runInParallel(calls)) {
-                    for (call in calls) yield(RunEvent.ToolStarted(call))
-
-                    executions.addAll(step.inParallel(calls).map { step.finished(it) })
-
-                    for (execution in executions) yield(RunEvent.ToolFinished(execution.result, execution.failure))
-                } else {
-                    for (call in calls) {
-                        yield(RunEvent.ToolStarted(call))
-
-                        val execution = step.finished(step.execute(call))
-
-                        executions.add(execution)
-                        yield(RunEvent.ToolFinished(execution.result, execution.failure))
-                    }
-                }
-
-                run.advance(response, executions, step)
-                yield(RunEvent.StepFinished(number))
-
-                step.handoffs.winner?.let { yield(RunEvent.Handoff(step.agent, it)) }
-
-                if (step.endedBy(executions)) {
-                    last = RunResult(run.steps)
-                    return@iterator
-                }
-
-                run.throwIfNoStepsLeft()
+            } catch (e: Throwable) {
+                chat?.fail(e)
+                generation?.fail(e)
+                throw e
             }
         }
 
         private var last: RunResult? = null
+
+        private fun finished(result: RunResult) {
+            last = result
+            generation?.end(result.usage)
+        }
 
         override fun hasNext() = !closed && events.hasNext()
 
@@ -279,6 +316,9 @@ class ToolLoop(
             closed = true
             current?.close()
             current = null
+            // What already ended stays as it ended
+            chat?.cut()
+            generation?.end(null)
         }
     }
 
@@ -287,11 +327,15 @@ class ToolLoop(
      * that answer its calls. The calls of an answer run with the tools of the step that got it, even when the next
      * step goes out with others.
      */
-    private inner class Outgoing(private val setup: StepSetup, private val options: CallOptions) {
+    private inner class Outgoing(
+        private val setup: StepSetup,
+        private val options: CallOptions,
+        /** What the spans of the step hang from. Null is the current span. */
+        val spanParent: Context?,
+    ) {
         val model = setup.model
         val outputTool = setup.outputTool
         val agent = setup.agent
-        val spanParent = setup.spanParent
         val handoffs = Handoffs(setup.team)
         private val hooks = setup.hooks ?: NoStepHooks
         private val toolsByName = setup.tools.associateBy { it.name }
@@ -421,11 +465,14 @@ class ToolLoop(
         private var execution: Execution? = null
         private var error: Throwable? = null
 
+        // What the thread of the step knows, so the tool logs and traces as part of the run
+        private val context = ContextPropagation.capture()
+
         private val thread = Thread.ofVirtual().name("tool:${call.toolName}").unstarted {
             try {
                 // It may have been cancelled between the moment the step started and the moment this one did
                 throwIfCancelled(options)
-                execution = step.execute(call)
+                execution = ContextPropagation.runWithContext(context) { step.execute(call) }
             } catch (e: Throwable) {
                 error = e
             }

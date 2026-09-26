@@ -97,8 +97,7 @@ class AgentRunner(
         stream(agent, conversation.toList(), configure)
 
     fun stream(agent: Agent, conversation: List<Message>, configure: AgentRunOptions.() -> Unit = {}): AgentRunStream {
-        // Not traced yet: its steps and its guardrails go on as they are read, maybe on other threads
-        val run = start(agent, conversation, configure, GenAISpans(OpenTelemetry.noop()))
+        val run = start(agent, conversation, configure, spans)
 
         run.beforeRun()
 
@@ -160,6 +159,9 @@ class AgentRunner(
         /** The span of the run, while it runs traced. */
         var span: GenAISpans.OpenSpan? = null
 
+        /** The context of whoever asked for the run, which a stream hangs from wherever it is read. */
+        private val caller = Context.current()
+
         /** In a workflow, the span of the agent that has the conversation, and the step it got it at. */
         private var stretch: GenAISpans.OpenSpan? = null
         private var stretchAgent: Agent? = null
@@ -211,6 +213,28 @@ class AgentRunner(
         }
 
         override fun resultOf(result: RunResult) = AgentRunResult(result, agents, id)
+
+        override fun started() {
+            span = spans.openAgentRun(first.name, isWorkflow, caller)
+        }
+
+        override fun stepsEnded(result: RunResult) = endStretch(result.steps)
+
+        override fun ended(result: AgentRunResult) {
+            span?.end(result.usage)
+        }
+
+        override fun failed(error: Throwable) {
+            stretch?.fail(error)
+            stretch = null
+            span?.fail(error)
+        }
+
+        override fun closed() {
+            stretch?.end(null)
+            stretch = null
+            span?.end(null)
+        }
 
         fun beforeRun() = hooksOf(first).forEach { it.beforeRun(contextOf(first, 0), conversation) }
 
