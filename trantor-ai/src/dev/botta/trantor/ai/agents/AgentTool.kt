@@ -1,5 +1,6 @@
 package dev.botta.trantor.ai.agents
 
+import dev.botta.trantor.ai.errors.NestedApprovalError
 import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
@@ -24,6 +25,8 @@ import kotlinx.serialization.Serializable
  *   ([dev.botta.trantor.ai.generation.Step.toolRuns]), and its usage and cost count as the run's.
  * - **A run of the agent that fails** goes back to the model as any tool that fails does: "Tool execution failed",
  *   with the exception in the tool failures, for the application.
+ * - **A run of the agent that waits for approval** fails the run that called it with [NestedApprovalError]: that run
+ *   cannot pause in its place. A tool guardrail can ask for approval of the call to the agent instead.
  * - **How deep it goes is bounded**: a run inside [maxDepth] agents that run as tools does not start another, and the
  *   call goes back to the model as an error. No other library bounds it; it is what ends a cycle of agents that use
  *   each other.
@@ -52,6 +55,14 @@ class AgentTool internal constructor(
             this.depth = depth
             configure()
         }
+
+        if (result.paused) throw NestedApprovalError(
+            agent.name,
+            "The run of ${agent.name}, used as the tool $name, waits for approval of " +
+                result.pending.joinToString { it.call.toolName } + ", which is not supported inside an agent used " +
+                "as a tool: ask for approval of the call to $name instead",
+        )
+
         val answer = result.outputAsJson()?.let { ToolResult.json(it) } ?: ToolResult.text(result.text)
 
         return answer.withRun(result.result)

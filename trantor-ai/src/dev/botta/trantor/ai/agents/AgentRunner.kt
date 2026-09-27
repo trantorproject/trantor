@@ -12,6 +12,8 @@ import dev.botta.trantor.ai.generation.ToolCheck
 import dev.botta.trantor.ai.generation.ToolRefusal
 import dev.botta.trantor.ai.history.projected
 import dev.botta.trantor.ai.generation.ToolLoop
+import dev.botta.trantor.ai.generation.WaitingCalls
+import dev.botta.trantor.ai.generation.HandsOver
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
@@ -157,8 +159,7 @@ class AgentRunner(
         /** The messages the run was given, which its session keeps once it ended well. */
         private val given: List<Message>,
         private val telemetry: GenAITelemetry,
-    ): NextStep, StreamedRun {
-        private val first = agent
+    ): NextStep, StreamedRun, HandsOver {
 
         /** A team is traced as a workflow, unless the run is that of an agent used as a tool. */
         val isWorkflow = team.size > 1 && options.depth == 0
@@ -179,6 +180,21 @@ class AgentRunner(
 
         /** What the run starts from: what its session holds, and then what it was given. */
         val conversation = kept + given
+
+        /**
+         * The agent the run starts with: the one it was asked for, or the one that made the calls the conversation
+         * left waiting for approval, which are its to pick up, with its tools and hooks. It has to be in the team.
+         */
+        private val first = WaitingCalls.agentOf(conversation)?.let { name ->
+            team[name] ?: throw IllegalArgumentException(
+                "The calls waiting for approval were made by $name, which is not in the team of the run: " +
+                    "${team.keys.joinToString()}",
+            )
+        } ?: agent
+
+        init {
+            agent = first
+        }
 
         /**
          * What the conversation is once the run ended, in the order it is kept: the results of the calls it resolved
@@ -232,6 +248,10 @@ class AgentRunner(
         }
 
         override fun resultOf(result: RunResult) = AgentRunResult(result, agents, id)
+
+        override fun handedOver(to: String) {
+            agent = team.getValue(to)
+        }
 
         override fun started() {
             span = telemetry.openAgentRun(first.name, isWorkflow, caller)
@@ -354,7 +374,8 @@ class AgentRunner(
                 AgentToolContext(callId, toolName, run, agent, id, team.keys, options.callOptions, options.depth)
             }
 
-            agents.add(agent)
+            // An approved call that handed the conversation over sets the first step up again, as the other agent
+            if (agents.size > steps.size) agents[steps.size] = agent else agents.add(agent)
 
             val model = chatModels.getOrPut(agent) { agent.modelFrom(models) }
             val invocation = invocationOf(agent, model, steps)

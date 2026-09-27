@@ -3,6 +3,7 @@ package dev.botta.trantor.ai.generation
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.errors.CancelledError
+import dev.botta.trantor.ai.errors.NestedApprovalError
 import dev.botta.trantor.ai.errors.NoPendingCallError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelWarning
@@ -108,9 +109,13 @@ class ToolLoop(
         while (true) {
             throwIfCancelled(options)
 
-            val step = run.next(generation)
+            var step = run.next(generation)
 
-            if (run.resolving) run.resolved(run.waiting.map { step.resolve(it, run.decisionAbout(it)) }, step)
+            if (run.resolving) {
+                run.resolved(run.waiting.map { step.resolve(it, run.decisionAbout(it)) }, step)
+
+                if (run.handedOver(step)) step = run.next(generation)
+            }
 
             val response = telemetry.chat(step.model, step.request, step.agent, step.invocation) {
                 step.model.generate(step.request, options)
@@ -166,7 +171,7 @@ class ToolLoop(
          * The calls the conversation left waiting for approval: those of its last answer without a result, which is
          * how a run that paused leaves it. The run answers them before its first step.
          */
-        val waiting = waitingIn(request.messages)
+        val waiting = WaitingCalls.of(request.messages)
 
         private val decisionsById = decisions.associateBy { it.callId }
 
@@ -210,6 +215,20 @@ class ToolLoop(
             resolved = calls
             messages = calls.into(messages)
             step.resolved(calls)
+        }
+
+        /**
+         * Whether an approved call the run answered before its first step handed the conversation over. The step it
+         * was answered with is then left unsent, and the first step goes out as the agent it was handed over to.
+         */
+        fun handedOver(step: Outgoing): Boolean {
+            val to = step.handoffs.winner ?: return false
+
+            // A next step of the application that does not hear of it goes on as it would after any step
+            val hearing = nextStep as? HandsOver ?: return false
+
+            hearing.handedOver(to)
+            return true
         }
 
         /** What the run left with [steps], which are all of them unless it says otherwise. */
@@ -310,7 +329,7 @@ class ToolLoop(
 
             try {
                 while (true) {
-                    val step = run.next(generation)
+                    var step = run.next(generation)
 
                     if (run.resolving) {
                         val executions = mutableListOf<Execution>()
@@ -327,6 +346,13 @@ class ToolLoop(
                         }
 
                         run.resolved(executions, step)
+
+                        if (run.handedOver(step)) {
+                            val from = step.agent
+
+                            step = run.next(generation)
+                            yield(RunEvent.Handoff(from, step.agent!!))
+                        }
                     }
 
                     yield(RunEvent.StepStarted(run.steps.size + 1))
@@ -512,7 +538,7 @@ class ToolLoop(
          * not approved, with the message of the decision or [NOT_APPROVED].
          */
         fun resolve(call: ToolCallPart, decision: Decision?): Execution = when (decision) {
-            is Approve -> execute(call).also { hooks.afterTool(it.result, it.failure) }
+            is Approve -> finished(execute(call))
             is Reject -> refused(call, decision.message ?: NOT_APPROVED)
             null -> refused(call, NOT_APPROVED)
         }
@@ -523,7 +549,8 @@ class ToolLoop(
         }
 
         /** A call that ran, with its handoff settled, as the model will read it. */
-        fun finished(execution: Execution) = handoffs.settle(execution).also { hooks.afterTool(it.result, it.failure) }
+        fun finished(execution: Execution) =
+            handoffs.settle(execution, paused).also { hooks.afterTool(it.result, it.failure) }
 
         /** Whether the answer calls the output tool, which ends the run if the call is right. */
         fun mayEndWith(calls: List<ToolCallPart>) = calls.any { it.toolName == outputTool }
@@ -578,6 +605,9 @@ class ToolLoop(
                     input = input,
                 )
             } catch (e: CancelledError) {
+                throw e
+            } catch (e: NestedApprovalError) {
+                // A mistake of the application, which the model could not work around
                 throw e
             } catch (e: InterruptedException) {
                 Thread.currentThread().interrupt()
@@ -666,19 +696,6 @@ class ToolLoop(
     private fun refused(call: ToolCallPart, message: String) =
         Execution(ToolResultPart(call.callId, call.toolName, ToolOutput.Text(message), isError = true))
 
-    /**
-     * The calls of the last answer of [messages] that have no result after it, which is how a run that paused leaves
-     * the conversation. Any other call without its result is a pair broken, which [ToolPairs] takes out.
-     */
-    private fun waitingIn(messages: List<Message>): List<ToolCallPart> {
-        val last = messages.indexOfLast { it is Message.Assistant }.takeIf { it >= 0 } ?: return emptyList()
-        val answered = messages.drop(last + 1).filterIsInstance<Message.Tool>().flatMap { it.results }.map { it.callId }
-
-        return (messages[last] as Message.Assistant).parts
-            .filterIsInstance<ToolCallPart>()
-            .filter { !it.providerExecuted && it.callId !in answered }
-    }
-
     private fun failed(call: ToolCallPart, error: Throwable, message: String, input: JsonObject? = null) = Execution(
         ToolResultPart(call.callId, call.toolName, ToolOutput.Text(message), isError = true),
         ToolFailure(call.callId, call.toolName, error),
@@ -705,6 +722,9 @@ class ToolLoop(
      *   leaves a warning, since the model asked for two things at once and only one could happen.
      * - One to an agent outside the team is answered as an error naming the team, so the model can pick again.
      * - Without a team, which is a generation, there is nobody to hand over to: it is left with a warning.
+     * - In a step that pauses for approval, it is answered as an error, with a warning: the run that picks the
+     *   conversation up goes on with the agent that made the calls that wait, and could not tell it had been handed
+     *   over. The model can hand it over again then.
      */
     private class Handoffs(private val team: Set<String>?) {
         /** The agent the conversation goes to after the step. */
@@ -713,7 +733,7 @@ class ToolLoop(
         private var winnerTool: String? = null
         val warnings = mutableListOf<ModelWarning>()
 
-        fun settle(execution: Execution): Execution {
+        fun settle(execution: Execution, paused: Boolean): Execution {
             val to = execution.handoff ?: return execution
             val tool = execution.result.toolName
 
@@ -728,6 +748,20 @@ class ToolLoop(
             }
 
             if (to !in team) return refused(execution, "There is no agent called $to. The team is: ${team.joinToString()}")
+
+            if (paused) {
+                warnings.add(
+                    ModelWarning(
+                        "$tool handed the conversation over to $to in a step that paused for approval, so it was not " +
+                            "handed over",
+                    ),
+                )
+                return refused(
+                    execution,
+                    "The conversation was not handed over to $to, since other calls of this step wait for approval. " +
+                        "Hand it over again once they are answered.",
+                )
+            }
 
             val first = winner ?: return execution.also {
                 winner = to

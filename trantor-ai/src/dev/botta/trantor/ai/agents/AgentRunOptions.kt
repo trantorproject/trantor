@@ -85,10 +85,11 @@ class AgentRunOptions {
 
     /**
      * What a person decided about the calls the conversation left waiting for approval, when a run paused on them.
-     * The run answers them before it calls the model: the approved ones run with the agent the run starts with, the
-     * others are answered as not approved, and so is any call that got no decision. A decision about a call that is
-     * not waiting fails the run with [dev.botta.trantor.ai.errors.NoPendingCallError] before anything happens. See
-     * [Decision].
+     * The run starts with the agent that made them, which has to be in the team, and answers them before it calls the
+     * model: the approved ones run with its tools and hooks, the others are answered as not approved, and so is any
+     * call that got no decision. An approved handoff hands the conversation over before the first step. A decision
+     * about a call that is not waiting fails the run with [dev.botta.trantor.ai.errors.NoPendingCallError] before
+     * anything happens. See [Decision].
      */
     fun decisions(vararg decisions: Decision) = apply { this.decisions.addAll(decisions) }
 

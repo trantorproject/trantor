@@ -3,6 +3,7 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.json.Json
+import dev.botta.trantor.ai.errors.NestedApprovalError
 import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.Approve
 import dev.botta.trantor.ai.generation.PendingCall
@@ -176,6 +177,130 @@ class AgentApprovalTest {
                 paused + Message.Tool(listOf(refunded)) + Message.Assistant(listOf(TextPart("Listo")), "support"),
             )
         }
+    }
+
+    @Nested
+    inner class `in a team` {
+        @Test
+        fun `a run that picks up calls waiting for approval goes on with the agent that made them`() {
+            salesModel.answers(listOf(TextPart("Listo, te devolvi 500")))
+            val afterAHandoff = listOf(
+                question,
+                Message.Assistant(listOf(handoffCall), "support"),
+                Message.Tool(listOf(handedOver)),
+                Message.Assistant(listOf(refundCall), "sales"),
+            )
+
+            val result = runner.run(support.handoffs("sales").build(), afterAHandoff) {
+                team(sales.build())
+                decisions(Approve("call_1"))
+            }
+
+            assertThat(salesRefund.refunded).containsExactly(500)
+            assertThat(result.lastAgent.name).isEqualTo("sales")
+            assertThat(model.requests).isEmpty()
+        }
+
+        @Test
+        fun `the agent that made them has to be in the team, or the run fails before anything runs`() {
+            val bySales = listOf(question, Message.Assistant(listOf(refundCall), "sales"))
+
+            assertThatThrownBy { runner.run(support.build(), bySales) { decisions(Approve("call_1")) } }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("made by sales")
+            assertThat(model.requests).isEmpty()
+            assertThat(salesModel.requests).isEmpty()
+        }
+
+        @Test
+        fun `a handoff in the step that paused is not done, and the conversation stays with the agent`() {
+            model.answers(listOf(handoffCall, refundCall))
+
+            val result = runner.run(support.handoffs("sales").build(), question) { team(sales.build()) }
+
+            val handoff = result.steps.single().step.toolResults.single()
+            assertThat(handoff.isError).isTrue()
+            assertThat((handoff.output as ToolOutput.Text).value).contains("not handed over")
+            assertThat(result.steps.single().step.handoff).isNull()
+            assertThat(result.pending).containsExactly(PendingCall(refundCall, "support"))
+            assertThat(result.warnings.map { it.message }).anyMatch { "not handed over" in it }
+        }
+
+        @Test
+        fun `an approved handoff hands the conversation over before the first step`() {
+            salesModel.answers(listOf(TextPart("Hola, soy ventas")))
+            val waiting = listOf(question, Message.Assistant(listOf(handoffCall), "support"))
+
+            val result = runner.run(support.handoffs("sales").build(), waiting) {
+                team(sales.build())
+                decisions(Approve("call_7"))
+            }
+
+            assertThat(model.requests).isEmpty()
+            assertThat(salesModel.requests).hasSize(1)
+            assertThat(result.result.resolved?.results).containsExactly(handedOver)
+            assertThat(result.lastAgent.name).isEqualTo("sales")
+            assertThat(result.text).isEqualTo("Hola, soy ventas")
+        }
+
+        @Test
+        fun `and a stream tells of it after the call ran`() {
+            salesModel.answers(listOf(TextPart("Hola, soy ventas")))
+            val waiting = listOf(question, Message.Assistant(listOf(handoffCall), "support"))
+
+            val events = runner.stream(support.handoffs("sales").build(), waiting) {
+                team(sales.build())
+                decisions(Approve("call_7"))
+            }.use { it.asSequence().toList() }
+
+            assertThat(events.take(4)).containsExactly(
+                RunEvent.ToolStarted(handoffCall),
+                RunEvent.ToolFinished(handedOver),
+                RunEvent.Handoff("support", "sales"),
+                RunEvent.StepStarted(1),
+            )
+        }
+
+        private val salesModel = FakeChatModel(modelId = "sales-model")
+        private val salesRefund = RefundTool(approvalOver = 100)
+        private val sales = Agent("sales").model(salesModel).tools(salesRefund)
+        private val handoffCall = ToolCallPart("call_7", "transfer_to_sales", Json.obj())
+        private val handedOver = ToolResultPart("call_7", "transfer_to_sales", ToolOutput.Text("Transferred to sales."))
+    }
+
+    @Nested
+    inner class `an agent used as a tool` {
+        @Test
+        fun `can wait for approval before it runs, asked by a guardrail`() {
+            model.answers(listOf(researchCall))
+            val careful = ToolGuardrail("careful") { call, _ ->
+                if (call.toolName == "researcher") ToolGuardrailVerdict.AskForApproval("It is expensive")
+                else GuardrailVerdict.Pass
+            }
+
+            val result = runner.run(support.tools(researcherTool).toolGuardrails(careful).build(), question)
+
+            assertThat(researcherModel.requests).isEmpty()
+            assertThat(result.pending).containsExactly(PendingCall(researchCall, "support", "It is expensive"))
+        }
+
+        @Test
+        fun `whose run waits for approval fails the run, since that is not supported`() {
+            model.answers(listOf(researchCall))
+            researcherModel.answers(listOf(refundCall))
+
+            assertThatThrownBy { runner.run(support.tools(researcherTool).build(), question) }
+                .isInstanceOf(NestedApprovalError::class.java)
+                .hasMessageContaining("researcher")
+        }
+
+        private val researcherModel = FakeChatModel(modelId = "researcher-model")
+        private val researcherTool = Agent("researcher")
+            .model(researcherModel)
+            .tools(RefundTool(approvalOver = 100))
+            .build()
+            .asTool(runner, "Researches what it is asked")
+        private val researchCall = ToolCallPart("call_5", "researcher", Json.obj("task" to "Devolve 500"))
     }
 
     private val model = FakeChatModel()
