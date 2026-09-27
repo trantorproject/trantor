@@ -23,6 +23,19 @@ sealed interface RunEvent {
     /** [failure] is there when the tool failed; [result] is what the model will read either way. */
     data class ToolFinished(val result: ToolResultPart, val failure: ToolFailure? = null): RunEvent
 
+    /**
+     * A call of the step waits for a person to approve it, and does not run. It comes after the tools of the step that
+     * did run and before its [StepFinished], one for each call that waits, and the run ends paused with that step.
+     */
+    data class ApprovalRequested(val pending: PendingCall): RunEvent
+
+    /**
+     * A call the run picked up waiting for approval was answered as not approved, without running: rejected, or left
+     * without a decision. It comes before the first step, next to the [ToolStarted] and [ToolFinished] of the approved
+     * ones. [result] is what the model will read.
+     */
+    data class ToolNotApproved(val result: ToolResultPart): RunEvent
+
     /** The call and its tools are over. The step itself is in the result of the run. */
     data class StepFinished(val number: Int): RunEvent
 

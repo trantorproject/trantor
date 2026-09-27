@@ -7,6 +7,7 @@ import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.Approve
 import dev.botta.trantor.ai.generation.PendingCall
 import dev.botta.trantor.ai.generation.Reject
+import dev.botta.trantor.ai.generation.RunEvent
 import dev.botta.trantor.ai.generation.ToolLoopApprovalTest.RefundTool
 import dev.botta.trantor.ai.history.InMemorySession
 import dev.botta.trantor.ai.models.ModelRegistry
@@ -92,6 +93,36 @@ class AgentApprovalTest {
 
             assertThat(result.paused).isTrue()
             assertThat(session.load()).containsExactly(question, Message.Assistant(listOf(refundCall), "support"))
+        }
+    }
+
+    @Nested
+    inner class `a paused stream` {
+        @Test
+        fun `tells which agent made the call that waits`() {
+            model.answers(listOf(refundCall))
+
+            val events = runner.stream(support.build(), question).use { it.asSequence().toList() }
+
+            assertThat(events.filterIsInstance<RunEvent.ApprovalRequested>())
+                .containsExactly(RunEvent.ApprovalRequested(PendingCall(refundCall, "support")))
+        }
+
+        @Test
+        fun `with the text held back, gives the text of the step before its approval requests`() {
+            model.streams(listOf(StreamPart.TextDelta("Te devuelvo")))
+            model.answers(listOf(TextPart("Te devuelvo"), refundCall))
+            val passing = OutputGuardrail("passing") { _, _ -> GuardrailVerdict.Pass }
+
+            val events = runner.stream(support.outputGuardrails(passing).build(), question)
+                .use { it.asSequence().toList() }
+
+            assertThat(events).containsExactly(
+                RunEvent.StepStarted(1),
+                RunEvent.Model(StreamPart.TextDelta("Te devuelvo")),
+                RunEvent.ApprovalRequested(PendingCall(refundCall, "support")),
+                RunEvent.StepFinished(1),
+            )
         }
     }
 

@@ -25,8 +25,9 @@ import dev.botta.trantor.ai.generation.RunStream
  *   [GuardrailTrippedError].
  * - With an output guardrail that [holds the text][OutputGuardrail.holdsText], what the model produces in a step is
  *   held back until the step shows whether it is the last one. A step that calls tools is not, and what it held comes
- *   out before its first tool starts. The last one comes out all together once the output guardrails passed, and not
- *   at all if one of them tripped.
+ *   out before its first tool starts, or before its first [RunEvent.ApprovalRequested] when the run pauses on it,
+ *   which the output guardrails do not check. The last one comes out all together once the output guardrails passed,
+ *   and not at all if one of them tripped.
  */
 class AgentRunStream internal constructor(
     private val stream: RunStream,
@@ -54,8 +55,9 @@ class AgentRunStream internal constructor(
 
                     event is RunEvent.Model -> held.add(event)
 
-                    // The model asked for tools, so this step is not the last and what it said can go
-                    event is RunEvent.ToolStarted -> {
+                    // The model asked for tools, so this step is not the last and what it said can go; nor is one that
+                    // waits for approval, which goes before the requests it made
+                    event is RunEvent.ToolStarted || event is RunEvent.ApprovalRequested -> {
                         holding = false
                         yieldAll(held.toList())
                         held.clear()

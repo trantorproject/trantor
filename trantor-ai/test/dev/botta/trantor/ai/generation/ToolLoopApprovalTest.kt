@@ -123,6 +123,43 @@ class ToolLoopApprovalTest {
     }
 
     @Nested
+    inner class `in a stream` {
+        @Test
+        fun `it tells of each call that waits, after the tools of its step and before the step finishes`() {
+            val weather = weatherCall("call_1", "Bariloche")
+            val refund = refundCall("call_2", 500)
+            model.streams(listOf(StreamPart.TextDelta("Busco")))
+            model.answers(listOf(TextPart("Busco"), weather, refund))
+
+            val events = loop().stream(ChatRequest("Que clima hay y devolveme la compra"))
+                .use { it.asSequence().toList() }
+
+            assertThat(events).containsExactly(
+                RunEvent.StepStarted(1),
+                RunEvent.Model(StreamPart.TextDelta("Busco")),
+                RunEvent.ToolStarted(weather),
+                RunEvent.ToolFinished(ToolResultPart("call_1", "getWeather", ToolOutput.Text("7 grados en Bariloche"))),
+                RunEvent.ApprovalRequested(PendingCall(refund, agent = null)),
+                RunEvent.StepFinished(1),
+            )
+        }
+
+        @Test
+        fun `with the reason of the check that asked for it`() {
+            val call = weatherCall("call_1", "Bariloche")
+            model.answers(listOf(call))
+            val asking = object: StepHooks {
+                override fun checkTool(call: ToolCallPart) = ToolApproval("It is far")
+            }
+
+            val events = loop(hooks = asking).stream(ChatRequest("Que clima hay?")).use { it.asSequence().toList() }
+
+            assertThat(events.filterIsInstance<RunEvent.ApprovalRequested>())
+                .containsExactly(RunEvent.ApprovalRequested(PendingCall(call, agent = null, reason = "It is far")))
+        }
+    }
+
+    @Nested
     inner class `what is kept` {
         @Test
         fun `the answer with every call and the results of those that ran are what the run added`() {

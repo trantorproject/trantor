@@ -323,6 +323,7 @@ class ToolLoop(
                             val execution = step.resolve(call, decision).also { executions.add(it) }
 
                             if (decision is Approve) yield(RunEvent.ToolFinished(execution.result, execution.failure))
+                            else yield(RunEvent.ToolNotApproved(execution.result))
                         }
 
                         run.resolved(executions, step)
@@ -383,6 +384,8 @@ class ToolLoop(
                             yield(RunEvent.ToolFinished(execution.result, execution.failure))
                         }
                     }
+
+                    for (pending in step.pending) yield(RunEvent.ApprovalRequested(pending))
 
                     run.advance(response, executions, step)
                     yield(RunEvent.StepFinished(number))

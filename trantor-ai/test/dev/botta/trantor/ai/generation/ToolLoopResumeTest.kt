@@ -57,8 +57,8 @@ class ToolLoopResumeTest {
 
             val result = loop().run(ChatRequest(paused), decisions = listOf(Approve("call_2")))
 
-            assertThat(model.requests.single().messages.last())
-                .isEqualTo(Message.Tool(listOf(ToolResultPart("call_2", "refund", Text(GENERIC_FAILURE), isError = true))))
+            val failed = ToolResultPart("call_2", "refund", Text(GENERIC_FAILURE), isError = true)
+            assertThat(model.requests.single().messages.last()).isEqualTo(Message.Tool(listOf(failed)))
             assertThat(result.toolFailures.map { it.callId }).containsExactly("call_2")
         }
     }
@@ -193,6 +193,32 @@ class ToolLoopResumeTest {
         assertThat(refund.refunded).containsExactly(500)
         assertThat(model.requests.single().messages).isEqualTo(paused + Message.Tool(listOf(refunded)))
         assertThat(events.filterIsInstance<RunEvent.ToolFinished>().map { it.result }).containsExactly(refunded)
+    }
+
+    @Test
+    fun `a resumed stream tells of the approved calls as tools that run, and of the others as not approved`() {
+        val another = ToolCallPart("call_3", "refund", Json.obj("amount" to 700))
+        val conversation = listOf(paused[0], Message.Assistant(listOf(weatherCall, refundCall, another)), paused[2])
+        model.answers(listOf(TextPart("Listo")))
+
+        val events = loop().stream(ChatRequest(conversation), decisions = listOf(Approve("call_2"), Reject("call_3")))
+            .use { it.asSequence().toList() }
+
+        assertThat(events.take(4)).containsExactly(
+            RunEvent.ToolStarted(refundCall),
+            RunEvent.ToolFinished(refunded),
+            RunEvent.ToolNotApproved(ToolResultPart("call_3", "refund", Text(ToolLoop.NOT_APPROVED), isError = true)),
+            RunEvent.StepStarted(1),
+        )
+    }
+
+    @Test
+    fun `and of a call without a decision as not approved too`() {
+        val events = loop().stream(ChatRequest(paused + Message.user("Mejor no")))
+            .use { it.asSequence().toList() }
+
+        val notApproved = ToolResultPart("call_2", "refund", Text(ToolLoop.NOT_APPROVED), isError = true)
+        assertThat(events.first()).isEqualTo(RunEvent.ToolNotApproved(notApproved))
     }
 
     private fun loop(hooks: StepHooks? = null) = ToolLoop(
