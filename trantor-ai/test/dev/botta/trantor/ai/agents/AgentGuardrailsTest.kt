@@ -4,7 +4,10 @@ package dev.botta.trantor.ai.agents
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.generation.Approve
+import dev.botta.trantor.ai.generation.PendingCall
 import dev.botta.trantor.ai.generation.RunEvent
+import dev.botta.trantor.ai.generation.ToolLoopApprovalTest.RefundTool
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
@@ -153,6 +156,87 @@ class AgentGuardrailsTest {
             runner.run(support.toolGuardrails(watching).hooks(everywhereIsCordoba).build(), question)
 
             assertThat(checked).containsExactly(Json.obj("city" to "Bariloche"))
+        }
+    }
+
+    @Nested
+    inner class `Asking for approval` {
+        @Test
+        fun `one that asks for it leaves the call waiting with its reason, and the others run`() {
+            supportModel.answers(listOf(weatherCall, forecastCall))
+
+            val result = runner.run(support.toolGuardrails(careful).build(), question)
+
+            assertThat(ran).containsExactly("getWeather")
+            assertThat(result.pending).containsExactly(PendingCall(forecastCall, "support", "Forecasts cost money"))
+        }
+
+        @Test
+        fun `the ones after it are still asked, and one that rejects the call wins`() {
+            supportModel.answers(listOf(forecastCall), listOf(TextPart("No puedo")))
+            val strict = ToolGuardrail("strict") { _, _ -> ToolGuardrailVerdict.Reject("No forecasts") }
+
+            val result = runner.run(support.toolGuardrails(careful, strict).build(), question)
+
+            assertThat(result.paused).isFalse()
+            assertThat(ran).isEmpty()
+            assertThat(result.steps.first().step.toolResults.single().output).isEqualTo(ToolOutput.Text("No forecasts"))
+        }
+
+        @Test
+        fun `and one that trips still stops the run`() {
+            supportModel.answers(listOf(forecastCall))
+            val stop = ToolGuardrail("stop") { _, _ -> GuardrailVerdict.Trip("Never") }
+
+            val error = catchThrowableOfType(GuardrailTrippedError::class.java) {
+                runner.run(support.toolGuardrails(careful, stop).build(), question)
+            }
+
+            assertThat(error.guardrail).isEqualTo("stop")
+        }
+
+        @Test
+        fun `the reasons of every one that asked go together`() {
+            supportModel.answers(listOf(forecastCall))
+            val far = ToolGuardrail("far") { _, _ -> ToolGuardrailVerdict.AskForApproval("Bariloche is far") }
+
+            val result = runner.run(support.toolGuardrails(careful, far).build(), question)
+
+            assertThat(result.pending.single().reason).isEqualTo("Forecasts cost money; Bariloche is far")
+        }
+
+        @Test
+        fun `a call its tool and a guardrail both ask approval for waits once, with the reason of the guardrail`() {
+            val refundCall = ToolCallPart("call_3", "refund", Json.obj("amount" to 500))
+            supportModel.answers(listOf(refundCall))
+            val money = ToolGuardrail("money") { _, _ -> ToolGuardrailVerdict.AskForApproval("It gives money back") }
+
+            val agent = support.tools(RefundTool(approvalOver = 100)).toolGuardrails(money).build()
+
+            val result = runner.run(agent, question)
+
+            assertThat(result.pending).containsExactly(PendingCall(refundCall, "support", "It gives money back"))
+        }
+
+        @Test
+        fun `once approved, the call runs without asking the guardrails again`() {
+            supportModel.answers(listOf(TextPart("Mañana llueve")))
+            val asked = mutableListOf<String>()
+            val counting = ToolGuardrail("counting") { call, _ ->
+                asked.add(call.callId)
+                ToolGuardrailVerdict.AskForApproval("Always")
+            }
+            val paused = listOf(question, Message.Assistant(listOf(forecastCall), "support"))
+
+            runner.run(support.toolGuardrails(counting).build(), paused) { decisions(Approve("call_2")) }
+
+            assertThat(ran).containsExactly("getForecast")
+            assertThat(asked).isEmpty()
+        }
+
+        private val careful = ToolGuardrail("careful") { call, _ ->
+            if (call.toolName == "getForecast") ToolGuardrailVerdict.AskForApproval("Forecasts cost money")
+            else GuardrailVerdict.Pass
         }
     }
 

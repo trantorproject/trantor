@@ -21,10 +21,11 @@ interface StepHooks {
 
     /**
      * Asked for every call of the step before any of them runs, with the call as the model made it. A [ToolRefusal]
-     * answers that call to the model as an error instead of running it, and the other calls run. An exception fails
-     * the run before any call of the step ran, so none of them had any effect.
+     * answers that call to the model as an error instead of running it, and a [ToolApproval] leaves it waiting for a
+     * person to approve it; the other calls run. An exception fails the run before any call of the step ran, so none
+     * of them had any effect.
      */
-    fun checkTool(call: ToolCallPart): ToolRefusal? = null
+    fun checkTool(call: ToolCallPart): ToolCheck? = null
 
     /**
      * The args a call goes to its tool with. What it returns is decoded like the model's own, so args the tool does
@@ -36,8 +37,17 @@ interface StepHooks {
     fun afterTool(result: ToolResultPart, failure: ToolFailure?) {}
 }
 
+/** What a check of the step says about a call that is not to run as it is. */
+sealed interface ToolCheck
+
 /** A call the step does not run: the model reads [message] as its error, and the run keeps [warning]. */
-class ToolRefusal(val message: String, val warning: String)
+class ToolRefusal(val message: String, val warning: String): ToolCheck
+
+/**
+ * A call that waits for a person to approve it, for [reason]: it does not run, and the run ends paused, as it does when
+ * its tool asks for approval.
+ */
+class ToolApproval(val reason: String?): ToolCheck
 
 /** The hooks that change nothing, for a step that brings none. */
 internal object NoStepHooks: StepHooks

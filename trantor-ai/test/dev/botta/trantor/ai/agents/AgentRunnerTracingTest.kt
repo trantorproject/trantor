@@ -214,6 +214,21 @@ class AgentRunnerTracingTest {
         }
 
         @Test
+        fun `of a tool that asks for approval escalates, and the run pauses without an error`() {
+            val careful = ToolGuardrail("careful") { _, _ ->
+                ToolGuardrailVerdict.AskForApproval("Weather costs money")
+            }
+            supportModel.answers(listOf(weatherCall()))
+
+            runner.run(support.tools(weather).toolGuardrails(careful).build(), question)
+
+            val guardrail = telemetry.named("run_guardrail careful")
+            assertThat(guardrail.attributes[VERDICT]).isEqualTo("escalate")
+            assertThat(guardrail.attributes[REASON]).isEqualTo("Weather costs money")
+            assertThat(telemetry.named("invoke_agent support").status.statusCode).isEqualTo(StatusCode.UNSET)
+        }
+
+        @Test
         fun `of a tool that trips fails the agent that asked for the call and the workflow`() {
             val stop = ToolGuardrail("stop") { _, _ -> GuardrailVerdict.Trip("Never") }
             supportModel.answers(listOf(weatherCall()))

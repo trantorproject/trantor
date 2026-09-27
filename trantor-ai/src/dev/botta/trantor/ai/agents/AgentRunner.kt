@@ -7,6 +7,8 @@ import dev.botta.trantor.ai.generation.ToolFailure
 import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.Step
 import dev.botta.trantor.ai.generation.StepSetup
+import dev.botta.trantor.ai.generation.ToolApproval
+import dev.botta.trantor.ai.generation.ToolCheck
 import dev.botta.trantor.ai.generation.ToolRefusal
 import dev.botta.trantor.ai.history.projected
 import dev.botta.trantor.ai.generation.ToolLoop
@@ -423,9 +425,15 @@ class AgentRunner(
             hooks.forEach { it.afterModel(step, response) }
         }
 
-        /** The first guardrail that does not pass decides, and the ones after it are not asked. */
-        override fun checkTool(call: ToolCallPart): ToolRefusal? {
+        /**
+         * The first guardrail that rejects the call or stops the run decides, and the ones after it are not asked.
+         * One that asks for approval does not decide: the ones after it are still asked, since a person who approves
+         * the call would otherwise skip them, and the call waits only if none of them rejects it.
+         */
+        override fun checkTool(call: ToolCallPart): ToolCheck? {
             val context = toolContext(call.callId, call.toolName)
+            var asked = false
+            val reasons = mutableListOf<String>()
 
             for (guardrail in guardrails) {
                 val verdict = telemetry.guardrail(guardrail.name, "input", "tool_call", call.callId, spanParent) {
@@ -440,10 +448,14 @@ class AgentRunner(
                         "The guardrail ${guardrail.name} rejected ${call.toolName} on call ${call.callId}, which did " +
                             "not run: ${verdict.message}",
                     )
+                    is ToolGuardrailVerdict.AskForApproval -> {
+                        asked = true
+                        verdict.reason?.let { reasons.add(it) }
+                    }
                 }
             }
 
-            return null
+            return if (asked) ToolApproval(reasons.joinToString("; ").ifEmpty { null }) else null
         }
 
         override fun beforeTool(call: ToolCallPart): JsonObject {

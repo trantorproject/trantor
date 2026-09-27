@@ -482,11 +482,19 @@ class ToolLoop(
         /**
          * Asks about every call before any of them runs, so that a check that fails the run leaves no call of the
          * step half done. A call the check refused is answered as refused and does not wait for approval: there is
-         * nothing to approve.
+         * nothing to approve. One the check asked approval for waits with its reason, and its tool is not asked.
          */
         fun check(calls: List<ToolCallPart>) {
-            refusals = calls.mapNotNull { call -> hooks.checkTool(call)?.let { call.callId to it } }.toMap()
-            pending = calls.filter { it.callId !in refusals && asksForApproval(it) }.map { PendingCall(it, agent) }
+            val checks = calls.associate { it.callId to hooks.checkTool(it) }
+
+            refusals = checks.mapNotNull { (callId, check) -> (check as? ToolRefusal)?.let { callId to it } }.toMap()
+            pending = calls.mapNotNull { call ->
+                when (val check = checks[call.callId]) {
+                    is ToolRefusal -> null
+                    is ToolApproval -> PendingCall(call, agent, check.reason)
+                    null -> PendingCall(call, agent).takeIf { asksForApproval(call) }
+                }
+            }
         }
 
         private fun asksForApproval(call: ToolCallPart) =

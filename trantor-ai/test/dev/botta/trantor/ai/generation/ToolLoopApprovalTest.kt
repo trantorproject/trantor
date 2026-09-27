@@ -86,6 +86,20 @@ class ToolLoopApprovalTest {
         }
 
         @Test
+        fun `a call a check asks approval for waits too, with the reason of the check`() {
+            val call = weatherCall("call_1", "Bariloche")
+            model.answers(listOf(call))
+            val asking = object: StepHooks {
+                override fun checkTool(call: ToolCallPart) = ToolApproval("It is far")
+            }
+
+            val result = loop(hooks = asking).run(ChatRequest("Que clima hay?"))
+
+            assertThat(weather.cities).isEmpty()
+            assertThat(result.pending).containsExactly(PendingCall(call, agent = null, reason = "It is far"))
+        }
+
+        @Test
         fun `a run that did not pause has nothing pending`() {
             model.answers(listOf(refundCall("call_1", 50)), listOf(TextPart("Listo")))
 

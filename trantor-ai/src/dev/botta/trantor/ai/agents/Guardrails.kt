@@ -86,7 +86,8 @@ interface OutputGuardrail {
  *
  * Every call of a step is checked before any of them runs, so a trip leaves no step half done: none of its tools had
  * any effect. OpenAI Agents checks each call right before it runs instead. A rejected call is answered to the model
- * as an error and the others run.
+ * as an error and the others run. A call can also be left waiting for a person to approve it, with the rules that
+ * depend on the moment, like who the user is or how much it is: see [ToolGuardrailVerdict.AskForApproval].
  */
 interface ToolGuardrail {
     /** Which one it was, in the [GuardrailTrippedError] and in the warning of a rejected call. */

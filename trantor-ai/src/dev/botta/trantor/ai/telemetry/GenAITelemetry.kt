@@ -273,6 +273,8 @@ internal class GenAITelemetry(openTelemetry: OpenTelemetry, settings: AITelemetr
                 is GuardrailVerdict.Pass -> verdict("allow", null)
                 is GuardrailVerdict.Trip -> verdict("deny", verdict.reason)
                 is ToolGuardrailVerdict.Reject -> verdict("deny", verdict.message)
+                // What the semantic conventions call a verdict that "requires human review, approval"
+                is ToolGuardrailVerdict.AskForApproval -> verdict("escalate", verdict.reason)
             }
         }
     }

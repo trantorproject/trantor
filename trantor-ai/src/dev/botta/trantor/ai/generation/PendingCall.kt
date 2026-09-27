@@ -11,4 +11,9 @@ data class PendingCall(
     val call: ToolCallPart,
     /** The agent that made the call, which is who picks the run up. Null in a generation. */
     val agent: String?,
+    /**
+     * Why it waits, when a check asked for approval and said why, like a tool guardrail. Null when its tool asked,
+     * which says no more than that it does.
+     */
+    val reason: String? = null,
 )
