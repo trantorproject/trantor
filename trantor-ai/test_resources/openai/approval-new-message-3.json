@@ -1,0 +1,157 @@
+{
+  "id": "resp_090168373ec90b23006ab910cb954887d2ab003e75190780f1",
+  "object": "response",
+  "created_at": 1790513355,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790513356,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_090168373ec90b23006ab910cc3cdc87d2b41e28da997533a9",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABquRDMqbDGKDa4JlZNwPL7ZCraB1Y_sL68WQVDZdbLzQ-skaCZ7ZkMVdxWihWhNjdSwdBl83FLInLVBUaDKH6EMnDupvyR5DVRzNl7FeRQcP3FKbyzc2qPZ7EJPZZTvkKlBS9hU5h8j5ZTYxzhpZMMWLlC5a8sqWKpjamrIrhm4YAOJVBrzFFBQUknkXyvw6YICcONnIq6YgSkNNQrK5ejKSQpnWhuRpQxi8yy1f76vdn0wTpWJCATFhVzKq9BSm3XFXbvf28qdaczL8eK6d_ql1Q3MayJRsrkQLkInOdAJbvFenU6rilIGzwaTbJ0oTVCaIhWfVmKKzDg1gGTV8xm-QPq0Qe6JtGzWXBTS0TVBnslqse_lxHY4pkY46mfkxze_fJxeRjEmuHTqqFiOQJpMfJRZhyijmCw4umzcRiP0PbbvBM-3M9rG0gbU_vA12MvKh9ew2W1p5ATmpTHk717XHuTGwWOyAThXUnbAfbUpFlQ58ij-jVxXB84dL6Wt9RLdiX0rXTY0Kc99_O3uEKGNq5ckhYKVs-3x_31lb6FIA8Ki3Vf66C0lFXGBE9wuT5FenIqWxgHNmWv6Sux8XxPFF03ERIUjApR0iQofrd-51Z6zlZNR98VKAPodJSrmRqZmpLEgD1l0HPnvG5V-XH5RckWAqAS2Vbni89piVhyIqtp2lOM1aeeluGPL0VlnOXX5vVTzJPV8-6iUi6yUvVbIj1paiD4a9e3wsh5x5WZi0y6CMczF52lyAaxYL2vobQFTaTp3zOJCIBMjfQamgQFZCHDNkK5U750hj7a91QBxWPqJu4Hx_8mrgYyRmd1YsIQ9jLv69i6lnsDyvR2Bu8EmOJYF3jJEieZ_Dhkgjzl7FrQ6b-Or7vPywaZIIgk68Q5SAbHo8VhUmU98IT0debxyxEK-fguXx3JjtlQIl1Qs2SPQW88MZnjZT_VjX3-BQ4pChYDbeHWaUJqSDrIfPV9rC5FTOd0E2k0CE5xxm31WnfCsFSHQa0V4CxWogbX3rLgINOqg83-w2mEC2LLXtPcgwnqnR8z_Sc-dPH5gCUKL9HFZeIeA6AnEQIkleUk8qRaNLQOlB7ejFZ8ZZIvEgxVHHj2hMa4SaPBP9cMLkq6SoS4wowcrUMcx9OcoYq1XXTEW0sW7S-6_7FPtvfOPGEsxenDa84TCmiz0HEYal3Ve31uTHOHd9-rMpLoyAmJgDGrKRdBIIzXBd9_y7266TS8vEN5zdGMT4fkSXQdKBAMlm019zf0ypDbEiGuzNzNkNJ8BDRw5LNEZLJDo6nxK9ulxHUD-XTtkCjjL1rxM5d9qF1pXMu88YfSgsez45W1jMOd1pSYXivhnQfhJHPEB77zscLW38o49pryYhvKmDqxywctdwCbLMMANh7GT6JHVcZLLmTd",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "msg_090168373ec90b23006ab910ccbd5c87d2b66a9d352452023b",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [
+            
+          ],
+          "logprobs": [
+            
+          ],
+          "text": "El pedido 42 llega el jueves."
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The state of an order of the store",
+      "name": "getOrder",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "integer",
+            "description": "The number of the order"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "order"
+        ]
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "description": "Gives back the money of an order, in dollars",
+      "name": "refund",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "integer",
+            "description": "The number of the order"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "How many dollars to give back"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "order",
+          "amount"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 267,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 58,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 325
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

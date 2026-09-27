@@ -1,0 +1,147 @@
+{
+  "id": "resp_03bef20b2ea223d3006ab910b185d887d2b4c9c5a40ea7159f",
+  "object": "response",
+  "created_at": 1790513329,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790513331,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "o4-mini-2025-04-16",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_03bef20b2ea223d3006ab910b2378487d2b52b44db92ae1ae1",
+      "type": "reasoning",
+      "content": [
+        
+      ],
+      "encrypted_content": "gAAAAABquRCzXkfDlEOfUGZfvwygOA4Gpj9ugfDMKPsk2GkPXUMRPVIQTHB46PmJO-GcCLHUROYVOgk-9sSHtYVoARuewaErYKnibZYQ2b4k8-W0YlnqQz80HJqkdoDR5EExXrjCeuV35kbBrk5ZXz1a-LcW5LaAOKnkNnYS6fRqncoCysFP6FhtJn-eafk3IwJhomk8Ihcr5yqslN7rQcxL-DcE66EMG5Za2TOH-B51552a9YhyvH8HW1KW67mIFDiIeBJcV_CBlWimCObcDvZxTXaJdguLT4qbvaQ1YkTJxaARNvzF3C1FSMXEZSgvlIHTWoRpx_DOmAD82M741CLRBqKLD10rO_qsZpls1LUel3Iufs81hsJpWJlo3_inYqDA-_m0medua-artwtLF2yXGxdIX5RYdfA55yhxqW8ndnn5SVfB6VcoYRzbxcZRgRLEX_tK2JwOyX31GmLRMLRD1sMrMmx79VKTBywkDEBso6BtLmCTc_yjXnnyNy2hfiLuGhwjU5_SGZNerA4fcFs_spvG0Mvbo18fqcR0Ys05PmXP6P8MUjStxH9kTbDH9r70p40pxqcJgywGkT4oBMDDmZTV7Qn0GLYCaX3rN4v0vVS_Vc_w0OKi1UxGWi7BE4HrdjAh5ZZt6iN9dLGCxvp2HpfeT6bxLCPj-NECjStjvZs5uHss4o_xHY42qgj8c8ajvpSXNnf1TEcAWvzmaWARFoxdeaiylm83cllSxfxkLUTTtJAWNUbEk5lfpOTz6FL2SNU0X71z2uRYAkmB23B2uyTB1KtOdhbZNDRCqWhjCKanYKR1M4-mJLEESUTcnxRm85cLCOl81VcKnLq61W2eeMVEbUfEBQCvlI1bxUQq7uj4xhO6IozTAPoSXKDLwsfkpmqNy516tcVJrbvl7V0ty0KVUDoV3pfNwMmuTAk0iglBEBSK9L8KpvzsdgTHMwIUAWlBw2JJdBC3eNTJzVIAjR9nSfbWbVyz2BpZYRU8892V2Ez5uGd9u5CKtjv_HyRcVWcLYfyzgj7yAvNQsKX7bAaOWLJ0htCDVehQDH8Mg_4FT5DSX6YD_mFAnmYvFq-kfHQt7DssVf-cQdsrIE9We7tbLa37sRgo6BqIbs0qlf-NPT0A0h7UbcFQqZ5thSgMSOX1Es0aotYkCNCDeAdUs-4P3hEKTBOxNNCmvx0zDuypH04U5USWMtDGvxNFTqstVq_9M8T2alvbHs-XAhaNB3fLjzEt-J03lLTZKICJx8AjitdLT7AQgIKAFRZ1qtPHmOmGPvWLuARjrzXz7DOamZGiGmpdBmmiABMFfDDr9yfAvWZdNastjEogDbBSQ4H-KhG8X1NUR3cgswROppv7_y5Es9O3_b61NcLOFp0XhvnEhOyX3OJb4p2vngoxftFrkK5aQrIvbZNbXPLk5oEL3bhlK83Nh_-x18SMbjlAdAU2u0RjUmxIH-exC_pCSv9daq8KUdjHZ0SzyHBKZtcMsqSxdgJlkUYWXNiTuw3lp-fuZMc6BdkAeoRtbgR6I6nmF5mVuei3gZFZUIYNK43hxMdfCHfFWViMNhN009kUhy8GY3P2dTPmXrdn4ITLN5o28aD6tppaLdM4S4kufDHwgae1paRpLwmnRki6yympsVTxVolLgLatfgCD7Dn7u-ViU69dilRUBdVnNQ8tb1TfIURp3JcC7In6qxtQ9j1TY6rngxDKEzJHNPKq5k3NbE3uRcOQmFPKnLwVTblltpLbZ10L_u5GYNGZyZTXooV92jPfLS3L5sHvCp16xJAINKZdBr1mUv68GsVwePRiF1btRS_RvNtkc7cJfN00WVc-4SIpMteiQnMWQn25Uxda9WbB-QCwoZC4Ldpp67orSsfCIeZDVH6DDEPCWPN5OyqJkc0KaCed5ho_u7PScXSvhntod-Gge40WDGWRtLHWFgrUnbofEodWSZf6GZ-nYrfmSXrK-_Tmg1sMRHbDbCsgBC2Bg4KRk9Xe2P6g7rhQ35o2vqLRALOEYw==",
+      "summary": [
+        
+      ]
+    },
+    {
+      "id": "fc_03bef20b2ea223d3006ab910b388d087d2add77f1e85d61512",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"order\":41,\"amount\":250}",
+      "call_id": "call_wBpC8ckfOeq898xtcaD0J4Th",
+      "name": "refund"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "in_memory",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "medium",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The state of an order of the store",
+      "name": "getOrder",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "integer",
+            "description": "The number of the order"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "order"
+        ]
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "description": "Gives back the money of an order, in dollars",
+      "name": "refund",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "integer",
+            "description": "The number of the order"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "How many dollars to give back"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "order",
+          "amount"
+        ]
+      },
+      "strict": true
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 1740,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 1536
+    },
+    "output_tokens": 166,
+    "output_tokens_details": {
+      "reasoning_tokens": 128
+    },
+    "total_tokens": 1906
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}
