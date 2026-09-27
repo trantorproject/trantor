@@ -95,6 +95,8 @@ result.usage             // added up over the steps, and the runs their tools ma
 result.estimatedCost     // added up too; null if any of them has no estimate
 result.newMessages       // what the run added to the conversation, to keep it
 result.toolFailures      // the exceptions of the tools that failed, for the application
+result.paused            // whether it ended waiting for a person to approve some calls
+result.pending           // those calls, when it did: see Approvals
 ```
 
 `newMessages` is what to store to continue the conversation later: the answers of the model, whole, and
@@ -290,6 +292,94 @@ model asked for them, since two calls that write could depend on each other.
 - A cancellation interrupts every one of them.
 - A tool that is `readOnly` can run on two threads at once, so it cannot keep mutable state of its own.
 
+### Approvals
+
+A tool can ask for a person to approve a call before it runs:
+
+```kotlin
+class RefundTool(private val payments: Payments): Tool<RefundTool.Args>(Args.serializer()) {
+    override val name = "refund"
+    override val description = "Gives back the money of an order, in dollars"
+
+    override fun needsApproval(args: Args, context: ToolContext) = args.amount > 100
+
+    override fun execute(args: Args, context: ToolContext) = ToolResult.text(payments.refund(args.order, args.amount))
+
+    @Serializable
+    data class Args(val order: Int, val amount: Int)
+}
+```
+
+`needsApproval` gets the args as the model sent them, before any hook changes them, which are the ones the person
+sees. Args that do not fit the tool are not asked about: the call goes back to the model as an error, as always.
+A [tool guardrail](#guardrails) can ask for approval too, for rules that depend on who the run is for.
+
+**A call that waits does not run, and the run ends there.** The other calls of the step run, the model is not
+called again, and the result says so:
+
+```kotlin
+val result = ai.generate { session(session); user(question); tools(orders, refund) }
+
+if (result.paused) {
+    result.pending          // each call that waits: the call (its id, tool and args), the agent, the reason
+    notifyWhoApproves(result.pending)
+}
+```
+
+The session keeps the paused run like any other: the answer of the model with all its calls, the results of the
+ones that ran, and nothing for the ones that wait. That is where the pause lives: **the call without its result
+is the mark**, and there is no other store. A paused run is not [compacted](#compacting-the-old-part), since it is
+not over, and its `text` is whatever the model said before asking.
+
+**Picking it up is another run on the same conversation**, with what the person decided:
+
+```kotlin
+ai.generate {
+    session(session)
+    tools(orders, refund)
+    decisions(Approve(callId), Reject(otherCallId, "The customer changed their mind"))
+}
+```
+
+Before it calls the model, the run answers the calls the last answer left without a result:
+
+- **An approved call runs**, with the tools and the hooks of the run, without asking for approval again.
+- **A rejected one** does not run, and the model reads the message of the decision as its error. Without one, it
+  reads that the call was not approved, that it should not call it again and that it should tell the user: told
+  only that it was not approved, o4-mini asked for it again right away when the user had asked for it. A message
+  of the application runs the same risk.
+- **One without a decision** is answered as not approved, with a warning. That is what happens when the user
+  writes something else instead: the conversation never keeps a call without its result, which every provider
+  refuses.
+- **A decision about a call that is not waiting** fails the run with `NoPendingCallError` before anything runs.
+  It is what a decision sent twice meets, since the first one answered the call: a call is never run twice.
+
+The results go right after the answer that made the calls, before a message the user wrote after it, which is
+where the providers take them; the session keeps them there. Without a session, `newMessages` starts with them,
+and the application puts them before the messages it gave the run. `result.resolved` has what the run answered,
+and its usage, failures and warnings count as the run's. A picked-up run can pause again.
+
+Some things to know:
+
+- **Notify whoever approves once the run returns**, as above, when the session already keeps the pause. An
+  `afterRun` hook of the agents hears of a paused run too, but it runs before the session keeps it.
+- **The pause is as safe as the conversation.** With a session, what waits is read from the server, and the client
+  only sends ids and decisions; the one who decides is authenticated and authorized by the application, and the id
+  of a call is not a permission. Without a session, a client that sends the history can approve a call it made up,
+  which OpenAI Agents and PydanticAI warn about too. A tool that does something sensitive still authorizes it.
+- **One run at a time on a conversation**, as always: two decisions at once would both find the call waiting.
+- **In a job**, a session per job, and the decision is another job that picks it up.
+- **The last step allowed**: if every call of it waits, the run fails with `MaxStepsExceededError`, as it would
+  with calls that could not run.
+- **Not yet:** changing the args when approving, approving a tool for the rest of the conversation, and a call
+  answered by someone else, like the front end.
+
+The pause lives in the conversation, as in AI SDK, Microsoft Agent Framework, PydanticAI and ADK, and not in a run
+state stored apart, as in OpenAI Agents, Mastra and LangGraph. There is one thing kept instead of two that have to
+agree, and nothing serialized that a deploy could break while a run waits; what that gives up is a single run
+across the pause, whose usage and steps are two results here. What the traces show of it is in
+[Telemetry](#approvals-1).
+
 ### Streaming a run
 
 ```kotlin
@@ -306,6 +396,14 @@ the model produces (a `StreamPart`, as the adapter read it), `ToolStarted`, `Too
 A run of agents also has `Handoff(from, to)`, right after the step that handed the conversation over, and
 `GuardrailTripped(guardrail, reason)` as its last event when a guardrail stops it; a generation has neither, since
 it has nobody to hand the conversation to and no guardrails.
+
+A run that [pauses](#approvals) says `ApprovalRequested(pending)` for each call that waits, after the tools of the
+step that did run and before its `StepFinished`, and the stream ends there. One that picks the conversation up
+starts with the calls it answered: `ToolStarted` and `ToolFinished` for the approved ones, and `ToolNotApproved`
+for the others, before its first step.
+
+`RunEvent` is sealed, so a `when` over it has to name every case; a new kind of event is a change to compile
+against, which is why `else` is worth it where only some of them matter.
 
 `result()` consumes whatever is left and gives the `RunResult`, and closing the stream closes the call in
 flight and runs no more tools.
@@ -391,10 +489,11 @@ just said, and in its block what belongs to that run and not to the agent:
 | `callOptions(...)` | Timeout, cancellation and headers, for every call of the run |
 | `session(...)`, `contextPolicy(...)` | Where the conversation is kept and what each call sends of it: [below](#the-history-of-a-conversation-with-agents) |
 | `hooks(...)`, `inputGuardrails(...)`, `outputGuardrails(...)`, `toolGuardrails(...)` | For this run only, after the global ones and the agent's |
+| `decisions(...)` | What a person decided about the calls a paused run left waiting: [Approvals](#approvals) and [in a team](#approvals-in-a-team) |
 
 An `AgentRunResult` has what a `RunResult` has — `text`, `newMessages`, `usage`, `estimatedCost`, `warnings`,
-`toolFailures` — plus the agent of each step in `steps`, the one that answered in `lastAgent`, and a `runId` that
-its tools and hooks see too. `result.result` is the `RunResult` underneath.
+`toolFailures`, `paused`, `pending` — plus the agent of each step in `steps`, the one that answered in
+`lastAgent`, and a `runId` that its tools and hooks see too. `result.result` is the `RunResult` underneath.
 
 ### Answering an object
 
@@ -565,7 +664,8 @@ A guardrail is a check that can stop a run. There is one kind for each thing a r
 - **`ToolGuardrail`**, on each call the model asks for, with its args as the model sent them. Every call of a step
   is checked before any of them runs, so a trip leaves no step half done. Besides passing or stopping the run, it
   can `Reject(message)` a single call: the call does not run, the model reads the message as its error, and the
-  run goes on with a warning.
+  run goes on with a warning. Or it can `AskForApproval(reason)`: the call waits for a person, as when its tool
+  [asks](#approvals), with the reason in `pending`.
 
 ```kotlin
 val offTopic = InputGuardrail("off-topic") { _, conversation ->
@@ -579,6 +679,9 @@ val support = Agent("support").inputGuardrails(offTopic).build()
 A guardrail that trips ends the run with a `GuardrailTrippedError`, which says which one, of what kind, why, and
 what else it found (`details`), and carries what the run left, so nothing spent is lost. They are declared globally
 with `addGuardrails`, on the agent and on the run, and asked in that order: the first that does not pass decides.
+Except one that asks for approval: the ones after it are still asked, since approving the call would otherwise skip
+them, so one that rejects the call or trips wins, and the call waits with the reasons of every one that asked. The
+run that picks it up runs it once approved without asking them again.
 The agent's are those of the agent it concerns: the one the run starts with for the input, the one that answered
 for the output, the one whose step asked for the call for the tools. A check that calls a model costs a call each
 time it is asked.
@@ -601,6 +704,26 @@ agents:
   of the others.
 - A `compaction(...)` runs after the output guardrails, and `afterRun` sees the result with the conversation
   compacted.
+- A run that [paused](#approvals) is kept too, and heard of by `afterRun`, but not checked by the output
+  guardrails nor compacted: it has no final answer yet.
+
+### Approvals in a team
+
+A paused run of agents works as [one of a generation](#approvals), with a few things of its own:
+
+- **It picks up with the agent that made the calls.** After support handed the conversation over to sales and sales
+  asked for a refund, `agents.run(support) { team(sales); decisions(...) }` goes on as sales, with its tools and its
+  hooks: the answer that made the calls says who made them. That agent has to be the one of the run or in its team,
+  or the run fails before anything runs. OpenAI Agents does the same with the agent of its `RunState`.
+- **A handoff in the step that paused is not made**: the model reads that it was not, since the run that picks the
+  conversation up could not tell, and can hand it over again then. Every other call of the step runs.
+- **An approved handoff hands the conversation over** before the first step, and a stream says `Handoff`.
+- **`output()` of a paused run** fails with `NoObjectGeneratedError`, saying it is waiting for approval.
+- **An agent used as a tool** can be approved before it runs, with a tool guardrail on the name of its tool. A call
+  that waits inside its own run is not supported: the run that called it cannot pause in its place, so it fails with
+  `NestedApprovalError`.
+- **In a stream with the text held back** by the output guardrails, the text of the step that paused comes out
+  before its `ApprovalRequested`.
 
 ### Streaming a run of agents
 
