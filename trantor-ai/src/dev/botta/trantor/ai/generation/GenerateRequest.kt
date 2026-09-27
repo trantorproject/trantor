@@ -52,6 +52,7 @@ class GenerateRequest {
         private set
     var compaction: Compaction? = null
         private set
+    val decisions = mutableListOf<Decision>()
 
     /** Where the conversation of the session starts in the request, and where what comes after it does. */
     private var sessionStart = 0
@@ -117,20 +118,32 @@ class GenerateRequest {
      */
     fun compaction(compactor: Compactor, afterTokens: Int) = apply { compaction = Compaction(compactor, afterTokens) }
 
+    /**
+     * What a person decided about the calls the conversation left waiting for approval, when a run paused on them.
+     * The run answers them before it calls the model: the approved ones run, the others are answered as not approved,
+     * and so is any call that got no decision. A decision about a call that is not waiting fails the run with
+     * [dev.botta.trantor.ai.errors.NoPendingCallError] before anything happens. See [Decision].
+     */
+    fun decisions(vararg decisions: Decision) = apply { this.decisions.addAll(decisions) }
+
     /** [result] with the conversation compacted, if the request asked for it and it went past its tokens. */
-    internal fun compacted(result: RunResult) =
-        compaction?.after(result, messages.drop(sessionStart) + result.newMessages, callOptions) ?: result
+    internal fun compacted(result: RunResult) = compaction?.after(
+        result,
+        result.keptAfter(messages.toList(), from = afterSession).drop(sessionStart),
+        callOptions,
+    ) ?: result
 
     /**
      * Keeps in the session, if there is one, what came after it in the request and what [result] added, or the
-     * conversation compacted in place of all it had.
+     * conversation compacted in place of all it had. The results of the calls the run resolved go first, right after
+     * the answer the session ends with.
      */
     internal fun keep(result: RunResult) {
         val session = session ?: return
         val compacted = result.compacted
 
         if (compacted != null) session.replace(compacted.conversation)
-        else session.append(messages.drop(afterSession) + result.newMessages)
+        else session.append(result.keptAfter(messages.toList(), from = afterSession).drop(afterSession))
     }
 
     /** The request of the first step. */

@@ -3,6 +3,7 @@ package dev.botta.trantor.ai.generation
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.errors.CancelledError
+import dev.botta.trantor.ai.errors.NoPendingCallError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
@@ -27,7 +28,9 @@ import io.opentelemetry.context.Context
  * results already came in the answer.
  *
  * A call whose tool [needs approval][Tool.needsApproval] does not run: the other calls of its step do, and the run
- * ends paused on that step, with the call in [RunResult.pending] and without asking the model again.
+ * ends paused on that step, with the call in [RunResult.pending] and without asking the model again. The run that
+ * picks the conversation up answers the calls its last answer left without a result before it calls the model, with
+ * the [Decision]s it got: an approved call runs, and any other is answered as not approved.
  *
  * A failing tool does not fail the run. The model gets a result marked as an error and can try something else:
  *
@@ -86,16 +89,29 @@ class ToolLoop(
     private val telemetry = GenAITelemetry(openTelemetry, telemetrySettings)
     private var tracesItsRun = true
 
-    fun run(request: ChatRequest, options: CallOptions = CallOptions()): RunResult =
-        if (tracesItsRun) telemetry.generation { loop(request, options, it) } else loop(request, options, null)
+    /**
+     * Runs [request] to the answer. [decisions] say what a person decided about the calls its conversation left
+     * waiting for approval, which the run answers before it calls the model. See [Decision].
+     */
+    fun run(request: ChatRequest, options: CallOptions = CallOptions(), decisions: List<Decision> = emptyList()) =
+        if (tracesItsRun) telemetry.generation { loop(request, options, decisions, it) }
+        else loop(request, options, decisions, null)
 
-    private fun loop(request: ChatRequest, options: CallOptions, generation: GenAITelemetry.OpenSpan?): RunResult {
-        val run = Run(request, options)
+    private fun loop(
+        request: ChatRequest,
+        options: CallOptions,
+        decisions: List<Decision>,
+        generation: GenAITelemetry.OpenSpan?,
+    ): RunResult {
+        val run = Run(request, options, decisions)
 
         while (true) {
             throwIfCancelled(options)
 
             val step = run.next(generation)
+
+            if (run.resolving) run.resolved(run.waiting.map { step.resolve(it, run.decisionAbout(it)) }, step)
+
             val response = telemetry.chat(step.model, step.request, step.agent, step.invocation) {
                 step.model.generate(step.request, options)
             }.also { step.answered(it) }
@@ -116,7 +132,7 @@ class ToolLoop(
 
             run.advance(response, executions, step)
 
-            if (step.paused || step.endedBy(executions)) return RunResult(run.steps)
+            if (step.paused || step.endedBy(executions)) return run.result()
 
             run.throwIfNoStepsLeft()
         }
@@ -126,17 +142,78 @@ class ToolLoop(
      * The same loop, received as it happens. Every event is produced while the run is going, so whoever reads it
      * sees the text and the tools as they happen; closing it stops the run where it is.
      */
-    fun stream(request: ChatRequest, options: CallOptions = CallOptions()): RunStream = Streamed(request, options)
+    fun stream(
+        request: ChatRequest,
+        options: CallOptions = CallOptions(),
+        decisions: List<Decision> = emptyList(),
+    ): RunStream = Streamed(request, options, decisions)
 
     /**
      * The steps of a run and the rules that end it, shared by [run] and [stream] so that both stop for the same
      * reasons and send the same thing on the next call.
      */
-    private inner class Run(private val request: ChatRequest, private val options: CallOptions) {
+    private inner class Run(
+        private val request: ChatRequest,
+        private val options: CallOptions,
+        private val decisions: List<Decision>,
+    ) {
         val steps = mutableListOf<Step>()
 
         /** The whole conversation, whatever each step sent of it. */
         private var messages = request.messages
+
+        /**
+         * The calls the conversation left waiting for approval: those of its last answer without a result, which is
+         * how a run that paused leaves it. The run answers them before its first step.
+         */
+        val waiting = waitingIn(request.messages)
+
+        private val decisionsById = decisions.associateBy { it.callId }
+
+        /** The calls it answered before its first step, once it did. */
+        private var resolved: ResolvedCalls? = null
+
+        init {
+            // Before anything runs: a decision that answers nothing means the application and the conversation disagree
+            decisions.firstOrNull { decision -> waiting.none { it.callId == decision.callId } }?.let {
+                throw NoPendingCallError(
+                    it.callId,
+                    "There is no call ${it.callId} waiting for approval in the conversation: it was answered " +
+                        "already, or it never was",
+                )
+            }
+        }
+
+        /** Whether the calls waiting for approval are still to be answered, which the first step does first. */
+        val resolving get() = waiting.isNotEmpty() && resolved == null
+
+        /** What was decided about [call], or null when nobody did. */
+        fun decisionAbout(call: ToolCallPart) = decisionsById[call.callId]
+
+        /**
+         * Keeps what the calls waiting for approval left, and puts their results right after the answer that made
+         * them, in the conversation and in what [step] sends.
+         */
+        fun resolved(executions: List<Execution>, step: Outgoing) {
+            val calls = ResolvedCalls(
+                executions.map { it.result },
+                executions.mapNotNull { it.failure },
+                waiting.filter { decisionAbout(it) == null }.map {
+                    ModelWarning(
+                        "The call ${it.callId} to ${it.toolName} was waiting for approval and the run got no " +
+                            "decision about it, so it was answered as not approved",
+                    )
+                },
+                executions.mapNotNull { it.run?.let { run -> it.result.callId to run } }.toMap(),
+            )
+
+            resolved = calls
+            messages = calls.into(messages)
+            step.resolved(calls)
+        }
+
+        /** What the run left with [steps], which are all of them unless it says otherwise. */
+        fun result(steps: List<Step> = this.steps) = RunResult(steps, resolved = resolved)
 
         /**
          * What the next step goes out with, set up with everything the run has said so far. It is part of the
@@ -154,7 +231,7 @@ class ToolLoop(
         fun callsOf(response: ChatResponse) = response.toolCalls.filterNot { it.providerExecuted }
 
         fun finish(response: ChatResponse, step: Outgoing) =
-            RunResult(steps + Step(response, warnings = step.warnings, agent = step.agent))
+            result(steps + Step(response, warnings = step.warnings, agent = step.agent))
 
         /**
          * Whether an answer without calls ends the run. It does, unless the step answers by calling an output tool
@@ -185,7 +262,7 @@ class ToolLoop(
          * since it could end the run; this is when the model got it wrong and another step would be needed.
          */
         fun throwIfNoStepsLeft() {
-            if (steps.size >= maxSteps) throw MaxStepsExceededError(maxSteps, RunResult(steps))
+            if (steps.size >= maxSteps) throw MaxStepsExceededError(maxSteps, result())
         }
 
         /** Keeps the step, with the agent its calls handed the conversation over to, and prepares the next one. */
@@ -214,8 +291,12 @@ class ToolLoop(
      * around what runs at once, like the model opening its stream or a tool. Closing it ends the spans it left open,
      * since an iterator nobody reads again never gets to its end.
      */
-    private inner class Streamed(request: ChatRequest, private val options: CallOptions): RunStream {
-        private val run = Run(request, options)
+    private inner class Streamed(
+        request: ChatRequest,
+        private val options: CallOptions,
+        decisions: List<Decision>,
+    ): RunStream {
+        private val run = Run(request, options, decisions)
         private var current: ChatStream? = null
         private var closed = false
 
@@ -230,6 +311,22 @@ class ToolLoop(
             try {
                 while (true) {
                     val step = run.next(generation)
+
+                    if (run.resolving) {
+                        val executions = mutableListOf<Execution>()
+
+                        for (call in run.waiting) {
+                            val decision = run.decisionAbout(call)
+
+                            if (decision is Approve) yield(RunEvent.ToolStarted(call))
+
+                            val execution = step.resolve(call, decision).also { executions.add(it) }
+
+                            if (decision is Approve) yield(RunEvent.ToolFinished(execution.result, execution.failure))
+                        }
+
+                        run.resolved(executions, step)
+                    }
 
                     yield(RunEvent.StepStarted(run.steps.size + 1))
 
@@ -293,7 +390,7 @@ class ToolLoop(
                     step.handoffs.winner?.let { yield(RunEvent.Handoff(step.agent, it)) }
 
                     if (step.paused || step.endedBy(executions)) {
-                        finished(RunResult(run.steps))
+                        finished(run.result())
                         return@iterator
                     }
 
@@ -320,7 +417,7 @@ class ToolLoop(
         override fun result(): RunResult {
             while (hasNext()) next()
 
-            return last ?: RunResult(run.steps)
+            return last ?: run.result()
         }
 
         override fun close() {
@@ -354,13 +451,22 @@ class ToolLoop(
         /** The calls of the step that will not run, by id, with what the model reads instead. */
         private var refusals = emptyMap<String, ToolRefusal>()
 
-        /** The messages of the step with every call and its result together, as the providers take them. */
-        private val paired = ToolPairs.matched(setup.request.messages)
+        /** What the step sends of the conversation, with the results of the calls the run resolved before it. */
+        private var messages = setup.request.messages
 
-        // Asked again on every step, so that a description that depends on the moment is up to date
-        val request = hooks.beforeModel(
-            setup.request.copy(messages = paired.first, tools = setup.request.tools + setup.tools.map { it.spec() }),
-        )
+        /**
+         * The messages of the step with every call and its result together, as the providers take them. Worked out
+         * when the step goes out, once the calls the run resolved before it have their results.
+         */
+        private val paired by lazy { ToolPairs.matched(messages) }
+
+        // Asked again on every step, so that a description that depends on the moment is up to date; and built when
+        // the step goes out, so that the hooks see the results of the calls the run resolved before it
+        val request by lazy {
+            val tools = setup.request.tools + setup.tools.map { it.spec() }
+
+            hooks.beforeModel(setup.request.copy(messages = paired.first, tools = tools))
+        }
 
         /** What the run noticed in the step: the halves of a pair it did not send, its handoffs, the calls not run. */
         val warnings get() = paired.second + handoffs.warnings + refusals.values.map { ModelWarning(it.warning) }
@@ -388,6 +494,22 @@ class ToolLoop(
 
         /** The calls that run in the step: all of them but the ones waiting for approval. */
         fun toRun(calls: List<ToolCallPart>) = calls.filter { call -> pending.none { it.call.callId == call.callId } }
+
+        /**
+         * Answers a call the conversation left waiting for approval, before the step goes out: an approved one runs
+         * with the tools and the hooks of the step, without asking for approval again; any other one is answered as
+         * not approved, with the message of the decision or [NOT_APPROVED].
+         */
+        fun resolve(call: ToolCallPart, decision: Decision?): Execution = when (decision) {
+            is Approve -> execute(call).also { hooks.afterTool(it.result, it.failure) }
+            is Reject -> refused(call, decision.message ?: NOT_APPROVED)
+            null -> refused(call, NOT_APPROVED)
+        }
+
+        /** Sends the results of the calls the run resolved right after the answer that made them. */
+        fun resolved(calls: ResolvedCalls) {
+            messages = calls.into(messages)
+        }
 
         /** A call that ran, with its handoff settled, as the model will read it. */
         fun finished(execution: Execution) = handoffs.settle(execution).also { hooks.afterTool(it.result, it.failure) }
@@ -528,8 +650,23 @@ class ToolLoop(
     }
 
     // Nothing failed: the call did not run, and the model reads why
-    private fun refused(call: ToolCallPart, refusal: ToolRefusal) =
-        Execution(ToolResultPart(call.callId, call.toolName, ToolOutput.Text(refusal.message), isError = true))
+    private fun refused(call: ToolCallPart, refusal: ToolRefusal) = refused(call, refusal.message)
+
+    private fun refused(call: ToolCallPart, message: String) =
+        Execution(ToolResultPart(call.callId, call.toolName, ToolOutput.Text(message), isError = true))
+
+    /**
+     * The calls of the last answer of [messages] that have no result after it, which is how a run that paused leaves
+     * the conversation. Any other call without its result is a pair broken, which [ToolPairs] takes out.
+     */
+    private fun waitingIn(messages: List<Message>): List<ToolCallPart> {
+        val last = messages.indexOfLast { it is Message.Assistant }.takeIf { it >= 0 } ?: return emptyList()
+        val answered = messages.drop(last + 1).filterIsInstance<Message.Tool>().flatMap { it.results }.map { it.callId }
+
+        return (messages[last] as Message.Assistant).parts
+            .filterIsInstance<ToolCallPart>()
+            .filter { !it.providerExecuted && it.callId !in answered }
+    }
 
     private fun failed(call: ToolCallPart, error: Throwable, message: String, input: JsonObject? = null) = Execution(
         ToolResultPart(call.callId, call.toolName, ToolOutput.Text(message), isError = true),
@@ -611,5 +748,9 @@ class ToolLoop(
     companion object {
         const val DEFAULT_MAX_STEPS = 10
         const val GENERIC_FAILURE = "Tool execution failed"
+
+        /** What the model reads of a call a person did not approve, when the decision says nothing else. */
+        const val NOT_APPROVED = "This call was not approved, so it did not run. Do not call it again: tell the user " +
+            "it was not approved."
     }
 }

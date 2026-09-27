@@ -52,7 +52,7 @@ class DefaultAI(
     }
 
     override fun stream(request: GenerateRequest): RunStream {
-        val stream = loopFor(request).stream(request.toChatRequest(), request.callOptions)
+        val stream = loopFor(request).stream(request.toChatRequest(), request.callOptions, request.decisions.toList())
 
         return if (request.session == null && request.compaction == null) stream else KeptStream(stream, request)
     }
@@ -60,7 +60,8 @@ class DefaultAI(
     override fun models() = models
 
     private fun run(request: GenerateRequest, first: ChatRequest) =
-        request.compacted(loopFor(request).run(first, request.callOptions)).also(request::keep)
+        request.compacted(loopFor(request).run(first, request.callOptions, request.decisions.toList()))
+            .also(request::keep)
 
     private fun loopFor(request: GenerateRequest): ToolLoop {
         val model = request.model?.let { models.chat(it) } ?: models.chat()

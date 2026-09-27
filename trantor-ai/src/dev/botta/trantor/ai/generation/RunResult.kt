@@ -5,6 +5,7 @@ import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.models.cost.CostEstimate
 import dev.botta.trantor.ai.history.Compacted
 import dev.botta.trantor.ai.models.ModelWarning
+import dev.botta.trantor.ai.history.Session
 
 /**
  * What a run left: the answer, every step it took to get there and what it all cost.
@@ -22,6 +23,11 @@ data class RunResult(
     val compacted: Compacted? = null,
     /** Why the compaction it was asked for did not happen, when it failed. */
     val compactionWarnings: List<ModelWarning> = emptyList(),
+    /**
+     * The calls the conversation left waiting for approval, which the run answered with its decisions before it
+     * called the model. Null when it had none.
+     */
+    val resolved: ResolvedCalls? = null,
 ) {
     /** The response of the last step, the one that answered. */
     val response get() = steps.last().response
@@ -46,8 +52,21 @@ data class RunResult(
      * A step whose calls were not run — the one a run ran out of steps on — is left out, because a call without its
      * result is a request the providers reject. The step a run paused on is kept with its calls waiting for approval
      * and without their results, which the run that picks it up adds.
+     *
+     * A run that [resolved] calls starts with their results, which go right after the answer that made them: before
+     * the messages it was given, for an application that keeps the conversation itself. [Session] does it on its own.
      */
     val newMessages: List<Message>
+        get() = resolved?.let { listOf(Message.Tool(it.results)) }.orEmpty() + stepMessages
+
+    /**
+     * [kept], the conversation the run went on from as it is kept, and what the run added, in the order the providers
+     * take them: the results of the calls it [resolved] right after the answer that made them, though never before
+     * [from], where what cannot change ends, and then its steps.
+     */
+    internal fun keptAfter(kept: List<Message>, from: Int = 0) = (resolved?.into(kept, from) ?: kept) + stepMessages
+
+    private val stepMessages: List<Message>
         get() = steps.flatMap { step ->
             when {
                 step.pending.isNotEmpty() -> listOfNotNull(
@@ -62,12 +81,17 @@ data class RunResult(
         }
 
     /**
-     * The usage of every step, of the runs its tools made and of the call that compacted the conversation, added up.
-     * It keeps no raw usage, which belongs to a single call.
+     * The usage of every step, of the runs its tools made, those of the calls it resolved included, and of the call
+     * that compacted the conversation, added up. It keeps no raw usage, which belongs to a single call.
      */
     val usage: Usage
-        get() = steps.fold(compacted?.response?.usage ?: Usage.Unknown) { total, step ->
-            step.toolRuns.values.fold(total + step.response.usage) { sum, run -> sum + run.usage }
+        get() {
+            val first = resolved?.toolRuns?.values.orEmpty()
+                .fold(compacted?.response?.usage ?: Usage.Unknown) { sum, run -> sum + run.usage }
+
+            return steps.fold(first) { total, step ->
+                step.toolRuns.values.fold(total + step.response.usage) { sum, run -> sum + run.usage }
+            }
         }
 
     /**
@@ -81,15 +105,17 @@ data class RunResult(
                     step.toolRuns.values.map { it.estimatedCost ?: return null }
             }
             val compaction = compacted?.let { listOf(it.response.info.estimatedCost ?: return null) }.orEmpty()
+            val resolvedRuns = resolved?.toolRuns?.values.orEmpty().map { it.estimatedCost ?: return null }
 
-            return (costs + compaction).reduce(CostEstimate::plus)
+            return (resolvedRuns + costs + compaction).reduce(CostEstimate::plus)
         }
 
     /**
      * What each call to the model said, and what the run noticed on its own, step by step, and why the conversation
      * was not compacted if it was not.
      */
-    val warnings get() = steps.flatMap { it.response.warnings + it.warnings } + compactionWarnings
+    val warnings get() =
+        resolved?.warnings.orEmpty() + steps.flatMap { it.response.warnings + it.warnings } + compactionWarnings
 
-    val toolFailures get() = steps.flatMap { it.toolFailures }
+    val toolFailures get() = resolved?.failures.orEmpty() + steps.flatMap { it.toolFailures }
 }

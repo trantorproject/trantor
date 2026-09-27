@@ -104,7 +104,9 @@ class AgentRunner(
 
         run.beforeRun()
 
-        return AgentRunStream(run.loop.stream(ChatRequest(run.conversation), run.options.callOptions), run)
+        val stream = run.loop.stream(ChatRequest(run.conversation), run.options.callOptions, run.options.decisions)
+
+        return AgentRunStream(stream, run)
     }
 
     private fun start(
@@ -170,8 +172,17 @@ class AgentRunner(
         private var stretchAgent: Agent? = null
         private var stretchStart = 0
 
+        /** What its session holds, which the run goes on from. */
+        private val kept = options.session?.load().orEmpty()
+
         /** What the run starts from: what its session holds, and then what it was given. */
-        val conversation = options.session?.load().orEmpty() + given
+        val conversation = kept + given
+
+        /**
+         * What the conversation is once the run ended, in the order it is kept: the results of the calls it resolved
+         * right after the answer that made them, what it was given and what it added.
+         */
+        private fun conversationAfter(result: RunResult) = result.keptAfter(conversation, from = kept.size)
 
         /** The agent of each step so far, in order. */
         private val agents = mutableListOf<Agent>()
@@ -183,7 +194,7 @@ class AgentRunner(
 
         /** Runs the steps on the loop, and ends the span of the last agent with them. */
         fun steps(): RunResult = try {
-            loop.run(ChatRequest(conversation), options.callOptions).also { endStretch(it.steps) }
+            loop.run(ChatRequest(conversation), options.callOptions, options.decisions).also { endStretch(it.steps) }
         } catch (e: Throwable) {
             stretch?.fail(e)
             stretch = null
@@ -257,7 +268,7 @@ class AgentRunner(
             hooksOf(last).forEach { it.afterRun(contextOf(last, result.steps.size), result) }
 
             if (compacted != null) session?.replace(compacted.conversation)
-            else session?.append(given + result.newMessages)
+            else session?.append(conversationAfter(result.result).drop(kept.size))
         }
 
         /**
@@ -267,7 +278,7 @@ class AgentRunner(
         override fun compacted(result: AgentRunResult): AgentRunResult {
             val compaction = options.compaction ?: return result
             val compacted = current {
-                compaction.after(result.result, conversation + result.newMessages, options.callOptions)
+                compaction.after(result.result, conversationAfter(result.result), options.callOptions)
             }
 
             return if (compacted === result.result) result else resultOf(compacted)

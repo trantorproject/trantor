@@ -5,6 +5,7 @@ package dev.botta.trantor.ai
 import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.MaxStepsExceededError
+import dev.botta.trantor.ai.generation.Approve
 import dev.botta.trantor.ai.generation.RunEvent
 import dev.botta.trantor.ai.generation.ToolLoopApprovalTest.RefundTool
 import dev.botta.trantor.ai.generation.textDeltas
@@ -336,6 +337,46 @@ class DefaultAITest {
         }
 
         @Test
+        fun `a resumed generation keeps the results of the calls it answered before the new message`() {
+            model.answers(listOf(TextPart("Llega el jueves")))
+            val paused = earlier + question + Message.Assistant(listOf(refundCall))
+            val session = InMemorySession(paused)
+
+            ai.generate {
+                session(session)
+                user("Y cuando llega?")
+                tools(RefundTool(approvalOver = 100))
+                decisions(Approve("call_1"))
+            }
+
+            assertThat(session.load()).isEqualTo(
+                paused + Message.Tool(listOf(refunded)) + Message.user("Y cuando llega?") +
+                    Message.Assistant(listOf(TextPart("Llega el jueves"))),
+            )
+        }
+
+        @Test
+        fun `and compacts the conversation in that order`() {
+            model.usage = Usage(inputTokens = 900, outputTokens = 200)
+            model.answers(listOf(TextPart("Llega el jueves")))
+            val paused = earlier + question + Message.Assistant(listOf(refundCall))
+            val compactor = FakeCompactor()
+
+            ai.generate {
+                session(InMemorySession(paused))
+                user("Y cuando llega?")
+                tools(RefundTool(approvalOver = 100))
+                decisions(Approve("call_1"))
+                compaction(compactor, afterTokens = 1000)
+            }
+
+            assertThat(compactor.conversations.single()).isEqualTo(
+                paused + Message.Tool(listOf(refunded)) + Message.user("Y cuando llega?") +
+                    Message.Assistant(listOf(TextPart("Llega el jueves"))),
+            )
+        }
+
+        @Test
         fun `a generation that fails keeps nothing`() {
             model.answers(listOf(weatherCall))
             val session = InMemorySession(earlier)
@@ -411,6 +452,7 @@ class DefaultAITest {
     private val weather = WeatherTool()
     private val weatherCall = ToolCallPart("call_1", "getWeather", Json.obj("city" to "Bariloche"))
     private val refundCall = ToolCallPart("call_1", "refund", Json.obj("amount" to 500))
+    private val refunded = ToolResultPart("call_1", "refund", ToolOutput.Text("Devueltos 500"))
 
     @Serializable
     data class Weather(val city: String, val celsius: Int)

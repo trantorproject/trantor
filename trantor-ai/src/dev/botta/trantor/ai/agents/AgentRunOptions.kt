@@ -1,6 +1,7 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.trantor.ai.RunContext
+import dev.botta.trantor.ai.generation.Decision
 import dev.botta.trantor.ai.generation.MaxStepsExceededError
 import dev.botta.trantor.ai.generation.ToolLoop
 import dev.botta.trantor.ai.history.Compaction
@@ -29,6 +30,7 @@ class AgentRunOptions {
         private set
     var compaction: Compaction? = null
         private set
+    val decisions = mutableListOf<Decision>()
 
     /** How many agents that run as tools this run is inside of. Set by [AgentTool], and 0 otherwise. */
     internal var depth = 0
@@ -80,6 +82,15 @@ class AgentRunOptions {
      * [Compaction].
      */
     fun compaction(compactor: Compactor, afterTokens: Int) = apply { compaction = Compaction(compactor, afterTokens) }
+
+    /**
+     * What a person decided about the calls the conversation left waiting for approval, when a run paused on them.
+     * The run answers them before it calls the model: the approved ones run with the agent the run starts with, the
+     * others are answered as not approved, and so is any call that got no decision. A decision about a call that is
+     * not waiting fails the run with [dev.botta.trantor.ai.errors.NoPendingCallError] before anything happens. See
+     * [Decision].
+     */
+    fun decisions(vararg decisions: Decision) = apply { this.decisions.addAll(decisions) }
 
     /** Timeout, cancellation and headers, which apply to every call of the run. */
     fun callOptions(options: CallOptions) = apply { callOptions = options }

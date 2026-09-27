@@ -156,6 +156,7 @@ class ToolLoopApprovalTest {
 
         val askedFor = mutableListOf<Int>()
         val refunded = mutableListOf<Int>()
+        var failWith: Exception? = null
 
         override fun needsApproval(args: Args, context: ToolContext): Boolean {
             askedFor.add(args.amount)
@@ -163,6 +164,7 @@ class ToolLoopApprovalTest {
         }
 
         override fun execute(args: Args, context: ToolContext): ToolResult {
+            failWith?.let { throw it }
             refunded.add(args.amount)
             return ToolResult.text("Devueltos ${args.amount}")
         }
