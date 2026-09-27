@@ -1,0 +1,12 @@
+event: message
+data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"p1","progress":1,"total":3}}
+
+event: message
+data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"p1","progress":2,"total":3}}
+
+event: message
+data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"p1","progress":3,"total":3}}
+
+event: message
+data: {"result":{"content":[{"type":"text","text":"Counted to 3."}],"resultType":"complete","_meta":{"io.modelcontextprotocol/serverInfo":{"name":"trantor-tester","version":"1.0.0"}}},"jsonrpc":"2.0","id":1}
+

@@ -1,0 +1,20 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Cannot divide by zero."
+      }
+    ],
+    "isError": true,
+    "resultType": "complete",
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "trantor-tester",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}

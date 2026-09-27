@@ -1,0 +1,34 @@
+{
+  "result": {
+    "tools": [
+      {
+        "name": "alpha",
+        "description": "The letter alpha",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "bravo",
+        "description": "The letter bravo",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      }
+    ],
+    "nextCursor": "2",
+    "resultType": "complete",
+    "ttlMs": 0,
+    "cacheScope": "private",
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "trantor-tester-paged",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}

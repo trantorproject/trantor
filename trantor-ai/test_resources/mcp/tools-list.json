@@ -1,0 +1,111 @@
+{
+  "result": {
+    "tools": [
+      {
+        "name": "get_weather",
+        "title": "Weather",
+        "description": "The current weather of a city, in celsius",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "The city and country"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      },
+      {
+        "name": "count",
+        "description": "Counts up to a number, telling the progress on the way",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "to": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          "required": [
+            "to"
+          ]
+        }
+      },
+      {
+        "name": "divide",
+        "description": "Divides a by b",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "a": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ]
+        },
+        "outputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "result": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "result"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "deploy",
+        "description": "Deploys to an environment, once a person confirms it",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "env": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "env"
+          ]
+        }
+      },
+      {
+        "name": "clima_en_ñuñoa",
+        "description": "A tool whose name is not plain ASCII, for the Mcp-Name header",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {}
+        }
+      }
+    ],
+    "resultType": "complete",
+    "ttlMs": 0,
+    "cacheScope": "private",
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "trantor-tester",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}

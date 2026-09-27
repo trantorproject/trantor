@@ -20,12 +20,16 @@ class FakeHttpClient(
 
     /** Every request, in order: a tool loop makes one per step. */
     val requests = mutableListOf<HttpRequest>()
-    private val queued = ArrayDeque<String>()
+    private val queued = ArrayDeque<Answer>()
 
     val requestBody get() = request?.body as String?
 
     /** The bodies of the next calls, one each and in order. Once they run out, [body] answers. */
-    fun answers(vararg bodies: String) = apply { queued.addAll(bodies) }
+    fun answers(vararg bodies: String) = apply { queued.addAll(bodies.map { Answer(it) }) }
+
+    /** The next call answers with its own status and content type, like a server that streams some answers. */
+    fun answer(body: String, status: Int? = null, contentType: String = "application/json") =
+        apply { queued.add(Answer(body, status, contentType)) }
 
     override fun stream(method: HttpMethods, request: HttpRequest, options: StreamOptions): HttpStreamResponse {
         this.method = method
@@ -35,7 +39,7 @@ class FakeHttpClient(
 
         error?.let { throw it }
 
-        return FakeStreamResponse(queued.removeFirstOrNull() ?: body)
+        return FakeStreamResponse(queued.removeFirstOrNull() ?: Answer(body))
     }
 
     override fun get(request: HttpRequest) = notUsed()
@@ -50,17 +54,19 @@ class FakeHttpClient(
 
     private fun notUsed(): HttpResponse = throw UnsupportedOperationException("Not used by these tests")
 
-    private inner class FakeStreamResponse(private val answer: String): HttpStreamResponse {
-        override val status = this@FakeHttpClient.status
-        override val contentType = "application/json"
+    private class Answer(val body: String, val status: Int? = null, val contentType: String = "application/json")
+
+    private inner class FakeStreamResponse(private val answer: Answer): HttpStreamResponse {
+        override val status = answer.status ?: this@FakeHttpClient.status
+        override val contentType = answer.contentType
         override val headers = responseHeaders
 
-        override fun lines() = answer.lineSequence()
+        override fun lines() = answer.body.lineSequence()
 
         override fun body(): String {
             whileReading()
 
-            return answer
+            return answer.body
         }
 
         override fun cancel() {

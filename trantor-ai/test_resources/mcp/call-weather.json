@@ -1,0 +1,19 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "It is 18 degrees and sunny in Rosario, Argentina."
+      }
+    ],
+    "resultType": "complete",
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "trantor-tester",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}

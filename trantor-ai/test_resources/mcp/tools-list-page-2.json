@@ -1,0 +1,34 @@
+{
+  "result": {
+    "tools": [
+      {
+        "name": "charlie",
+        "description": "The letter charlie",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "delta",
+        "description": "The letter delta",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      }
+    ],
+    "nextCursor": "4",
+    "resultType": "complete",
+    "ttlMs": 0,
+    "cacheScope": "private",
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "trantor-tester-paged",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}

@@ -1,0 +1,33 @@
+{
+  "result": {
+    "resultType": "input_required",
+    "inputRequests": {
+      "confirm": {
+        "method": "elicitation/create",
+        "params": {
+          "message": "Deploy to production?",
+          "requestedSchema": {
+            "type": "object",
+            "properties": {
+              "confirm": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "confirm"
+            ]
+          },
+          "mode": "form"
+        }
+      }
+    },
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "trantor-tester",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}
