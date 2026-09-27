@@ -1192,12 +1192,34 @@ the one of the root span is the whole.
 The conventions have no span for a guardrail yet. `run_guardrail` follows the proposal in
 [pull request 427](https://github.com/open-telemetry/semantic-conventions-genai/pull/427), not merged, with its
 base attributes: what it looked at (`input` or `output`, and `llm` or `tool_call` with the id of the call), its
-verdict (`allow` or `deny`), what the run did (`allow` or `block`) and the reason of a `Trip` or a `Reject`. The
-reason is written by the application and goes to the traces, so it should not carry data of the user.
+verdict (`allow`, `deny`, or `escalate` for one that asked for approval), what the run did (`allow` or `block`) and
+the reason of a `Trip`, a `Reject` or an `AskForApproval`. The reason is written by the application and goes to the
+traces, so it should not carry data of the user.
 
 A trip is what a guardrail is for, so its span does not fail: the run it stopped does, with
 `GuardrailTrippedError`. A guardrail that throws is what failed. A guardrail that calls a model has the spans of
 that call inside its own.
+
+### Approvals
+
+A run that pauses for approval ends its spans well: waiting for a person is not a failure. What the trace shows:
+
+- **A call a tool guardrail asked approval for** has its `run_guardrail` span, with `escalate` and the reason.
+- **A call its tool asked approval for**, and one rejected when the run is picked up, have no span of their own,
+  since they never ran. They are in the result of the run (`pending`, `resolved`) and in the conversation.
+- **An approved call** runs in the run that picks the conversation up, which is a trace of its own, in an
+  `execute_tool` span. The id of the call ties the two traces together wherever both have it: the `run_guardrail`
+  of one and the `execute_tool` of the other, or what was said when it is [captured](#what-was-said).
+
+**Not traced yet, until the conventions have it.** A decision about a call before it runs (`require_approval`,
+`allow`, `deny`) is proposed as the event `gen_ai.tool.call.decision` in
+[pull request 535](https://github.com/open-telemetry/semantic-conventions-genai/pull/535), and the pause and the
+resumption of an agent as `gen_ai.agent.paused` and `gen_ai.agent.resumed` in
+[pull request 445](https://github.com/open-telemetry/semantic-conventions-genai/pull/445). Neither is merged, and
+the second needs an id of the run kept across the pause, which nobody has yet. Both are events, which OpenTelemetry
+now writes as logs tied to the span and not as span events, whose API it
+[deprecated in March 2026](https://opentelemetry.io/blog/2026/deprecating-span-events/); trantor-opentelemetry
+exports no logs yet. They come with the conventions.
 
 ### Streams and tools at the same time
 
