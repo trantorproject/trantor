@@ -2,9 +2,12 @@
 
 package dev.botta.trantor.config
 
+import dev.botta.env.EnvVar
 import dev.botta.json.Json
+import dev.botta.trantor.config.providers.EnvironmentVariablesConfigProvider
 import dev.botta.trantor.config.providers.addMemoryCollection
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.*
 
 class ConfigManagerTest {
@@ -403,6 +406,109 @@ class ConfigManagerTest {
                     "key2" to "value2",
                 )
             ))
+        }
+    }
+
+    @Nested
+    inner class `interpolation` {
+        @Test
+        fun `a reference takes the value of another key`() {
+            config.addMemoryCollection("db.host" to "localhost", "db.url" to "jdbc:postgresql://\${db.host}/app")
+
+            assertThat(config["db.url"]).isEqualTo("jdbc:postgresql://localhost/app")
+        }
+
+        @Test
+        fun `a reference to a variable of the environment takes it by its name`() {
+            config.addMemoryCollection("mcp.authorization" to "Bearer \${GITHUB_TOKEN}")
+            config.add(EnvironmentVariablesConfigProvider { listOf(EnvVar("GITHUB_TOKEN", "ghp_123")) })
+
+            assertThat(config["mcp.authorization"]).isEqualTo("Bearer ghp_123")
+        }
+
+        @Test
+        fun `a key that is not there, or is null, becomes empty`() {
+            config.addMemoryCollection("nothing" to null, "a" to "[\${missing}]", "b" to "[\${nothing}]")
+
+            assertThat(config["a"]).isEqualTo("[]")
+            assertThat(config["b"]).isEqualTo("[]")
+        }
+
+        @Test
+        fun `a key that is not there takes the default after the colon`() {
+            config.addMemoryCollection("db.host" to "\${DB_HOST:localhost}")
+
+            assertThat(config["db.host"]).isEqualTo("localhost")
+        }
+
+        @Test
+        fun `the default is taken as it is, colons and all`() {
+            config.addMemoryCollection("dir" to "\${DATA_DIR:C:\\data:backup}")
+
+            assertThat(config["dir"]).isEqualTo("C:\\data:backup")
+        }
+
+        @Test
+        fun `several references with text around them`() {
+            config.addMemoryCollection("user" to "nico", "host" to "db", "url" to "\${user}@\${host}:\${port:5432}/app")
+
+            assertThat(config["url"]).isEqualTo("nico@db:5432/app")
+        }
+
+        @Test
+        fun `a referenced value with references of its own is resolved too`() {
+            config.addMemoryCollection(
+                "db.host" to "\${DB_HOST:localhost}",
+                "db.url" to "jdbc:postgresql://\${db.host}/app",
+                "jdbc.url" to "\${db.url}",
+            )
+
+            assertThat(config["jdbc.url"]).isEqualTo("jdbc:postgresql://localhost/app")
+        }
+
+        @Test
+        fun `the value a later provider gives is the one a reference takes`() {
+            config.addMemoryCollection("db.host" to "localhost", "db.url" to "jdbc:postgresql://\${db.host}/app")
+            config.addMemoryCollection("db.host" to "db.production")
+
+            assertThat(config["db.url"]).isEqualTo("jdbc:postgresql://db.production/app")
+        }
+
+        @Test
+        fun `a cycle fails naming the keys`() {
+            config.addMemoryCollection("a" to "\${b}", "b" to "x\${c}", "c" to "\${a}")
+
+            assertThatThrownBy { config["a"] }
+                .isInstanceOf(ConfigInterpolationError::class.java)
+                .hasMessageContaining("a -> b -> c -> a")
+        }
+
+        @Test
+        fun `a double dollar is a literal reference`() {
+            config.addMemoryCollection("host" to "db", "template" to "\$\${host} is \${host}")
+
+            assertThat(config["template"]).isEqualTo("\${host} is db")
+        }
+
+        @Test
+        fun `an unclosed reference is left as it is`() {
+            config.addMemoryCollection("host" to "db", "broken" to "\${host is \${host")
+
+            assertThat(config["broken"]).isEqualTo("\${host is \${host")
+        }
+
+        @Test
+        fun `a section and its json get the values resolved, so settings classes do`() {
+            config.addMemoryCollection(
+                "token" to "ghp_123",
+                "mcp.servers.github.url" to "https://api.githubcopilot.com/mcp/",
+                "mcp.servers.github.headers.Authorization" to "Bearer \${token}",
+            )
+
+            val json = config.getSection("mcp").toJson()
+
+            assertThat(json.path("servers.github.headers.Authorization")?.asString()).isEqualTo("Bearer ghp_123")
+            assertThat(config.getSection("mcp.servers.github.headers")["Authorization"]).isEqualTo("Bearer ghp_123")
         }
     }
 

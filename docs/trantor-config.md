@@ -50,6 +50,41 @@ Implications:
 - `has(path)` is true if any provider contains the path.
 - `required(path)` throws `RequiredConfigError` if final value is missing.
 
+The value found is then [interpolated](#interpolation): its references to other keys are resolved.
+
+---
+
+## Interpolation
+
+A value can refer to other keys of the same configuration, and they are resolved when it is read:
+
+```json
+{
+  "db": { "host": "${DB_HOST:localhost}", "url": "jdbc:postgresql://${db.host}/app" },
+  "ai": { "mcp": { "servers": { "github": {
+    "url": "https://api.githubcopilot.com/mcp/",
+    "headers": { "Authorization": "Bearer ${GITHUB_TOKEN}" }
+  } } } }
+}
+```
+
+- `${path}` is the value of that key, whatever its case, like any other lookup.
+- A variable of the environment is a key under its own name (see the
+  [environment provider](#environment-variables-provider)), so `${GITHUB_TOKEN}` reads it. That is how a secret
+  stays out of a file that is checked in, and also how it reaches what the environment provider cannot name: a
+  header like `Authorization` or `X-Api-Key`, or a variable of the environment of a process, whose names a path of
+  the provider would turn into camel case.
+- `${path:default}` is the default when the key is not there or is `null`. It is taken as it is from the first colon
+  on, so `${DATA_DIR:C:\data}` works; a default has no references of its own.
+- A key that is not there and has no default is **empty**.
+- The value of a reference is resolved too, so `db.url` above ends up with the host of the environment or
+  `localhost`. A chain that comes back to where it started (`a -> b -> a`) fails with `ConfigInterpolationError`,
+  naming it: none of those keys has a value.
+- `$${` is a literal `${`, and a `${` without its `}` is left as it is.
+- It happens on every read, including `getSection(...).toJson()`, so a settings class registered with `addConfig`
+  gets the values resolved. Being resolved when read, a reference takes what the providers say then: an environment
+  variable that overrides `db.host` changes `db.url` too.
+
 ---
 
 ## Case Sensitivity
@@ -209,12 +244,15 @@ Since the last provider wins, add providers from lowest to highest priority.
 - `required(path)` throws `RequiredConfigError("Missing required config <path>")`.
 - Missing sections do not throw; they return empty section views.
 - Missing JSON/properties resources do not throw in built-in resource providers.
+- A reference to a key that is not there reads as empty; a chain of references that comes back to where it started
+  throws `ConfigInterpolationError`.
 
 ---
 
 ## Agent-Oriented Rules
 
 - Always assume config values are strings unless converted by consuming code.
+- Keep secrets out of checked-in files with a reference to the environment: `"Bearer ${GITHUB_TOKEN}"`.
 - Use provider order intentionally; override behavior depends only on add order.
 - Use `getSection(...).toJson()` when you need structured payloads from flattened keys.
 - For arrays represented in config, preserve `__config_type__ = "array"` markers.

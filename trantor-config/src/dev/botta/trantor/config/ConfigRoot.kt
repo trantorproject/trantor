@@ -15,14 +15,21 @@ class ConfigRoot(providers: List<ConfigProvider> = listOf()): Config {
         providers.add(provider)
     }
 
-    override fun get(path: String): String? {
-        for(provider in providers.reversed()) {
-           if (provider.has(path)) {
-               return provider.get(path)
-           }
+    /**
+     * The value of the last provider that has [path], with its references to other keys resolved: see
+     * [ConfigInterpolation].
+     */
+    override fun get(path: String) = get(path, emptyList())
+
+    private fun get(path: String, resolving: List<String>): String? {
+        if (resolving.any { it.equals(path, ignoreCase = true) }) {
+            throw ConfigInterpolationError(
+                "The configuration refers to itself, so it has no value: ${(resolving + path).joinToString(" -> ")}",
+            )
         }
 
-        return null
+        val value = providers.lastOrNull { it.has(path) }?.get(path) ?: return null
+        return ConfigInterpolation.resolve(value) { get(it, resolving + path) }
     }
 
     override fun has(path: String) = providers.any { it.has(path) }
