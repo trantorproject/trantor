@@ -7,6 +7,8 @@ dependencies {
     api(project(":trantor-domain"))
     api(project(":trantor-web-client"))
     api(project(":trantor-di"))
+    // To end the processes of the MCP servers with the application
+    implementation(project(":trantor-hosting"))
     api("org.jetbrains.kotlinx:kotlinx-serialization-json")
     api("org.jetbrains.kotlinx:kotlinx-schema-generator-json")
 }

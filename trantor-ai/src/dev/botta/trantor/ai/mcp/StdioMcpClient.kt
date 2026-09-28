@@ -27,10 +27,10 @@ import kotlin.time.Duration.Companion.seconds
  */
 internal class StdioMcpClient(
     override val name: String,
-    private val command: List<String>,
-    private val env: Map<String, String> = emptyMap(),
-    private val workingDirectory: File? = null,
-    private val requestTimeout: Duration = DEFAULT_REQUEST_TIMEOUT,
+    internal val command: List<String>,
+    internal val env: Map<String, String> = emptyMap(),
+    internal val workingDirectory: File? = null,
+    internal val requestTimeout: Duration = DEFAULT_REQUEST_TIMEOUT,
     private val probeTimeout: Duration = DEFAULT_PROBE_TIMEOUT,
     private val launcher: McpProcessLauncher = SystemProcesses,
 ): BaseMcpClient() {
