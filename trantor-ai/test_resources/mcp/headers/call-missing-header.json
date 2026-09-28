@@ -1,0 +1,14 @@
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32020,
+    "message": "Bad Request: the request headers and body disagree: the body carries region=\"eu-west-1\" but the Mcp-Param-Region header is absent",
+    "data": {
+      "mismatch": {
+        "header": "Mcp-Param-Region",
+        "body": "the body carries region=\"eu-west-1\" but the Mcp-Param-Region header is absent"
+      }
+    }
+  },
+  "id": 2
+}

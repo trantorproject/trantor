@@ -7,7 +7,7 @@ import dev.botta.trantor.web.client.HttpMethods
 import dev.botta.trantor.web.client.HttpRequest
 import dev.botta.trantor.web.client.HttpStreamResponse
 import dev.botta.trantor.web.client.sse.sseEvents
-import java.util.Base64
+import dev.botta.trantor.primitives.logging.getLogger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -28,9 +28,61 @@ internal class HttpMcpClient(
     private val ids = AtomicLong()
     private val lock = Any()
 
+    /**
+     * Which arguments of each tool of a server of 2026-07-28 go in `Mcp-Param-*` headers, from the last listing;
+     * null until one.
+     */
+    @Volatile
+    private var declarations: Map<String, List<McpParamHeaders.Declaration>>? = null
+
     /** What the server speaks, once a request told; until then, null. */
     @Volatile
     private var revision: Revision? = null
+
+    /**
+     * Calls the tool with the headers its schema asks for, as the last listing said. When the server says they do
+     * not match, the tool was not listed or changed since, so it is listed again and called once more, as the spec
+     * says: the server turned the call down before running it. Listing before every call would cost a request each
+     * time for what is rare.
+     */
+    override fun callTool(name: String, arguments: JsonObject): McpToolResult {
+        return try {
+            super.callTool(name, arguments)
+        } catch (e: McpError) {
+            if (e.code != McpMessages.HEADER_MISMATCH) throw e
+
+            listTools()
+            super.callTool(name, arguments)
+        }
+    }
+
+    /**
+     * A server of 2026-07-28 may mark arguments to go in headers too, and a tool whose marks break the rules of the
+     * spec is left out, as the spec asks of a client over HTTP, with a warning that says why.
+     */
+    override fun listed(tools: List<McpToolDefinition>): List<McpToolDefinition> {
+        if (revision != Revision.Current) {
+            declarations = emptyMap()
+            return tools
+        }
+
+        val valid = mutableListOf<McpToolDefinition>()
+        val found = mutableMapOf<String, List<McpParamHeaders.Declaration>>()
+
+        for (tool in tools) {
+            when (val scan = McpParamHeaders.scan(tool.inputSchema)) {
+                is McpParamHeaders.Scan.Valid -> {
+                    valid.add(tool)
+                    found[tool.name] = scan.declarations
+                }
+                is McpParamHeaders.Scan.Invalid ->
+                    logger.warn("Leaving out the tool ${tool.name} of the MCP server $name: ${scan.reason}")
+            }
+        }
+
+        declarations = found
+        return valid
+    }
 
     /** Ends the session of a server of before, if it gave one. The server may not allow it, and that is fine. */
     override fun close() {
@@ -153,7 +205,11 @@ internal class HttpMcpClient(
         // The body says the same: the spec mirrors it in headers so that a gateway can route without reading it
         put("MCP-Protocol-Version", McpMessages.PROTOCOL_VERSION)
         put("Mcp-Method", request.method)
-        request.name?.let { put("Mcp-Name", headerValue(it)) }
+        request.name?.let { put("Mcp-Name", McpParamHeaders.encode(it)) }
+        if (request.method == "tools/call") {
+            val declarations = request.name?.let { this@HttpMcpClient.declarations?.get(it) }.orEmpty()
+            putAll(McpParamHeaders.of(declarations, request.params["arguments"]?.asObject() ?: JsonObject()))
+        }
     }
 
     private fun headersOf(earlier: Revision.Earlier) = buildMap {
@@ -168,19 +224,6 @@ internal class HttpMcpClient(
         put("Accept", "application/json, text/event-stream")
     }
 
-    /**
-     * A value as a header can carry it: as it is when it is plain ASCII, and in base64 otherwise, in the form the
-     * spec defines. That covers a name with other letters, and one with a line break that would add a header.
-     */
-    private fun headerValue(value: String): String {
-        val looksEncoded = value.startsWith(BASE64_PREFIX) && value.endsWith(BASE64_SUFFIX)
-        val plain = value.all { it in ' '..'~' } && value.trim() == value && !looksEncoded
-
-        if (plain) return value
-
-        return BASE64_PREFIX + Base64.getEncoder().encodeToString(value.toByteArray()) + BASE64_SUFFIX
-    }
-
     private sealed interface Revision {
         /** 2026-07-28: no handshake and no session. */
         data object Current: Revision
@@ -190,10 +233,10 @@ internal class HttpMcpClient(
     }
 
     private companion object {
-        const val BASE64_PREFIX = "=?base64?"
-        const val BASE64_SUFFIX = "?="
         const val SESSION_HEADER = "Mcp-Session-Id"
 
         val LOST_SESSION = setOf(400, 404)
+
+        private val logger = getLogger<HttpMcpClient>()
     }
 }

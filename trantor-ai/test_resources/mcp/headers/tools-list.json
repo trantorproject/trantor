@@ -1,0 +1,216 @@
+{
+  "result": {
+    "tools": [
+      {
+        "name": "get_weather",
+        "title": "Weather",
+        "description": "The current weather of a city, in celsius",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "The city and country"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      },
+      {
+        "name": "count",
+        "description": "Counts up to a number, telling the progress on the way",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "to": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          "required": [
+            "to"
+          ]
+        }
+      },
+      {
+        "name": "divide",
+        "description": "Divides a by b",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "a": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ]
+        },
+        "outputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "result": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "result"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "deploy",
+        "description": "Deploys to an environment, once a person confirms it",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "env": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "env"
+          ]
+        }
+      },
+      {
+        "name": "ping_client",
+        "description": "Pings the client before answering, which only a 2025-era connection allows",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {}
+        }
+      },
+      {
+        "name": "run_query",
+        "description": "Runs a query in a region",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "region": {
+              "type": "string",
+              "x-mcp-header": "Region"
+            },
+            "limit": {
+              "type": "integer",
+              "x-mcp-header": "Limit"
+            },
+            "dry_run": {
+              "type": "boolean",
+              "x-mcp-header": "Dry-Run"
+            },
+            "options": {
+              "type": "object",
+              "properties": {
+                "zone": {
+                  "type": "string",
+                  "x-mcp-header": "Zone"
+                }
+              }
+            },
+            "query": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "region",
+            "query"
+          ]
+        }
+      },
+      {
+        "name": "header_on_a_number",
+        "description": "A tool with a header the spec does not allow",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "number",
+              "x-mcp-header": "Amount"
+            }
+          }
+        }
+      },
+      {
+        "name": "header_under_items",
+        "description": "A tool with a header the spec does not allow",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "x-mcp-header": "Id"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "header_twice",
+        "description": "A tool with a header the spec does not allow",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "region": {
+              "type": "string",
+              "x-mcp-header": "Region"
+            },
+            "zone": {
+              "type": "string",
+              "x-mcp-header": "REGION"
+            }
+          }
+        }
+      },
+      {
+        "name": "header_with_a_space",
+        "description": "A tool with a header the spec does not allow",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "region": {
+              "type": "string",
+              "x-mcp-header": "The Region"
+            }
+          }
+        }
+      },
+      {
+        "name": "clima_en_ñuñoa",
+        "description": "A tool whose name is not plain ASCII, for the Mcp-Name header",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {}
+        }
+      }
+    ],
+    "resultType": "complete",
+    "ttlMs": 0,
+    "cacheScope": "private",
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "trantor-tester",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}

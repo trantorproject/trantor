@@ -17,13 +17,16 @@ internal abstract class BaseMcpClient: McpClient {
             cursor = result["nextCursor"]?.asString()
         } while (cursor != null)
 
-        return tools
+        return listed(tools)
     }
 
     override fun callTool(name: String, arguments: JsonObject): McpToolResult {
         val params = Json.obj("name" to name, "arguments" to arguments)
         return McpMessages.toolResultOf(send(McpRequest("tools/call", params, name)))
     }
+
+    /** The tools of a whole listing, as the transport takes them, which may leave some out. */
+    protected open fun listed(tools: List<McpToolDefinition>) = tools
 
     /** Sends [request] in the revision the server speaks, and gives back the result of its answer. */
     protected abstract fun send(request: McpRequest): JsonObject

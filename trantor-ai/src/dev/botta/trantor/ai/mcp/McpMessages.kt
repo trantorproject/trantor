@@ -16,11 +16,14 @@ internal object McpMessages {
 
     private const val UNSUPPORTED_PROTOCOL_VERSION = -32022
 
+    /** The headers of a request over HTTP do not match its body. */
+    const val HEADER_MISMATCH = -32020
+
     /**
      * HeaderMismatch, MissingRequiredClientCapability and UnsupportedProtocolVersion: errors of 2026-07-28 that a
      * server of before does not answer, so one of them says the server speaks the new revision.
      */
-    val CURRENT_ERRORS = setOf(-32020, -32021, UNSUPPORTED_PROTOCOL_VERSION)
+    val CURRENT_ERRORS = setOf(HEADER_MISMATCH, -32021, UNSUPPORTED_PROTOCOL_VERSION)
 
     /** A request of the 2026-07-28 revision, which says in its `_meta` who asks and on which version. */
     fun request(id: Long, method: String, params: JsonObject = JsonObject()) = Json.obj(
