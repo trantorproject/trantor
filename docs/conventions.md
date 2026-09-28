@@ -162,11 +162,9 @@ for, what it costs, what it does in the case that would surprise them.
 
 ```kotlin
 /**
- * Ties an http call to a [Cancellation] for as long as the call lasts.
- *
- * It listens before the call is made, because opening it blocks until the provider answers and that wait
- * has to be cancellable too. When the call is over it stops listening, so that a token reused for many
- * calls does not end up holding a callback for each one.
+ * A call that remembers whether it was cancelled on purpose. OkHttp cancels it too when its total timeout
+ * runs out, so [Call.isCanceled] cannot tell a cut stream, which ends, from one that took too long, which
+ * fails.
  */
 ```
 

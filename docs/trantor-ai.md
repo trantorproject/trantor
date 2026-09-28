@@ -1585,7 +1585,12 @@ val cancellation = Cancellation()
 models.chat().generate(request, CallOptions(cancellation = cancellation))
 ```
 
-Cancelling closes the connection. Because the transport reports that as an end of data rather than an
-error, what was read is checked afterwards: half an answer is a `CancelledError`, never an answer. The
-listener is registered before the call is opened, since that wait is itself cancellable, and removed when
-the call ends, so a token reused across calls does not accumulate callbacks.
+`Cancellation` lives in `trantor-primitives` (`dev.botta.trantor.primitives.Cancellation`), since the http
+client takes it too; `throwIfCancelled()`, which fails with `CancelledError`, is an extension of this module.
+
+The cancellation goes to the http client with the call, which cuts it at any point: while it waits for the
+answer, which is the whole call when the answer is not streamed, or while it is read. A call cut while it
+waits fails as `CancelledError`, not as a provider error. One cut while it is read ends as if the provider
+had stopped writing, so what was read is checked afterwards: half an answer is a `CancelledError`, never an
+answer. The client stops listening when the call ends, so a token reused across calls does not accumulate
+callbacks.

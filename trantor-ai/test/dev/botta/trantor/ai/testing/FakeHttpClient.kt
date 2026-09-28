@@ -12,6 +12,9 @@ class FakeHttpClient(
     /** Runs while the body is being read, to try what happens in the middle of a call. */
     var whileReading: () -> Unit = {}
 
+    /** Runs while the call waits for the headers, which is all of it when the server answers at once. */
+    var whileOpening: () -> Unit = {}
+
     var method: HttpMethods? = null
 
     /** The method of every request, in the order of [requests]. */
@@ -47,7 +50,15 @@ class FakeHttpClient(
 
         error?.let { throw it }
 
-        return FakeStreamResponse(nextAnswer())
+        // As the client of Trantor: it listens to the cancellation from before it opens the call until it is closed
+        val cancellation = options.cancellation?.onCancel { wasCancelled = true }
+        whileOpening()
+        if (options.cancellation?.isCancelled == true) {
+            cancellation?.close()
+            throw HttpClientError("Canceled")
+        }
+
+        return FakeStreamResponse(nextAnswer(), cancellation)
     }
 
     override fun delete(request: HttpRequest): HttpResponse {
@@ -82,7 +93,10 @@ class FakeHttpClient(
         val headers: Map<String, String>? = null,
     )
 
-    private inner class FakeStreamResponse(private val answer: Answer): HttpStreamResponse {
+    private inner class FakeStreamResponse(
+        private val answer: Answer,
+        private val cancellation: AutoCloseable?,
+    ): HttpStreamResponse {
         override val status = answer.status ?: this@FakeHttpClient.status
         override val contentType = answer.contentType
         override val headers = headersOf(answer)
@@ -104,6 +118,7 @@ class FakeHttpClient(
         }
 
         override fun close() {
+            cancellation?.close()
             wasClosed = true
         }
     }

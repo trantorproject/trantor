@@ -3,7 +3,8 @@ package dev.botta.trantor.ai.mcp
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.json.values.JsonValue
-import dev.botta.trantor.ai.Cancellation
+import dev.botta.trantor.ai.throwIfCancelled
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.primitives.logging.getLogger
 import io.opentelemetry.api.OpenTelemetry

@@ -1,10 +1,8 @@
 @file:Suppress("ClassName")
 
-package dev.botta.trantor.ai
+package dev.botta.trantor.primitives
 
-import dev.botta.trantor.ai.errors.CancelledError
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 class CancellationTest {
@@ -65,18 +63,6 @@ class CancellationTest {
         cancellation.onCancel { calls++ }
 
         assertThat(calls).isEqualTo(1)
-    }
-
-    @Test
-    fun `throws when cancelled`() {
-        cancellation.cancel()
-
-        assertThatThrownBy { cancellation.throwIfCancelled() }.isInstanceOf(CancelledError::class.java)
-    }
-
-    @Test
-    fun `does not throw when not cancelled`() {
-        cancellation.throwIfCancelled()
     }
 
     private val cancellation = Cancellation()

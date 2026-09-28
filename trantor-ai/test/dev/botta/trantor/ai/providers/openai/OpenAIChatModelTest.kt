@@ -6,7 +6,7 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.errors.*
 import dev.botta.trantor.ai.models.CallOptions
-import dev.botta.trantor.ai.Cancellation
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpMethods
@@ -384,6 +384,17 @@ class OpenAIChatModelTest {
         // Half a body is not an answer, and it is not a parsing error either
         assertThat(thrown).isInstanceOf(CancelledError::class.java)
         assertThat(httpClient.wasCancelled).isTrue()
+    }
+
+    @Test
+    fun `cancelling while it waits for the answer cuts the call and ends it as cancelled`() {
+        val cancellation = Cancellation()
+        httpClient.whileOpening = { cancellation.cancel() }
+
+        assertThatThrownBy {
+            model.generate(ChatRequest(Message.user("Hola")), CallOptions(cancellation = cancellation))
+        }.isInstanceOf(CancelledError::class.java)
+        assertThat(httpClient.options?.cancellation).isSameAs(cancellation)
     }
 
     @Test

@@ -2,6 +2,7 @@
 
 package dev.botta.trantor.web.client.okhttp
 
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpMethods
 import dev.botta.trantor.web.client.HttpRequest
@@ -11,6 +12,7 @@ import mockwebserver3.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -99,6 +101,58 @@ class OkHttpHttpClientStreamTest {
 
         assertThat(lines).hasSizeLessThan(3)
         assertThat(elapsedMs).isLessThan(2_000)
+    }
+
+    @Nested
+    inner class `a cancellation` {
+        @Test
+        fun `stops the wait for the headers, which is all the call when the server answers at once`() {
+            server.enqueue(MockResponse.Builder().code(200).body(EVENTS).headersDelay(5, TimeUnit.SECONDS).build())
+            val cancellation = Cancellation()
+            thread {
+                Thread.sleep(300)
+                cancellation.cancel()
+            }
+
+            val startedAt = System.nanoTime()
+            val thrown = runCatching {
+                client.stream(HttpMethods.Get, HttpRequest(url("/events")), StreamOptions(cancellation = cancellation))
+            }.exceptionOrNull()
+            val elapsedMs = (System.nanoTime() - startedAt) / 1_000_000
+
+            assertThat(thrown).isInstanceOf(HttpClientError::class.java)
+            assertThat(elapsedMs).isLessThan(2_000)
+        }
+
+        @Test
+        fun `that was already cancelled does not send the request`() {
+            val cancellation = Cancellation().apply { cancel() }
+
+            assertThatThrownBy {
+                client.stream(HttpMethods.Get, HttpRequest(url("/events")), StreamOptions(cancellation = cancellation))
+            }.isInstanceOf(HttpClientError::class.java)
+            assertThat(server.requestCount).isZero()
+        }
+
+        @Test
+        fun `while the body is read ends the lines, as cancel does`() {
+            server.enqueue(
+                MockResponse.Builder().code(200).body(EVENTS).throttleBody(1, 300, TimeUnit.MILLISECONDS).build(),
+            )
+            val cancellation = Cancellation()
+
+            val options = StreamOptions(cancellation = cancellation)
+            val lines = mutableListOf<String>()
+            val elapsedMs = measureTimeMillis {
+                client.stream(HttpMethods.Get, HttpRequest(url("/events")), options).use {
+                    thread { cancellation.cancel() }
+                    it.lines().forEach { line -> lines.add(line) }
+                }
+            }
+
+            assertThat(lines).hasSizeLessThan(3)
+            assertThat(elapsedMs).isLessThan(2_000)
+        }
     }
 
     @Test

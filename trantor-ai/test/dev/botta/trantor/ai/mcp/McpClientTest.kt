@@ -3,7 +3,7 @@
 package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.Cancellation
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.testing.FakeHttpClient
@@ -240,6 +240,17 @@ class McpClientTest {
                 client.callTool("get_weather", Json.obj("city" to "Rosario"), CallOptions(cancellation = cancellation))
             }.isInstanceOf(CancelledError::class.java)
             assertThat(httpClient.wasCancelled).isTrue()
+        }
+
+        @Test
+        fun `a run cancelled while it waits for the answer cuts the call and fails as cancelled`() {
+            val cancellation = Cancellation()
+            httpClient.whileOpening = { cancellation.cancel() }
+
+            assertThatThrownBy {
+                client.callTool("get_weather", Json.obj("city" to "Rosario"), CallOptions(cancellation = cancellation))
+            }.isInstanceOf(CancelledError::class.java)
+            assertThat(httpClient.options?.cancellation).isSameAs(cancellation)
         }
 
         @Test

@@ -3,6 +3,9 @@
 package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
+import dev.botta.trantor.ai.errors.CancelledError
+import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.errors.AuthenticationError
 import dev.botta.trantor.ai.errors.ProviderError
@@ -137,6 +140,28 @@ class OpenAIChatModelStreamTest {
 
         assertThat(httpClient.wasCancelled).isTrue()
         assertThat(httpClient.wasClosed).isTrue()
+    }
+
+    @Test
+    fun `cancelling while it is read ends the stream as cancelled, not with half an answer`() {
+        httpClient.body = fixture("stream-text.txt")
+        val cancellation = Cancellation()
+        httpClient.whileReading = { cancellation.cancel() }
+
+        val stream = model.stream(ChatRequest(Message.user("Hola")), CallOptions(cancellation = cancellation))
+
+        assertThatThrownBy { stream.use { it.response() } }.isInstanceOf(CancelledError::class.java)
+        assertThat(httpClient.wasCancelled).isTrue()
+    }
+
+    @Test
+    fun `cancelling while it waits for the answer cuts the call and ends it as cancelled`() {
+        val cancellation = Cancellation()
+        httpClient.whileOpening = { cancellation.cancel() }
+
+        assertThatThrownBy { model.stream(ChatRequest(Message.user("Hola")), CallOptions(cancellation = cancellation)) }
+            .isInstanceOf(CancelledError::class.java)
+        assertThat(httpClient.options?.cancellation).isSameAs(cancellation)
     }
 
     private fun sentBody() = Json.parse(httpClient.requestBody!!).asObject()!!

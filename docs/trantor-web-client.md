@@ -85,3 +85,21 @@ http.stream(HttpMethods.Post, HttpRequest(url, body), StreamOptions(readTimeout 
 A stream is not bounded by `requestTimeout`: it ends when the server goes silent for longer than
 `StreamOptions.readTimeout` (the `idleTimeout` of the client if not given), or when `totalTimeout` runs out.
 `cancel()` stops it from another thread.
+
+`stream` blocks until the headers arrive, which for a server that answers all at once is the whole call, and
+there is no response yet to call `cancel()` on. A `Cancellation` (from `trantor-primitives`) in the options
+stops the call at any point:
+
+```kotlin
+val cancellation = Cancellation()
+
+http.stream(HttpMethods.Post, HttpRequest(url, body), StreamOptions(cancellation = cancellation)).use { ... }
+
+// from another thread
+cancellation.cancel()
+```
+
+A call cut while it waits fails with `HttpClientError`; one cut while its body is read ends where it was cut,
+as `cancel()` ends it, so the caller checks its cancellation before taking what it read as the whole body. The
+client listens from before it opens the call until the response is closed, so one token can be reused for
+many calls.

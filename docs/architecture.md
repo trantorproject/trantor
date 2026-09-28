@@ -229,6 +229,7 @@ Includes:
 - Logging utilities
 - Kotlin extensions
 - Serialization helpers
+- `Cancellation`, the token that stops work running on another thread, like an http call
 
 ---
 

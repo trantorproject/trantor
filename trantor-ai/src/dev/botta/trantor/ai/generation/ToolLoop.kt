@@ -8,6 +8,7 @@ import dev.botta.trantor.ai.errors.NoPendingCallError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.throwIfCancelled
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.ai.telemetry.AITelemetrySettings

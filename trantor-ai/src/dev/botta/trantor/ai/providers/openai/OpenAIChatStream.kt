@@ -3,10 +3,11 @@ package dev.botta.trantor.ai.providers.openai
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.errors.ProviderError
-import dev.botta.trantor.ai.models.CancellationLink
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.throwIfCancelled
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.web.client.HttpStreamResponse
 import dev.botta.trantor.web.client.sse.sseEvents
 import kotlin.time.TimeSource
@@ -23,7 +24,7 @@ internal class OpenAIChatStream(
     private val startedAt: TimeSource.Monotonic.ValueTimeMark,
     private val warnings: List<ModelWarning>,
     private val mapper: OpenAIResponseMapper,
-    private val link: CancellationLink,
+    private val cancellation: Cancellation?,
 ): ChatStream {
     private val events = response.sseEvents().iterator()
     private val pending = ArrayDeque<StreamPart>()
@@ -34,7 +35,7 @@ internal class OpenAIChatStream(
 
     override fun hasNext(): Boolean {
         fill()
-        link.throwIfCancelled()
+        cancellation?.throwIfCancelled()
 
         return pending.isNotEmpty()
     }
@@ -47,7 +48,7 @@ internal class OpenAIChatStream(
     override fun response(): ChatResponse {
         while (hasNext()) next()
 
-        link.throwIfCancelled()
+        cancellation?.throwIfCancelled()
 
         finalResponse?.let { return mapper.map(it, modelId, startedAt.elapsedNow(), warnings) }
 
@@ -58,7 +59,6 @@ internal class OpenAIChatStream(
         closed = true
         response.cancel()
         response.close()
-        link.close()
     }
 
     private fun fill() {

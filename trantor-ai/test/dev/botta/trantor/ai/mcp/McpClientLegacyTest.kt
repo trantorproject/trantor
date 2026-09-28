@@ -3,7 +3,7 @@
 package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.Cancellation
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.testing.FakeHttpClient
@@ -144,6 +144,25 @@ class McpClientLegacyTest {
             assertThat(cancelled["method"]?.asString()).isEqualTo("notifications/cancelled")
             assertThat(cancelled.path("params.requestId")).isEqualTo(call["id"])
             assertThat(httpClient.request?.headers).containsEntry("Mcp-Session-Id", SESSION)
+        }
+
+        @Test
+        fun `is told as well of a request cancelled while it waits for the answer`() {
+            val cancellation = Cancellation()
+            everythingOpens()
+            streamed("everything-tools-list.txt", SESSION)
+            client.listTools()
+            httpClient.answer("", status = 202, contentType = "")
+            httpClient.whileOpening = { cancellation.cancel() }
+
+            assertThatThrownBy {
+                client.callTool("echo", Json.obj("message" to "hola"), CallOptions(cancellation = cancellation))
+            }.isInstanceOf(CancelledError::class.java)
+
+            val call = sentBodies().last { it["method"]?.asString() == "tools/call" }
+            val cancelled = sentBodies().last()
+            assertThat(cancelled["method"]?.asString()).isEqualTo("notifications/cancelled")
+            assertThat(cancelled.path("params.requestId")).isEqualTo(call["id"])
         }
 
         @Test

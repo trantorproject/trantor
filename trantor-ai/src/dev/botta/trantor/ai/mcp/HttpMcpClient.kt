@@ -4,7 +4,7 @@ import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
-import dev.botta.trantor.ai.models.CancellationLink
+import dev.botta.trantor.ai.throwIfCancelled
 import dev.botta.trantor.web.client.StreamOptions
 import java.io.InterruptedIOException
 import io.opentelemetry.api.OpenTelemetry
@@ -211,37 +211,40 @@ internal class HttpMcpClient(
         options.cancellation?.throwIfCancelled()
 
         val timeout = options.timeout ?: requestTimeout
-        val streamOptions = StreamOptions(totalTimeout = timeout.inWholeMilliseconds.toInt())
+        val cancellation = options.cancellation
+        val streamOptions = StreamOptions(
+            totalTimeout = timeout.inWholeMilliseconds.toInt(),
+            cancellation = cancellation,
+        )
         val httpRequest = HttpRequest(url, body.toString(), headers)
 
-        return CancellationLink(options.cancellation).use { link ->
-            val response = try {
-                link.attach(httpClient.stream(HttpMethods.Post, httpRequest, streamOptions))
+        val response = try {
+            httpClient.stream(HttpMethods.Post, httpRequest, streamOptions)
+        } catch (e: Exception) {
+            // A call cut while it waits for the answer fails on its way, which says nothing of the server
+            cancellation?.throwIfCancelled()
+            throw unreachable(e, what, timeout)
+        } catch (e: HttpClientError) {
+            // Not an Exception: what the client of Trantor throws when the call fails on the way
+            cancellation?.throwIfCancelled()
+            throw unreachable(e, what, timeout)
+        }
+
+        return response.use {
+            try {
+                read(it).also { cancellation?.throwIfCancelled() }
             } catch (e: CancelledError) {
                 throw e
+            } catch (e: McpError) {
+                // A cancelled stream ends as if the server stopped writing, which says nothing of the server
+                cancellation?.throwIfCancelled()
+                throw e
             } catch (e: Exception) {
+                cancellation?.throwIfCancelled()
                 throw unreachable(e, what, timeout)
             } catch (e: HttpClientError) {
-                // Not an Exception: what the client of Trantor throws when the call fails on the way
+                cancellation?.throwIfCancelled()
                 throw unreachable(e, what, timeout)
-            }
-
-            response.use {
-                try {
-                    read(it).also { link.throwIfCancelled() }
-                } catch (e: CancelledError) {
-                    throw e
-                } catch (e: McpError) {
-                    // A cancelled stream ends as if the server stopped writing, which says nothing of the server
-                    link.throwIfCancelled()
-                    throw e
-                } catch (e: Exception) {
-                    link.throwIfCancelled()
-                    throw unreachable(e, what, timeout)
-                } catch (e: HttpClientError) {
-                    link.throwIfCancelled()
-                    throw unreachable(e, what, timeout)
-                }
             }
         }
     }

@@ -4,7 +4,7 @@ package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
-import dev.botta.trantor.ai.Cancellation
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.testing.TestTelemetry

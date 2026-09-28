@@ -3,11 +3,12 @@ package dev.botta.trantor.ai.providers.anthropic
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.errors.ProviderError
-import dev.botta.trantor.ai.models.CancellationLink
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.ChatResponse
 import dev.botta.trantor.ai.models.chat.ChatStream
 import dev.botta.trantor.ai.models.chat.StreamPart
+import dev.botta.trantor.ai.throwIfCancelled
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.web.client.HttpStreamResponse
 import dev.botta.trantor.web.client.sse.sseEvents
 import kotlin.time.TimeSource
@@ -29,7 +30,7 @@ internal class AnthropicChatStream(
     private val startedAt: TimeSource.Monotonic.ValueTimeMark,
     private val warnings: List<ModelWarning>,
     private val mapper: AnthropicResponseMapper,
-    private val link: CancellationLink,
+    private val cancellation: Cancellation?,
 ): ChatStream {
     private val events = response.sseEvents().iterator()
     private val pending = ArrayDeque<StreamPart>()
@@ -40,7 +41,7 @@ internal class AnthropicChatStream(
 
     override fun hasNext(): Boolean {
         fill()
-        link.throwIfCancelled()
+        cancellation?.throwIfCancelled()
 
         return pending.isNotEmpty()
     }
@@ -54,7 +55,7 @@ internal class AnthropicChatStream(
     override fun response(): ChatResponse {
         while (hasNext()) next()
 
-        link.throwIfCancelled()
+        cancellation?.throwIfCancelled()
 
         return mapper.map(assembled(), modelId, startedAt.elapsedNow(), warnings + cutShort())
     }
@@ -63,7 +64,6 @@ internal class AnthropicChatStream(
         closed = true
         response.cancel()
         response.close()
-        link.close()
     }
 
     private fun fill() {

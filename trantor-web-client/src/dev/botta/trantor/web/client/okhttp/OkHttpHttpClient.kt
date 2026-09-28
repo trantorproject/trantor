@@ -43,16 +43,23 @@ class OkHttpHttpClient(
 
     override fun stream(method: HttpMethods, request: HttpRequest, options: StreamOptions): HttpStreamResponse {
         val okRequest = buildRequest(method.value, request)
-        val call = streamClient(options).newCall(okRequest)
+        val call = StreamCall(streamClient(options).newCall(okRequest))
+        // Before execute, which blocks until the headers arrive: OkHttp cuts a call from another thread even then
+        val cancellation = options.cancellation?.onCancel { call.cancel() }
 
         try {
             val response = call.execute()
 
             logger.info("${method.value} ${request.url} Response: ${response.code} (stream)")
 
-            return OkHttpHttpStreamResponse(call, response)
+            return OkHttpHttpStreamResponse(call, response, cancellation)
         } catch (e: Throwable) {
-            logger.error("${method.value} ${request.url}", e)
+            cancellation?.close()
+            if (call.cancelled) {
+                logger.info("${method.value} ${request.url} cancelled")
+            } else {
+                logger.error("${method.value} ${request.url}", e)
+            }
             call.cancel()
             throw HttpClientError(e.message, e)
         }

@@ -3,9 +3,9 @@ package dev.botta.trantor.ai.providers.anthropic
 import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.AuthenticationError
 import dev.botta.trantor.ai.models.CallOptions
-import dev.botta.trantor.ai.models.CancellationLink
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.throwIfCancelled
 import dev.botta.trantor.web.client.*
 import dev.botta.trantor.ai.providers.defaultHttpClient
 import kotlin.time.TimeSource
@@ -37,21 +37,21 @@ class AnthropicChatModel(
         val startedAt = TimeSource.Monotonic.markNow()
 
         try {
-            CancellationLink(options.cancellation).use { link ->
-                call(mapped, options, link).use { response ->
-                    val body = response.body()
+            call(mapped, options).use { response ->
+                val body = response.body()
 
-                    // Cancelling closes the connection, so what came back is half a body and not an answer
-                    link.throwIfCancelled()
+                // Cancelling closes the connection, so what came back is half a body and not an answer
+                options.cancellation?.throwIfCancelled()
 
-                    if (response.status != 200) throw errorMapper.toError(response, body)
+                if (response.status != 200) throw errorMapper.toError(response, body)
 
-                    val json = Json.parse(body).asObject() ?: throw errorMapper.toError(response, body)
+                val json = Json.parse(body).asObject() ?: throw errorMapper.toError(response, body)
 
-                    return responseMapper.map(json, modelId, startedAt.elapsedNow(), mapped.warnings)
-                }
+                return responseMapper.map(json, modelId, startedAt.elapsedNow(), mapped.warnings)
             }
         } catch (e: Throwable) {
+            // A call cut while it waits for the answer fails on its way, which was not the fault of the provider
+            options.cancellation?.throwIfCancelled()
             throw errorMapper.toError(e)
         }
     }
@@ -61,35 +61,34 @@ class AnthropicChatModel(
 
         val mapped = requestMapper.map(modelId, request, stream = true)
         val startedAt = TimeSource.Monotonic.markNow()
-        // The link lives as long as the stream, and the stream closes it
-        val link = CancellationLink(options.cancellation)
 
         val response = try {
-            call(mapped, options, link)
+            call(mapped, options)
         } catch (e: Throwable) {
-            link.close()
+            options.cancellation?.throwIfCancelled()
             throw errorMapper.toError(e)
         }
 
         if (response.status != 200) {
             val body = response.use { it.body() }
-            link.close()
+            options.cancellation?.throwIfCancelled()
             throw errorMapper.toError(response, body)
         }
 
         val responseMapper = AnthropicResponseMapper(mapped.stamp)
 
-        return AnthropicChatStream(modelId, response, startedAt, mapped.warnings, responseMapper, link)
+        return AnthropicChatStream(modelId, response, startedAt, mapped.warnings, responseMapper, options.cancellation)
     }
 
-    private fun call(mapped: MappedRequest, options: CallOptions, link: CancellationLink): HttpStreamResponse {
+    private fun call(mapped: MappedRequest, options: CallOptions): HttpStreamResponse {
         val httpRequest = HttpRequest("${config.baseUrl}/messages", mapped.body.toString(), headers(mapped, options))
         val streamOptions = StreamOptions(
             readTimeout = config.readTimeout,
             totalTimeout = options.timeout?.inWholeMilliseconds?.toInt(),
+            cancellation = options.cancellation,
         )
 
-        return link.attach(httpClient.stream(HttpMethods.Post, httpRequest, streamOptions))
+        return httpClient.stream(HttpMethods.Post, httpRequest, streamOptions)
     }
 
     private fun headers(mapped: MappedRequest, options: CallOptions) = buildMap {

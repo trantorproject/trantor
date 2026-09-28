@@ -30,7 +30,7 @@ which is the canonical example.
 
 | Module | What lives here |
 |---|---|
-| `trantor-primitives` | The bottom of the stack: logging, small Kotlin extensions, event and serialization abstractions. Depends on nothing of Trantor. |
+| `trantor-primitives` | The bottom of the stack: logging, small Kotlin extensions, event and serialization abstractions, the cancellation token. Depends on nothing of Trantor. |
 | `trantor-di` | The service container: `ServiceRegistry`, `ServiceProvider`, lifetimes, value resolvers. |
 | `trantor-config` | Stacked configuration providers, sections, case-insensitive paths. |
 | `trantor-hosting` | `Host`, `HostBuilder`, `HostedService`, `Module`. Application lifecycle. |
