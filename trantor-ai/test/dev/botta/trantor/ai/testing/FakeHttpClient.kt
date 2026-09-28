@@ -13,6 +13,9 @@ class FakeHttpClient(
     var whileReading: () -> Unit = {}
 
     var method: HttpMethods? = null
+
+    /** The method of every request, in the order of [requests]. */
+    val methods = mutableListOf<HttpMethods>()
     var request: HttpRequest? = null
     var options: StreamOptions? = null
     var wasCancelled = false
@@ -27,20 +30,40 @@ class FakeHttpClient(
     /** The bodies of the next calls, one each and in order. Once they run out, [body] answers. */
     fun answers(vararg bodies: String) = apply { queued.addAll(bodies.map { Answer(it) }) }
 
-    /** The next call answers with its own status and content type, like a server that streams some answers. */
-    fun answer(body: String, status: Int? = null, contentType: String = "application/json") =
-        apply { queued.add(Answer(body, status, contentType)) }
+    /** The next call answers with its own status, content type and headers, like a server that streams some. */
+    fun answer(
+        body: String,
+        status: Int? = null,
+        contentType: String = "application/json",
+        headers: Map<String, String>? = null,
+    ) = apply { queued.add(Answer(body, status, contentType, headers)) }
 
     override fun stream(method: HttpMethods, request: HttpRequest, options: StreamOptions): HttpStreamResponse {
         this.method = method
         this.request = request
         this.options = options
         requests.add(request)
+        methods.add(method)
 
         error?.let { throw it }
 
-        return FakeStreamResponse(queued.removeFirstOrNull() ?: Answer(body))
+        return FakeStreamResponse(nextAnswer())
     }
+
+    override fun delete(request: HttpRequest): HttpResponse {
+        method = HttpMethods.Delete
+        this.request = request
+        requests.add(request)
+        methods.add(HttpMethods.Delete)
+
+        val answer = nextAnswer()
+        val bytes = answer.body.toByteArray()
+        return HttpResponse(answer.status ?: status, bytes, answer.contentType, headers = headersOf(answer))
+    }
+
+    private fun nextAnswer() = queued.removeFirstOrNull() ?: Answer(body)
+
+    private fun headersOf(answer: Answer) = answer.headers ?: responseHeaders
 
     override fun get(request: HttpRequest) = notUsed()
 
@@ -50,16 +73,19 @@ class FakeHttpClient(
 
     override fun patch(request: HttpRequest) = notUsed()
 
-    override fun delete(request: HttpRequest) = notUsed()
-
     private fun notUsed(): HttpResponse = throw UnsupportedOperationException("Not used by these tests")
 
-    private class Answer(val body: String, val status: Int? = null, val contentType: String = "application/json")
+    private class Answer(
+        val body: String,
+        val status: Int? = null,
+        val contentType: String = "application/json",
+        val headers: Map<String, String>? = null,
+    )
 
     private inner class FakeStreamResponse(private val answer: Answer): HttpStreamResponse {
         override val status = answer.status ?: this@FakeHttpClient.status
         override val contentType = answer.contentType
-        override val headers = responseHeaders
+        override val headers = headersOf(answer)
 
         override fun lines() = answer.body.lineSequence()
 

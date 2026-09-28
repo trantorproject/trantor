@@ -11,6 +11,11 @@ import dev.botta.trantor.primitives.TrantorBuildInfo
 internal object McpMessages {
     const val PROTOCOL_VERSION = "2026-07-28"
 
+    /** The last revision with the handshake, which a server of before agrees to or answers with its own. */
+    const val EARLIER_PROTOCOL_VERSION = "2025-11-25"
+
+    private const val UNSUPPORTED_PROTOCOL_VERSION = -32022
+
     /** A request of the 2026-07-28 revision, which says in its `_meta` who asks and on which version. */
     fun request(id: Long, method: String, params: JsonObject = JsonObject()) = Json.obj(
         "jsonrpc" to "2.0",
@@ -18,6 +23,23 @@ internal object McpMessages {
         "method" to method,
         "params" to JsonObject(params.toList()).with("_meta", meta()),
     )
+
+    /** A request of a revision before 2026-07-28, which says nothing of who asks: the handshake did. */
+    fun earlierRequest(id: Long, method: String, params: JsonObject = JsonObject()) =
+        Json.obj("jsonrpc" to "2.0", "id" to id, "method" to method, "params" to params)
+
+    /** The handshake of the revisions before 2026-07-28, offering no capabilities. */
+    fun initialize(id: Long): JsonObject {
+        val params = Json.obj(
+            "protocolVersion" to EARLIER_PROTOCOL_VERSION,
+            "capabilities" to Json.obj(),
+            "clientInfo" to clientInfo(),
+        )
+
+        return earlierRequest(id, "initialize", params)
+    }
+
+    fun notification(method: String) = Json.obj("jsonrpc" to "2.0", "method" to method)
 
     /**
      * The result of the answer to [request], or the error it carries. [what] names the request in the errors, like
@@ -42,12 +64,20 @@ internal object McpMessages {
         return result
     }
 
-    fun errorOf(error: JsonObject, what: String, status: Int? = null) = McpError(
-        error["message"]?.asString() ?: "The MCP server failed to answer $what",
-        code = error["code"]?.asInt(),
-        status = status,
-        data = error["data"],
-    )
+    fun errorOf(error: JsonObject, what: String, status: Int? = null): McpError {
+        val code = error["code"]?.asInt()
+        val message = error["message"]?.asString() ?: "The MCP server failed to answer $what"
+        val supported = error["data"]?.asObject()?.get("supported")?.asArray()?.mapNotNull { it.asString() }
+
+        // Its own message names the version it was asked for; which ones it takes is what says what to do
+        val told = if (code == UNSUPPORTED_PROTOCOL_VERSION && supported != null) {
+            "The MCP server supports ${supported.joinToString()}, and this client speaks $PROTOCOL_VERSION: $message"
+        } else {
+            message
+        }
+
+        return McpError(told, code, status, error["data"])
+    }
 
     fun toolOf(tool: JsonObject) = McpToolDefinition(
         name = tool["name"]?.asString() ?: throw McpError("The MCP server listed a tool without a name: $tool"),
@@ -74,7 +104,9 @@ internal object McpMessages {
 
     private fun meta() = Json.obj(
         "io.modelcontextprotocol/protocolVersion" to PROTOCOL_VERSION,
-        "io.modelcontextprotocol/clientInfo" to Json.obj("name" to "trantor-ai", "version" to TrantorBuildInfo.version),
+        "io.modelcontextprotocol/clientInfo" to clientInfo(),
         "io.modelcontextprotocol/clientCapabilities" to Json.obj(),
     )
+
+    private fun clientInfo() = Json.obj("name" to "trantor-ai", "version" to TrantorBuildInfo.version)
 }

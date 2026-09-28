@@ -1,0 +1,7 @@
+id: 20996950-27d2-4bc0-9912-de9a855e75e4
+data: 
+
+event: message
+id: 958f7ca7-9950-4a83-9271-97c8b12f20a8
+data: {"result":{"content":[{"type":"text","text":"Echo: hola"}]},"jsonrpc":"2.0","id":4}
+

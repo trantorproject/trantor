@@ -7,9 +7,10 @@ import dev.botta.trantor.web.client.HttpClient
 /**
  * A connection to one MCP server, to list the tools it offers and call them.
  *
- * It speaks the 2026-07-28 revision of the protocol, where every request stands on its own: there is no handshake
- * and no session to open or close. It declares no capabilities of its own, so a server does not ask it for input,
- * a completion of a model or its roots.
+ * It speaks the 2026-07-28 revision of the protocol, where every request stands on its own, and the revisions before
+ * it, which most servers still speak: with one of those it opens a session with their handshake on the first request,
+ * and opens it again if the server loses it. [close] ends that session. It declares no capabilities of its own, so a
+ * server does not ask it for input, a completion of a model or its roots.
  *
  * ```kotlin
  * val github = McpClient.http("https://api.githubcopilot.com/mcp/", mapOf("Authorization" to "Bearer $token"))
@@ -20,7 +21,7 @@ import dev.botta.trantor.web.client.HttpClient
  *
  * Listing is a call to the server, so it happens when it is asked for and not when the client is created.
  */
-interface McpClient {
+interface McpClient: AutoCloseable {
     /** Every tool of the server, following its pages until the last one. */
     fun listTools(): List<McpToolDefinition>
 

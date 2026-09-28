@@ -1,0 +1,7 @@
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32000,
+    "message": "Bad Request: No valid session ID provided"
+  }
+}

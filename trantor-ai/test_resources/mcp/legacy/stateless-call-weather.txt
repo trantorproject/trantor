@@ -1,0 +1,3 @@
+event: message
+data: {"result":{"content":[{"type":"text","text":"It is 18 degrees and sunny in Rosario."}]},"jsonrpc":"2.0","id":3}
+
