@@ -4,6 +4,7 @@ package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.config.ConfigManager
 import dev.botta.trantor.config.providers.addMemoryCollection
@@ -155,9 +156,9 @@ class McpServiceRegistryExtensionsTest {
     private class FakeClient(override val name: String): McpClient {
         var closed = false
 
-        override fun listTools() = emptyList<McpToolDefinition>()
+        override fun listTools(options: CallOptions) = emptyList<McpToolDefinition>()
 
-        override fun callTool(name: String, arguments: JsonObject) = McpToolResult(emptyList())
+        override fun callTool(name: String, arguments: JsonObject, options: CallOptions) = McpToolResult(emptyList())
 
         override fun close() {
             closed = true

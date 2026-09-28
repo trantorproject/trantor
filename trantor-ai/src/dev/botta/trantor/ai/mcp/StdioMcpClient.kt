@@ -3,7 +3,10 @@ package dev.botta.trantor.ai.mcp
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.json.values.JsonValue
+import dev.botta.trantor.ai.Cancellation
+import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.primitives.logging.getLogger
+import io.opentelemetry.api.OpenTelemetry
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.CompletableFuture
@@ -13,7 +16,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -30,12 +32,15 @@ internal class StdioMcpClient(
     internal val command: List<String>,
     internal val env: Map<String, String> = emptyMap(),
     internal val workingDirectory: File? = null,
-    internal val requestTimeout: Duration = DEFAULT_REQUEST_TIMEOUT,
+    internal val requestTimeout: Duration = McpClient.DEFAULT_REQUEST_TIMEOUT,
     private val probeTimeout: Duration = DEFAULT_PROBE_TIMEOUT,
     private val launcher: McpProcessLauncher = SystemProcesses,
+    openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
 ): BaseMcpClient() {
     private val ids = AtomicLong()
     private val lock = Any()
+
+    override val telemetry = McpTelemetry(openTelemetry, "pipe")
 
     @Volatile
     private var connection: Connection? = null
@@ -93,14 +98,22 @@ internal class StdioMcpClient(
             }
         }
 
+        /**
+         * Sends [request] and waits for its answer, as long as the shorter of the timeouts of the run and of the
+         * client. When it does not come, or the run is cancelled, the server is told to stop the request.
+         */
         fun send(request: McpRequest): JsonObject {
             val id = ids.incrementAndGet()
+            val trace = telemetry.context()
             val message = when (val revision = revision) {
-                Revision.Current -> McpMessages.request(id, request.method, request.params)
-                is Revision.Earlier -> McpMessages.earlierRequest(id, request.method, request.params)
+                Revision.Current -> McpMessages.request(id, request.method, request.params, trace)
+                is Revision.Earlier -> McpMessages.earlierRequest(id, request.method, request.params, trace)
             }
-            val answer = exchange(id, message, requestTimeout, cancel = true)
-                ?: throw McpError("The MCP server $name did not answer ${request.what} in $requestTimeout")
+            val timeout = listOfNotNull(request.options.timeout, requestTimeout).min()
+            telemetry.sent(id, revision.version)
+
+            val answer = exchange(id, message, timeout, cancel = true, request.options.cancellation)
+                ?: throw McpError("The MCP server $name did not answer ${request.what} in $timeout")
 
             return McpMessages.resultOf(answer, request.what)
         }
@@ -121,33 +134,49 @@ internal class StdioMcpClient(
          * picks, or does not answer at all, so anything but an error of the new revision means the handshake of
          * before; the spec asks not to tell by the code.
          */
-        private fun discover(): Revision {
+        private fun discover() = telemetry.request(McpRequest("server/discover", JsonObject())) {
             val id = ids.incrementAndGet()
+            telemetry.sent(id, McpMessages.PROTOCOL_VERSION)
+
             // Not cancelled when it gets no answer: a server of before does not know the request
-            val answer = exchange(id, McpMessages.request(id, "server/discover"), probeTimeout, cancel = false)
+            val message = McpMessages.request(id, "server/discover", trace = telemetry.context())
+            val answer = exchange(id, message, probeTimeout, cancel = false)
             val error = answer?.get("error")?.asObject()
 
-            if (answer != null && error == null) return Revision.Current
-            if (error != null && error["code"]?.asInt() in McpMessages.CURRENT_ERRORS) {
-                throw McpMessages.errorOf(error, "server/discover")
+            when {
+                answer != null && error == null -> Revision.Current
+                error != null && error["code"]?.asInt() in McpMessages.CURRENT_ERRORS ->
+                    throw McpMessages.errorOf(error, "server/discover")
+                else -> null
             }
+        } ?: handshake()
 
-            return handshake()
-        }
-
-        private fun handshake(): Revision.Earlier {
+        private fun handshake() = telemetry.request(McpRequest("initialize", JsonObject())) {
             val id = ids.incrementAndGet()
+            telemetry.sent(id, McpMessages.EARLIER_PROTOCOL_VERSION)
+
             val answer = exchange(id, McpMessages.initialize(id), requestTimeout, cancel = true)
                 ?: throw McpError("The MCP server $name did not answer initialize in $requestTimeout")
             val result = McpMessages.resultOf(answer, "initialize")
 
             write(McpMessages.notification("notifications/initialized"))
 
-            return Revision.Earlier(result["protocolVersion"]?.asString() ?: McpMessages.EARLIER_PROTOCOL_VERSION)
+            Revision.Earlier(result["protocolVersion"]?.asString() ?: McpMessages.EARLIER_PROTOCOL_VERSION)
         }
 
-        /** Sends [message] and waits for its answer, or null when it does not come in [timeout]. */
-        private fun exchange(id: Long, message: JsonObject, timeout: Duration, cancel: Boolean): JsonObject? {
+        /**
+         * Sends [message] and waits for its answer, or null when it does not come in [timeout]. A [cancellation] of
+         * the run stops the wait with [CancelledError], and either way the server is told, when [cancel] says so.
+         */
+        private fun exchange(
+            id: Long,
+            message: JsonObject,
+            timeout: Duration,
+            cancel: Boolean,
+            cancellation: Cancellation? = null,
+        ): JsonObject? {
+            cancellation?.throwIfCancelled()
+
             val answer = CompletableFuture<JsonObject>()
             waiting[id] = answer
             // It may have ended before the request was waiting, and then nothing would answer it
@@ -158,15 +187,23 @@ internal class StdioMcpClient(
 
             write(message)
 
-            return try {
-                answer.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-            } catch (e: TimeoutException) {
-                waiting.remove(id)
-                if (cancel) runCatching { write(cancelled(id)) }
-                null
-            } catch (e: ExecutionException) {
-                throw e.cause ?: e
+            return cancellation?.onCancel { answer.completeExceptionally(CancelledError()) }.use {
+                try {
+                    answer.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+                } catch (e: TimeoutException) {
+                    stop(id, "No answer in $timeout", cancel)
+                    null
+                } catch (e: ExecutionException) {
+                    val cause = e.cause ?: e
+                    if (cause is CancelledError) stop(id, "Cancelled by the client", cancel)
+                    throw cause
+                }
             }
+        }
+
+        private fun stop(id: Long, reason: String, tell: Boolean) {
+            waiting.remove(id)
+            if (tell) runCatching { write(McpMessages.cancelled(id, reason)) }
         }
 
         private fun write(message: JsonObject) {
@@ -238,16 +275,16 @@ internal class StdioMcpClient(
             runCatching { write(answer) }
         }
 
-        private fun cancelled(id: Long) = McpMessages.notification("notifications/cancelled").with(
-            "params",
-            Json.obj("requestId" to id, "reason" to "No answer in time"),
-        )
     }
 
     private sealed interface Revision {
-        data object Current: Revision
+        val version: String
 
-        class Earlier(val version: String): Revision
+        data object Current: Revision {
+            override val version = McpMessages.PROTOCOL_VERSION
+        }
+
+        class Earlier(override val version: String): Revision
     }
 
     /**
@@ -267,7 +304,6 @@ internal class StdioMcpClient(
     }
 
     companion object {
-        val DEFAULT_REQUEST_TIMEOUT = 2.minutes
         private val DEFAULT_PROBE_TIMEOUT = 10.seconds
 
         /** How long it waits for a process to end, once asked and once told. */

@@ -2,6 +2,7 @@ package dev.botta.trantor.ai.mcp
 
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.web.client.HttpClient
+import io.opentelemetry.api.OpenTelemetry
 import java.io.File
 import kotlin.time.Duration.Companion.seconds
 
@@ -54,24 +55,31 @@ class McpClients {
     }
 
     /** Adds a client for each server of [settings], its HTTP ones calling through [httpClient]. */
-    internal fun addAll(settings: McpSettings, httpClient: HttpClient) = apply {
-        settings.servers.forEach { (name, server) -> add(clientOf(name, server, httpClient)) }
+    internal fun addAll(settings: McpSettings, httpClient: HttpClient, openTelemetry: OpenTelemetry) = apply {
+        settings.servers.forEach { (name, server) -> add(clientOf(name, server, httpClient, openTelemetry)) }
     }
 
-    private fun clientOf(name: String, server: McpServerSettings, httpClient: HttpClient): McpClient {
+    private fun clientOf(
+        name: String,
+        server: McpServerSettings,
+        httpClient: HttpClient,
+        openTelemetry: OpenTelemetry,
+    ): McpClient {
         val url = server.url
         val command = server.command.orEmpty()
+        val timeout = server.requestTimeoutSeconds?.seconds ?: McpClient.DEFAULT_REQUEST_TIMEOUT
 
         return when {
             url != null && command.isNotEmpty() ->
                 throw McpError("The MCP server $name has both a url and a command: it is one or the other")
-            url != null -> McpClient.http(name, url, server.headers, httpClient)
+            url != null -> McpClient.http(name, url, server.headers, httpClient, timeout, openTelemetry)
             command.isNotEmpty() -> McpClient.stdio(
                 name,
                 command,
                 server.env,
                 server.workingDirectory?.let(::File),
-                server.requestTimeoutSeconds?.seconds ?: StdioMcpClient.DEFAULT_REQUEST_TIMEOUT,
+                timeout,
+                openTelemetry,
             )
             else -> throw McpError("The MCP server $name has neither a url nor a command")
         }

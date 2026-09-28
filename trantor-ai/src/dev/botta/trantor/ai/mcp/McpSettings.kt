@@ -30,6 +30,6 @@ data class McpServerSettings(
     /** Added to the safe part of the environment of the application that the process gets. */
     var env: MutableMap<String, String> = mutableMapOf(),
     var workingDirectory: String? = null,
-    /** How long a request over stdio waits for its answer. */
+    /** How long a request waits for its answer, when the run does not say a shorter time. */
     var requestTimeoutSeconds: Long? = null,
 )

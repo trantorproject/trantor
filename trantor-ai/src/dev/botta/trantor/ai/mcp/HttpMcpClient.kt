@@ -2,7 +2,15 @@ package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.errors.CancelledError
+import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.ai.models.CancellationLink
+import dev.botta.trantor.web.client.StreamOptions
+import java.io.InterruptedIOException
+import io.opentelemetry.api.OpenTelemetry
+import kotlin.time.Duration
 import dev.botta.trantor.web.client.HttpClient
+import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpMethods
 import dev.botta.trantor.web.client.HttpRequest
 import dev.botta.trantor.web.client.HttpStreamResponse
@@ -24,9 +32,13 @@ internal class HttpMcpClient(
     private val url: String,
     private val headers: Map<String, String>,
     private val httpClient: HttpClient,
+    private val requestTimeout: Duration = McpClient.DEFAULT_REQUEST_TIMEOUT,
+    openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
 ): BaseMcpClient() {
     private val ids = AtomicLong()
     private val lock = Any()
+
+    override val telemetry = McpTelemetry(openTelemetry, "tcp", url)
 
     /**
      * Which arguments of each tool of a server of 2026-07-28 go in `Mcp-Param-*` headers, from the last listing;
@@ -45,14 +57,14 @@ internal class HttpMcpClient(
      * says: the server turned the call down before running it. Listing before every call would cost a request each
      * time for what is rare.
      */
-    override fun callTool(name: String, arguments: JsonObject): McpToolResult {
+    override fun callTool(name: String, arguments: JsonObject, options: CallOptions): McpToolResult {
         return try {
-            super.callTool(name, arguments)
+            super.callTool(name, arguments, options)
         } catch (e: McpError) {
             if (e.code != McpMessages.HEADER_MISMATCH) throw e
 
-            listTools()
-            super.callTool(name, arguments)
+            listTools(options)
+            super.callTool(name, arguments, options)
         }
     }
 
@@ -110,7 +122,7 @@ internal class HttpMcpClient(
             }
         }
 
-        val earlier = handshake()
+        val earlier = handshake(request.options)
         revision = earlier
         return sendEarlier(request, earlier)
     }
@@ -123,9 +135,11 @@ internal class HttpMcpClient(
         error.status in 400..499 && error.code !in McpMessages.CURRENT_ERRORS
 
     private fun sendCurrent(request: McpRequest): JsonObject {
-        val body = McpMessages.request(ids.incrementAndGet(), request.method, request.params)
+        val id = ids.incrementAndGet()
+        val body = McpMessages.request(id, request.method, request.params, telemetry.context())
+        telemetry.sent(id, McpMessages.PROTOCOL_VERSION)
 
-        return post(body, currentHeaders(request)) { answer(it, request.what) }
+        return post(body, currentHeaders(request), request.options, request.what) { answer(it, request.what) }
     }
 
     /**
@@ -134,23 +148,35 @@ internal class HttpMcpClient(
      * The spec says it answers 404, and the reference server answers 400: both open it again.
      */
     private fun sendEarlier(request: McpRequest, earlier: Revision.Earlier, again: Boolean = true): JsonObject {
-        val body = McpMessages.earlierRequest(ids.incrementAndGet(), request.method, request.params)
+        val id = ids.incrementAndGet()
+        val body = McpMessages.earlierRequest(id, request.method, request.params, telemetry.context())
+        telemetry.sent(id, earlier.version, earlier.session)
 
-        val result = post(body, headersOf(earlier)) {
-            if (again && earlier.session != null && it.status in LOST_SESSION) null else answer(it, request.what)
+        val result = try {
+            post(body, headersOf(earlier), request.options, request.what) {
+                if (again && earlier.session != null && it.status in LOST_SESSION) null else answer(it, request.what)
+            }
+        } catch (e: CancelledError) {
+            // Before 2026-07-28 a stream that closes is not a cancellation: the server is told
+            val cancelled = McpMessages.cancelled(id)
+            runCatching { post(cancelled, headersOf(earlier), CallOptions(), "notifications/cancelled") {} }
+            throw e
         }
 
-        return result ?: sendEarlier(request, reopen(earlier), again = false)
+        return result ?: sendEarlier(request, reopen(earlier, request.options), again = false)
     }
 
-    private fun reopen(lost: Revision.Earlier) = synchronized(lock) {
+    private fun reopen(lost: Revision.Earlier, options: CallOptions) = synchronized(lock) {
         // Another request may have opened it again already
-        (revision as? Revision.Earlier)?.takeIf { it !== lost } ?: handshake().also { revision = it }
+        (revision as? Revision.Earlier)?.takeIf { it !== lost } ?: handshake(options).also { revision = it }
     }
 
     /** `initialize` and `notifications/initialized`, the handshake of the revisions before 2026-07-28. */
-    private fun handshake(): Revision.Earlier {
-        val earlier = post(McpMessages.initialize(ids.incrementAndGet()), commonHeaders()) {
+    private fun handshake(options: CallOptions) = telemetry.request(McpRequest("initialize", JsonObject())) {
+        val id = ids.incrementAndGet()
+        telemetry.sent(id, McpMessages.EARLIER_PROTOCOL_VERSION)
+
+        val earlier = post(McpMessages.initialize(id), commonHeaders(), options, "initialize") {
             val result = answer(it, "initialize")
             val session = it.headers.entries.firstOrNull { header -> header.key.equals(SESSION_HEADER, true) }?.value
             val version = result["protocolVersion"]?.asString() ?: McpMessages.EARLIER_PROTOCOL_VERSION
@@ -158,7 +184,7 @@ internal class HttpMcpClient(
             Revision.Earlier(version, session)
         }
 
-        post(McpMessages.notification("notifications/initialized"), headersOf(earlier)) {
+        post(McpMessages.notification("notifications/initialized"), headersOf(earlier), options, "initialize") {
             if (it.status !in 200..299) {
                 throw McpError(
                     "The MCP server turned down notifications/initialized with ${it.status}: ${it.body()}",
@@ -167,11 +193,66 @@ internal class HttpMcpClient(
             }
         }
 
-        return earlier
+        earlier
     }
 
-    private fun <T> post(body: JsonObject, headers: Map<String, String>, read: (HttpStreamResponse) -> T): T =
-        httpClient.stream(HttpMethods.Post, HttpRequest(url, body.toString(), headers)).use(read)
+    /**
+     * Posts [body] and reads its answer with [read], within the timeout of the run or else the one of the client,
+     * which is the time the whole stream may take. Cancelling the run cancels the stream, and what was read of it is
+     * not taken for an answer. What fails on the way to the server is an [McpError] that names it.
+     */
+    private fun <T> post(
+        body: JsonObject,
+        headers: Map<String, String>,
+        options: CallOptions,
+        what: String,
+        read: (HttpStreamResponse) -> T,
+    ): T {
+        options.cancellation?.throwIfCancelled()
+
+        val timeout = options.timeout ?: requestTimeout
+        val streamOptions = StreamOptions(totalTimeout = timeout.inWholeMilliseconds.toInt())
+        val httpRequest = HttpRequest(url, body.toString(), headers)
+
+        return CancellationLink(options.cancellation).use { link ->
+            val response = try {
+                link.attach(httpClient.stream(HttpMethods.Post, httpRequest, streamOptions))
+            } catch (e: CancelledError) {
+                throw e
+            } catch (e: Exception) {
+                throw unreachable(e, what, timeout)
+            } catch (e: HttpClientError) {
+                // Not an Exception: what the client of Trantor throws when the call fails on the way
+                throw unreachable(e, what, timeout)
+            }
+
+            response.use {
+                try {
+                    read(it).also { link.throwIfCancelled() }
+                } catch (e: CancelledError) {
+                    throw e
+                } catch (e: McpError) {
+                    // A cancelled stream ends as if the server stopped writing, which says nothing of the server
+                    link.throwIfCancelled()
+                    throw e
+                } catch (e: Exception) {
+                    link.throwIfCancelled()
+                    throw unreachable(e, what, timeout)
+                } catch (e: HttpClientError) {
+                    link.throwIfCancelled()
+                    throw unreachable(e, what, timeout)
+                }
+            }
+        }
+    }
+
+    private fun unreachable(error: Throwable, what: String, timeout: Duration): McpError {
+        if (generateSequence<Throwable>(error) { it.cause }.any { it is InterruptedIOException }) {
+            return McpError("The MCP server $name did not answer $what in $timeout", cause = error)
+        }
+
+        return McpError("Could not reach the MCP server $name for $what: ${error.message}", cause = error)
+    }
 
     private fun answer(response: HttpStreamResponse, what: String): JsonObject {
         if (response.status != 200) {

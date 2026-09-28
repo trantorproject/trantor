@@ -4,6 +4,11 @@ package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.Cancellation
+import dev.botta.trantor.ai.errors.CancelledError
+import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.ai.testing.TestTelemetry
+import io.opentelemetry.api.common.AttributeKey.stringKey
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -136,6 +141,58 @@ class StdioMcpClientTest {
             val call = server.process.written.single { it["method"]?.asString() == "tools/call" }
             val cancelled = server.process.written.single { it["method"]?.asString() == "notifications/cancelled" }
             assertThat(cancelled.path("params.requestId")).isEqualTo(call["id"])
+        }
+    }
+
+    @Nested
+    inner class `timeouts and cancellation` {
+        @Test
+        fun `a request waits the shorter of the timeouts of the run and the client`() {
+            server.on("server/discover") { reply(it, "current-discover.jsonl") }
+            val startedAt = System.nanoTime()
+
+            assertThatThrownBy {
+                client.callTool("get_weather", Json.obj("city" to "Rosario"), CallOptions(timeout = 100.milliseconds))
+            }.isInstanceOf(McpError::class.java).hasMessageContaining("tools/call get_weather")
+
+            assertThat((System.nanoTime() - startedAt) / 1_000_000).isLessThan(900)
+        }
+
+        @Test
+        fun `a cancelled run tells the server to stop the request, and fails as cancelled`() {
+            val cancellation = Cancellation()
+            server.on("server/discover") { reply(it, "current-discover.jsonl") }
+            server.on("tools/call") { thread { Thread.sleep(50); cancellation.cancel() } }
+
+            assertThatThrownBy {
+                client.callTool("get_weather", Json.obj("city" to "Rosario"), CallOptions(cancellation = cancellation))
+            }.isInstanceOf(CancelledError::class.java)
+
+            val call = server.process.written.single { it["method"]?.asString() == "tools/call" }
+            val cancelled = server.process.written.single { it["method"]?.asString() == "notifications/cancelled" }
+            assertThat(cancelled.path("params.requestId")).isEqualTo(call["id"])
+        }
+    }
+
+    @Nested
+    inner class `traces` {
+        @Test
+        fun `say the transport is a pipe, and carry the context of the trace in _meta`() {
+            val telemetry = TestTelemetry()
+            server.speaksCurrent()
+            val client = StdioMcpClient(
+                "tester",
+                listOf("node", "server.mjs", "--stdio"),
+                probeTimeout = 200.milliseconds,
+                launcher = server,
+                openTelemetry = telemetry.openTelemetry,
+            )
+
+            client.listTools()
+
+            val span = telemetry.named("tools/list")
+            assertThat(span.attributes.get(stringKey("network.transport"))).isEqualTo("pipe")
+            assertThat(server.process.written.last().path("params._meta.traceparent")?.asString()).contains(span.spanId)
         }
     }
 

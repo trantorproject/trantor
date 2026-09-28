@@ -87,7 +87,11 @@ class FakeHttpClient(
         override val contentType = answer.contentType
         override val headers = headersOf(answer)
 
-        override fun lines() = answer.body.lineSequence()
+        override fun lines(): Sequence<String> {
+            whileReading()
+
+            return answer.body.lineSequence()
+        }
 
         override fun body(): String {
             whileReading()

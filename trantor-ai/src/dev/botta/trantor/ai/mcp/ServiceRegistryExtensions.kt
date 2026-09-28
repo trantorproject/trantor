@@ -6,6 +6,7 @@ import dev.botta.trantor.hosting.HostedService
 import dev.botta.trantor.hosting.addHostedService
 import dev.botta.trantor.web.client.HttpClient
 import dev.botta.trantor.web.client.addHttpClient
+import io.opentelemetry.api.OpenTelemetry
 
 /**
  * Registers [McpClients], with a client for each server of the `ai.mcp.servers` section ([McpSettings]) and the ones
@@ -17,8 +18,9 @@ import dev.botta.trantor.web.client.addHttpClient
  * ```
  *
  * The clients over HTTP call through the [HttpClient] of the application, which this adds when there is none, so
- * they share its connections and are traced along with every other call. When the application stops, every client
- * is closed: a server over stdio is a process, and it would outlive the application otherwise.
+ * they share its connections and are traced along with every other call; the requests are traced with the
+ * `OpenTelemetry` of the container, when there is one. When the application stops, every client is closed: a server
+ * over stdio is a process, and it would outlive the application otherwise.
  */
 fun ServiceRegistry.addMcp(configuration: ServiceConfiguration<McpClients> = { _, _ -> }) = apply {
     addMcpConfig()
@@ -27,7 +29,11 @@ fun ServiceRegistry.addMcp(configuration: ServiceConfiguration<McpClients> = { _
     if (has<McpClients>()) return@apply
 
     if (!has<HttpClient>()) addHttpClient()
-    addSingleton { McpClients().addAll(it.get<McpSettings>(), it.get<HttpClient>()) }
+    addSingleton {
+        // Whether it was registered before or after, as addAI does
+        val openTelemetry = it.getOrDefault<OpenTelemetry> { OpenTelemetry.noop() }
+        McpClients().addAll(it.get<McpSettings>(), it.get<HttpClient>(), openTelemetry)
+    }
     addHostedService { McpClientsLifetime(it.get<McpClients>()) }
 }
 

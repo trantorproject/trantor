@@ -1,5 +1,7 @@
 package dev.botta.trantor.ai.testing
 
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
+import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.metrics.SdkMeterProvider
 import io.opentelemetry.sdk.metrics.data.MetricData
@@ -14,6 +16,8 @@ class TestTelemetry {
     val exporter: InMemorySpanExporter = InMemorySpanExporter.create()
     private val metricReader = InMemoryMetricReader.create()
     val openTelemetry: OpenTelemetrySdk = OpenTelemetrySdk.builder()
+        // What an application with trantor-opentelemetry propagates, for what carries the context to another service
+        .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
         .setTracerProvider(SdkTracerProvider.builder().addSpanProcessor(SimpleSpanProcessor.create(exporter)).build())
         .setMeterProvider(SdkMeterProvider.builder().registerMetricReader(metricReader).build())
         .build()

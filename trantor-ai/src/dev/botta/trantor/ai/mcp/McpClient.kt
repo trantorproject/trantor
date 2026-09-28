@@ -3,7 +3,10 @@ package dev.botta.trantor.ai.mcp
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.providers.defaultHttpClient
 import dev.botta.trantor.web.client.HttpClient
+import dev.botta.trantor.ai.models.CallOptions
+import io.opentelemetry.api.OpenTelemetry
 import java.io.File
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration
 
 /**
@@ -31,14 +34,18 @@ interface McpClient: AutoCloseable {
     val name: String
 
     /** Every tool of the server, following its pages until the last one. */
-    fun listTools(): List<McpToolDefinition>
+    fun listTools(options: CallOptions = CallOptions()): List<McpToolDefinition>
 
     /**
      * Calls a tool of the server with [arguments]. A tool that failed comes back with [McpToolResult.isError], as the
      * server tells it; what fails is the call itself, as an [McpError]: a tool the server does not know, a server
      * that did not answer 200, or one that needs something this client cannot give.
      */
-    fun callTool(name: String, arguments: JsonObject = JsonObject()): McpToolResult
+    fun callTool(
+        name: String,
+        arguments: JsonObject = JsonObject(),
+        options: CallOptions = CallOptions(),
+    ): McpToolResult
 
     companion object {
         /**
@@ -51,7 +58,9 @@ interface McpClient: AutoCloseable {
             url: String,
             headers: Map<String, String> = emptyMap(),
             httpClient: HttpClient = defaultHttpClient,
-        ): McpClient = HttpMcpClient(name, url, headers, httpClient)
+            requestTimeout: Duration = DEFAULT_REQUEST_TIMEOUT,
+            openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+        ): McpClient = HttpMcpClient(name, url, headers, httpClient, requestTimeout, openTelemetry)
 
         /**
          * A client of a server it starts as a process with [command], and talks to over its standard input and
@@ -72,7 +81,12 @@ interface McpClient: AutoCloseable {
             command: List<String>,
             env: Map<String, String> = emptyMap(),
             workingDirectory: File? = null,
-            requestTimeout: Duration = StdioMcpClient.DEFAULT_REQUEST_TIMEOUT,
-        ): McpClient = StdioMcpClient(name, command, env, workingDirectory, requestTimeout)
+            requestTimeout: Duration = DEFAULT_REQUEST_TIMEOUT,
+            openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+        ): McpClient =
+            StdioMcpClient(name, command, env, workingDirectory, requestTimeout, openTelemetry = openTelemetry)
+
+        /** How long a request waits for its answer when neither the client nor the run says. */
+        val DEFAULT_REQUEST_TIMEOUT = 2.minutes
     }
 }

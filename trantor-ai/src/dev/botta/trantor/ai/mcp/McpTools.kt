@@ -86,7 +86,9 @@ class McpTool internal constructor(
      * can fix the call; a call the server turned down is an [McpError], which the model reads as any failure.
      */
     override fun execute(args: JsonObject, context: ToolContext): ToolResult {
-        val result = client.callTool(definition.name, BottaJson.parse(args.toString()).asObject()!!)
+        val arguments = BottaJson.parse(args.toString()).asObject()!!
+        // Within the timeout and the cancellation of the run, and on the span of this tool
+        val result = McpTelemetry.calledByTool { client.callTool(definition.name, arguments, context.callOptions) }
         val texts = result.content.filterIsInstance<McpContent.Text>()
 
         if (result.isError) throw ToolError(textOf(result).ifEmpty { "The tool ${definition.name} failed" })

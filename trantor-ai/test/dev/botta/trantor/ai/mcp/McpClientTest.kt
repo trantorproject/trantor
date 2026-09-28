@@ -3,6 +3,9 @@
 package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
+import dev.botta.trantor.ai.Cancellation
+import dev.botta.trantor.ai.errors.CancelledError
+import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.primitives.TrantorBuildInfo
 import dev.botta.trantor.web.client.HttpMethods
@@ -10,6 +13,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import dev.botta.trantor.web.client.HttpClientError
+import java.io.IOException
+import java.io.InterruptedIOException
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * A client of an MCP server over Streamable HTTP, on the 2026-07-28 revision. The fixtures are what a server of the
@@ -199,6 +206,77 @@ class McpClientTest {
             client.callTool("get_weather", Json.obj("city" to "Rosario"))
 
             assertThat(sentBodies().map { it["id"].toString() }.distinct()).hasSize(2)
+        }
+    }
+
+    @Nested
+    inner class `timeouts and cancellation` {
+        @Test
+        fun `a call gets the timeout of the run as the total time of its stream`() {
+            httpClient.answer(fixture("call-weather.json"))
+
+            client.callTool("get_weather", Json.obj("city" to "Rosario"), CallOptions(timeout = 5.seconds))
+
+            assertThat(httpClient.options?.totalTimeout).isEqualTo(5_000)
+        }
+
+        @Test
+        fun `without one, the request timeout of the client`() {
+            httpClient.answer(fixture("call-weather.json"))
+            val client = McpClient.http("tester", URL, httpClient = httpClient, requestTimeout = 30.seconds)
+
+            client.callTool("get_weather", Json.obj("city" to "Rosario"))
+
+            assertThat(httpClient.options?.totalTimeout).isEqualTo(30_000)
+        }
+
+        @Test
+        fun `a cancelled run cancels the stream and fails as cancelled`() {
+            val cancellation = Cancellation()
+            httpClient.answer(fixture("call-weather.json"))
+            httpClient.whileReading = { cancellation.cancel() }
+
+            assertThatThrownBy {
+                client.callTool("get_weather", Json.obj("city" to "Rosario"), CallOptions(cancellation = cancellation))
+            }.isInstanceOf(CancelledError::class.java)
+            assertThat(httpClient.wasCancelled).isTrue()
+        }
+
+        @Test
+        fun `a run cancelled before the call does not send it`() {
+            val cancellation = Cancellation().apply { cancel() }
+
+            assertThatThrownBy {
+                client.callTool("get_weather", Json.obj("city" to "Rosario"), CallOptions(cancellation = cancellation))
+            }.isInstanceOf(CancelledError::class.java)
+            assertThat(httpClient.requests).isEmpty()
+        }
+
+        @Test
+        fun `a stream that goes past its time fails as an McpError saying so, whether opening or reading it`() {
+            val timeout = HttpClientError("timeout", InterruptedIOException("timeout"))
+            httpClient.error = timeout
+
+            assertThatThrownBy { client.listTools(CallOptions(timeout = 1.seconds)) }
+                .isInstanceOf(McpError::class.java)
+                .hasMessageContaining("did not answer tools/list in 1s")
+
+            httpClient.error = null
+            httpClient.whileReading = { throw timeout }
+
+            assertThatThrownBy { client.listTools(CallOptions(timeout = 1.seconds)) }
+                .isInstanceOf(McpError::class.java)
+                .hasMessageContaining("did not answer tools/list in 1s")
+        }
+
+        @Test
+        fun `a server that cannot be reached fails as an McpError naming it`() {
+            httpClient.error = IOException("Connection refused")
+
+            assertThatThrownBy { client.listTools() }
+                .isInstanceOf(McpError::class.java)
+                .hasMessageContaining("tester")
+                .hasMessageContaining("Connection refused")
         }
     }
 

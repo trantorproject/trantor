@@ -4,7 +4,9 @@ package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.Cancellation
 import dev.botta.trantor.ai.RunContext
+import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.generation.ToolLoop
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.TextPart
@@ -20,6 +22,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.seconds
 
 /** The tools of an MCP server, as tools of trantor-ai for a generation or an agent. */
 class McpToolsTest {
@@ -132,6 +135,18 @@ class McpToolsTest {
         }
 
         @Test
+        fun `passes the timeout and the cancellation of its run to the client`() {
+            val client = FakeMcpClient("tester", definition("get_weather"))
+            val options = CallOptions(timeout = 5.seconds, cancellation = Cancellation())
+
+            val context = ToolContext("call_1", "tool", callOptions = options)
+
+            client.tools().single().call(Json.obj("city" to "Rosario"), context)
+
+            assertThat(client.options).isEqualTo(options)
+        }
+
+        @Test
         fun `answers the model with the text of the tool`() {
             val client = FakeMcpClient("tester", definition("get_weather"))
             client.answer = McpToolResult(listOf(McpContent.Text("18 degrees"), McpContent.Text("Sunny")))
@@ -220,11 +235,13 @@ class McpToolsTest {
         val calls = mutableListOf<Pair<String, JsonObject>>()
         var answer = McpToolResult(listOf(McpContent.Text("done")))
         var failure: McpError? = null
+        var options: CallOptions? = null
 
-        override fun listTools() = definitions.toList()
+        override fun listTools(options: CallOptions) = definitions.toList()
 
-        override fun callTool(name: String, arguments: JsonObject): McpToolResult {
+        override fun callTool(name: String, arguments: JsonObject, options: CallOptions): McpToolResult {
             calls.add(name to arguments)
+            this.options = options
             failure?.let { throw it }
             return answer
         }

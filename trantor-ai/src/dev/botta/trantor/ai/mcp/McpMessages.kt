@@ -25,17 +25,38 @@ internal object McpMessages {
      */
     val CURRENT_ERRORS = setOf(HEADER_MISMATCH, -32021, UNSUPPORTED_PROTOCOL_VERSION)
 
-    /** A request of the 2026-07-28 revision, which says in its `_meta` who asks and on which version. */
-    fun request(id: Long, method: String, params: JsonObject = JsonObject()) = Json.obj(
-        "jsonrpc" to "2.0",
-        "id" to id,
-        "method" to method,
-        "params" to JsonObject(params.toList()).with("_meta", meta()),
-    )
+    /**
+     * A request of the 2026-07-28 revision, which says in its `_meta` who asks and on which version, and carries
+     * the context of the [trace].
+     */
+    fun request(
+        id: Long,
+        method: String,
+        params: JsonObject = JsonObject(),
+        trace: Map<String, String> = emptyMap(),
+    ): JsonObject {
+        val meta = meta().apply { putAll(trace.mapValues { Json.value(it.value) }) }
+        return Json.obj(
+            "jsonrpc" to "2.0",
+            "id" to id,
+            "method" to method,
+            "params" to JsonObject(params.toList()).with("_meta", meta),
+        )
+    }
 
-    /** A request of a revision before 2026-07-28, which says nothing of who asks: the handshake did. */
-    fun earlierRequest(id: Long, method: String, params: JsonObject = JsonObject()) =
-        Json.obj("jsonrpc" to "2.0", "id" to id, "method" to method, "params" to params)
+    /**
+     * A request of a revision before 2026-07-28, which says nothing of who asks, since the handshake did. The context
+     * of the [trace] goes in its `_meta` too: a server that does not know it leaves it.
+     */
+    fun earlierRequest(
+        id: Long,
+        method: String,
+        params: JsonObject = JsonObject(),
+        trace: Map<String, String> = emptyMap(),
+    ): JsonObject {
+        val withTrace = if (trace.isEmpty()) params else JsonObject(params.toList()).with("_meta", Json.value(trace))
+        return Json.obj("jsonrpc" to "2.0", "id" to id, "method" to method, "params" to withTrace)
+    }
 
     /** The handshake of the revisions before 2026-07-28, offering no capabilities. */
     fun initialize(id: Long): JsonObject {
@@ -49,6 +70,10 @@ internal object McpMessages {
     }
 
     fun notification(method: String) = Json.obj("jsonrpc" to "2.0", "method" to method)
+
+    /** Tells the server that the request [id] is no longer awaited, so it can stop what it does for it. */
+    fun cancelled(id: Long, reason: String = "Cancelled by the client") =
+        notification("notifications/cancelled").with("params", Json.obj("requestId" to id, "reason" to reason))
 
     /**
      * The result of the answer to [request], or the error it carries. [what] names the request in the errors, like
