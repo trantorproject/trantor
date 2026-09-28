@@ -24,31 +24,13 @@ internal class HttpMcpClient(
     private val url: String,
     private val headers: Map<String, String>,
     private val httpClient: HttpClient,
-): McpClient {
+): BaseMcpClient() {
     private val ids = AtomicLong()
     private val lock = Any()
 
     /** What the server speaks, once a request told; until then, null. */
     @Volatile
     private var revision: Revision? = null
-
-    override fun listTools(): List<McpToolDefinition> {
-        val tools = mutableListOf<McpToolDefinition>()
-        var cursor: String? = null
-
-        do {
-            val params = cursor?.let { Json.obj("cursor" to it) } ?: JsonObject()
-            val result = send(Request("tools/list", params))
-
-            result["tools"]?.asArray().orEmpty().mapNotNullTo(tools) { it.asObject()?.let(McpMessages::toolOf) }
-            cursor = result["nextCursor"]?.asString()
-        } while (cursor != null)
-
-        return tools
-    }
-
-    override fun callTool(name: String, arguments: JsonObject) =
-        McpMessages.toolResultOf(send(Request("tools/call", Json.obj("name" to name, "arguments" to arguments), name)))
 
     /** Ends the session of a server of before, if it gave one. The server may not allow it, and that is fine. */
     override fun close() {
@@ -58,14 +40,14 @@ internal class HttpMcpClient(
         runCatching { httpClient.delete(HttpRequest(url, headers = headersOf(earlier))) }
     }
 
-    private fun send(request: Request): JsonObject = when (val revision = revision) {
+    override fun send(request: McpRequest): JsonObject = when (val revision = revision) {
         Revision.Current -> sendCurrent(request)
         is Revision.Earlier -> sendEarlier(request, revision)
         // The first request tells, one at a time, so that calls in parallel open a single session
         null -> synchronized(lock) { if (this.revision == null) sendFirst(request) else null } ?: send(request)
     }
 
-    private fun sendFirst(request: Request): JsonObject {
+    private fun sendFirst(request: McpRequest): JsonObject {
         try {
             return sendCurrent(request).also { revision = Revision.Current }
         } catch (e: McpError) {
@@ -85,9 +67,10 @@ internal class HttpMcpClient(
      * Whether the server turned down a request of 2026-07-28 because it speaks a revision of before: a 4xx whose
      * body is not one of the errors of the new revision, which a server of before does not know.
      */
-    private fun speaksAnEarlierRevision(error: McpError) = error.status in 400..499 && error.code !in CURRENT_ERRORS
+    private fun speaksAnEarlierRevision(error: McpError) =
+        error.status in 400..499 && error.code !in McpMessages.CURRENT_ERRORS
 
-    private fun sendCurrent(request: Request): JsonObject {
+    private fun sendCurrent(request: McpRequest): JsonObject {
         val body = McpMessages.request(ids.incrementAndGet(), request.method, request.params)
 
         return post(body, currentHeaders(request)) { answer(it, request.what) }
@@ -98,7 +81,7 @@ internal class HttpMcpClient(
      * restarted, turns the request down before it runs it, so a new session opens and the request goes once more.
      * The spec says it answers 404, and the reference server answers 400: both open it again.
      */
-    private fun sendEarlier(request: Request, earlier: Revision.Earlier, again: Boolean = true): JsonObject {
+    private fun sendEarlier(request: McpRequest, earlier: Revision.Earlier, again: Boolean = true): JsonObject {
         val body = McpMessages.earlierRequest(ids.incrementAndGet(), request.method, request.params)
 
         val result = post(body, headersOf(earlier)) {
@@ -165,7 +148,7 @@ internal class HttpMcpClient(
         return McpMessages.resultOf(answer, what)
     }
 
-    private fun currentHeaders(request: Request) = buildMap {
+    private fun currentHeaders(request: McpRequest) = buildMap {
         putAll(commonHeaders())
         // The body says the same: the spec mirrors it in headers so that a gateway can route without reading it
         put("MCP-Protocol-Version", McpMessages.PROTOCOL_VERSION)
@@ -198,11 +181,6 @@ internal class HttpMcpClient(
         return BASE64_PREFIX + Base64.getEncoder().encodeToString(value.toByteArray()) + BASE64_SUFFIX
     }
 
-    private class Request(val method: String, val params: JsonObject, val name: String? = null) {
-        /** How the errors name it, like "tools/call deploy". */
-        val what = listOfNotNull(method, name).joinToString(" ")
-    }
-
     private sealed interface Revision {
         /** 2026-07-28: no handshake and no session. */
         data object Current: Revision
@@ -215,9 +193,6 @@ internal class HttpMcpClient(
         const val BASE64_PREFIX = "=?base64?"
         const val BASE64_SUFFIX = "?="
         const val SESSION_HEADER = "Mcp-Session-Id"
-
-        /** HeaderMismatch, MissingRequiredClientCapability and UnsupportedProtocolVersion, new in 2026-07-28. */
-        val CURRENT_ERRORS = setOf(-32020, -32021, -32022)
 
         val LOST_SESSION = setOf(400, 404)
     }

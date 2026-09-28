@@ -1,0 +1,2 @@
+{"method":"notifications/tools/list_changed","jsonrpc":"2.0"}
+{"result":{"content":[{"type":"text","text":"Echo: hola"}]},"jsonrpc":"2.0","id":3}

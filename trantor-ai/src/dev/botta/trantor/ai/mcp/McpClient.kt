@@ -3,6 +3,8 @@ package dev.botta.trantor.ai.mcp
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.providers.defaultHttpClient
 import dev.botta.trantor.web.client.HttpClient
+import java.io.File
+import kotlin.time.Duration
 
 /**
  * A connection to one MCP server, to list the tools it offers and call them.
@@ -50,5 +52,27 @@ interface McpClient: AutoCloseable {
             headers: Map<String, String> = emptyMap(),
             httpClient: HttpClient = defaultHttpClient,
         ): McpClient = HttpMcpClient(name, url, headers, httpClient)
+
+        /**
+         * A client of a server it starts as a process with [command], and talks to over its standard input and
+         * output, which the application calls [name]. It starts with the first request, and [close] ends it.
+         *
+         * The process gets only the safe part of the environment of the application, like the path, and [env]:
+         * the keys of the application are not for a server of a third party, and what it needs goes in [env].
+         * On Windows, a bare command like `npx` is found on the path with its extension, `npx.cmd`, so the same
+         * command works on every system. A request that gets no answer in [requestTimeout] fails, and the server is
+         * told to stop it.
+         *
+         * ```kotlin
+         * val files = McpClient.stdio("files", listOf("npx", "-y", "@modelcontextprotocol/server-filesystem", "/data"))
+         * ```
+         */
+        fun stdio(
+            name: String,
+            command: List<String>,
+            env: Map<String, String> = emptyMap(),
+            workingDirectory: File? = null,
+            requestTimeout: Duration = StdioMcpClient.DEFAULT_REQUEST_TIMEOUT,
+        ): McpClient = StdioMcpClient(name, command, env, workingDirectory, requestTimeout)
     }
 }
