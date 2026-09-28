@@ -53,8 +53,11 @@ abstract class Tool<TArgs: Any>(val argsSerializer: KSerializer<TArgs>) {
 
     abstract fun execute(args: TArgs, context: ToolContext): ToolResult
 
-    /** What the model is told about the tool. */
-    fun spec() = FunctionToolSpec(name, description, JsonSchemas.of(argsSerializer.descriptor))
+    /**
+     * What the model is told about the tool: its schema comes from the args. A tool whose schema comes from
+     * somewhere else, like one of an MCP server, tells it here.
+     */
+    open fun spec() = FunctionToolSpec(name, description, JsonSchemas.of(argsSerializer.descriptor))
 
     /**
      * Runs the tool with the input the model sent, decoded into its args.

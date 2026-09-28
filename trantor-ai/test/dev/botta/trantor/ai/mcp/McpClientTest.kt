@@ -210,7 +210,7 @@ class McpClientTest {
         javaClass.getResource("/mcp/$name")?.readText() ?: error("Missing fixture $name")
 
     private val httpClient = FakeHttpClient()
-    private val client = McpClient.http(URL, mapOf("Authorization" to "Bearer secret"), httpClient)
+    private val client = McpClient.http("tester", URL, mapOf("Authorization" to "Bearer secret"), httpClient)
 
     private companion object {
         const val URL = "http://127.0.0.1:3001/mcp"

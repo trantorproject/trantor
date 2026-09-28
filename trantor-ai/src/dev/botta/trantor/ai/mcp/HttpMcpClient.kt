@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong
  * using it. Which one the server speaks is kept for the life of the client.
  */
 internal class HttpMcpClient(
+    override val name: String,
     private val url: String,
     private val headers: Map<String, String>,
     private val httpClient: HttpClient,

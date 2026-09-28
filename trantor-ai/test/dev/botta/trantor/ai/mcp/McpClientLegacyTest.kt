@@ -201,7 +201,7 @@ class McpClientLegacyTest {
         javaClass.getResource("/mcp/legacy/$name")?.readText() ?: error("Missing fixture $name")
 
     private val httpClient = FakeHttpClient()
-    private val client = McpClient.http(URL, httpClient = httpClient)
+    private val client = McpClient.http("everything", URL, httpClient = httpClient)
 
     private companion object {
         const val URL = "http://127.0.0.1:3002/mcp"

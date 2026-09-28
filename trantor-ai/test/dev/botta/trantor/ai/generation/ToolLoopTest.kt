@@ -51,6 +51,26 @@ class ToolLoopTest {
     }
 
     @Test
+    fun `two tools with the same name fail the run before calling the model`() {
+        val loop = ToolLoop(model, listOf(weather, WeatherTool()), 5, RunContext())
+
+        assertThatThrownBy { loop.run(ChatRequest("Hola")) }
+            .isInstanceOfSatisfying(DuplicateToolError::class.java) {
+                assertThat(it.names).containsExactly("getWeather")
+            }
+        assertThat(model.requests).isEmpty()
+    }
+
+    @Test
+    fun `a tool the request already had counts for the same name`() {
+        val spec = FunctionToolSpec("getWeather", parameters = Json.obj("type" to "object"))
+
+        assertThatThrownBy { loop().run(ChatRequest(listOf(Message.user("Hola")), tools = listOf(spec))) }
+            .isInstanceOf(DuplicateToolError::class.java)
+        assertThat(model.requests).isEmpty()
+    }
+
+    @Test
     fun `the next call carries the answer of the model whole and then the results`() {
         // Reasoning and parts we do not model have to go back as they came, or the provider loses the thread
         val reasoning = ReasoningPart(text = "Busco el clima", opaque = Json.obj("signature" to "abc"))

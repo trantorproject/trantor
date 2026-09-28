@@ -493,6 +493,7 @@ class ToolLoop(
         // the step goes out, so that the hooks see the results of the calls the run resolved before it
         val request by lazy {
             val tools = setup.request.tools + setup.tools.map { it.spec() }
+            failOnDuplicates(tools)
 
             hooks.beforeModel(setup.request.copy(messages = paired.first, tools = tools))
         }
@@ -622,6 +623,14 @@ class ToolLoop(
                 logger.error("Tool ${call.toolName} failed on call ${call.callId}: ${e.message}", e)
                 failed(call, e, errorHandlers.firstNotNullOfOrNull { it.handle(e, call) } ?: GENERIC_FAILURE, input)
             }
+        }
+
+        private fun failOnDuplicates(tools: List<ToolSpec>) {
+            val duplicates = tools.groupingBy { it.name }.eachCount().filterValues { it > 1 }.keys.toList()
+            if (duplicates.isEmpty()) return
+
+            val names = duplicates.joinToString()
+            throw DuplicateToolError(duplicates, "More than one tool is called $names: the model could not say which")
         }
 
         private fun contextOf(call: ToolCallPart) =

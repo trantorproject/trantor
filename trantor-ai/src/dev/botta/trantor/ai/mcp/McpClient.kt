@@ -13,7 +13,7 @@ import dev.botta.trantor.web.client.HttpClient
  * server does not ask it for input, a completion of a model or its roots.
  *
  * ```kotlin
- * val github = McpClient.http("https://api.githubcopilot.com/mcp/", mapOf("Authorization" to "Bearer $token"))
+ * val github = McpClient.http("github", "https://api.githubcopilot.com/mcp/", mapOf("Authorization" to "Bearer $key"))
  *
  * github.listTools()
  * github.callTool("search_issues", Json.obj("query" to "is:open label:bug"))
@@ -22,6 +22,12 @@ import dev.botta.trantor.web.client.HttpClient
  * Listing is a call to the server, so it happens when it is asked for and not when the client is created.
  */
 interface McpClient: AutoCloseable {
+    /**
+     * How the application calls the server, like "github". It goes in front of the names of its tools, so that two
+     * servers can have a tool with the same name. It is not the name the server says it has, which nothing checks.
+     */
+    val name: String
+
     /** Every tool of the server, following its pages until the last one. */
     fun listTools(): List<McpToolDefinition>
 
@@ -34,13 +40,15 @@ interface McpClient: AutoCloseable {
 
     companion object {
         /**
-         * A client of the server at [url] over Streamable HTTP. [headers] go in every request, like the credentials
-         * of an API key; they are not a place for secrets written in code, which come from the environment.
+         * A client of the server at [url] over Streamable HTTP, which the application calls [name]. [headers] go in
+         * every request, like the credentials of an API key; they are not a place for secrets written in code, which
+         * come from the environment.
          */
         fun http(
+            name: String,
             url: String,
             headers: Map<String, String> = emptyMap(),
             httpClient: HttpClient = defaultHttpClient,
-        ): McpClient = HttpMcpClient(url, headers, httpClient)
+        ): McpClient = HttpMcpClient(name, url, headers, httpClient)
     }
 }
