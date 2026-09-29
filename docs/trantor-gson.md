@@ -185,7 +185,7 @@ val schema = serializer.schemaOf<PlaceOrder>()
   is its value.
 - The validations of Jakarta say up front what the validation will ask for: `@NotBlank` is `minLength: 1`, `@Size`,
   `@Min`, `@Max`, `@DecimalMin`, `@Positive` and the like are their keywords, `@Pattern` is `pattern` and `@Email`
-  is `format: email`. They are read from the field (`@field:NotBlank`) or from the parameter.
+  is `format: email`. They are read from the parameter or from the field behind it, where Kotlin also puts them.
 - `@Description`, from `trantor-primitives`, on a class or a field, is its `description`: what the name and the type
   do not say.
 
@@ -193,7 +193,7 @@ val schema = serializer.schemaOf<PlaceOrder>()
 @Description("An order of a customer")
 data class PlaceOrder(
     @Description("The customer who buys") val customer: CustomerId,
-    @field:NotEmpty val lines: List<OrderLine>,
+    @NotEmpty val lines: List<OrderLine>,
 )
 ```
 

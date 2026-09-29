@@ -63,13 +63,13 @@ class ServiceKeyValueResolverTest {
     class Queue(val name: String)
 
     class Worker(
-        @param:ServiceKey("emails") val emails: Queue,
-        @param:ServiceKey("reports") val reports: Queue,
+        @ServiceKey("emails") val emails: Queue,
+        @ServiceKey("reports") val reports: Queue,
     )
 
-    class WantsEmails(@param:ServiceKey("emails") val emails: Queue)
+    class WantsEmails(@ServiceKey("emails") val emails: Queue)
 
-    class WantsOptionalEmails(@param:ServiceKey("emails") val emails: Queue? = null)
+    class WantsOptionalEmails(@ServiceKey("emails") val emails: Queue? = null)
 
     private val config = ConfigManager()
     private val registry = ServiceRegistry(config)

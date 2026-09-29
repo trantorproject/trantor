@@ -296,7 +296,7 @@ class McpServerTest {
     data class Me(val name: String)
 
     @RolesAuthorization(["seller"])
-    data class PlaceOrder(@field:NotBlank val sku: String, val quantity: Int): Command<Unit>
+    data class PlaceOrder(@NotBlank val sku: String, val quantity: Int): Command<Unit>
 
     /** Who asks, by the session token the middleware of Trantor took off the header, as crafty does with its own. */
     class TokenAuthenticationMiddleware: Middleware {

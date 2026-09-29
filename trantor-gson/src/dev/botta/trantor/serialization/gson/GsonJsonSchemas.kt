@@ -254,7 +254,10 @@ internal class GsonJsonSchemas(
         return (classifier as KClass<*>).createType(arguments, type.isMarkedNullable, type.annotations)
     }
 
-    /** The annotations of a parameter, and of the field behind it, where `@field:NotBlank` puts them. */
+    /**
+     * The annotations of a parameter and of the field behind it: Kotlin puts an annotation of Java on both, or only
+     * on the field when it is written `@field:NotBlank`.
+     */
     private fun annotationsOf(parameter: KParameter, klass: KClass<*>): List<Annotation> {
         val field = runCatching { klass.java.getDeclaredField(parameter.name!!) }.getOrNull()
         return parameter.annotations + field?.annotations.orEmpty()

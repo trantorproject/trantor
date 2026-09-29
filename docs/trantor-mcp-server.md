@@ -54,7 +54,7 @@ say what its body says is turned down with 400.
 @Description("An order of a customer")
 data class PlaceOrder(
     @Description("The customer who buys") val customer: CustomerId,
-    @field:NotEmpty val lines: List<OrderLine>,
+    @NotEmpty val lines: List<OrderLine>,
     val payment: Payment,
     val deliverOn: LocalDate,
 ): Command<OrderPlaced>

@@ -411,18 +411,18 @@ class GsonSerializerSchemaTest {
     data class Country(val code: Iso, val region: Iso? = null)
 
     data class Validated(
-        @field:NotBlank val name: String,
-        @field:Size(min = 2, max = 10) val code: String,
-        @field:NullOrNotBlank val nick: String?,
-        @field:NotEmpty val tags: List<String>,
-        @field:Size(max = 3) val picks: List<String>,
-        @field:Min(1) @field:Max(5) val count: Int,
-        @field:Positive val positive: Int,
-        @field:PositiveOrZero val zeroOrMore: Int,
-        @field:DecimalMin("0.5") val rate: Double,
-        @field:DecimalMin("0", inclusive = false) val above: Double,
-        @field:Pattern(regexp = "^[0-9]{4}$") val zip: String,
-        @field:jakarta.validation.constraints.Email val contact: String,
+        @NotBlank val name: String,
+        @Size(min = 2, max = 10) val code: String,
+        @NullOrNotBlank val nick: String?,
+        @NotEmpty val tags: List<String>,
+        @Size(max = 3) val picks: List<String>,
+        @Min(1) @Max(5) val count: Int,
+        @Positive val positive: Int,
+        @PositiveOrZero val zeroOrMore: Int,
+        @DecimalMin("0.5") val rate: Double,
+        @DecimalMin("0", inclusive = false) val above: Double,
+        @Pattern(regexp = "^[0-9]{4}$") val zip: String,
+        @jakarta.validation.constraints.Email val contact: String,
     )
 
     data class OnParameter(@NotBlank val name: String)

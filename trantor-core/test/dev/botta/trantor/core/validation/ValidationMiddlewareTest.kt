@@ -86,12 +86,12 @@ class ValidationMiddlewareTest {
         runCatching { validate(request) }.exceptionOrNull() as ValidationError
 
     class PlaceOrder(
-        @field:NotBlank val customer: String,
-        @field:Min(1) val quantity: Int,
-        @field:jakarta.validation.Valid val address: Address? = null,
+        @NotBlank val customer: String,
+        @Min(1) val quantity: Int,
+        @jakarta.validation.Valid val address: Address? = null,
     ): Request<String>
 
-    class Address(@field:Size(min = 1) val city: String)
+    class Address(@Size(min = 1) val city: String)
 
     class Ping: Request<String>
 

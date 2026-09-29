@@ -26,9 +26,6 @@ allprojects {
 
     kotlin {
         jvmToolchain(25)
-        compilerOptions {
-            freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
-        }
     }
 
     tasks.named<Copy>("processResources") {

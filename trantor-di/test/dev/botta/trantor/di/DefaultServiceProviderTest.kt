@@ -480,7 +480,7 @@ class DefaultServiceProviderTest {
 
     annotation class ConfigValue(val key: String)
 
-    class ClassWithValueResolver(@param:ConfigValue("config-key") val param: String) {
+    class ClassWithValueResolver(@ConfigValue("config-key") val param: String) {
     }
 
     class ConfigServiceValueResolver: ServiceValueResolver {

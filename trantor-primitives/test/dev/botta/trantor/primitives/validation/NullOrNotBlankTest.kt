@@ -30,7 +30,7 @@ class NullOrNotBlankTest {
     private fun validate(request: RenameBook) =
         validator.validate(request).map { "${it.propertyPath}: ${it.message}" }
 
-    class RenameBook(@field:NullOrNotBlank val title: String?)
+    class RenameBook(@NullOrNotBlank val title: String?)
 
     private val validator = Validation.byProvider(HibernateValidator::class.java)
         .configure()

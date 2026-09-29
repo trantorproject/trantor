@@ -104,21 +104,21 @@ class ConfigServiceValueResolverTest {
         return DefaultServiceProvider(ServiceRegistry(config)).create<WantsABoolean>().enabled
     }
 
-    class WantsAName(@param:ConfigValue("app.name") val name: String)
+    class WantsAName(@ConfigValue("app.name") val name: String)
 
-    class WantsAnOptionalName(@param:ConfigValue("app.name") val name: String = "unnamed")
+    class WantsAnOptionalName(@ConfigValue("app.name") val name: String = "unnamed")
 
-    class WantsAPort(@param:ConfigValue("app.port") val port: Int)
+    class WantsAPort(@ConfigValue("app.port") val port: Int)
 
-    class WantsABoolean(@param:ConfigValue("app.enabled") val enabled: Boolean)
+    class WantsABoolean(@ConfigValue("app.enabled") val enabled: Boolean)
 
-    class WantsADate(@param:ConfigValue("app.when") val date: LocalDate)
+    class WantsADate(@ConfigValue("app.when") val date: LocalDate)
 
     class WantsNumbers(
-        @param:ConfigValue("app.port") val port: Int,
-        @param:ConfigValue("app.maxSize") val maxSize: Long,
-        @param:ConfigValue("app.ratio") val ratio: Double,
-        @param:ConfigValue("app.factor") val factor: Float,
+        @ConfigValue("app.port") val port: Int,
+        @ConfigValue("app.maxSize") val maxSize: Long,
+        @ConfigValue("app.ratio") val ratio: Double,
+        @ConfigValue("app.factor") val factor: Float,
     )
 
     private val config = ConfigManager()
