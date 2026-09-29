@@ -20,6 +20,8 @@ class ApplicationRouteRegister(
     /** Runs a request through the middlewares of the application, with the `Context` of the call. */
     val executor: WebApplicationExecutor,
 ): RouteRegister {
+    override val openTelemetry get() = routes.openTelemetry
+
     override fun before(handler: Handler) = apply {
         routes.before(handler)
     }

@@ -3,9 +3,13 @@ package dev.botta.trantor.web.server
 import io.javalin.Javalin
 import io.javalin.http.*
 import io.javalin.websocket.WsConfig
+import io.opentelemetry.api.OpenTelemetry
 import java.util.function.Consumer
 
-class JavalinRouteRegister(private val javalin: Javalin): RouteRegister {
+class JavalinRouteRegister(
+    private val javalin: Javalin,
+    override val openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+): RouteRegister {
     override fun before(handler: Handler) = apply {
         javalin.before(handler)
     }

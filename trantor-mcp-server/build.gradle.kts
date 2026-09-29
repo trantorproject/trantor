@@ -6,6 +6,7 @@ plugins {
 dependencies {
     api(project(":trantor-ai"))
     api(project(":trantor-web"))
+    testImplementation("io.opentelemetry:opentelemetry-sdk-testing")
 }
 
 extra.set("POM_NAME", "Trantor MCP Server")

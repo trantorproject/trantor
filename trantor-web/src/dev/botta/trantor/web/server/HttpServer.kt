@@ -57,7 +57,7 @@ class HttpServer(
                 it.addFilter(FilterHolder(ServerSpanFilter(openTelemetry)), "/*", EnumSet.of(DispatcherType.REQUEST))
             }
         }
-        routeRegister = JavalinRouteRegister(javalin)
+        routeRegister = JavalinRouteRegister(javalin, openTelemetry)
         setupMdc()
     }
 

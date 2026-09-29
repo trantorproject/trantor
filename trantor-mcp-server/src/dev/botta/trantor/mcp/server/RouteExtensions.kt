@@ -7,8 +7,10 @@ import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.web.application.routes.ApplicationRouteRegister
 import dev.botta.trantor.web.server.RouteRegister
+import dev.botta.trantor.web.server.clientAddress
 import io.javalin.http.Context
 import io.javalin.http.Handler
+import io.opentelemetry.api.OpenTelemetry
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
@@ -32,11 +34,16 @@ import kotlin.reflect.typeOf
  *
  * It takes POST, as the 2026-07-28 revision of MCP asks, and answers GET and DELETE with 405: there is no stream the
  * server opens on its own and no session to end.
+ *
+ * It traces with the `OpenTelemetry` of the routes, the one of the server: each request is a span of MCP that goes on
+ * from the trace the client sent in it, as [McpEndpoint] tells.
  */
 fun <T: RouteRegister> T.mcp(path: String, name: String, version: String, configure: McpEndpointBuilder.() -> Unit) =
     apply {
         val application = this as? ApplicationRouteRegister
-        val endpoint = McpEndpointBuilder(name, version, application?.mapper?.serializer).apply(configure).build()
+        val endpoint = McpEndpointBuilder(name, version, application?.mapper?.serializer, openTelemetry)
+            .apply(configure)
+            .build()
 
         val handler = Handler { context ->
             val call = McpCall { request -> execute(application, request, context) }
@@ -53,6 +60,7 @@ class McpEndpointBuilder internal constructor(
     private val name: String,
     private val version: String,
     private val serializer: JsonSerializer?,
+    private val openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
 ) {
     private val tools = mutableListOf<Tool<*>>()
     private var instructions: String? = null
@@ -98,7 +106,8 @@ class McpEndpointBuilder internal constructor(
     fun visibleTools(filter: (tools: List<Tool<*>>, identity: Identity) -> List<Tool<*>>) =
         apply { visibleTools = filter }
 
-    internal fun build() = McpEndpoint(name, version, tools.toList(), instructions, authenticated, visibleTools)
+    internal fun build() =
+        McpEndpoint(name, version, tools.toList(), instructions, authenticated, visibleTools, openTelemetry)
 }
 
 private fun execute(application: ApplicationRouteRegister?, request: Request<*>, context: Context): Any? {
@@ -109,7 +118,14 @@ private fun execute(application: ApplicationRouteRegister?, request: Request<*>,
     return executor.execute(request as Request<Any?>, context)
 }
 
-private fun requestOf(context: Context) = McpHttpRequest(context.method().name, context.body(), context.headerMap())
+private fun requestOf(context: Context) = McpHttpRequest(
+    context.method().name,
+    context.body(),
+    context.headerMap(),
+    clientAddress = context.req().clientAddress,
+    clientPort = context.req().remotePort,
+    httpVersion = context.req().protocol.substringAfter("HTTP/"),
+)
 
 private fun respond(context: Context, response: McpHttpResponse) {
     context.status(response.status)

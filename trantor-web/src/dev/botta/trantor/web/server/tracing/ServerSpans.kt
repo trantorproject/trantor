@@ -2,6 +2,7 @@ package dev.botta.trantor.web.server.tracing
 
 import dev.botta.trantor.primitives.TrantorBuildInfo
 import dev.botta.trantor.primitives.telemetry.UrlRedaction
+import dev.botta.trantor.web.server.clientAddress
 import io.javalin.http.Context
 import io.javalin.http.HandlerType
 import io.opentelemetry.api.OpenTelemetry
@@ -60,7 +61,7 @@ internal class ServerSpanFilter(openTelemetry: OpenTelemetry): Filter {
             .setAttribute(stringKey("url.scheme"), req.scheme)
             .setAttribute(stringKey("server.address"), req.serverName)
             .setAttribute(longKey("server.port"), req.serverPort.toLong())
-            .setAttribute(stringKey("client.address"), req.remoteAddr)
+            .setAttribute(stringKey("client.address"), req.clientAddress)
             .setAttribute(stringKey("network.protocol.version"), req.protocol.substringAfter("HTTP/"))
 
         if (method == null) builder.setAttribute(stringKey("http.request.method_original"), req.method)

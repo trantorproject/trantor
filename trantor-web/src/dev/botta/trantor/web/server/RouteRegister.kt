@@ -2,9 +2,17 @@ package dev.botta.trantor.web.server
 
 import io.javalin.http.Handler
 import io.javalin.websocket.WsConfig
+import io.opentelemetry.api.OpenTelemetry
 import java.util.function.Consumer
 
 interface RouteRegister {
+    /**
+     * What the server of these routes traces with, for what builds on them and makes spans of its own, like the
+     * endpoint of trantor-mcp-server: its spans then hang from the ones of the requests. The no-op one when the routes
+     * are not of a server that traces.
+     */
+    val openTelemetry: OpenTelemetry get() = OpenTelemetry.noop()
+
     fun before(handler: Handler): RouteRegister
 
     fun beforeMatched(handler: Handler): RouteRegister

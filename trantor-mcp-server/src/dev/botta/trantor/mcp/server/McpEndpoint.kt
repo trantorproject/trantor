@@ -17,6 +17,7 @@ import dev.botta.trantor.core.auth.UnauthorizedAccessError
 import dev.botta.trantor.core.validation.ValidationError
 import dev.botta.trantor.domain.errors.DomainError
 import dev.botta.trantor.primitives.logging.getLogger
+import io.opentelemetry.api.OpenTelemetry
 
 /**
  * An MCP server of the 2026-07-28 revision behind one endpoint over HTTP, with [tools] for the models of other
@@ -41,8 +42,14 @@ class McpEndpoint(
     private val requireAuthentication: Boolean = false,
     /** Which tools a caller sees, out of all of them; null when every caller sees every tool. */
     private val visibleTools: ((List<Tool<*>>, Identity) -> List<Tool<*>>)? = null,
+    /**
+     * What traces and measures each request, following the conventions of OpenTelemetry for MCP: a span that goes
+     * on from the trace the client sent in `_meta`, and `mcp.server.operation.duration`. The no-op one costs nothing.
+     */
+    openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
 ) {
     private val tools = tools.toList()
+    private val telemetry = McpServerTelemetry(openTelemetry)
 
     fun handle(request: McpHttpRequest, run: RunContext = RunContext()): McpHttpResponse {
         if (request.method != "POST") return McpHttpResponse(405, headers = mapOf("Allow" to "POST"))
@@ -56,10 +63,26 @@ class McpEndpoint(
         val id = message["id"]
         val method = message["method"]?.asString()
             ?: return error(id, McpProtocol.Errors.INVALID_REQUEST, "The message is not a request", 400)
+        val params = message["params"]?.asObject() ?: JsonObject()
+        val tool = if (method == "tools/call") params["name"]?.asString() else null
+        val known = tools.any { it.name == tool }
 
+        return telemetry.operation(request, method, id, params["_meta"]?.asObject(), tool, known) { operation ->
+            answer(request, id, method, params, run, operation)
+        }
+    }
+
+    private fun answer(
+        request: McpHttpRequest,
+        id: JsonValue?,
+        method: String,
+        params: JsonObject,
+        run: RunContext,
+        operation: McpOperation,
+    ): McpHttpResponse {
         // Who asks is asked once, and only when something needs it: it runs a request through the application
         val identity by lazy { run.get<McpCall>()?.identity() ?: AnonymousIdentity() }
-        if (requireAuthentication && !identity.isAuthenticated) return unauthenticated(id)
+        if (requireAuthentication && !identity.isAuthenticated) return unauthenticated(id, operation)
         val visible = lazy {
             val filter = visibleTools ?: return@lazy tools.associateBy { it.name }
             filter(tools, identity).associateBy { it.name }
@@ -68,23 +91,23 @@ class McpEndpoint(
         // A notification says something and waits for nothing; none of the ones of the revision does anything here
         if (id == null) return McpHttpResponse(202)
 
-        val params = message["params"]?.asObject() ?: JsonObject()
         val claimed = params["_meta"]?.asObject()?.get(McpProtocol.Meta.PROTOCOL_VERSION)?.asString()
         val headerVersion = request.header(McpProtocol.Headers.PROTOCOL_VERSION)
 
         // One that says 2026-07-28 in the header and not in the body is not of before: turnDown says what is wrong
         if (claimed == null && headerVersion != McpProtocol.VERSION) {
-            return earlier(id, method, params, headerVersion, run, visible)
+            return earlier(id, method, params, headerVersion, run, visible, operation)
         }
 
-        turnDown(request, id, method, params)?.let { return it }
+        claimed?.let { operation.speaks(it) }
+        turnDown(request, id, method, params, operation)?.let { return it }
 
         return when (method) {
             "server/discover" -> result(id, discover())
             "tools/list" -> result(id, list(visible.value))
-            "tools/call" -> call(id, params, run, visible.value)
+            "tools/call" -> call(id, params, run, visible.value, operation)
             "ping" -> result(id, Json.obj())
-            else -> error(id, McpProtocol.Errors.METHOD_NOT_FOUND, "Method not found: $method", 404)
+            else -> error(id, McpProtocol.Errors.METHOD_NOT_FOUND, "Method not found: $method", 404, operation)
         }
     }
 
@@ -97,30 +120,31 @@ class McpEndpoint(
         id: JsonValue,
         method: String,
         params: JsonObject,
+        operation: McpOperation,
     ): McpHttpResponse? {
         val headerVersion = request.header(McpProtocol.Headers.PROTOCOL_VERSION)
         val bodyVersion = params["_meta"]?.asObject()?.get(McpProtocol.Meta.PROTOCOL_VERSION)?.asString()
 
         if (headerVersion == null || headerVersion != bodyVersion) {
-            return mismatch(id, "The protocol version header says $headerVersion, and the body $bodyVersion")
+            return mismatch(id, "The protocol version header says $headerVersion, and the body $bodyVersion", operation)
         }
 
         if (bodyVersion != McpProtocol.VERSION) {
             val data = Json.obj("supported" to Json.array(McpProtocol.VERSION), "requested" to bodyVersion)
             val message = "Unsupported protocol version: $bodyVersion"
-            return error(id, McpProtocol.Errors.UNSUPPORTED_PROTOCOL_VERSION, message, 400, data)
+            return error(id, McpProtocol.Errors.UNSUPPORTED_PROTOCOL_VERSION, message, 400, operation, data)
         }
 
         val headerMethod = request.header(McpProtocol.Headers.METHOD)
         if (headerMethod != method) {
-            return mismatch(id, "The method header says $headerMethod, and the body $method")
+            return mismatch(id, "The method header says $headerMethod, and the body $method", operation)
         }
 
         if (method == "tools/call") {
             val bodyName = params["name"]?.asString()
             val headerName = request.header(McpProtocol.Headers.NAME)?.let { McpProtocol.decodeHeaderValue(it) }
             if (headerName != bodyName) {
-                return mismatch(id, "The name header says $headerName, and the body $bodyName")
+                return mismatch(id, "The name header says $headerName, and the body $bodyName", operation)
             }
         }
 
@@ -135,26 +159,35 @@ class McpEndpoint(
         headerVersion: String?,
         run: RunContext,
         visible: Lazy<Map<String, Tool<*>>>,
+        operation: McpOperation,
     ): McpHttpResponse {
         if (method != "initialize" && headerVersion != null && headerVersion !in McpProtocol.EARLIER_VERSIONS) {
-            return error(id, McpProtocol.Errors.INVALID_REQUEST, "Unsupported protocol version: $headerVersion", 400)
+            val message = "Unsupported protocol version: $headerVersion"
+            return error(id, McpProtocol.Errors.INVALID_REQUEST, message, 400, operation)
         }
 
+        if (method == "initialize") {
+            val agreed = agreed(params)
+            operation.speaks(agreed)
+            return result(id, initialize(agreed), complete = false)
+        }
+        headerVersion?.let { operation.speaks(it) }
+
         return when (method) {
-            "initialize" -> result(id, initialize(params), complete = false)
             "tools/list" -> result(id, Json.obj("tools" to described(visible.value)), complete = false)
-            "tools/call" -> call(id, params, run, visible.value, complete = false)
+            "tools/call" -> call(id, params, run, visible.value, operation, complete = false)
             "ping" -> result(id, Json.obj(), complete = false)
             // Not a 404, which tells a client of before that its session is gone, and it would open another
-            else -> error(id, McpProtocol.Errors.METHOD_NOT_FOUND, "Method not found: $method", 200)
+            else -> error(id, McpProtocol.Errors.METHOD_NOT_FOUND, "Method not found: $method", 200, operation)
         }
     }
 
-    /** The handshake of before, in the revision the client asked for when it is one this endpoint speaks. */
-    private fun initialize(params: JsonObject): JsonObject {
-        val requested = params["protocolVersion"]?.asString()
-        val agreed = requested?.takeIf { it in McpProtocol.EARLIER_VERSIONS } ?: McpProtocol.EARLIER_VERSION
+    /** The revision of the handshake of before: the one the client asked for when it is one this endpoint speaks. */
+    private fun agreed(params: JsonObject) =
+        params["protocolVersion"]?.asString()?.takeIf { it in McpProtocol.EARLIER_VERSIONS }
+            ?: McpProtocol.EARLIER_VERSION
 
+    private fun initialize(agreed: String): JsonObject {
         return Json.obj(
             "protocolVersion" to agreed,
             "capabilities" to Json.obj("tools" to Json.obj()),
@@ -192,33 +225,36 @@ class McpEndpoint(
         params: JsonObject,
         run: RunContext,
         visible: Map<String, Tool<*>>,
+        operation: McpOperation,
         complete: Boolean = true,
     ): McpHttpResponse {
         val name = params["name"]?.asString()
         // One the caller does not see does not exist for them
-        val tool = visible[name] ?: return error(id, McpProtocol.Errors.INVALID_PARAMS, "Unknown tool: $name", 200)
+        val tool = visible[name]
+            ?: return error(id, McpProtocol.Errors.INVALID_PARAMS, "Unknown tool: $name", 200, operation)
         val arguments = params["arguments"]?.asObject() ?: JsonObject()
 
         val output = try {
             val context = ToolContext(callId = id.asString() ?: id.toString(), toolName = tool.name, run = run)
             tool.call(arguments, context).output
         } catch (e: InvalidToolInputError) {
-            return result(id, failed(e.message), complete)
+            return failed(id, e.message, complete, operation)
         } catch (e: ToolError) {
-            return result(id, failed(e.message), complete)
+            return failed(id, e.message, complete, operation)
         } catch (e: NotAuthenticatedError) {
-            return unauthenticated(id)
+            return unauthenticated(id, operation)
         } catch (e: UnauthorizedAccessError) {
             // A permission of the application denied: the model tells the person, who may ask someone who has it
-            return result(id, failed(e.message), complete)
+            return failed(id, e.message, complete, operation)
         } catch (e: DomainError) {
-            return result(id, failed(e.message), complete)
+            return failed(id, e.message, complete, operation)
         } catch (e: ValidationError) {
-            return result(id, failed(e.message), complete)
+            return failed(id, e.message, complete, operation)
         } catch (e: Exception) {
             // What nobody expected may say what it should not, like the insides of the application: it goes to the log
+            // and to the trace, which are the application's
             logger.error("The tool $name of the MCP server ${this.name} failed", e)
-            return error(id, McpProtocol.Errors.INTERNAL_ERROR, "Internal error", 200)
+            return error(id, McpProtocol.Errors.INTERNAL_ERROR, "Internal error", 200, operation, exception = e)
         }
 
         return result(id, resultOf(output), complete)
@@ -234,7 +270,13 @@ class McpEndpoint(
         }
     }
 
-    private fun failed(message: String?) = Json.obj("content" to Json.array(text(message.orEmpty())), "isError" to true)
+    /** A tool that ran and failed as it may: the model reads why, and the result says it is an error. */
+    private fun failed(id: JsonValue, message: String?, complete: Boolean, operation: McpOperation): McpHttpResponse {
+        operation.toolFailed()
+        val result = Json.obj("content" to Json.array(text(message.orEmpty())), "isError" to true)
+
+        return result(id, result, complete)
+    }
 
     private fun text(value: String) = Json.obj("type" to "text", "text" to value)
 
@@ -258,11 +300,13 @@ class McpEndpoint(
      * A use case that needs to know who asks, and nobody said: the answer is 401 with the challenge of a Bearer token,
      * which is what makes a client ask the person for credentials.
      */
-    private fun unauthenticated(id: JsonValue?): McpHttpResponse {
+    private fun unauthenticated(id: JsonValue?, operation: McpOperation): McpHttpResponse {
+        val message = "Authentication required"
+        operation.answeredError(McpProtocol.Errors.INVALID_REQUEST, message)
         val body = Json.obj(
             "jsonrpc" to "2.0",
             "id" to (id ?: Json.NULL),
-            "error" to Json.obj("code" to McpProtocol.Errors.INVALID_REQUEST, "message" to "Authentication required"),
+            "error" to Json.obj("code" to McpProtocol.Errors.INVALID_REQUEST, "message" to message),
         )
 
         val headers = mapOf("Content-Type" to "application/json", "WWW-Authenticate" to "Bearer")
@@ -270,15 +314,23 @@ class McpEndpoint(
         return McpHttpResponse(401, body.toString(), headers)
     }
 
-    private fun mismatch(id: JsonValue, message: String) = error(id, McpProtocol.Errors.HEADER_MISMATCH, message, 400)
+    private fun mismatch(id: JsonValue, message: String, operation: McpOperation) =
+        error(id, McpProtocol.Errors.HEADER_MISMATCH, message, 400, operation)
 
+    /**
+     * A JSON-RPC error, which [operation] tells the trace of, with the [exception] behind it when there is one. Without
+     * an operation, the message was not a request, and there is no trace of MCP to tell.
+     */
     private fun error(
         id: JsonValue?,
         code: Int,
         message: String,
         status: Int,
+        operation: McpOperation? = null,
         data: JsonObject? = null,
+        exception: Throwable? = null,
     ): McpHttpResponse {
+        operation?.answeredError(code, message, exception)
         val error = Json.obj("code" to code, "message" to message)
         data?.let { error["data"] = it }
 

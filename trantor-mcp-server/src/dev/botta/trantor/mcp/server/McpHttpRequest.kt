@@ -6,6 +6,11 @@ class McpHttpRequest(
     val method: String,
     val body: String,
     private val headers: Map<String, String> = emptyMap(),
+    /** The address of who sent it, as the server sees it. */
+    val clientAddress: String? = null,
+    val clientPort: Int? = null,
+    /** The version of HTTP it came in, like 1.1 or 2. */
+    val httpVersion: String? = null,
 ) {
     /** A header by its name, which HTTP compares ignoring case. */
     fun header(name: String) = headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value

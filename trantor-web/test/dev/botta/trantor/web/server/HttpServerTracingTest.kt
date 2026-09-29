@@ -22,6 +22,8 @@ import org.junit.jupiter.api.*
 import java.net.ServerSocket
 import java.net.URI
 import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import java.net.http.WebSocket
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
@@ -49,6 +51,15 @@ class HttpServerTracingTest {
             assertThat(span.attributes[stringKey("user_agent.original")]).isEqualTo("tests")
             assertThat(span.attributes[stringKey("network.protocol.version")]).isEqualTo("1.1")
             assertThat(span.status.statusCode).isEqualTo(StatusCode.UNSET)
+        }
+
+        @Test
+        fun `says who sent it by their address, without the brackets an IPv6 one has in a URL`() {
+            val request = HttpRequest.newBuilder(URI("http://[::1]:$port/orders/order-7")).build()
+
+            HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.discarding())
+
+            assertThat(serverSpan().attributes[stringKey("client.address")]).isEqualTo("0:0:0:0:0:0:0:1")
         }
 
         @Test
@@ -165,6 +176,11 @@ class HttpServerTracingTest {
             assertThat(echoed.get(5, SECONDS)).isEqualTo("hola")
             socket.abort()
         }
+    }
+
+    @Test
+    fun `its routes trace with its OpenTelemetry, for what builds on them and traces on its own`() {
+        assertThat(server.routes.openTelemetry).isSameAs(openTelemetry)
     }
 
     @BeforeEach

@@ -27,7 +27,14 @@ import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolError
 import dev.botta.trantor.ai.tools.ToolResult
 import dev.botta.trantor.config.providers.addMemoryCollection
+import dev.botta.trantor.mcp.server.testing.TestTelemetry
 import dev.botta.trantor.web.application.WebApplication
+import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.common.AttributeKey.longKey
+import io.opentelemetry.api.common.AttributeKey.stringKey
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.sdk.trace.data.SpanData
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -42,6 +49,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.concurrent.TimeUnit
 
 /** The MCP client of trantor-ai talking to an MCP route of a running application. */
 @Tag("slow")
@@ -155,6 +163,51 @@ class McpServerTest {
         }
     }
 
+    @Nested
+    inner class `the traces` {
+        @Test
+        fun `a call goes on in the server from the span of the client, linked to the HTTP request that carried it`() {
+            McpClient.http("store", url, openTelemetry = telemetry.openTelemetry).use {
+                it.callTool("echo", Json.obj("text" to "hola"))
+            }
+
+            val client = telemetry.spans.single { it.name == "tools/call echo" && it.kind == SpanKind.CLIENT }
+            val server = telemetry.spans.single { it.name == "tools/call echo" && it.kind == SpanKind.SERVER }
+            assertThat(server.parentSpanId).isEqualTo(client.spanId)
+            assertThat(server.links.map { it.spanContext }).containsExactly(httpSpan("POST /mcp").spanContext)
+        }
+
+        @Test
+        fun `tells who called and over which HTTP, as the span of the HTTP request does`() {
+            client.callTool("echo", Json.obj("text" to "hola"))
+
+            val server = telemetry.spans.single { it.name == "tools/call echo" && it.kind == SpanKind.SERVER }
+            val http = httpSpan("POST /mcp")
+            assertThat(server.attributes[stringKey("client.address")])
+                .isEqualTo(http.attributes[stringKey("client.address")])
+            assertThat(server.attributes[longKey("client.port")]).isPositive()
+            assertThat(server.attributes[stringKey("network.protocol.version")]).isEqualTo("1.1")
+        }
+
+        @Test
+        fun `a use case runs inside the span of its call, through the middlewares of the application`() {
+            val result = seller.callTool("span_of_the_use_case")
+
+            val server = telemetry.spans.single { it.name == "tools/call span_of_the_use_case" }
+            assertThat(result.structuredContent?.path("result")?.asString()).isEqualTo(server.spanId)
+        }
+
+        /** The span of the HTTP request, which ends on the server after the response is written. */
+        private fun httpSpan(name: String): SpanData {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+            while (true) {
+                telemetry.spans.singleOrNull { it.name == name }?.let { return it }
+                check(System.nanoTime() < deadline) { "No span $name arrived: ${telemetry.spans}" }
+                Thread.sleep(10)
+            }
+        }
+    }
+
     @Test
     fun `answers GET with 405, since the server opens no stream of its own`() {
         val request = HttpRequest.newBuilder(URI.create(url)).GET().build()
@@ -169,6 +222,7 @@ class McpServerTest {
         val port = ServerSocket(0).use { it.localPort }
         val builder = WebApplication.builder { appName = "test"; environmentName = "DEVELOPMENT" }
         builder.config.addMemoryCollection("httpServer.port" to port.toString())
+        builder.services.addSingleton<OpenTelemetry>(telemetry.openTelemetry)
         app = builder.build()
 
         app.routes.mcp("/mcp", name = "store", version = "1.0.0") {
@@ -180,6 +234,7 @@ class McpServerTest {
         val bus = app.services.get<CQBus>()
         bus.registerContextAwareHandler<WhoAmI, Me> { ContextAwareRequestHandler { _, context -> whoAsks(context) } }
         bus.registerHandler<PlaceOrder, Unit> { RequestHandler { request, _ -> orders += request } }
+        bus.registerHandler<SpanOfTheUseCase, String> { RequestHandler { _, _ -> Span.current().spanContext.spanId } }
         // In the order crafty registers them: the last of a priority is the first to run
         app.registerMiddleware(RolesAuthorizationMiddleware())
         app.registerMiddleware(ValidationMiddleware(app.services.get()))
@@ -189,6 +244,7 @@ class McpServerTest {
         app.routes.mcp("/store", name = "store", version = "1.0.0") {
             tool<WhoAmI>("who_am_i", "Who asks")
             tool<PlaceOrder>("place_order", "Places an order")
+            tool<SpanOfTheUseCase>("span_of_the_use_case", "The span the use case runs in")
         }
 
         app.routes.mcp("/guarded", name = "store", version = "1.0.0") {
@@ -207,8 +263,9 @@ class McpServerTest {
     }
 
     @BeforeEach
-    fun forgetTheOrders() {
+    fun forgetTheOrdersAndTheSpans() {
         orders.clear()
+        telemetry.exporter.reset()
     }
 
     @AfterAll
@@ -225,6 +282,7 @@ class McpServerTest {
     private lateinit var guardedUrl: String
     private lateinit var seller: McpClient
     private val orders = mutableListOf<PlaceOrder>()
+    private val telemetry = TestTelemetry()
 
     private fun whoAsks(context: ExecutionContext): Me {
         if (!context.identity.isAuthenticated) throw NotAuthenticatedError()
@@ -232,6 +290,8 @@ class McpServerTest {
     }
 
     class WhoAmI: Query<Me>
+
+    class SpanOfTheUseCase: Query<String>
 
     data class Me(val name: String)
 
