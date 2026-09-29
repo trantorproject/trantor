@@ -34,6 +34,22 @@ class OpenAIChatModelToolsTest {
     }
 
     @Test
+    fun `a tool whose schema refers to itself stays strict, which OpenAI holds a model to`() {
+        httpClient.body = fixture("tool-call")
+        val tree = Json.obj(
+            "type" to "object",
+            "properties" to Json.obj("children" to Json.obj("type" to "array", "items" to Json.obj("\$ref" to "#"))),
+        )
+
+        val response = model.generate(requestWith(weatherTool.copy(parameters = tree)))
+
+        val sent = sentBody()["tools"]?.asArray()?.get(0)?.asObject()
+        assertThat(sent?.get("strict")?.asBoolean()).isTrue()
+        assertThat(sent?.path("parameters.additionalProperties")?.asBoolean()).isFalse()
+        assertThat(response.warnings).isEmpty()
+    }
+
+    @Test
     fun `lets the model choose the tool by default`() {
         httpClient.body = fixture("tool-call")
 

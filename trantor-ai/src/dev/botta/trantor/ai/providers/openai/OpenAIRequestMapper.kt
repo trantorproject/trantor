@@ -245,7 +245,8 @@ internal class OpenAIRequestMapper(
 
         // In strict mode the schema has to follow rules a plain schema doesn't, so the adapter fixes it instead of
         // making everyone write it by hand
-        private fun schemaFor(schema: JsonObject, strict: Boolean) = if (strict) StrictSchema.of(schema) else schema
+        private fun schemaFor(schema: JsonObject, strict: Boolean) =
+            if (strict) StrictSchema.of(schema, OpenAIStrictRules) else schema
 
         private fun toTool(tool: ToolSpec) = when (tool) {
             is FunctionToolSpec -> Json.obj(

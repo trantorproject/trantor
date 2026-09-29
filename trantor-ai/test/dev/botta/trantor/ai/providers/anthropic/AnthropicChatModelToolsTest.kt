@@ -6,7 +6,9 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.*
+import dev.botta.trantor.ai.errors.UnsupportedRequestError
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
@@ -26,6 +28,24 @@ class AnthropicChatModelToolsTest {
                     """"additionalProperties":false,"required":["city"]},"description":"The weather of a city",""" +
                     """"strict":true}]"""
             )
+        }
+
+        @Test
+        fun `a tool whose schema refers to itself goes without strict, which Anthropic cannot hold a model to`() {
+            val response = generate(requestWith(weatherTool.copy(parameters = tree)))
+
+            assertThat(sentTool().containsKey("strict")).isFalse()
+            assertThat(response.warnings.single().message).contains("getWeather", "refers to itself")
+        }
+
+        @Test
+        fun `and so an answer whose schema refers to itself is turned down before it is asked for`() {
+            val request = ChatRequest(listOf(Message.user("Un arbol")), output = OutputSpec.Json(tree))
+
+            assertThatThrownBy { generate(request) }
+                .isInstanceOf(UnsupportedRequestError::class.java)
+                .hasMessageContaining("refers to itself")
+            assertThat(httpClient.requestBody).isNull()
         }
 
         @Test
@@ -199,6 +219,11 @@ class AnthropicChatModelToolsTest {
             "type" to "object",
             "properties" to Json.obj("city" to Json.obj("type" to "string")),
         ),
+    )
+
+    private val tree = Json.obj(
+        "type" to "object",
+        "properties" to Json.obj("children" to Json.obj("type" to "array", "items" to Json.obj($$"$ref" to "#"))),
     )
 
     // An empty object is an answer the mapper reads without complaining, so these tests are about what was sent

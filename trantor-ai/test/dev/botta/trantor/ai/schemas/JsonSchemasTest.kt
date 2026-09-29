@@ -3,6 +3,7 @@
 package dev.botta.trantor.ai.schemas
 
 import dev.botta.json.Json
+import dev.botta.trantor.ai.providers.openai.OpenAIStrictRules
 import kotlinx.schema.generator.json.SerialDescription
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
@@ -77,7 +78,7 @@ class JsonSchemasTest {
 
     @Test
     fun `a type without properties is an object without properties, which strict mode can close`() {
-        val schema = StrictSchema.of(JsonSchemas.of<Nothing>())
+        val schema = StrictSchema.of(JsonSchemas.of<Nothing>(), OpenAIStrictRules)
 
         assertThat(schema).isEqualTo(
             Json.obj(

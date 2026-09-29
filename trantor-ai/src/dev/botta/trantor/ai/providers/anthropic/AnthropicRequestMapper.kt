@@ -162,20 +162,31 @@ internal class AnthropicRequestMapper(
         /**
          * Holding the model to the schema is the same grammar as structured output, and the same models have it.
          * Where it is not there the tool still goes, because a tool nobody can be held to is far better than no
-         * tool at all — what is lost is the guarantee, and that is what the warning says.
+         * tool at all — what is lost is the guarantee, and that is what the warning says. The same goes for a schema
+         * that refers to itself, which Anthropic cannot hold a model to.
          */
         private fun strictly(tool: FunctionToolSpec): Boolean {
-            if (!tool.strict || takes.structuredOutput) return tool.strict
+            if (!tool.strict) return false
 
-            warnings.add(
-                ModelWarning(
-                    "$modelId cannot be held to the schema of ${tool.name}, so the tool was sent without it" +
-                        warnings.becauseItIsAGuess,
-                    "tools",
+            if (!takes.structuredOutput) {
+                warnings.add(
+                    ModelWarning(
+                        "$modelId cannot be held to the schema of ${tool.name}, so the tool was sent without it" +
+                            warnings.becauseItIsAGuess,
+                        "tools",
+                    )
                 )
-            )
+                return false
+            }
 
-            return false
+            if (StrictSchema.refersToItself(tool.parameters)) {
+                val message = "The schema of ${tool.name} refers to itself, which Anthropic cannot hold a model to, " +
+                    "so the tool was sent without it"
+                warnings.add(ModelWarning(message, "tools"))
+                return false
+            }
+
+            return true
         }
 
         private fun toToolChoice(choice: ToolChoice, parallel: Boolean?, thinking: JsonObject?): JsonObject {
@@ -388,6 +399,14 @@ internal class AnthropicRequestMapper(
         private fun formatFor(output: OutputSpec) = when (output) {
             is OutputSpec.Text -> null
             is OutputSpec.Json -> if (takes.structuredOutput) {
+                // Its answers in JSON are always held to their schema: there is nothing to fall back to
+                if (StrictSchema.refersToItself(output.schema)) {
+                    val message = "The schema of the answer refers to itself, which Anthropic cannot hold a model " +
+                        "to, and it has no answer in JSON that is not held to its schema"
+                    val warning = ModelWarning(message, "output")
+                    throw UnsupportedRequestError(ANTHROPIC_PROVIDER, listOf(warning))
+                }
+
                 // Anthropic names no schema and takes no strict flag: closing the schema is the whole of it
                 Json.obj("type" to "json_schema", "schema" to schemaFor(output.schema, strict = true))
             } else {
@@ -400,7 +419,8 @@ internal class AnthropicRequestMapper(
          * A schema the model is held to has to be closed: every object saying `additionalProperties: false` and
          * naming every property it has. The adapter closes it instead of making everyone write it by hand.
          */
-        private fun schemaFor(schema: JsonObject, strict: Boolean) = if (strict) StrictSchema.of(schema) else schema
+        private fun schemaFor(schema: JsonObject, strict: Boolean) =
+            if (strict) StrictSchema.of(schema, AnthropicStrictRules) else schema
 
         /**
          * One mark for each part the application asked to cache. The ones of the system prompt and the conversation
