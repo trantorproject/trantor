@@ -103,6 +103,8 @@ application can specialize them.
 | `ArgumentCannotBeEmptyError` | An argument is present but empty. An `InvalidArgumentError`. | `name` |
 | `InvalidOperationError` | The operation is not allowed in the current state (cancelling a delivered order). | |
 | `ForbiddenError` | The actor is not allowed to do it. | |
+| `ConcurrentModificationError` | Someone else saved the same thing between the moment it was read and the moment it was saved. | |
+| `ValueTooLongError` | A value is longer than the storage allows (a text column). | |
 
 `AlreadyExistsError` and `UniqueValueError` are final.
 
@@ -114,8 +116,9 @@ class OrderAlreadyShippedError(val orderId: OrderId): DomainError("Order $orderI
 
 Put what a caller needs in properties, not only in the message.
 
-`trantor-web` turns these into HTTP responses: `NotFoundError` is a 404, `ForbiddenError` a 403, and any other
-`DomainError` a 400 whose JSON body names the error type. See [trantor-web](trantor-web.md#errors).
+`trantor-web` turns these into HTTP responses: `NotFoundError` is a 404, `ForbiddenError` a 403,
+`ConcurrentModificationError` a 409, and any other `DomainError` a 400 whose JSON body names the error type.
+See [trantor-web](trantor-web.md#errors).
 
 ---
 

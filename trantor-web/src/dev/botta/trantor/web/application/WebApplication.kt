@@ -45,6 +45,7 @@ class WebApplication(private val application: Application, private val requestMa
         addForbiddenError<UnauthorizedAccessError>()
         addForbiddenError<ForbiddenError>()
         addNotFoundError<NotFoundError>()
+        addConflictError<ConcurrentModificationError>()
         addBadRequestError<DomainError>()
         addBadRequestError<ValidationError>()
         addBadRequestError<JsonParseError>()

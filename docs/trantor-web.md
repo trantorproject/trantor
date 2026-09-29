@@ -142,6 +142,7 @@ the domain errors of `trantor-domain`:
 | `NotAuthenticatedErrorHandler` | 401 |
 | `ForbiddenErrorHandler` | 403 |
 | `NotFoundErrorHandler` | 404 |
+| `ConflictErrorHandler` | 409 |
 | `InternalErrorHandler` | 500 |
 
 `InternalErrorHandler` is the one that catches what nothing else did: it logs at error level and does not

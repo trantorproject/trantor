@@ -6,6 +6,8 @@ dependencies {
     implementation("com.zaxxer:HikariCP")
     implementation(project(":trantor-di"))
     implementation(project(":trantor-config"))
+
+    testImplementation(project(":trantor-gson"))
 }
 
 extra.set("POM_NAME", "Trantor Data")

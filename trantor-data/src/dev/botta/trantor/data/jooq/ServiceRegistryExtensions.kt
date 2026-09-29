@@ -4,6 +4,7 @@ import dev.botta.trantor.core.tx.TransactionManager
 import dev.botta.trantor.data.jdbc.*
 import dev.botta.trantor.di.ServiceRegistry
 import org.jooq.*
+import org.jooq.conf.Settings
 import org.jooq.impl.*
 import org.jooq.tools.jdbc.JDBCUtils
 import javax.sql.DataSource
@@ -29,6 +30,11 @@ fun ServiceRegistry.addJooq(key: String? = null) = apply {
         }
         if (jooqSettings.logSql) {
             jooqConfiguration.set(DefaultExecuteListenerProvider(SQLLogger()))
+        }
+        if (jooqSettings.optimisticLocking) {
+            jooqConfiguration.set(
+                Settings().withExecuteWithOptimisticLocking(true).withExecuteWithOptimisticLockingExcludeUnversioned(true)
+            )
         }
         val transactionManager = it.get<TransactionManager>(key)
         jooqConfiguration.set(TrantorJooqTransactionProvider(transactionManager))

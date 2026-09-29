@@ -7,6 +7,7 @@ import dev.botta.cqbus.requests.Request
 import dev.botta.cqbus.requests.handlers.ContextAwareRequestHandler
 import dev.botta.cqbus.requests.handlers.RequestHandler
 import dev.botta.trantor.config.providers.addMemoryCollection
+import dev.botta.trantor.domain.errors.ConcurrentModificationError
 import dev.botta.trantor.domain.errors.DomainError
 import dev.botta.trantor.domain.errors.NotFoundError
 import dev.botta.trantor.web.application.routes.ApplicationRouteRegister
@@ -74,6 +75,12 @@ class WebApplicationTest {
         }
 
         @Test
+        fun `a concurrent modification is a 409`() {
+            RestAssured.given().body("""{"quantity":5}""").put("/orders/stale")
+                .then().statusCode(409).body("type", equalTo("ConcurrentModificationError"))
+        }
+
+        @Test
         fun `a body that is not json is a 400, not a 500`() {
             RestAssured.given().body("{ not json").post("/orders").then().statusCode(400)
         }
@@ -126,7 +133,10 @@ class WebApplicationTest {
             }
         }
         bus.registerHandler<UpdateOrder, OrderView> {
-            RequestHandler { request, _ -> OrderView(request.id, "nico", request.quantity) }
+            RequestHandler { request, _ ->
+                if (request.id == "stale") throw ConcurrentModificationError()
+                OrderView(request.id, "nico", request.quantity)
+            }
         }
         bus.registerHandler<CancelOrder, Unit> { RequestHandler { _, _ -> } }
         bus.registerHandler<GetInvoice, InvoiceView> { RequestHandler { request, _ -> InvoiceView(request.id) } }

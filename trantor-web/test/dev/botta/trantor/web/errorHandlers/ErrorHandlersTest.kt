@@ -38,6 +38,11 @@ class ErrorHandlersTest {
         }
 
         @Test
+        fun `conflict is 409`() {
+            assertThat(statusOf(ConflictErrorHandler(OrderRejected::class))).isEqualTo(409)
+        }
+
+        @Test
         fun `internal is 500`() {
             assertThat(statusOf(InternalErrorHandler(OrderRejected::class))).isEqualTo(500)
         }
