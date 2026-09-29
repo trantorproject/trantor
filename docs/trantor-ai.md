@@ -1021,7 +1021,9 @@ val invoice = response.objectAs<Invoice>()
 
 The schema is generated from the Kotlin class and closed before it is sent: every property required, no
 open maps. Both providers ask for the same thing — OpenAI calls it strict mode, Anthropic only demands
-`additionalProperties: false` — so the shaping is shared in `StrictSchema`.
+`additionalProperties: false` — so the shaping is shared in `StrictSchema`. A sealed class, and a nullable
+object, are written as `anyOf` their options: neither provider takes `oneOf` in strict mode, which is what the
+generator writes for them.
 
 Which wire field carries it is the adapter's business and not the caller's: `text.format` on OpenAI,
 `output_config.format` on Anthropic. A model too old to have one drops it with a warning.

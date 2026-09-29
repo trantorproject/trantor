@@ -4,6 +4,7 @@ package dev.botta.trantor.ai.schemas
 
 import dev.botta.json.Json
 import dev.botta.trantor.ai.schemas.JsonSchemas
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -40,6 +41,22 @@ class StrictSchemaTest {
     }
 
     @Test
+    fun `a sealed class is any of its subtypes, since no provider takes oneOf in strict mode`() {
+        val strict = StrictSchema.of(JsonSchemas.of<Payment>())
+
+        assertThat(strict.toString()).doesNotContain("oneOf")
+        assertThat(strict.path($$"$defs.Method.anyOf")?.asArray()?.map { it.asObject()?.get($$"$ref")?.asString() })
+            .containsExactly($$"#/$defs/card", $$"#/$defs/cash")
+    }
+
+    @Test
+    fun `a nullable object is it or null`() {
+        val strict = StrictSchema.of(JsonSchemas.of<Payment>())
+
+        assertThat(strict.path("properties.backup.anyOf")?.asArray()).hasSize(2)
+    }
+
+    @Test
     fun `the original schema is not touched`() {
         val schema = JsonSchemas.of<Order>()
         val before = schema.toString()
@@ -61,4 +78,18 @@ class StrictSchemaTest {
 
     @Serializable
     data class Item(val sku: String)
+
+    @Serializable
+    data class Payment(val method: Method, val backup: Item? = null)
+
+    @Serializable
+    sealed class Method {
+        @Serializable
+        @SerialName("card")
+        data class Card(val last4: String): Method()
+
+        @Serializable
+        @SerialName("cash")
+        data class Cash(val tendered: Double? = null): Method()
+    }
 }

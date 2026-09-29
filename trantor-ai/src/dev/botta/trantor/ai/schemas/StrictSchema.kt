@@ -11,7 +11,10 @@ import dev.botta.json.values.JsonObject
  * additionalProperties and **every** property listed in required. A field with a default is optional in Kotlin but
  * has to be required here, which is why an optional field has to be nullable to work: the model answers it as null.
  *
- * Definitions are also renamed to their simple name, since kotlinx generates them with the whole package.
+ * Definitions are also renamed to their simple name, since kotlinx generates them with the whole package, and every
+ * `oneOf` becomes an `anyOf`: kotlinx writes a sealed class and a nullable object as `oneOf`, which neither provider
+ * takes in strict mode ("'oneOf' is not permitted", "Schema type 'oneOf' is not supported", recorded on 2026-09-29).
+ * Their options exclude each other anyway, by the label of each subtype or by being null, so `anyOf` says the same.
  *
  * Both OpenAI and Anthropic ask for the same two things, so the shape is shared rather than copied. Anthropic is
  * the looser of the two: it only demands `additionalProperties: false`, and takes a listed default in place of a
@@ -23,6 +26,7 @@ internal object StrictSchema {
 
         shortenDefinitionNames(copy)
         close(copy)
+        replaceOneOf(copy)
 
         return copy
     }
@@ -66,6 +70,18 @@ internal object StrictSchema {
         }
     }
 
+    private fun replaceOneOf(value: Any?) {
+        when (value) {
+            is JsonObject -> {
+                value.remove(ONE_OF)?.let { value[ANY_OF] = it }
+                value.values.forEach { replaceOneOf(it) }
+            }
+            is JsonArray -> value.forEach { replaceOneOf(it) }
+        }
+    }
+
+    private const val ONE_OF = "oneOf"
+    private const val ANY_OF = "anyOf"
     private const val DEFS = $$"$defs"
     private const val REF = $$"$ref"
     private const val REF_PREFIX = $$"#/$defs/"
