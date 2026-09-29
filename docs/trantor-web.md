@@ -77,6 +77,47 @@ a path parameter wins over a query parameter of the same name.
 The handler's return value is serialized as the response, and the status code is whatever the route
 declared.
 
+### A route written by hand that runs a use case
+
+When a route has to do something `post<T>` does not, like setting a cookie or answering a shape of its own, it
+is written by hand and still runs the use case through the application, with its middlewares. An
+`ApplicationController` takes what it needs in its constructor: `WebApplicationBuilder` registers the
+`ApplicationRequestMapper` and the `WebApplicationExecutor` in the container, and `addController<T>()` builds the
+controller from it.
+
+```kotlin
+class AuthController(
+    private val mapper: ApplicationRequestMapper,
+    private val executor: WebApplicationExecutor,
+): ApplicationController {
+    override fun registerRoutes(http: ApplicationRouteRegister) {
+        http.post("/login", ::onLogin)
+    }
+
+    private fun onLogin(ctx: Context) {
+        val login = mapper.toRequest(Login::class, ctx)
+        val response = executor.execute(login, ctx)
+
+        if (response.isSuccessful) ctx.cookie(Cookie("sessionToken", response.sessionToken!!, isHttpOnly = true))
+        ctx.jsonObj("isSuccessful" to response.isSuccessful)
+    }
+}
+
+app.addController<AuthController>()
+```
+
+- `mapper.toRequest(type, ctx)` builds the request as `post<T>` does: the JSON body, then the query string and
+  the path parameters.
+- `executor.execute(request, ctx)` runs it with the `Context` of the call, which is what the middlewares that read
+  the HTTP request need, like `SessionTokenFromHeadersMiddleware`. `executeAsSystem(request, ctx)` runs it as the
+  system instead of the caller.
+- The answer is whatever the handler writes to `ctx`; `jsonValue` and `jsonObj` from `ContextExtensions` write JSON.
+  An exception goes to the error handlers, as in any route.
+
+The `ApplicationRouteRegister` an `ApplicationController` is handed has them too, as `http.mapper` and
+`http.executor` (and the serializer as `http.mapper.serializer`), for what builds on routes that run use cases,
+like the MCP endpoint of `trantor-mcp-server`.
+
 ---
 
 ## Errors

@@ -128,11 +128,12 @@ internal class HttpMcpClient(
     }
 
     /**
-     * Whether the server turned down a request of 2026-07-28 because it speaks a revision of before: a 4xx whose
-     * body is not one of the errors of the new revision, which a server of before does not know.
+     * Whether the server turned down a request of 2026-07-28 because it speaks a revision of before: a 400 whose
+     * body is not one of the errors of the new revision, which a server of before does not know. Only a 400, as the
+     * spec says: a 401 or a 403 asks for credentials, whatever the revision.
      */
     private fun speaksAnEarlierRevision(error: McpError) =
-        error.status in 400..499 && error.code !in McpMessages.CURRENT_ERRORS
+        error.status == 400 && error.code !in McpMessages.CURRENT_ERRORS
 
     private fun sendCurrent(request: McpRequest): JsonObject {
         val id = ids.incrementAndGet()

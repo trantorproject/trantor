@@ -8,10 +8,17 @@ import io.javalin.websocket.WsConfig
 import java.util.function.Consumer
 import kotlin.reflect.KClass
 
+/**
+ * The routes of a [dev.botta.trantor.web.application.WebApplication], which can be declared as the use case they run:
+ * `post<PlaceOrder>("/orders")`. Its [mapper] and its [executor] are what a way of exposing use cases of another
+ * module builds on, as an MCP endpoint does.
+ */
 class ApplicationRouteRegister(
     private val routes: RouteRegister,
-    private val mapper: ApplicationRequestMapper,
-    private val executor: WebApplicationExecutor,
+    /** Builds a request out of an HTTP call, with the serializer of the application. */
+    val mapper: ApplicationRequestMapper,
+    /** Runs a request through the middlewares of the application, with the `Context` of the call. */
+    val executor: WebApplicationExecutor,
 ): RouteRegister {
     override fun before(handler: Handler) = apply {
         routes.before(handler)

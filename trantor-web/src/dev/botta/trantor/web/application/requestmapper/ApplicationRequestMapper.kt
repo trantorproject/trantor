@@ -9,7 +9,10 @@ import dev.botta.trantor.web.application.requestmapper.transformers.*
 import io.javalin.http.Context
 import kotlin.reflect.KClass
 
-class ApplicationRequestMapper(private val serializer: JsonSerializer) {
+class ApplicationRequestMapper(
+    /** The serializer of the application, which reads the requests and writes the responses. */
+    val serializer: JsonSerializer,
+) {
     private val transformers = mutableListOf(
         QuerystringApplicationRequestMapperJsonTransformer(),
         PathParamApplicationRequestMapperJsonTransformer(),

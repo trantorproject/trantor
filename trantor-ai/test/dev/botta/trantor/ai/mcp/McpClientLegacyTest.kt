@@ -204,6 +204,18 @@ class McpClientLegacyTest {
         }
 
         @Test
+        fun `that asks for credentials is not taken for one of before, since only a 400 says that`() {
+            httpClient.answer("", status = 401, contentType = "")
+            httpClient.answer("", status = 403, contentType = "")
+
+            assertThatThrownBy { client.listTools() }
+                .isInstanceOfSatisfying(McpError::class.java) { assertThat(it.status).isEqualTo(401) }
+            assertThatThrownBy { client.listTools() }
+                .isInstanceOfSatisfying(McpError::class.java) { assertThat(it.status).isEqualTo(403) }
+            assertThat(sentMethods()).containsExactly("tools/list", "tools/list")
+        }
+
+        @Test
         fun `closing sends nothing, since there is no session`() {
             httpClient.answer(javaClass.getResource("/mcp/call-weather.json")!!.readText())
 
