@@ -137,7 +137,7 @@ internal class StdioMcpClient(
          */
         private fun discover() = telemetry.request(McpRequest("server/discover", JsonObject())) {
             val id = ids.incrementAndGet()
-            telemetry.sent(id, McpMessages.PROTOCOL_VERSION)
+            telemetry.sent(id, McpProtocol.VERSION)
 
             // Not cancelled when it gets no answer: a server of before does not know the request
             val message = McpMessages.request(id, "server/discover", trace = telemetry.context())
@@ -154,7 +154,7 @@ internal class StdioMcpClient(
 
         private fun handshake() = telemetry.request(McpRequest("initialize", JsonObject())) {
             val id = ids.incrementAndGet()
-            telemetry.sent(id, McpMessages.EARLIER_PROTOCOL_VERSION)
+            telemetry.sent(id, McpProtocol.EARLIER_VERSION)
 
             val answer = exchange(id, McpMessages.initialize(id), requestTimeout, cancel = true)
                 ?: throw McpError("The MCP server $name did not answer initialize in $requestTimeout")
@@ -162,7 +162,7 @@ internal class StdioMcpClient(
 
             write(McpMessages.notification("notifications/initialized"))
 
-            Revision.Earlier(result["protocolVersion"]?.asString() ?: McpMessages.EARLIER_PROTOCOL_VERSION)
+            Revision.Earlier(result["protocolVersion"]?.asString() ?: McpProtocol.EARLIER_VERSION)
         }
 
         /**
@@ -282,7 +282,7 @@ internal class StdioMcpClient(
         val version: String
 
         data object Current: Revision {
-            override val version = McpMessages.PROTOCOL_VERSION
+            override val version = McpProtocol.VERSION
         }
 
         class Earlier(override val version: String): Revision

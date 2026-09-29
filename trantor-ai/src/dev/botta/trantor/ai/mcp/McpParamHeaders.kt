@@ -3,7 +3,6 @@ package dev.botta.trantor.ai.mcp
 import dev.botta.json.values.JsonArray
 import dev.botta.json.values.JsonObject
 import dev.botta.json.values.JsonValue
-import java.util.Base64
 
 /**
  * The arguments of a tool that a server of 2026-07-28 marks with `x-mcp-header` in its schema, which a client over
@@ -17,9 +16,7 @@ import java.util.Base64
  */
 internal object McpParamHeaders {
     private const val MARK = "x-mcp-header"
-    private const val PREFIX = "Mcp-Param-"
-    private const val BASE64_PREFIX = "=?base64?"
-    private const val BASE64_SUFFIX = "?="
+    private const val PREFIX = McpProtocol.Headers.PARAM_PREFIX
     private val TOKEN = Regex("^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+$")
     private val TYPES = setOf("string", "integer", "boolean")
 
@@ -109,12 +106,5 @@ internal object McpParamHeaders {
      * A value as a header can carry it: as it is when it is plain ASCII, and in base64 otherwise, in the form the
      * spec defines. That covers a value with other letters, and one with a line break that would add a header.
      */
-    fun encode(value: String): String {
-        val looksEncoded = value.startsWith(BASE64_PREFIX) && value.endsWith(BASE64_SUFFIX)
-        val plain = value.all { it in ' '..'~' } && value.trim() == value && !looksEncoded
-
-        if (plain) return value
-
-        return BASE64_PREFIX + Base64.getEncoder().encodeToString(value.toByteArray()) + BASE64_SUFFIX
-    }
+    fun encode(value: String) = McpProtocol.encodeHeaderValue(value)
 }

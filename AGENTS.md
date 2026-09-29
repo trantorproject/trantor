@@ -41,6 +41,7 @@ which is the canonical example.
 | `trantor-web` | HTTP server on Javalin: routes, controllers, error handlers, websockets. |
 | `trantor-web-client` | HTTP client abstraction on OkHttp, plus SSE. `addHttpClient()` registers one for the application. |
 | `trantor-ai` | LLM access: `ChatModel`, `ModelRegistry`, middlewares, provider adapters. |
+| `trantor-mcp-server` | An MCP server as a route of trantor-web, whose tools the models of other applications call. |
 | `trantor-gson` | `JsonSerializer` on Gson, with the Kotlin-aware adapters. |
 | `trantor-aws`, `trantor-queues-sqs` | AWS integration and the SQS queue driver. |
 | `trantor-taskpool` | Bounded pool for background work. |

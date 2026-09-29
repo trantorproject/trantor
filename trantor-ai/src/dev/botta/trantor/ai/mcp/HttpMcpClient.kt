@@ -61,7 +61,7 @@ internal class HttpMcpClient(
         return try {
             super.callTool(name, arguments, options)
         } catch (e: McpError) {
-            if (e.code != McpMessages.HEADER_MISMATCH) throw e
+            if (e.code != McpProtocol.Errors.HEADER_MISMATCH) throw e
 
             listTools(options)
             super.callTool(name, arguments, options)
@@ -137,7 +137,7 @@ internal class HttpMcpClient(
     private fun sendCurrent(request: McpRequest): JsonObject {
         val id = ids.incrementAndGet()
         val body = McpMessages.request(id, request.method, request.params, telemetry.context())
-        telemetry.sent(id, McpMessages.PROTOCOL_VERSION)
+        telemetry.sent(id, McpProtocol.VERSION)
 
         return post(body, currentHeaders(request), request.options, request.what) { answer(it, request.what) }
     }
@@ -174,12 +174,12 @@ internal class HttpMcpClient(
     /** `initialize` and `notifications/initialized`, the handshake of the revisions before 2026-07-28. */
     private fun handshake(options: CallOptions) = telemetry.request(McpRequest("initialize", JsonObject())) {
         val id = ids.incrementAndGet()
-        telemetry.sent(id, McpMessages.EARLIER_PROTOCOL_VERSION)
+        telemetry.sent(id, McpProtocol.EARLIER_VERSION)
 
         val earlier = post(McpMessages.initialize(id), commonHeaders(), options, "initialize") {
             val result = answer(it, "initialize")
             val session = it.headers.entries.firstOrNull { header -> header.key.equals(SESSION_HEADER, true) }?.value
-            val version = result["protocolVersion"]?.asString() ?: McpMessages.EARLIER_PROTOCOL_VERSION
+            val version = result["protocolVersion"]?.asString() ?: McpProtocol.EARLIER_VERSION
 
             Revision.Earlier(version, session)
         }
@@ -198,8 +198,8 @@ internal class HttpMcpClient(
 
     /**
      * Posts [body] and reads its answer with [read], within the shorter of the timeout of the run and the one of the
-     * client, which is the time the whole stream may take. Cancelling the run cancels the stream, and what was read of it is
-     * not taken for an answer. What fails on the way to the server is an [McpError] that names it.
+     * client, which is the time the whole stream may take. Cancelling the run cancels the stream, and what was read
+     * of it is not taken for an answer. What fails on the way to the server is an [McpError] that names it.
      */
     private fun <T> post(
         body: JsonObject,
@@ -287,9 +287,9 @@ internal class HttpMcpClient(
     private fun currentHeaders(request: McpRequest) = buildMap {
         putAll(commonHeaders())
         // The body says the same: the spec mirrors it in headers so that a gateway can route without reading it
-        put("MCP-Protocol-Version", McpMessages.PROTOCOL_VERSION)
-        put("Mcp-Method", request.method)
-        request.name?.let { put("Mcp-Name", McpParamHeaders.encode(it)) }
+        put(McpProtocol.Headers.PROTOCOL_VERSION, McpProtocol.VERSION)
+        put(McpProtocol.Headers.METHOD, request.method)
+        request.name?.let { put(McpProtocol.Headers.NAME, McpProtocol.encodeHeaderValue(it)) }
         if (request.method == "tools/call") {
             val declarations = request.name?.let { this@HttpMcpClient.declarations?.get(it) }.orEmpty()
             putAll(McpParamHeaders.of(declarations, request.params["arguments"]?.asObject() ?: JsonObject()))
@@ -298,7 +298,7 @@ internal class HttpMcpClient(
 
     private fun headersOf(earlier: Revision.Earlier) = buildMap {
         putAll(commonHeaders())
-        put("MCP-Protocol-Version", earlier.version)
+        put(McpProtocol.Headers.PROTOCOL_VERSION, earlier.version)
         earlier.session?.let { put(SESSION_HEADER, it) }
     }
 
@@ -317,7 +317,7 @@ internal class HttpMcpClient(
     }
 
     private companion object {
-        const val SESSION_HEADER = "Mcp-Session-Id"
+        const val SESSION_HEADER = McpProtocol.Headers.SESSION
 
         val LOST_SESSION = setOf(400, 404)
 

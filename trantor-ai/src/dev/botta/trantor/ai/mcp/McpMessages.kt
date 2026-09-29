@@ -9,21 +9,15 @@ import dev.botta.trantor.primitives.TrantorBuildInfo
  * results it reads back.
  */
 internal object McpMessages {
-    const val PROTOCOL_VERSION = "2026-07-28"
-
-    /** The last revision with the handshake, which a server of before agrees to or answers with its own. */
-    const val EARLIER_PROTOCOL_VERSION = "2025-11-25"
-
-    private const val UNSUPPORTED_PROTOCOL_VERSION = -32022
-
-    /** The headers of a request over HTTP do not match its body. */
-    const val HEADER_MISMATCH = -32020
-
     /**
      * HeaderMismatch, MissingRequiredClientCapability and UnsupportedProtocolVersion: errors of 2026-07-28 that a
      * server of before does not answer, so one of them says the server speaks the new revision.
      */
-    val CURRENT_ERRORS = setOf(HEADER_MISMATCH, -32021, UNSUPPORTED_PROTOCOL_VERSION)
+    val CURRENT_ERRORS = setOf(
+        McpProtocol.Errors.HEADER_MISMATCH,
+        McpProtocol.Errors.MISSING_REQUIRED_CLIENT_CAPABILITY,
+        McpProtocol.Errors.UNSUPPORTED_PROTOCOL_VERSION,
+    )
 
     /**
      * A request of the 2026-07-28 revision, which says in its `_meta` who asks and on which version, and carries
@@ -61,7 +55,7 @@ internal object McpMessages {
     /** The handshake of the revisions before 2026-07-28, offering no capabilities. */
     fun initialize(id: Long): JsonObject {
         val params = Json.obj(
-            "protocolVersion" to EARLIER_PROTOCOL_VERSION,
+            "protocolVersion" to McpProtocol.EARLIER_VERSION,
             "capabilities" to Json.obj(),
             "clientInfo" to clientInfo(),
         )
@@ -104,8 +98,9 @@ internal object McpMessages {
         val supported = error["data"]?.asObject()?.get("supported")?.asArray()?.mapNotNull { it.asString() }
 
         // Its own message names the version it was asked for; which ones it takes is what says what to do
-        val told = if (code == UNSUPPORTED_PROTOCOL_VERSION && supported != null) {
-            "The MCP server supports ${supported.joinToString()}, and this client speaks $PROTOCOL_VERSION: $message"
+        val told = if (code == McpProtocol.Errors.UNSUPPORTED_PROTOCOL_VERSION && supported != null) {
+            val speaks = McpProtocol.VERSION
+            "The MCP server supports ${supported.joinToString()}, and this client speaks $speaks: $message"
         } else {
             message
         }
@@ -137,9 +132,9 @@ internal object McpMessages {
     }
 
     private fun meta() = Json.obj(
-        "io.modelcontextprotocol/protocolVersion" to PROTOCOL_VERSION,
-        "io.modelcontextprotocol/clientInfo" to clientInfo(),
-        "io.modelcontextprotocol/clientCapabilities" to Json.obj(),
+        McpProtocol.Meta.PROTOCOL_VERSION to McpProtocol.VERSION,
+        McpProtocol.Meta.CLIENT_INFO to clientInfo(),
+        McpProtocol.Meta.CLIENT_CAPABILITIES to Json.obj(),
     )
 
     private fun clientInfo() = Json.obj("name" to "trantor-ai", "version" to TrantorBuildInfo.version)

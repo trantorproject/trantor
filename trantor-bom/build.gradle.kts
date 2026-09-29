@@ -50,6 +50,7 @@ dependencies {
         api("dev.botta.trantor:trantor-domain:$version")
         api("dev.botta.trantor:trantor-gson:$version")
         api("dev.botta.trantor:trantor-hosting:$version")
+        api("dev.botta.trantor:trantor-mcp-server:$version")
         api("dev.botta.trantor:trantor-opentelemetry:$version")
         api("dev.botta.trantor:trantor-primitives:$version")
         api("dev.botta.trantor:trantor-queues-sqs:$version")
