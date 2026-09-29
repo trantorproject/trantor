@@ -750,6 +750,9 @@ trantor-ai has a client of its own, over HTTP and over stdio, and the tools of a
 agent like any other tool. It speaks the 2026-07-28 revision of the protocol, where every request stands on its
 own, and the revisions before it, which most servers still speak.
 
+This section is about using the servers of others. To offer the use cases of the application as an MCP server, see
+[trantor-mcp-server](trantor-mcp-server.md).
+
 ### Declaring the servers
 
 ```json
