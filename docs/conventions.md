@@ -47,17 +47,23 @@ Not enforced, still expected:
 
 ## Naming
 
-**Errors end in `Error`**, not `Exception`, and they are `open` so an application can specialize them:
+**Errors end in `Error`**, not `Exception`, extend `RuntimeException`, and are `open` so an application can
+specialize them:
 
 ```kotlin
-open class DomainError(message: String, cause: Throwable? = null): Exception(message, cause)
+open class DomainError(message: String, cause: Throwable? = null): RuntimeException(message, cause)
 open class NotFoundError(message: String = "Not found", cause: Throwable? = null): DomainError(message, cause)
 ```
+
+`RuntimeException` and not `Exception`: Kotlin has no checked exceptions, but Java does, and an error of Trantor
+crosses into Java code. A Java API that takes a `RuntimeException` (the `ExecuteContext` of jOOQ) refuses the
+other, Java code cannot catch a checked error a Kotlin function does not declare, and a Java proxy wraps one in
+an `UndeclaredThrowableException`.
 
 An error carries what a caller needs to act on, as properties, not buried in the message:
 
 ```kotlin
-class RequiredConfigError(val path: String): Exception("Missing required config $path")
+class RequiredConfigError(val path: String): RuntimeException("Missing required config $path")
 ```
 
 The message says what is wrong **and what to do about it** when that is knowable:

@@ -37,7 +37,7 @@ which is the canonical example.
 | `trantor-opentelemetry` | `addOpenTelemetry()`: the OpenTelemetry SDK and the OTLP exporters, for traces and metrics. Trantor traces and measures with the API, which is in primitives. |
 | `trantor-core` | Application services: application pipeline, auth, broadcast, cache, events, jobs, queues, scheduling, transactions. |
 | `trantor-domain` | Domain building blocks: `Aggregate`, `Id`, `Money`, `Email`, domain errors, `Ensure`. |
-| `trantor-data` | JDBC, Hikari, jOOQ, transaction managers. |
+| `trantor-data` | JDBC, Hikari, jOOQ, transaction managers, the errors of the database. |
 | `trantor-web` | HTTP server on Javalin: routes, controllers, error handlers, websockets. |
 | `trantor-web-client` | HTTP client abstraction on OkHttp, plus SSE. `addHttpClient()` registers one for the application. |
 | `trantor-ai` | LLM access: `ChatModel`, `ModelRegistry`, middlewares, provider adapters. |
@@ -164,7 +164,7 @@ Full detail in [docs/conventions.md](docs/conventions.md). The short version:
 - 4 spaces, 120 columns, trailing commas, `.editorconfig` covers the rest.
 - `class Foo: Bar`, no space before the colon.
 - Expression bodies where the function is one expression.
-- Errors are `open class XError(message: String, cause: Throwable? = null): Exception(message, cause)`,
+- Errors are `open class XError(message: String, cause: Throwable? = null): RuntimeException(message, cause)`,
   named `...Error`, carrying the data a caller needs as properties.
 - Enum-like sets are named in plural: `ServiceLifetimes`, `HttpMethods`, `FinishReasons`.
 - A name that is shared across a family carries no prefix (`CallOptions`, `Usage`); a name specific to one

@@ -88,8 +88,9 @@ Features:
 Provides utilities for database access, including:
 - JDBC integration
 - jOOQ integration
+- the errors of the database, translated per engine
 
-This module helps standardize data access patterns in Trantor applications.
+This module helps standardize data access patterns in Trantor applications. See [trantor-data](trantor-data.md).
 
 ---
 

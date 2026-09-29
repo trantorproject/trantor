@@ -10,7 +10,6 @@ import java.io.InterruptedIOException
 import io.opentelemetry.api.OpenTelemetry
 import kotlin.time.Duration
 import dev.botta.trantor.web.client.HttpClient
-import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpMethods
 import dev.botta.trantor.web.client.HttpRequest
 import dev.botta.trantor.web.client.HttpStreamResponse
@@ -225,10 +224,6 @@ internal class HttpMcpClient(
             // A call cut while it waits for the answer fails on its way, which says nothing of the server
             cancellation?.throwIfCancelled()
             throw unreachable(e, what, timeout)
-        } catch (e: HttpClientError) {
-            // Not an Exception: what the client of Trantor throws when the call fails on the way
-            cancellation?.throwIfCancelled()
-            throw unreachable(e, what, timeout)
         }
 
         return response.use {
@@ -241,9 +236,6 @@ internal class HttpMcpClient(
                 cancellation?.throwIfCancelled()
                 throw e
             } catch (e: Exception) {
-                cancellation?.throwIfCancelled()
-                throw unreachable(e, what, timeout)
-            } catch (e: HttpClientError) {
                 cancellation?.throwIfCancelled()
                 throw unreachable(e, what, timeout)
             }

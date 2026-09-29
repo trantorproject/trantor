@@ -88,7 +88,7 @@ order would announce it as placed again.
 ## Domain errors
 
 A `DomainError` is a failure the domain can explain: a rule that was broken, something that does not exist, an
-operation that is not allowed right now. Everything in `errors/` extends it, and all but two are `open` so an
+operation that is not allowed right now. Everything in `errors/` extends it, and all but three are `open` so an
 application can specialize them.
 
 | Error | Use it when | Carries |
@@ -104,9 +104,8 @@ application can specialize them.
 | `InvalidOperationError` | The operation is not allowed in the current state (cancelling a delivered order). | |
 | `ForbiddenError` | The actor is not allowed to do it. | |
 | `ConcurrentModificationError` | Someone else saved the same thing between the moment it was read and the moment it was saved. | |
-| `ValueTooLongError` | A value is longer than the storage allows (a text column). | |
 
-`AlreadyExistsError` and `UniqueValueError` are final.
+`AlreadyExistsError`, `UniqueValueError` and `ConcurrentModificationError` are final.
 
 An application defines its own errors when a failure has a meaning its callers react to specifically:
 

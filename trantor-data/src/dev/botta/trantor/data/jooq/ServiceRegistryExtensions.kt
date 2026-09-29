@@ -28,9 +28,11 @@ fun ServiceRegistry.addJooq(key: String? = null) = apply {
         } else if (jdbcSettings != null) {
             jooqConfiguration.setSQLDialect(JDBCUtils.dialect(jdbcSettings.url))
         }
-        if (jooqSettings.logSql) {
-            jooqConfiguration.set(DefaultExecuteListenerProvider(SQLLogger()))
+        val listeners = buildList {
+            if (jooqSettings.translateErrors) add(JooqErrorTranslator())
+            if (jooqSettings.logSql) add(SQLLogger())
         }
+        jooqConfiguration.set(*DefaultExecuteListenerProvider.providers(*listeners.toTypedArray()))
         if (jooqSettings.optimisticLocking) {
             jooqConfiguration.set(
                 Settings().withExecuteWithOptimisticLocking(true).withExecuteWithOptimisticLockingExcludeUnversioned(true)

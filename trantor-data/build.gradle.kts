@@ -6,8 +6,10 @@ dependencies {
     implementation("com.zaxxer:HikariCP")
     implementation(project(":trantor-di"))
     implementation(project(":trantor-config"))
+    compileOnly("org.postgresql:postgresql:42.7.13")
 
     testImplementation(project(":trantor-gson"))
+    testImplementation("org.postgresql:postgresql:42.7.13")
 }
 
 extra.set("POM_NAME", "Trantor Data")

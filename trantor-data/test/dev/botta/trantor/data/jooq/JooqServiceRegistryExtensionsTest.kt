@@ -31,6 +31,33 @@ class JooqServiceRegistryExtensionsTest {
         assertThat(dsl().settings().isExecuteWithOptimisticLockingExcludeUnversioned).isTrue
     }
 
+    @Test
+    fun `translates the errors of the database unless the configuration says not to`() {
+        registry.addJooq()
+
+        assertThat(listeners()).hasExactlyElementsOfTypes(JooqErrorTranslator::class.java)
+    }
+
+    @Test
+    fun `leaves the errors of the database as jOOQ throws them when the configuration says so`() {
+        config.addMemoryCollection("jooq.translateErrors" to "false")
+
+        registry.addJooq()
+
+        assertThat(listeners()).isEmpty()
+    }
+
+    @Test
+    fun `logs the SQL besides translating the errors`() {
+        config.addMemoryCollection("jooq.logSql" to "true")
+
+        registry.addJooq()
+
+        assertThat(listeners()).hasExactlyElementsOfTypes(JooqErrorTranslator::class.java, SQLLogger::class.java)
+    }
+
+    private fun listeners() = dsl().configuration().executeListenerProviders().map { it.provide() }
+
     private fun dsl() = DefaultServiceProvider(registry).get<DSLContext>()
 
     private val config = ConfigManager()
