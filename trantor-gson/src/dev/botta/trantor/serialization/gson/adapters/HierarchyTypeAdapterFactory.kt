@@ -10,11 +10,14 @@ import java.io.IOException
 
 // See: https://www.novatec-gmbh.de/en/blog/gson-object-hierarchies/
 class HierarchyTypeAdapterFactory<T> private constructor(
-    private val baseType: Class<T>,
-    private val typeFieldName: String,
+    internal val baseType: Class<T>,
+    internal val typeFieldName: String,
     private val maintainType: Boolean
 ): TypeAdapterFactory {
-    private val labelToSubtype = mutableMapOf<String, Class<*>>()
+    private val labelToSubtype = linkedMapOf<String, Class<*>>()
+
+    /** The subtypes by their label, in the order they were registered: what a schema of the base lists. */
+    internal val subtypes: Map<String, Class<*>> get() = labelToSubtype.toMap()
     private val subtypeToLabel = mutableMapOf<Class<*>, String>()
 
     fun subtype(type: Class<out T>, label: String = type.simpleName) = apply {

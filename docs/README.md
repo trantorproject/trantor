@@ -21,7 +21,7 @@ The rules an agent needs in one place are in `AGENTS.md`, at the root of the Tra
 | [trantor-web](trantor-web.md) | `trantor-web` | HTTP server, routes, controllers, error handlers, websockets |
 | [trantor-web-client](trantor-web-client.md) | `trantor-web-client` | The `HttpClient` of the application, streams and SSE |
 | [trantor-opentelemetry](trantor-opentelemetry.md) | `trantor-opentelemetry` | Traces over OTLP: what Trantor traces, logs with trace ids, the Java agent |
-| [trantor-gson](trantor-gson.md) | `trantor-gson` | The `JsonSerializer`: Kotlin classes through their constructor, the types of the domain, `Maybe`, hierarchies |
+| [trantor-gson](trantor-gson.md) | `trantor-gson` | The `JsonSerializer`: Kotlin classes through their constructor, the types of the domain, `Maybe`, hierarchies, the JSON Schema of what it reads |
 | [trantor-ai](trantor-ai.md) | `trantor-ai` | Chat models, the OpenAI and Anthropic adapters, the model registry and the capability catalog |
 
 Not documented yet: `trantor-data`,

@@ -163,7 +163,57 @@ subtype keeps it as a field of its own.
 
 ---
 
+## The schema of what it reads
+
+`GsonSerializer` is a `JsonSchemaSource`: it tells, as a JSON Schema, what it reads for a type, by the same rules
+it reads by. That is what a model is given for the arguments of a tool, or what an API can document for a request.
+
+```kotlin
+val schema = serializer.schemaOf<PlaceOrder>()
+```
+
+- A class is an object with a property for each parameter of its primary constructor, by its serialized name. A
+  parameter that cannot be null and has no default is `required`; a nullable one also takes `null`. The properties
+  of the body are left out: they are not how the class is built.
+- The classes, enums and hierarchies it uses go to `$defs`, by their simple name (with the package when two share
+  it), and a class that contains itself refers to itself.
+- A hierarchy is `anyOf` its subtypes, each with its label as a `const` it requires. A nullable object is `anyOf` it
+  and `null`. Neither OpenAI nor Anthropic take `oneOf`.
+- Ids and uuids are strings with `format: uuid`, `Email` with `format: email`, `LocalDate` with `format: date`,
+  `LocalDateTime` with `format: date-time` (its parser needs an offset, as that format does), and `LocalTime` and
+  `YearMonth` with a `pattern`. `Money` is a string. A `Maybe` is what it holds, never required, and a value class
+  is its value.
+- The validations of Jakarta say up front what the validation will ask for: `@NotBlank` is `minLength: 1`, `@Size`,
+  `@Min`, `@Max`, `@DecimalMin`, `@Positive` and the like are their keywords, `@Pattern` is `pattern` and `@Email`
+  is `format: email`. They are read from the field (`@field:NotBlank`) or from the parameter.
+- `@Description`, from `trantor-primitives`, on a class or a field, is its `description`: what the name and the type
+  do not say.
+
+```kotlin
+@Description("An order of a customer")
+data class PlaceOrder(
+    @Description("The customer who buys") val customer: CustomerId,
+    @field:NotEmpty val lines: List<OrderLine>,
+)
+```
+
+**An adapter of the application says what it reads.** A `StringValueSerializer` is a string on its own, or the
+schema it is given:
+
+```kotlin
+gson.registerTypeAdapter(Sku::class.java, StringValueSerializer({ Sku(it) }, { it.value }, skuSchema))
+gson.registerTypeAdapter(Point::class.java, PointAdapter(), Json.obj("type" to "string", "pattern" to pointPattern))
+gson.registerSchema(Point::class.java, pointSchema)   // for an adapter registered without one
+```
+
+A type read by an adapter that gave no schema, or by a factory other than a `HierarchyTypeAdapterFactory`, fails
+with a `JsonSchemaError` that says where it is (`PlaceOrder.lines[].sku`) and how to give it one. The schema is
+never guessed.
+
+---
+
 ## Tests
 
 `GsonSerializerKotlinTest` is the reference for how a Kotlin class is read and written: each rule above is a test.
-`GsonSerializerValuesTest` covers the types of the domain, and the adapters have tests of their own.
+`GsonSerializerSchemaTest` does the same for the schema. `GsonSerializerValuesTest` covers the types of the domain,
+and the adapters have tests of their own.
