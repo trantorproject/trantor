@@ -890,8 +890,8 @@ process ends on its own. What was on the way then fails, and the next request st
 
 The `callOptions` of the run reach every call of its MCP tools, as they reach the calls to the model:
 
-- **A request waits for the timeout of the run**, or for the `requestTimeoutSeconds` of the server (two minutes by
-  default) when the run gives none; over stdio, for the shorter of the two. One that does not get its answer in time
+- **A request waits for the shorter of the timeout of the run and the `requestTimeoutSeconds` of the server** (two
+  minutes by default), so a server that hangs does not hold a long run. One that does not get its answer in time
   fails with an `McpError` that says so.
 - **Cancelling the run stops the request** with a `CancelledError`, even while it waits for the answer, and the
   server is told, so it can stop what it does: over stdio and on a server of before, with `notifications/cancelled`;

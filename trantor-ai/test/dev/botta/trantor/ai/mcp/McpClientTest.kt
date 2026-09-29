@@ -231,6 +231,16 @@ class McpClientTest {
         }
 
         @Test
+        fun `a timeout of the run longer than the one of the client waits only for the one of the client`() {
+            httpClient.answer(fixture("call-weather.json"))
+            val client = McpClient.http("tester", URL, httpClient = httpClient, requestTimeout = 30.seconds)
+
+            client.callTool("get_weather", Json.obj("city" to "Rosario"), CallOptions(timeout = 60.seconds))
+
+            assertThat(httpClient.options?.totalTimeout).isEqualTo(30_000)
+        }
+
+        @Test
         fun `a cancelled run cancels the stream and fails as cancelled`() {
             val cancellation = Cancellation()
             httpClient.answer(fixture("call-weather.json"))

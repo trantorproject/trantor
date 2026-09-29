@@ -197,8 +197,8 @@ internal class HttpMcpClient(
     }
 
     /**
-     * Posts [body] and reads its answer with [read], within the timeout of the run or else the one of the client,
-     * which is the time the whole stream may take. Cancelling the run cancels the stream, and what was read of it is
+     * Posts [body] and reads its answer with [read], within the shorter of the timeout of the run and the one of the
+     * client, which is the time the whole stream may take. Cancelling the run cancels the stream, and what was read of it is
      * not taken for an answer. What fails on the way to the server is an [McpError] that names it.
      */
     private fun <T> post(
@@ -210,7 +210,7 @@ internal class HttpMcpClient(
     ): T {
         options.cancellation?.throwIfCancelled()
 
-        val timeout = options.timeout ?: requestTimeout
+        val timeout = listOfNotNull(options.timeout, requestTimeout).min()
         val cancellation = options.cancellation
         val streamOptions = StreamOptions(
             totalTimeout = timeout.inWholeMilliseconds.toInt(),
