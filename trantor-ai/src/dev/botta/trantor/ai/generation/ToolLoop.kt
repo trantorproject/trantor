@@ -619,6 +619,9 @@ class ToolLoop(
             } catch (e: ToolError) {
                 failed(call, e, e.message!!, input)
             } catch (e: Exception) {
+                // A call the cancellation of the run cut fails on its way, like the HTTP client of Trantor does: the
+                // tool did not fail, the run was cancelled
+                throwIfCancelled(options)
                 if (tool.onError == ToolErrorModes.FailRun) throw e
 
                 logger.error("Tool ${call.toolName} failed on call ${call.callId}: ${e.message}", e)

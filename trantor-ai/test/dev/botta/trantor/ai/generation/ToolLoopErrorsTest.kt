@@ -5,9 +5,12 @@ package dev.botta.trantor.ai.generation
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.errors.CancelledError
+import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
+import dev.botta.trantor.primitives.Cancellation
+import dev.botta.trantor.web.client.HttpClientError
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -165,6 +168,31 @@ class ToolLoopErrorsTest {
                 Thread.interrupted()
             }
         }
+
+        @Test
+        fun `a tool whose call the cancellation of the run cut ends it as cancelled, not as a failure of the tool`() {
+            val consulted = mutableListOf<Throwable>()
+            val handler = ToolErrorHandler { error, _ -> consulted += error; null }
+            model.answers(listOf(call("download", Json.obj())))
+
+            val loop = ToolLoop(model, listOf(DownloadTool(cancellation)), errorHandlers = listOf(handler))
+
+            assertThatThrownBy { loop.run(ChatRequest("Hola"), CallOptions(cancellation = cancellation)) }
+                .isInstanceOf(CancelledError::class.java)
+            assertThat(consulted).isEmpty()
+        }
+
+        @Test
+        fun `and so does one that asks to fail the run, which did not fail but was cancelled`() {
+            model.answers(listOf(call("download", Json.obj())))
+
+            val loop = ToolLoop(model, listOf(DownloadTool(cancellation, ToolErrorModes.FailRun)))
+
+            assertThatThrownBy { loop.run(ChatRequest("Hola"), CallOptions(cancellation = cancellation)) }
+                .isInstanceOf(CancelledError::class.java)
+        }
+
+        private val cancellation = Cancellation()
     }
 
     private fun loop(handlers: List<ToolErrorHandler> = emptyList()) =
@@ -210,6 +238,23 @@ class ToolLoopErrorsTest {
         override fun execute(args: Args, context: ToolContext): ToolResult {
             calls++
             return ToolResult.text("12:00")
+        }
+
+        @Serializable
+        class Args
+    }
+
+    /** Cancels the run while it downloads, and fails as the HTTP client of Trantor does when a call is cut. */
+    class DownloadTool(
+        private val cancellation: Cancellation,
+        override val onError: ToolErrorModes = ToolErrorModes.SendToModel,
+    ): Tool<DownloadTool.Args>(Args.serializer()) {
+        override val name = "download"
+        override val description = "Downloads a file"
+
+        override fun execute(args: Args, context: ToolContext): ToolResult {
+            cancellation.cancel()
+            throw HttpClientError("Canceled")
         }
 
         @Serializable
