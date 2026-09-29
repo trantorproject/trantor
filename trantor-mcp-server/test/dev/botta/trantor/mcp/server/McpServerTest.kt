@@ -126,6 +126,35 @@ class McpServerTest {
         }
     }
 
+    @Nested
+    inner class `an endpoint that asks who is there` {
+        @Test
+        fun `shows each one the tools the filter gives for the identity the middlewares built`() {
+            val seller = McpClient.http("store", guardedUrl, mapOf("Authorization" to "Bearer seller-token"))
+            val guest = McpClient.http("store", guardedUrl, mapOf("Authorization" to "Bearer guest-token"))
+
+            assertThat(seller.listTools().map { it.name }).containsExactly("who_am_i", "place_order")
+            assertThat(guest.listTools().map { it.name }).containsExactly("who_am_i")
+        }
+
+        @Test
+        fun `answers 401 to who does not say who they are, from the first request`() {
+            val anonymous = McpClient.http("store", guardedUrl)
+
+            assertThatThrownBy { anonymous.listTools() }
+                .isInstanceOfSatisfying(McpError::class.java) { assertThat(it.status).isEqualTo(401) }
+        }
+
+        @Test
+        fun `a tool one does not see does not exist for them`() {
+            val guest = McpClient.http("store", guardedUrl, mapOf("Authorization" to "Bearer guest-token"))
+
+            assertThatThrownBy { guest.callTool("place_order", Json.obj("sku" to "ABC-1", "quantity" to 2)) }
+                .isInstanceOfSatisfying(McpError::class.java) { assertThat(it.message).contains("Unknown tool") }
+            assertThat(orders).isEmpty()
+        }
+    }
+
     @Test
     fun `answers GET with 405, since the server opens no stream of its own`() {
         val request = HttpRequest.newBuilder(URI.create(url)).GET().build()
@@ -162,9 +191,17 @@ class McpServerTest {
             tool<PlaceOrder>("place_order", "Places an order")
         }
 
+        app.routes.mcp("/guarded", name = "store", version = "1.0.0") {
+            tool<WhoAmI>("who_am_i", "Who asks")
+            tool<PlaceOrder>("place_order", "Places an order")
+            requireAuthentication()
+            visibleTools { tools, identity -> if ("seller" in identity.roles) tools else tools.filter { it.readOnly } }
+        }
+
         app.start()
         url = "http://localhost:$port/mcp"
         useCasesUrl = "http://localhost:$port/store"
+        guardedUrl = "http://localhost:$port/guarded"
         client = McpClient.http("store", url)
         seller = McpClient.http("store", useCasesUrl, mapOf("Authorization" to "Bearer seller-token"))
     }
@@ -185,6 +222,7 @@ class McpServerTest {
     private lateinit var url: String
     private lateinit var client: McpClient
     private lateinit var useCasesUrl: String
+    private lateinit var guardedUrl: String
     private lateinit var seller: McpClient
     private val orders = mutableListOf<PlaceOrder>()
 

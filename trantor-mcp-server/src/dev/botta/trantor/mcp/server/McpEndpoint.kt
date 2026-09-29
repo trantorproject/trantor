@@ -3,6 +3,8 @@ package dev.botta.trantor.mcp.server
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.json.values.JsonValue
+import dev.botta.cqbus.identity.AnonymousIdentity
+import dev.botta.cqbus.identity.Identity
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.mcp.McpProtocol
 import dev.botta.trantor.ai.tools.InvalidToolInputError
@@ -35,8 +37,12 @@ class McpEndpoint(
     tools: List<Tool<*>>,
     /** What a client should know to use the tools, which it can give to its model. */
     val instructions: String? = null,
+    /** Whether a caller the application did not authenticate is answered with 401 on every request. */
+    private val requireAuthentication: Boolean = false,
+    /** Which tools a caller sees, out of all of them; null when every caller sees every tool. */
+    private val visibleTools: ((List<Tool<*>>, Identity) -> List<Tool<*>>)? = null,
 ) {
-    private val tools = tools.associateBy { it.name }
+    private val tools = tools.toList()
 
     fun handle(request: McpHttpRequest, run: RunContext = RunContext()): McpHttpResponse {
         if (request.method != "POST") return McpHttpResponse(405, headers = mapOf("Allow" to "POST"))
@@ -51,6 +57,14 @@ class McpEndpoint(
         val method = message["method"]?.asString()
             ?: return error(id, McpProtocol.Errors.INVALID_REQUEST, "The message is not a request", 400)
 
+        // Who asks is asked once, and only when something needs it: it runs a request through the application
+        val identity by lazy { run.get<McpCall>()?.identity() ?: AnonymousIdentity() }
+        if (requireAuthentication && !identity.isAuthenticated) return unauthenticated(id)
+        val visible = lazy {
+            val filter = visibleTools ?: return@lazy tools.associateBy { it.name }
+            filter(tools, identity).associateBy { it.name }
+        }
+
         // A notification says something and waits for nothing; none of the ones of the revision does anything here
         if (id == null) return McpHttpResponse(202)
 
@@ -60,15 +74,15 @@ class McpEndpoint(
 
         // One that says 2026-07-28 in the header and not in the body is not of before: turnDown says what is wrong
         if (claimed == null && headerVersion != McpProtocol.VERSION) {
-            return earlier(id, method, params, headerVersion, run)
+            return earlier(id, method, params, headerVersion, run, visible)
         }
 
         turnDown(request, id, method, params)?.let { return it }
 
         return when (method) {
             "server/discover" -> result(id, discover())
-            "tools/list" -> result(id, list())
-            "tools/call" -> call(id, params, run)
+            "tools/list" -> result(id, list(visible.value))
+            "tools/call" -> call(id, params, run, visible.value)
             "ping" -> result(id, Json.obj())
             else -> error(id, McpProtocol.Errors.METHOD_NOT_FOUND, "Method not found: $method", 404)
         }
@@ -120,6 +134,7 @@ class McpEndpoint(
         params: JsonObject,
         headerVersion: String?,
         run: RunContext,
+        visible: Lazy<Map<String, Tool<*>>>,
     ): McpHttpResponse {
         if (method != "initialize" && headerVersion != null && headerVersion !in McpProtocol.EARLIER_VERSIONS) {
             return error(id, McpProtocol.Errors.INVALID_REQUEST, "Unsupported protocol version: $headerVersion", 400)
@@ -127,8 +142,8 @@ class McpEndpoint(
 
         return when (method) {
             "initialize" -> result(id, initialize(params), complete = false)
-            "tools/list" -> result(id, Json.obj("tools" to described()), complete = false)
-            "tools/call" -> call(id, params, run, complete = false)
+            "tools/list" -> result(id, Json.obj("tools" to described(visible.value)), complete = false)
+            "tools/call" -> call(id, params, run, visible.value, complete = false)
             "ping" -> result(id, Json.obj(), complete = false)
             // Not a 404, which tells a client of before that its session is gone, and it would open another
             else -> error(id, McpProtocol.Errors.METHOD_NOT_FOUND, "Method not found: $method", 200)
@@ -156,9 +171,9 @@ class McpEndpoint(
         this["_meta"] = Json.obj(McpProtocol.Meta.SERVER_INFO to Json.obj("name" to name, "version" to version))
     }
 
-    private fun list() = Json.obj("tools" to described()).apply { notCached(this) }
+    private fun list(visible: Map<String, Tool<*>>) = Json.obj("tools" to described(visible)).apply { notCached(this) }
 
-    private fun described() = Json.array(tools.values.map { describe(it) })
+    private fun described(visible: Map<String, Tool<*>>) = Json.array(visible.values.map { describe(it) })
 
     private fun describe(tool: Tool<*>): JsonObject {
         val spec = tool.spec()
@@ -172,9 +187,16 @@ class McpEndpoint(
         return description
     }
 
-    private fun call(id: JsonValue, params: JsonObject, run: RunContext, complete: Boolean = true): McpHttpResponse {
+    private fun call(
+        id: JsonValue,
+        params: JsonObject,
+        run: RunContext,
+        visible: Map<String, Tool<*>>,
+        complete: Boolean = true,
+    ): McpHttpResponse {
         val name = params["name"]?.asString()
-        val tool = tools[name] ?: return error(id, McpProtocol.Errors.INVALID_PARAMS, "Unknown tool: $name", 200)
+        // One the caller does not see does not exist for them
+        val tool = visible[name] ?: return error(id, McpProtocol.Errors.INVALID_PARAMS, "Unknown tool: $name", 200)
         val arguments = params["arguments"]?.asObject() ?: JsonObject()
 
         val output = try {
@@ -236,10 +258,10 @@ class McpEndpoint(
      * A use case that needs to know who asks, and nobody said: the answer is 401 with the challenge of a Bearer token,
      * which is what makes a client ask the person for credentials.
      */
-    private fun unauthenticated(id: JsonValue): McpHttpResponse {
+    private fun unauthenticated(id: JsonValue?): McpHttpResponse {
         val body = Json.obj(
             "jsonrpc" to "2.0",
-            "id" to id,
+            "id" to (id ?: Json.NULL),
             "error" to Json.obj("code" to McpProtocol.Errors.INVALID_REQUEST, "message" to "Authentication required"),
         )
 

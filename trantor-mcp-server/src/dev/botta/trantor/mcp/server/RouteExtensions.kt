@@ -1,5 +1,6 @@
 package dev.botta.trantor.mcp.server
 
+import dev.botta.cqbus.identity.Identity
 import dev.botta.cqbus.requests.Request
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.tools.Tool
@@ -55,6 +56,8 @@ class McpEndpointBuilder internal constructor(
 ) {
     private val tools = mutableListOf<Tool<*>>()
     private var instructions: String? = null
+    private var authenticated = false
+    private var visibleTools: ((List<Tool<*>>, Identity) -> List<Tool<*>>)? = null
 
     fun tool(tool: Tool<*>) = apply { tools += tool }
 
@@ -80,7 +83,22 @@ class McpEndpointBuilder internal constructor(
     /** What a client should know to use the tools, which it can give to its model. */
     fun instructions(text: String) = apply { instructions = text }
 
-    internal fun build() = McpEndpoint(name, version, tools.toList(), instructions)
+    /**
+     * Answers every request whose caller the middlewares of the application did not authenticate with 401 and the
+     * challenge of a Bearer token, before anything else: that is what makes a client ask the person to sign in.
+     */
+    fun requireAuthentication() = apply { authenticated = true }
+
+    /**
+     * Which of the tools the caller sees, given the identity the middlewares of the application built: the ones
+     * [filter] gives. It is asked once for the whole list, on every listing and every call, so it can read what each
+     * one may use from a database in one query. A tool the caller does not see does not exist for them: calling it
+     * answers that there is no such tool. Hiding a tool is not authorizing it: the use case still does that.
+     */
+    fun visibleTools(filter: (tools: List<Tool<*>>, identity: Identity) -> List<Tool<*>>) =
+        apply { visibleTools = filter }
+
+    internal fun build() = McpEndpoint(name, version, tools.toList(), instructions, authenticated, visibleTools)
 }
 
 private fun execute(application: ApplicationRouteRegister?, request: Request<*>, context: Context): Any? {

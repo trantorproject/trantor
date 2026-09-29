@@ -1,6 +1,9 @@
 package dev.botta.trantor.core.application
 
 import dev.botta.cqbus.CQBus
+import dev.botta.cqbus.identity.Identity
+import dev.botta.cqbus.requests.handlers.ContextAwareRequestHandler
+import dev.botta.trantor.core.auth.CurrentIdentity
 import dev.botta.trantor.core.cache.CacheModule
 import dev.botta.trantor.core.events.EventsModule
 import dev.botta.trantor.core.jobs.JobsModule
@@ -27,6 +30,11 @@ class ApplicationBuilder(private val builderConfig: ApplicationBuilderConfig): H
     private fun addDefaultServices() {
         services.addGsonSerializer()
         services.addSingletonIfMissing { CQBus() }
+        services.configure<CQBus> { bus, _ ->
+            bus.registerContextAwareHandler<CurrentIdentity, Identity> {
+                ContextAwareRequestHandler { _, context -> context.identity }
+            }
+        }
         services.addSingletonIfMissing<ApplicationExecutor> { it.create<DefaultApplicationExecutor>() }
         services.addModule<TransactionsModule>()
         services.addModule<EventsModule>()

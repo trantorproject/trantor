@@ -2,6 +2,8 @@
 
 package dev.botta.trantor.mcp.server
 
+import dev.botta.cqbus.identity.AnonymousIdentity
+import dev.botta.cqbus.identity.Identity
 import dev.botta.cqbus.requests.Command
 import dev.botta.cqbus.requests.PureCommand
 import dev.botta.cqbus.requests.Query
@@ -10,6 +12,7 @@ import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.mcp.McpProtocol
+import dev.botta.trantor.core.auth.CurrentIdentity
 import dev.botta.trantor.core.auth.NotAuthenticatedError
 import dev.botta.trantor.core.auth.UnauthorizedAccessError
 import dev.botta.trantor.core.validation.FieldError
@@ -124,6 +127,80 @@ class UseCaseToolTest {
     }
 
     @Nested
+    inner class `who asks` {
+        @Test
+        fun `nobody, on an endpoint that requires authentication, is a 401 on every request`() {
+            val answers = listOf("tools/list", "tools/call", "server/discover").map { method ->
+                guarded.handle(request(method, "stock"), RunContext(McpCall(::answer)))
+            }
+
+            assertThat(answers.map { it.status }).containsOnly(401)
+            assertThat(answers.first().headers).containsEntry("WWW-Authenticate", "Bearer")
+        }
+
+        @Test
+        fun `somebody, on an endpoint that requires authentication, is served`() {
+            asking = seller
+
+            val answer = guarded.handle(request("tools/list"), RunContext(McpCall(::answer)))
+
+            assertThat(answer.status).isEqualTo(200)
+        }
+
+        @Test
+        fun `sees the tools the filter gives for them, asked once for the whole list`() {
+            asking = seller
+
+            val listed = names(guarded.handle(request("tools/list"), RunContext(McpCall(::answer))))
+
+            assertThat(listed).containsExactly("stock", "place_order")
+            assertThat(filtered).isEqualTo(1)
+        }
+
+        @Test
+        fun `calling a tool they do not see is calling one that does not exist`() {
+            asking = guest
+
+            val answer = guarded.handle(request("tools/call", "place_order"), RunContext(McpCall(::answer)))
+
+            assertThat(Json.parse(answer.body!!).asObject()!!.path("error.code")?.asInt())
+                .isEqualTo(McpProtocol.Errors.INVALID_PARAMS)
+            assertThat(ran.filterIsInstance<PlaceOrder>()).isEmpty()
+        }
+
+        @Test
+        fun `an anonymous one sees what the filter gives for nobody, when authentication is not required`() {
+            val open = McpEndpointBuilder("store", "1.0.0", serializer)
+                .tool<GetStock>("stock", "The stock of a product")
+                .tool<PlaceOrder>("place_order", "Places an order for an account")
+                .visibleTools { tools, who -> if (who.isAuthenticated) tools else tools.filter { it.readOnly } }
+                .build()
+
+            val listed = names(open.handle(request("tools/list"), RunContext(McpCall(::answer))))
+
+            assertThat(listed).containsExactly("stock")
+        }
+
+        private val seller = Person("nico", listOf("seller"))
+        private val guest = Person("ana", emptyList())
+        private var filtered = 0
+
+        private val guarded = McpEndpointBuilder("store", "1.0.0", serializer)
+            .tool<GetStock>("stock", "The stock of a product")
+            .tool<PlaceOrder>("place_order", "Places an order for an account")
+            .tool<ForgetOrder>("forget_order", "Forgets an order")
+            .requireAuthentication()
+            .visibleTools { tools, identity ->
+                filtered++
+                tools.filter { tool -> tool.name != "forget_order" && ("seller" in identity.roles || tool.readOnly) }
+            }
+            .build()
+
+        private fun names(answer: McpHttpResponse) =
+            result(answer)["tools"]?.asArray()?.map { it.asObject()?.get("name")?.asString() }
+    }
+
+    @Nested
     inner class `declaring it` {
         @Test
         fun `on routes that cannot run a use case fails, saying where it has to be`() {
@@ -169,6 +246,7 @@ class UseCaseToolTest {
     private fun answer(request: Request<*>): Any? {
         ran += request
         return when (request) {
+            is CurrentIdentity -> asking
             is PlaceOrder -> OrderPlaced("A-1", request.quantity)
             is GetStock -> Stock(request.sku, 12)
             is ListOrders -> listOf(OrderPlaced("A-1", 2))
@@ -183,6 +261,24 @@ class UseCaseToolTest {
         result.path("content")?.asArray()?.first()?.asObject()?.get("text")?.asString()
 
     private val ran = mutableListOf<Request<*>>()
+    private var asking: Identity = AnonymousIdentity()
+
+    /** A request of 2026-07-28 for [method], and for the tool [tool] when it calls one. */
+    private fun request(method: String, tool: String? = null): McpHttpRequest {
+        val params = Json.obj("_meta" to Json.obj(McpProtocol.Meta.PROTOCOL_VERSION to McpProtocol.VERSION))
+        if (method == "tools/call") {
+            params["name"] = tool
+            params["arguments"] = Json.obj("sku" to "ABC-1")
+        }
+        val headers = buildMap {
+            put(McpProtocol.Headers.PROTOCOL_VERSION, McpProtocol.VERSION)
+            put(McpProtocol.Headers.METHOD, method)
+            if (method == "tools/call") put(McpProtocol.Headers.NAME, tool!!)
+        }
+        val body = Json.obj("jsonrpc" to "2.0", "id" to 1, "method" to method, "params" to params)
+
+        return McpHttpRequest("POST", body.toString(), headers)
+    }
 
     private val serializer = GsonSerializer().apply {
         registerTypeAdapter(Sku::class.java, StringValueSerializer({ Sku(it) }, { it.value }))
@@ -194,6 +290,12 @@ class UseCaseToolTest {
         .tool<ForgetOrder>("forget_order", "Forgets an order", readOnly = true)
         .tool<ListOrders>("orders", "The orders placed")
         .build()
+
+    class Person(override val name: String, override val roles: List<String>): Identity {
+        override val isAuthenticated = true
+        override val authenticationType = "token"
+        override val properties = emptyMap<String, Any>()
+    }
 
     class AccountId(raw: UUID): Id(raw)
 

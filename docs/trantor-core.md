@@ -144,7 +144,9 @@ implementation for applications with no database.
 ## The rest
 
 - **Auth**: `SystemIdentity`, `RolesAuthorization` and `RolesAuthorizationMiddleware`, plus
-  `NotAuthenticatedError` and `UnauthorizedAccessError`.
+  `NotAuthenticatedError` and `UnauthorizedAccessError`. `app.identityOf(context)` says who is asking in an
+  `ExecutionContext` as the middlewares of the application tell it: it runs the query `CurrentIdentity`, whose
+  handler the application registers, through them.
 - **Broadcast**: `Broadcaster`, `Channel`, `ClientSession`. The implementation is in `trantor-web` over
   websockets; `NullBroadcaster` is the one for applications that do not broadcast.
 - **Scheduling**: `Scheduler` and `ScheduledJob` over db-scheduler, with `NullScheduler` as the default. A

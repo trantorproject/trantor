@@ -113,6 +113,8 @@ app.addController<AuthController>()
   system instead of the caller.
 - The answer is whatever the handler writes to `ctx`; `jsonValue` and `jsonObj` from `ContextExtensions` write JSON.
   An exception goes to the error handlers, as in any route.
+- `executor.identityOf(ctx)` says who is asking in the call, as the middlewares of the application tell it, without a
+  use case of its own.
 
 The `ApplicationRouteRegister` an `ApplicationController` is handed has them too, as `http.mapper` and
 `http.executor` (and the serializer as `http.mapper.serializer`), for what builds on routes that run use cases,
