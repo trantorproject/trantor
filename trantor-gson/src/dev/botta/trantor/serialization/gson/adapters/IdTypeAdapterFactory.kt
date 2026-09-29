@@ -34,7 +34,7 @@ class IdTypeAdapterFactory : TypeAdapterFactory {
                 }
                 val str = `in`.nextString()
                 val ctor = idClass.getConstructor(UUID::class.java)
-                return ctor.newInstance(UUID.fromString(str)) as T
+                return readValue(str, idClass.simpleName) { ctor.newInstance(UUID.fromString(str)) as T }
             }
         }
     }

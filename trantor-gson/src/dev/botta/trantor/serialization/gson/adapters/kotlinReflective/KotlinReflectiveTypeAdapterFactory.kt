@@ -26,6 +26,8 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
         if (!rawType.isAnnotationPresent(KOTLIN_METADATA)) return null
         val kotlinRawType: KClass<T> = type.toKClass()
         require(!kotlinRawType.isInner) { "Cannot serialize inner class ${rawType.name}" }
+        // Its constructor has no Java constructor behind it, and on the wire it is its value
+        if (kotlinRawType.isValue) return ValueClassAdapter(gson, kotlinRawType)
 
         val primaryConstructor: KFunction<T> = kotlinRawType.primaryConstructor
             ?.apply { isAccessible = true }
@@ -39,7 +41,13 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
             val names = parameter.getSerializedNames(declaringClass)
             if (names.isNotEmpty()) {
                 // Retrieve adapters for serializable inner properties
-                constructorAdapters[parameter] = gson.getAdapter(type.resolveType(parameter.type.javaType))
+                // The Java type of a value class is the one of its value, which the constructor does not take
+                val valueClass = (parameter.type.classifier as? KClass<*>)?.takeIf { it.isValue }
+                constructorAdapters[parameter] = if (valueClass != null) {
+                    gson.getAdapter(valueClass.java)
+                } else {
+                    gson.getAdapter(type.resolveType(parameter.type.javaType))
+                }
             }
             // Associate the parameter with the possible names
             names.forEach { name: String -> constructorMap[name] = parameter }
@@ -109,6 +117,12 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
             }
             reader.endObject()
 
+            // A null for a parameter that cannot be null but has a default is as if it were left out: the strict mode
+            // of OpenAI sends every field, and null for the ones the model has nothing to say about
+            constructorParams.entries.removeIf { (param, value) ->
+                value == null && param.isOptional && !param.type.isMarkedNullable
+            }
+
             // Set to null missing non-optional parameters (nullables get null value and non-nullables throws JsonParseException next)
             primaryConstructor.parameters
                 .filter { !it.isOptional }
@@ -117,6 +131,10 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
             constructorParams.forEach { (param, value) ->
                 if (value == null && !param.type.isMarkedNullable) {
                     throw JsonParseException("${param.name} cannot be null in type '${kClass.simpleName}'")
+                }
+                // Gson knows nothing of the nullability of what a list or a map holds, which Kotlin says in the type
+                nullInside(value, param.type, param.name.orEmpty())?.let {
+                    throw JsonParseException("$it cannot be null in type '${kClass.simpleName}'")
                 }
             }
             try {
@@ -134,6 +152,32 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
     }
 
     companion object {
+        /**
+         * Where a null is inside [value], a list or a map whose [type] says it cannot hold one, like `tags[1]` or
+         * `scores[a]`; null when there is none. It goes down into lists of lists and maps of lists.
+         */
+        internal fun nullInside(value: Any?, type: KType, path: String): String? {
+            val arguments = type.arguments.mapNotNull { it.type }
+
+            return when (value) {
+                is Collection<*> -> {
+                    val itemType = arguments.singleOrNull() ?: return null
+                    value.withIndex().firstNotNullOfOrNull { (i, item) ->
+                        if (item == null && !itemType.isMarkedNullable) "$path[$i]"
+                        else nullInside(item, itemType, "$path[$i]")
+                    }
+                }
+                is Map<*, *> -> {
+                    val valueType = arguments.getOrNull(1) ?: return null
+                    value.entries.firstNotNullOfOrNull { (key, item) ->
+                        if (item == null && !valueType.isMarkedNullable) "$path[$key]"
+                        else nullInside(item, valueType, "$path[$key]")
+                    }
+                }
+                else -> null
+            }
+        }
+
         /**
          * Classes annotated with this are eligible for this adapter.
          */

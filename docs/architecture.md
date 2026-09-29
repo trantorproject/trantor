@@ -199,9 +199,8 @@ See `docs/trantor-domain.md`.
 
 ### trantor-gson
 
-Provides a JSON serializer implementation based on **Gson**.
-
-Used for serialization and deserialization of objects.
+Provides a JSON serializer implementation based on **Gson**, which reads Kotlin classes through their primary
+constructor and knows the types of the domain. See [trantor-gson](trantor-gson.md).
 
 ---
 

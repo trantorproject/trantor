@@ -10,14 +10,28 @@ import dev.botta.trantor.serialization.gson.adapters.kotlinReflective.KotlinRefl
 import java.lang.reflect.Type
 import java.time.*
 
+/**
+ * The [JsonSerializer] of Trantor, on Gson, with the adapters that make it read Kotlin classes as Kotlin reads them
+ * (through the primary constructor, with its defaults and its nullability), the types of the domain, and the strict
+ * reading of booleans and enums.
+ *
+ * The [Gson] is built once and kept, since building it throws away the adapters it worked out for each type, which
+ * made every call several times slower. Registering an adapter builds it again on the next call.
+ */
 class GsonSerializer: JsonSerializer {
     private val builder: GsonBuilder = GsonBuilder()
     private val yearMonthParser by lazy { YearMonthParser() }
+
+    @Volatile
+    private var gson: Gson? = null
 
     init {
         builder.registerTypeAdapterFactory(KotlinReflectiveTypeAdapterFactory.create())
         builder.registerTypeAdapterFactory(MaybeTypeAdapterFactory())
         builder.registerTypeAdapterFactory(IdTypeAdapterFactory())
+        builder.registerTypeAdapterFactory(StrictEnumTypeAdapterFactory())
+        builder.registerTypeAdapter(Boolean::class.javaPrimitiveType, StrictBooleanTypeAdapter())
+        builder.registerTypeAdapter(Boolean::class.javaObjectType, StrictBooleanTypeAdapter())
         builder.registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeSerializer())
         builder.registerTypeAdapter(LocalDate::class.java, LocalDateSerializer())
         builder.registerTypeAdapter(LocalTime::class.java, LocalTimeSerializer())
@@ -27,12 +41,17 @@ class GsonSerializer: JsonSerializer {
         ))
         builder.registerTypeAdapter(Money::class.java, StringValueSerializer({ Money(it) }, { it.plainString() }))
         builder.registerTypeAdapter(Email::class.java, StringValueSerializer({ Email(it) }))
+        builder.setExclusionStrategies(DelegatedPropertiesExclusion())
     }
 
-    fun getGson() = builder.create()
+    /** The Gson this serializer uses, with every adapter registered so far. */
+    fun getGson(): Gson = gson ?: synchronized(this) { gson ?: builder.create().also { gson = it } }
 
     fun registerTypeAdapter(type: Class<*>, adapter: Any) {
-        builder.registerTypeAdapter(type, adapter)
+        synchronized(this) {
+            builder.registerTypeAdapter(type, adapter)
+            gson = null
+        }
     }
 
     inline fun <reified T> registerTypeAdapter(adapter: Any) {
@@ -40,19 +59,22 @@ class GsonSerializer: JsonSerializer {
     }
 
     fun registerTypeAdapterFactory(factory: TypeAdapterFactory) {
-        builder.registerTypeAdapterFactory(factory)
+        synchronized(this) {
+            builder.registerTypeAdapterFactory(factory)
+            gson = null
+        }
     }
 
     override fun serialize(obj: Any?): String {
-        return builder.create().toJson(obj)
+        return getGson().toJson(obj)
     }
 
     override fun <T> deserialize(serialized: String?, type: Class<T>): T {
-        return builder.create().fromJson(serialized, type)
+        return getGson().fromJson(serialized, type)
     }
 
     fun <T> deserialize(serialized: String?, type: Type): T {
-        return builder.create().fromJson(serialized, type)
+        return getGson().fromJson(serialized, type)
     }
 
     inline fun <reified T> deserialize(serialized: String?): T {

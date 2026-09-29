@@ -1,6 +1,7 @@
 package dev.botta.trantor.serialization.gson
 
 import dev.botta.json.Json
+import dev.botta.trantor.serialization.gson.adapters.StringValueSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -36,7 +37,26 @@ class GsonSerializerTest {
         assertThat(obj.aDouble).isEqualTo(5.4)
     }
 
+    @Test
+    fun `an adapter registered after the serializer was used is used too`() {
+        serializer.serialize(Tag("a"))
+
+        serializer.registerTypeAdapter(Tag::class.java, StringValueSerializer({ Tag(it) }, { it.value }))
+
+        assertThat(serializer.serialize(Tag("a"))).isEqualTo("\"a\"")
+    }
+
+    @Test
+    fun `the Gson it gives is the one it uses`() {
+        serializer.registerTypeAdapter(Tag::class.java, StringValueSerializer({ Tag(it) }, { it.value }))
+
+        assertThat(serializer.getGson()).isSameAs(serializer.getGson())
+        assertThat(serializer.getGson().toJson(Tag("a"))).isEqualTo("\"a\"")
+    }
+
     private val serializer = GsonSerializer()
+
+    data class Tag(val value: String)
 
     class MyClass {
         var aNumber: Int? = null

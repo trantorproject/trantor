@@ -12,6 +12,7 @@ class LocalDateTimeSerializer: JsonSerializer<LocalDateTime?>, JsonDeserializer<
 
     @Throws(JsonParseException::class)
     override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): LocalDateTime {
-        return LocalDateTimeParser().parseISO8601(json.asString)
+        val text = json.asString
+        return readValue(text, "date and time") { LocalDateTimeParser().parseISO8601(text) }
     }
 }

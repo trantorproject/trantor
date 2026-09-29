@@ -13,6 +13,7 @@ class StringValueSerializer<T: Any?>(
 
     @Throws(JsonParseException::class)
     override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): T {
-        return factory(json.asString)
+        val text = json.asString
+        return readValue(text, (typeOfT as? Class<*>)?.simpleName ?: "value") { factory(text) }
     }
 }

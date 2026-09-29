@@ -11,6 +11,7 @@ class LocalTimeSerializer: JsonSerializer<LocalTime?>, JsonDeserializer<LocalTim
 
     @Throws(JsonParseException::class)
     override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): LocalTime {
-        return LocalTime.parse(json.asString)
+        val text = json.asString
+        return readValue(text, "time") { LocalTime.parse(text) }
     }
 }

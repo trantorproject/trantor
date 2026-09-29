@@ -57,7 +57,10 @@ class HierarchyTypeAdapterFactory<T> private constructor(
                 val label = labelJsonElement.asString
                 // registration requires that subtype extends T
                 val delegate = labelToDelegate[label] as TypeAdapter<R>?
-                    ?: throw JsonParseException("cannot deserialize $baseType subtype named $label, did you forget to register a subtype?")
+                    ?: throw JsonParseException(
+                        "cannot deserialize $baseType subtype named $label, did you forget to register a subtype? " +
+                            "The ones registered are ${labelToSubtype.keys.joinToString()}",
+                    )
                 return delegate.fromJsonTree(jsonElement)
             }
 
