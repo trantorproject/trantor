@@ -195,8 +195,9 @@ val schema = serializer.schemaOf<PlaceOrder>()
   and `null`. Neither OpenAI nor Anthropic take `oneOf`.
 - Ids and uuids are strings with `format: uuid`, `Email` with `format: email`, `LocalDate` with `format: date`,
   `LocalDateTime` with `format: date-time` (its parser needs an offset, as that format does), and `LocalTime` and
-  `YearMonth` with a `pattern`. `Money` is a string. A `Maybe` is what it holds or `null`, never required, and a
-  value class is its value.
+  `YearMonth` with a `pattern`. `Money` is a string with a `pattern` that asks for a dot for the decimals
+  (`1234.50`, never `1234,50`), which a model asked in another language might otherwise write. A `Maybe` is what it
+  holds or `null`, never required, and a value class is its value.
 - The validations of Jakarta say up front what the validation will ask for: `@NotBlank` is `minLength: 1`, `@Size`,
   `@Min`, `@Max`, `@DecimalMin`, `@Positive` and the like are their keywords, `@Pattern` is `pattern` and `@Email`
   is `format: email`. They are read from the parameter or from the field behind it, where Kotlin also puts them.

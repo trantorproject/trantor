@@ -178,7 +178,7 @@ class GsonSerializerSchemaTest {
                       "at": {"type": "string", "format": "date-time"},
                       "time": {"type": "string", "pattern": "^\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$"},
                       "month": {"type": "string", "pattern": "^\\d{4}-\\d{2}$"},
-                      "amount": {"type": "string"}
+                      "amount": {"type": "string", "pattern": "^-?\\d+(\\.\\d+)?$"}
                     }
                     """,
                 ),

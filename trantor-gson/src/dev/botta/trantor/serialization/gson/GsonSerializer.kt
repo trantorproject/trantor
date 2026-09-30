@@ -50,7 +50,10 @@ class GsonSerializer: JsonSerializer, JsonSchemaSource {
             { it.formatAsISO8601() },
             string("pattern" to YEAR_MONTH_PATTERN),
         ))
-        registerTypeAdapter(Money::class.java, StringValueSerializer({ Money(it) }, { it.plainString() }))
+        registerTypeAdapter(
+            Money::class.java,
+            StringValueSerializer({ Money(it) }, { it.plainString() }, string("pattern" to MONEY_PATTERN)),
+        )
         registerTypeAdapter(Email::class.java, StringValueSerializer({ Email(it) }, schema = string("format" to EMAIL)))
         builder.setExclusionStrategies(DelegatedPropertiesExclusion())
     }
@@ -139,6 +142,12 @@ class GsonSerializer: JsonSerializer, JsonSchemaSource {
         private const val TIME_PATTERN = "^\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?$"
         private const val EMAIL = "email"
         private const val YEAR_MONTH_PATTERN = "^\\d{4}-\\d{2}$"
+
+        /**
+         * An amount with a dot for the decimals, as Money reads it. Without it a model asked in Spanish may write
+         * 1234,50, which Money cannot read, and an answer that is an object gets no second try (plan-gson, P4).
+         */
+        private const val MONEY_PATTERN = "^-?\\d+(\\.\\d+)?$"
 
         private val wrappers = mapOf<Class<*>, Class<*>>(
             java.lang.Boolean.TYPE to java.lang.Boolean::class.java,
