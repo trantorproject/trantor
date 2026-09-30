@@ -28,6 +28,8 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
 internal fun ModelCatalog.addAnthropicModels() = apply {
     add("anthropic/claude-opus-5-5", boundThinking.searchingTools(), opus55Price)
     add("anthropic/claude-opus-5", systemAnywhere.searchingTools(), opusPrice)
+    // Takes what Opus 5.5 takes, and costs what Sonnet 5 does (models/sonnet-5-5/whats-new, read on 2026-09-30)
+    add("anthropic/claude-sonnet-5-5", boundThinking.searchingTools(), sonnet5Price)
     add("anthropic/claude-sonnet-5", effortOnly, sonnet5Price)
     add("anthropic/claude-opus-4-8", systemAnywhere.searchingTools(), opusPrice)
     add("anthropic/claude-opus-4-7", effortOnly.searchingTools(), opusPrice)
@@ -98,19 +100,20 @@ private val systemAnywhere = effortOnly.copy(features = effortOnly.features + Mi
 
 /**
  * Fable, Mythos and Opus 5.5 always think, and answer 400 to thinking disabled; a lower effort is how they think less
- * (platform.claude.com/docs/en/build-with-claude/thinking, read on 2026-09-23).
+ * (platform.claude.com/docs/en/build-with-claude/thinking, read on 2026-09-23). So does Sonnet 5.5, whose lowest
+ * setting is `between_tools`, which thinks between tool calls but not before the first.
  */
 private val alwaysThinking = systemAnywhere.copy(features = systemAnywhere.features - ReasoningOff)
 
 /**
- * Fable 5.1, Mythos 5.1 and Opus 5.5 also answer 400 to a forced tool call, so the choice of calling one is left to
- * the model.
+ * Fable 5.1, Mythos 5.1, Opus 5.5 and Sonnet 5.5 also answer 400 to a forced tool call, so the choice of calling one
+ * is left to the model.
  */
 private val withoutForcedToolUse = alwaysThinking.copy(features = alwaysThinking.features - ForcedToolUse)
 
 /**
- * Opus 5.5 and Fable 5.1 also tie each thinking block to everything before it, and answer 400 when that changed;
- * Mythos 5.1 does not (platform.claude.com/docs/en/build-with-claude/preserved-thinking, read on 2026-09-23).
+ * Opus 5.5, Sonnet 5.5 and Fable 5.1 also tie each thinking block to everything before it, and answer 400 when that
+ * changed; Mythos 5.1 does not (platform.claude.com/docs/en/build-with-claude/preserved-thinking, read on 2026-09-23).
  */
 private val boundThinking = withoutForcedToolUse.copy(features = withoutForcedToolUse.features + BoundThinking)
 

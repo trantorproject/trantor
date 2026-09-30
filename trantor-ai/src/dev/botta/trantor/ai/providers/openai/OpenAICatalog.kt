@@ -17,7 +17,8 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  *
  * The GPT-5.x families sit in the middle and are the reason [ReasoningOff] exists: they reason by default and
  * refuse the sampling settings while they do, but they can be told not to reason at all, and then they take them
- * again. GPT-6 Astra cannot be told that — an effort of `none` is a 400 there — so for it the refusal is flat.
+ * again. GPT-6 Astra and GPT-6.1 Sol cannot be told that — an effort of `none` is a 400 there — so for them the
+ * refusal is flat.
  * GPT-6 Sol and Luna take an effort of `none`; whether they then take a `temperature` is written nowhere, so they
  * are kept without one, which drops it with a warning instead of risking a 400.
  *
@@ -26,14 +27,24 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  * exact ceiling of the older models, so those are left null rather than guessed: nothing in the call path reads
  * them here, since the Responses API does not require `max_output_tokens` the way Anthropic requires `max_tokens`.
  *
- * Each price is the Standard tier of the OpenAI pricing page on 2026-09-21, and on 2026-09-23 for GPT-6 Sol and
- * Luna (developers.openai.com/api/docs/pricing), for a short context: the GPT-6 and GPT-5.6 families, GPT-5.5 and
- * GPT-5.4 charge more past a long prompt, and for an estimate the short price is the one most calls pay. Only the
- * newest models charge a cache write; on the rest a write is billed as plain input, which is what a missing
- * cacheWrite means.
+ * Each price is the Standard tier of the OpenAI pricing page on 2026-09-21, on 2026-09-23 for GPT-6 Sol and Luna,
+ * and on 2026-09-30 for GPT-6.1 Sol (developers.openai.com/api/docs/pricing), for a short context: the GPT-6 and
+ * GPT-5.6 families, GPT-5.5 and GPT-5.4 charge more past a long prompt, and for an estimate the short price is the
+ * one most calls pay. Only the newest models charge a cache write; on the rest a write is billed as plain input,
+ * which is what a missing cacheWrite means.
  */
 internal fun ModelCatalog.addOpenAIModels() = apply {
-    add("openai/gpt-6-astra", gpt6.searchingTools(), ModelPricing(input = "10", output = "50", cacheRead = "1", cacheWrite = "12.50"))
+    add(
+        "openai/gpt-6-astra",
+        gpt6.searchingTools(),
+        ModelPricing(input = "10", output = "50", cacheRead = "1", cacheWrite = "12.50"),
+    )
+    // Takes no effort of none, unlike GPT-6 Sol (developers.openai.com/api/docs/models/gpt-6.1-sol, 2026-09-30)
+    add(
+        "openai/gpt-6.1-sol",
+        gpt6.searchingTools(),
+        ModelPricing(input = "2", output = "10", cacheRead = "0.10", cacheWrite = "2.50"),
+    )
     add(
         "openai/gpt-6-sol",
         gpt6Optional.searchingTools(),
@@ -61,8 +72,16 @@ internal fun ModelCatalog.addOpenAIModels() = apply {
         ModelPricing(input = "0.20", output = "1.20", cacheRead = "0.02", cacheWrite = "0.25"),
     )
 
-    add("openai/gpt-5.5", reasoningOptional.searchingTools(), ModelPricing(input = "5", output = "30", cacheRead = "0.50"))
-    add("openai/gpt-5.4", reasoningOptional.searchingTools(), ModelPricing(input = "2.50", output = "15", cacheRead = "0.25"))
+    add(
+        "openai/gpt-5.5",
+        reasoningOptional.searchingTools(),
+        ModelPricing(input = "5", output = "30", cacheRead = "0.50"),
+    )
+    add(
+        "openai/gpt-5.4",
+        reasoningOptional.searchingTools(),
+        ModelPricing(input = "2.50", output = "15", cacheRead = "0.25"),
+    )
 
     add("openai/gpt-5", gpt5, ModelPricing(input = "1.25", output = "10", cacheRead = "0.125"))
     add("openai/gpt-5-mini", gpt5, ModelPricing(input = "0.25", output = "2", cacheRead = "0.025"))

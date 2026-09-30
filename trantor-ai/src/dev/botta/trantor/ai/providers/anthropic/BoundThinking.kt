@@ -11,8 +11,8 @@ import java.security.MessageDigest
 
 /**
  * The thinking of a request to a model that ties each thinking block to what came before it — the top-level
- * `system`, the `tools` and every earlier message — which Opus 5.5 and Fable 5.1 do. Anthropic answers 400 to a block
- * whose prefix changed.
+ * `system`, the `tools` and every earlier message — which Opus 5.5, Sonnet 5.5 and Fable 5.1 do. Anthropic answers 400
+ * to a block whose prefix changed.
  *
  * Within a conversation that only grows the prefix never changes, but some things change the past:
  *
