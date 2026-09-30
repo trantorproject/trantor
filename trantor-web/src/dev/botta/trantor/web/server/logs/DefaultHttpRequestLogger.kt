@@ -36,7 +36,7 @@ class DefaultHttpRequestLogger(private val logger: Logger): HttpRequestLogger {
         val sb = StringBuilder()
         sb.append(coloredStatus(ctx) + ": ")
         sb.append(colored(ctx.req().method, Ansi.Color.CYAN))
-        sb.append(" - " + ctx.fullUrl())
+        sb.append(" - " + ctx.loggableUrl())
         sb.append(" in " + executionTimeMs + "ms")
         if (ctx.statusCode() < 200 || ctx.statusCode() >= 400) {
             val contentType = ctx.req().contentType ?: ""

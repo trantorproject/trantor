@@ -5,6 +5,7 @@ import dev.botta.trantor.primitives.CorrelationIdGenerator
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.web.server.controllers.Controller
 import dev.botta.trantor.web.server.logs.HttpRequestLogger
+import dev.botta.trantor.web.server.logs.LOGGABLE_URL
 import dev.botta.trantor.web.server.stats.*
 import dev.botta.trantor.web.server.tracing.*
 import io.javalin.Javalin
@@ -39,6 +40,7 @@ class HttpServer(
     private var managementThreadPool: QueuedThreadPool? = null
     private val statisticsHandler = StatisticsHandler()
     private val requestLogger: HttpRequestLogger = settings.requestLoggerFactory(logger)
+    private val secrets = SecretParams(settings.secretParams)
     val id = UUID.randomUUID().toString()
     val stats: HttpServerStats
         get() = statisticsHandler.getStats(threadPool, managementThreadPool)
@@ -54,10 +56,11 @@ class HttpServer(
             settings.configureJavalin(javalinConfig)
             configureJetty(javalinConfig.jetty)
             javalinConfig.jetty.modifyServletContextHandler {
-                it.addFilter(FilterHolder(ServerSpanFilter(openTelemetry)), "/*", EnumSet.of(DispatcherType.REQUEST))
+                val filter = FilterHolder(ServerSpanFilter(openTelemetry, secrets))
+                it.addFilter(filter, "/*", EnumSet.of(DispatcherType.REQUEST))
             }
         }
-        routeRegister = JavalinRouteRegister(javalin, openTelemetry)
+        routeRegister = JavalinRouteRegister(javalin, openTelemetry, secrets)
         setupMdc()
     }
 
@@ -106,6 +109,8 @@ class HttpServer(
     private fun logRequest(ctx: Context, executionTimeMs: Float) {
         // The end of the request for Javalin, sync or async, and the first moment the route is known for sure
         ServerSpans.routed(ctx)
+        val base = ctx.req().requestURL.toString().removeSuffix(ctx.req().requestURI)
+        ctx.attribute(LOGGABLE_URL, secrets.url(base, ctx.req().requestURI, ctx.queryString()))
         requestLogger.handle(ctx, executionTimeMs)
         MDC.clear()
     }

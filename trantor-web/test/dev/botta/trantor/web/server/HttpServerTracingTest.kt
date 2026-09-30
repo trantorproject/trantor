@@ -16,7 +16,12 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.data.SpanData
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
+import dev.botta.trantor.web.server.logs.DefaultHttpRequestLogger
+import io.mockk.clearMocks
+import io.mockk.mockk
+import io.mockk.verify
 import io.restassured.RestAssured
+import org.slf4j.Logger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
 import java.net.ServerSocket
@@ -88,6 +93,40 @@ class HttpServerTracingTest {
             RestAssured.given().get("/search?q=libros&sig=secret&page=2").then().statusCode(200)
 
             assertThat(serverSpan().attributes[stringKey("url.query")]).isEqualTo("q=libros&sig=REDACTED&page=2")
+        }
+    }
+
+    @Nested
+    inner class `a secret param` {
+        @Test
+        fun `in the path of a route is redacted from the span`() {
+            RestAssured.given().post("/mcp/abc123").then().statusCode(200)
+
+            assertThat(serverSpan().attributes[stringKey("url.path")]).isEqualTo("/mcp/REDACTED")
+        }
+
+        @Test
+        fun `and in the query`() {
+            RestAssured.given().get("/search?q=libros&token=abc123").then().statusCode(200)
+
+            assertThat(serverSpan().attributes[stringKey("url.query")]).isEqualTo("q=libros&token=REDACTED")
+        }
+
+        @Test
+        fun `and from the span of the upgrade of a websocket`() {
+            val socket = HttpClient.newHttpClient().newWebSocketBuilder()
+                .buildAsync(URI("ws://localhost:$port/live/abc123"), object: WebSocket.Listener {})
+                .get(5, SECONDS)
+            socket.abort()
+
+            assertThat(serverSpan().attributes[stringKey("url.path")]).isEqualTo("/live/REDACTED")
+        }
+
+        @Test
+        fun `and from the log of the request`() {
+            RestAssured.given().post("/mcp/abc123?token=abc123").then().statusCode(200)
+
+            verify(timeout = 5_000) { log.info(match { "/mcp/REDACTED?token=REDACTED" in it && "abc123" !in it }) }
         }
     }
 
@@ -186,12 +225,18 @@ class HttpServerTracingTest {
     @BeforeEach
     fun forgetTheSpansOfOtherTests() {
         exporter.reset()
+        clearMocks(log)
     }
 
     @BeforeAll
     fun startTheServer() {
         port = freePort()
-        server = HttpServer(HttpServerSettings(port = port), openTelemetry)
+        val settings = HttpServerSettings(
+            port = port,
+            secretParams = setOf("token"),
+            requestLoggerFactory = { DefaultHttpRequestLogger(log) },
+        )
+        server = HttpServer(settings, openTelemetry)
 
         server.get("/orders/{id}") { it.jsonObj("id" to it.pathParam("id")) }
         server.get("/orders/{id}/load") { throw OrderNotFound("No such order") }
@@ -209,6 +254,8 @@ class HttpServerTracingTest {
             }
         }
         server.ws("/echo") { ws -> ws.onMessage { it.send(it.message()) } }
+        server.post("/mcp/{token}") { it.result("ok") }
+        server.ws("/live/{token}") { }
         server.addErrorHandler(NotFoundErrorHandler(OrderNotFound::class))
         server.addErrorHandler(InternalErrorHandler(Crash::class))
 
@@ -241,6 +288,7 @@ class HttpServerTracingTest {
 
     private class Crash(message: String): Exception(message)
 
+    private val log = mockk<Logger>(relaxed = true)
     private val exporter = InMemorySpanExporter.create()
     private val openTelemetry = OpenTelemetrySdk.builder()
         .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))

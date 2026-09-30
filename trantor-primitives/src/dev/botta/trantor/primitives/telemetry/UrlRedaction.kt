@@ -12,9 +12,10 @@ object UrlRedaction {
         "X-Goog-Signature",
     )
 
-    fun query(query: String) = query.split("&").joinToString("&") { pair ->
+    /** The query with the values of the keys the conventions list, and of [secretKeys], redacted. */
+    fun query(query: String, secretKeys: Set<String> = emptySet()) = query.split("&").joinToString("&") { pair ->
         val key = pair.substringBefore("=")
-        if ("=" in pair && key in SENSITIVE_QUERY_KEYS) "$key=$REDACTED" else pair
+        if ("=" in pair && (key in SENSITIVE_QUERY_KEYS || key in secretKeys)) "$key=$REDACTED" else pair
     }
 
     fun url(url: String): String {
@@ -36,5 +37,5 @@ object UrlRedaction {
             withoutCredentials.substring(queryEnd)
     }
 
-    private const val REDACTED = "REDACTED"
+    const val REDACTED = "REDACTED"
 }

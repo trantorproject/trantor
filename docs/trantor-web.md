@@ -32,6 +32,27 @@ When there is an `OpenTelemetry` in the container, every request is a `SERVER` s
 (`GET /orders/{id}`), which goes on from the trace of the caller. See
 [trantor-opentelemetry](trantor-opentelemetry.md).
 
+**Secret params.** A token in the URL — for a client that can only be given a URL — must not reach a trace or a
+log. `secretParams` names the params whose values are written `REDACTED`, in the path of any route, HTTP,
+websocket or MCP, and in the query:
+
+```kotlin
+services.configure<HttpServerSettings> { settings, _ -> settings.secretParams = setOf("token") }
+```
+
+With a route `/mcp/{token}`, a request to `/mcp/abc123?token=abc123` is `/mcp/REDACTED` in `url.path` of its span
+and `/mcp/REDACTED?token=REDACTED` in its log; the signatures the OpenTelemetry conventions list are redacted from
+the query anyway. A logger of the application writes the same with `ctx.loggableUrl()`.
+
+- The path is compared with the routes the server knows when the request arrives, so it is redacted from the start
+  of the span, and so is the upgrade of a websocket.
+- Of two routes that could take a path, like `/mcp/health` and `/mcp/{token}`, the first one registered redacts it,
+  which at worst hides a segment that was not secret.
+- After a param that takes slashes (`<token>`) or a wildcard, everything is redacted, since which segment is which
+  cannot be told.
+- What records the URL outside the application — a proxy, a load balancer, the client itself — is not covered: a
+  token in the URL is a password, and is best one the application can revoke on its own.
+
 ---
 
 ## Routes and controllers

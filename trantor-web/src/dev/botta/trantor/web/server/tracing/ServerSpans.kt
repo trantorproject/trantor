@@ -1,7 +1,7 @@
 package dev.botta.trantor.web.server.tracing
 
 import dev.botta.trantor.primitives.TrantorBuildInfo
-import dev.botta.trantor.primitives.telemetry.UrlRedaction
+import dev.botta.trantor.web.server.SecretParams
 import dev.botta.trantor.web.server.clientAddress
 import io.javalin.http.Context
 import io.javalin.http.HandlerType
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * handlers included, and has to end after the response is written. For an asynchronous request (`ctx.future`)
  * that is when the async context completes, not when the filter returns.
  */
-internal class ServerSpanFilter(openTelemetry: OpenTelemetry): Filter {
+internal class ServerSpanFilter(openTelemetry: OpenTelemetry, private val secrets: SecretParams): Filter {
     private val tracer = openTelemetry.getTracer(INSTRUMENTATION, TrantorBuildInfo.version)
     private val propagator = openTelemetry.propagators.textMapPropagator
 
@@ -57,7 +57,8 @@ internal class ServerSpanFilter(openTelemetry: OpenTelemetry): Filter {
             .setParent(parent)
             .setSpanKind(SpanKind.SERVER)
             .setAttribute(stringKey("http.request.method"), method ?: "_OTHER")
-            .setAttribute(stringKey("url.path"), req.requestURI)
+            // Redacted from the start, so that no processor ever sees a secret the conventions ask to scrub
+            .setAttribute(stringKey("url.path"), secrets.path(req.requestURI))
             .setAttribute(stringKey("url.scheme"), req.scheme)
             .setAttribute(stringKey("server.address"), req.serverName)
             .setAttribute(longKey("server.port"), req.serverPort.toLong())
@@ -65,7 +66,7 @@ internal class ServerSpanFilter(openTelemetry: OpenTelemetry): Filter {
             .setAttribute(stringKey("network.protocol.version"), req.protocol.substringAfter("HTTP/"))
 
         if (method == null) builder.setAttribute(stringKey("http.request.method_original"), req.method)
-        req.queryString?.let { builder.setAttribute(stringKey("url.query"), UrlRedaction.query(it)) }
+        req.queryString?.let { builder.setAttribute(stringKey("url.query"), secrets.query(it)) }
         req.getHeader("User-Agent")?.let { builder.setAttribute(stringKey("user_agent.original"), it) }
 
         return builder.startSpan()

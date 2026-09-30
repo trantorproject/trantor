@@ -156,6 +156,24 @@ identity as the application builds it everywhere.
 Since what each caller sees may differ and the list may change, a listing tells a client of 2026-07-28 not to keep
 it (`ttlMs: 0`, `cacheScope: private`).
 
+### A token in the URL
+
+Some clients are given only a URL: a custom connector of Claude without sign-in, for one. There the token goes in the
+path, and the middleware of the application that builds the identity reads it from there instead of a header:
+
+```kotlin
+http.mcp("/mcp/{token}", name = "store", version = "1.0.0") {
+    tool<PlaceOrder>("place_order", "Places an order for a customer")
+    requireAuthentication()
+}
+
+services.configure<HttpServerSettings> { settings, _ -> settings.secretParams = setOf("token") }
+```
+
+`secretParams` keeps the token out of the traces and the logs of the application (see
+[Secret params](trantor-web.md#the-server)). A token of its own for each client the person connects, which the
+application can revoke without touching the others, is safer than the one of their session.
+
 ---
 
 ## Clients of before

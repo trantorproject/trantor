@@ -6,10 +6,15 @@ import io.javalin.websocket.WsConfig
 import io.opentelemetry.api.OpenTelemetry
 import java.util.function.Consumer
 
-class JavalinRouteRegister(
+class JavalinRouteRegister internal constructor(
     private val javalin: Javalin,
-    override val openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+    override val openTelemetry: OpenTelemetry,
+    /** Told about every route, HTTP or websocket, so that the ones with a secret param are redacted. */
+    private val secrets: SecretParams,
 ): RouteRegister {
+    constructor(javalin: Javalin, openTelemetry: OpenTelemetry = OpenTelemetry.noop()):
+        this(javalin, openTelemetry, SecretParams(emptySet()))
+
     override fun before(handler: Handler) = apply {
         javalin.before(handler)
     }
@@ -47,6 +52,7 @@ class JavalinRouteRegister(
     }
 
     override fun ws(path: String, consumer: Consumer<WsConfig>) = apply {
+        secrets.route(path)
         javalin.ws(path, consumer)
     }
 
@@ -59,6 +65,7 @@ class JavalinRouteRegister(
     }
 
     private fun registerRoute(verb: HandlerType, path: String, handler: Handler) {
+        secrets.route(path)
         javalin.addHttpHandler(verb, path, handler)
     }
 }
