@@ -7,6 +7,9 @@ sealed interface StreamPart {
 
     data class ReasoningDelta(val text: String): StreamPart
 
+    /** A piece of a note the model writes between tool calls for whoever watches the run (see [ReasoningPart.note]). */
+    data class NoteDelta(val text: String): StreamPart
+
     /** An item that finished: a text, a reasoning block or a tool call, already assembled. */
     data class PartDone(val part: Part): StreamPart
 

@@ -29,12 +29,28 @@ data class ReasoningPart(
     val text: String? = null,
     val opaque: JsonObject? = null,
     override val metadata: ProviderMetadata = ProviderMetadata.None,
+    /**
+     * Whether it is a note the model wrote between tool calls for whoever watches the run — what it found and what
+     * it will do next — and not reasoning. [text] is then the note, to show like the text of the answer. It goes
+     * back to the provider like any reasoning. See
+     * [Notes](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai.md#notes-between-tool-calls).
+     */
+    val note: Boolean = false,
 ): Part
 
-/** The model refused to answer. Kept as a refusal instead of being turned into text. */
+/**
+ * The model refused to answer. Kept as a refusal instead of being turned into text. [text] is what the model said, or
+ * the explanation of the provider when a safeguard stopped it before it said anything.
+ */
 data class RefusalPart(
     val text: String,
     override val metadata: ProviderMetadata = ProviderMetadata.None,
+    /**
+     * Why, when the provider says: Anthropic names the policy of the safeguard that declined (`cyber`, `bio`,
+     * `frontier_llm`, `reasoning_extraction`, `general_harms`), which tells an application whether retrying with
+     * another model or another prompt is worth it.
+     */
+    val category: String? = null,
 ): Part
 
 data class ToolCallPart(

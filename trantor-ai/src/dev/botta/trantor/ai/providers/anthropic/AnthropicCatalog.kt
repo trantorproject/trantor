@@ -28,17 +28,17 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  * [AnthropicOptions.effort], which is not checked against any of this.
  */
 internal fun ModelCatalog.addAnthropicModels() = apply {
-    add("anthropic/claude-opus-5-5", boundThinking.searchingTools(), opus55Price)
+    add("anthropic/claude-opus-5-5", boundThinking.searchingTools().writingNotes(), opus55Price)
     add("anthropic/claude-opus-5", systemAnywhere.searchingTools(), opusPrice)
     // Costs what Sonnet 5 does (models/sonnet-5-5/whats-new, read on 2026-09-30)
-    add("anthropic/claude-sonnet-5-5", thinkingBetweenTools.searchingTools(), sonnet5Price)
+    add("anthropic/claude-sonnet-5-5", thinkingBetweenTools.searchingTools().writingNotes(), sonnet5Price)
     add("anthropic/claude-sonnet-5", effortOnly, sonnet5Price)
     add("anthropic/claude-opus-4-8", systemAnywhere.searchingTools(), opusPrice)
     add("anthropic/claude-opus-4-7", effortOnly.searchingTools(), opusPrice)
-    add("anthropic/claude-fable-5", alwaysThinking.searchingTools(), fablePrice)
+    add("anthropic/claude-fable-5", alwaysThinking.searchingTools().writingNotes(), fablePrice)
     add("anthropic/claude-mythos-5", alwaysThinking.searchingTools(), fablePrice)
-    add("anthropic/claude-fable-5-1", boundThinking.searchingTools(), fable51Price)
-    add("anthropic/claude-mythos-5-1", withoutForcedToolUse.searchingTools(), fable51Price)
+    add("anthropic/claude-fable-5-1", boundThinking.searchingTools().writingNotes(), fable51Price)
+    add("anthropic/claude-mythos-5-1", withoutForcedToolUse.searchingTools().writingNotes(), fable51Price)
 
     add("anthropic/claude-opus-4-6", bothWays.searchingTools(), opusPrice)
     add("anthropic/claude-sonnet-4-6", bothWays.searchingTools(), sonnetPrice)
@@ -62,6 +62,12 @@ internal fun ModelCatalog.addAnthropicModels() = apply {
  * out. Named model by model, since a profile is shared by some that have it and some that do not.
  */
 private fun ModelCapabilities.searchingTools() = copy(features = features + ToolSearch)
+
+/**
+ * The models that write progress notes between tool calls, as "Progress updates between tool calls" of the thinking
+ * guide lists them (read on 2026-09-30): Fable 5.1, Mythos 5.1, Opus 5.5, Sonnet 5.5 and Fable 5, but not Mythos 5.
+ */
+private fun ModelCapabilities.writingNotes() = copy(features = features + ProgressNotes)
 
 /**
  * Effort and no budget: a budget is a 400 here. And no sampling settings at all, which is also a 400. Thinking can

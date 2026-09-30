@@ -82,6 +82,12 @@ enum class ModelFeatures {
      */
     ThinkingBetweenTools,
     /**
+     * Between tool calls the model can write a note for whoever watches the run, about what it found and what it will
+     * do next, which comes back as a thinking block of its own: Claude Fable 5.1, Mythos 5.1, Opus 5.5, Sonnet 5.5
+     * and Fable 5. It can be asked for apart from the thinking, so that it can be told from it.
+     */
+    ProgressNotes,
+    /**
      * The model takes a system message anywhere in the conversation, not only at the start. It is what lets an
      * instruction that changes go after the conversation instead of before it, where changing it would undo the
      * cache of everything that follows. OpenAI takes them anywhere; among the Claude models only the newest do.

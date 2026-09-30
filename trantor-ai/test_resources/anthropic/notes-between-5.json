@@ -1,0 +1,32 @@
+{
+  "model": "claude-sonnet-5-5",
+  "id": "msg_011Cfa5XQTSKTTPpnH8kMYw4",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "Tu último pedido, el O-3 del 20 de septiembre, está en Rosario en este momento y la entrega estimada es mañana antes de las 18. Por ahora no tenés que hacer nada: el paquete sigue su curso, y si mañana a esa hora todavía no llegó, escribinos con el código de seguimiento ZX-12 y lo revisamos de inmediato."
+    }
+  ],
+  "container": null,
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 1330,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 131,
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "diagnostics": null
+}

@@ -1,0 +1,78 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-5-5","id":"msg_011Cfa5V6daKC8bikiazW5XM","type":"message","role":"assistant","content":[],"container":null,"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":965,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":119,"service_tier":"standard","inference_geo":"global"},"diagnostics":null}               }
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""}        }
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Ana, encontré d"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"os pedidos a tu"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" nombre: el O"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"-3 (20/09/"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"2026) y el O-1"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" (02/08/2026"}               }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"). Voy a revisar"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" el detalle del O-3"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" para ob"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"tener su código de seguim"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"iento y ver dónde"}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" está el paquete."}   }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"\n\n"}               }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"CAQSwQYKEQgSGAI4AUIJbmFycmF0aW9uEgyiwSjKm7y9rhAF/60aDDwWeBnUjJ3a1RW/ZCIwKL85e4ZQhptLrrqDdPojLxdhMjL8SlnZ9OEGTtcBjo3E9aCI++rfBjIQxx2+3b2yKt0Fpm7DkaAeeh0GhexEYmPGjMmLnOBSdnBv2zBRxOANw2Pj/mus1d4TxQnIhbjw+f1kUmubp2pA/XJl3cBvMkxmZpfcCJ7ivMaPNfkJGZVjrhDNRsFoOIu29FF82OWUF0JMwyr9Y8vv99/pguYCK5hOxKK/8qkgW7eh35YXqledqcx6dGvTkLIH5oXuYGXgwjT2WzN5c+ek8PDffoxIa9VFdwixtpzrVr7cXIMmsS+Ja8zM2ndubtnl7lFwZFQUuXxS3BdZqxrwtPc/5zhFFXpzj5uQ8JmsS1m3XFqFYYXMATVDtEuEL8kY0qiviQE5qmqIuW4VnTfXmj4v/IH75LQzG5rfm4Bn9ArrlGX5ybR8mKjaqg+7D2MH642C7W7++2wtPk+4WM2E0AqEbEiUW/59TzHWwUvg6vSn+TvSTHtg0t/+vDVFVVf+UzG0dWkjAOOQzw1dZ6vqg+dUKJ2C3RWzesURuJuZhZ3UkCA0nOuIb6mA/KkdR9wgiCICwDn4aGxlYyJQN2vz5EW20OtAjWUU23EUMLo8ut9GVKuWcF1XtEc2nUWUjlkdNAD58OkTycvxHWIOWPXVmh6G/E+TKCJcgLpMVj5PN0Ys0WQ9i7DLqPjZNln5lRtWuki97jXsdoUaOxfJG8HH1q85aPdlj/JfpRKSEGnFJ110w21mwHMFOs9+G5qX5JZ2Z88LrdSh0ueBvBQNm6GO9e5qFDe5ODvuTFVcDETU5Pbix7/dv6drscm/3DEPVy5tGF+sa0mkJW2tN8jdwH88gz4pmfMo6+jFswgE+7THm9F0h40pFy8fYzWqG9lSLafPAq5IsisclSA9eRL5FgrP+PTf16XnV5BKAFS7pRaM7pDN/6IRmH8UyZaQaVIbbByYjVkim+h196ocV8k2ZpCFghaQ/kssgk+QZxZs8qfhNOVTkf2ZlozbXSP7cTMpKLQJUcCfvXL1wRZ5XKYzG918nTWAeT8xFRgB"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0              }
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_01DKp6ZRdhLUDhmYKgwoaxpq","name":"getOrder","input":{},"caller":{"type":"direct"}}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":""} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"value"}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"\": \"O-3"}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"\"}"}            }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1}
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null,"stop_details":null,"container":null},"usage":{"input_tokens":965,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":149,"output_tokens_details":{"thinking_tokens":100}}     }
+
+event: message_stop
+data: {"type":"message_stop"            }
+

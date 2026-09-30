@@ -129,7 +129,8 @@ class AnthropicChatModelPerModelTest {
         fun `except on a model that always thinks, which answers 400 to it`() {
             val response = generate("claude-opus-5-5", ChatSettings(reasoning = Reasoning.Off))
 
-            assertThat(sentBody().containsKey("thinking")).isFalse()
+            // What goes is what it does with nothing said, which on this model asks for its notes apart
+            assertThat(sentBody()["thinking"].toString()).isEqualTo("""{"type":"adaptive","display":"updates"}""")
             assertThat(response.warnings.map { it.message }).containsExactly(
                 "claude-opus-5-5 always thinks, so Reasoning.Off was not sent; a lower effort is how it thinks less",
             )
@@ -154,7 +155,7 @@ class AnthropicChatModelPerModelTest {
                 ),
             )
 
-            assertThat(sentBody().containsKey("thinking")).isFalse()
+            assertThat(sentBody().path("thinking.type")?.asString()).isEqualTo("adaptive")
             assertThat(response.warnings.single().message).contains("between_tools", "xhigh")
         }
 
@@ -169,6 +170,48 @@ class AnthropicChatModelPerModelTest {
             )
 
             assertThat(sentBody()["thinking"].toString()).isEqualTo("""{"type":"between_tools"}""")
+        }
+
+        @Test
+        fun `on a model that writes notes between tool calls, saying nothing asks for them apart from its thinking`() {
+            generate("claude-opus-5-5", ChatSettings())
+
+            assertThat(sentBody()["thinking"].toString()).isEqualTo("""{"type":"adaptive","display":"updates"}""")
+            assertThat(betas()).contains("thinking-display-updates-2026-08-18")
+        }
+
+        @Test
+        fun `and so does asking it to think without a summary`() {
+            generate("claude-opus-5-5", ChatSettings(reasoning = Reasoning.effort(ReasoningEfforts.Low)))
+
+            assertThat(sentBody().path("thinking.display")?.asString()).isEqualTo("updates")
+            assertThat(betas()).contains("thinking-display-updates-2026-08-18")
+        }
+
+        @Test
+        fun `but asking for a summary gets it, which its notes cannot be told apart from`() {
+            val summarized = Reasoning.effort(ReasoningEfforts.Low, ReasoningSummaries.Auto)
+
+            generate("claude-opus-5-5", ChatSettings(reasoning = summarized))
+
+            assertThat(sentBody().path("thinking.display")?.asString()).isEqualTo("summarized")
+            assertThat(betas()).doesNotContain("thinking-display-updates-2026-08-18")
+        }
+
+        @Test
+        fun `and the thinking of the options goes as it was asked`() {
+            generateWith(
+                "claude-opus-5-5",
+                ChatRequest(
+                    listOf(Message.user("Hola")),
+                    providerOptions = ProviderOptions.of(
+                        AnthropicOptions(thinking = AnthropicThinking.Adaptive(summary = false)),
+                    ),
+                ),
+            )
+
+            assertThat(sentBody().path("thinking.display")?.asString()).isEqualTo("omitted")
+            assertThat(betas()).doesNotContain("thinking-display-updates-2026-08-18")
         }
 
         @Test
@@ -639,8 +682,8 @@ class AnthropicChatModelPerModelTest {
             generateWith("claude-opus-5-5", request())
 
             assertThat(sentBody()["messages"]!!.asArray()!!.last().toString()).isEqualTo(turnScoped("Son las 10"))
-            assertThat(httpClient.request?.headers?.get("anthropic-beta"))
-                .isEqualTo("mid-conversation-system-clear-at-2026-08-21")
+            assertThat(httpClient.request?.headers?.get("anthropic-beta")?.split(","))
+                .contains("mid-conversation-system-clear-at-2026-08-21")
         }
 
         @Test
@@ -711,7 +754,7 @@ class AnthropicChatModelPerModelTest {
             val answer = generateWith("claude-opus-5-5", request(dynamic = null))
 
             assertThat(httpClient.requestBody).doesNotContain("clear_at")
-            assertThat(httpClient.request?.headers).doesNotContainKey("anthropic-beta")
+            assertThat(httpClient.request?.headers?.get("anthropic-beta").orEmpty()).doesNotContain("clear-at")
             assertThat(stampOf(answer.content)).isNull()
         }
 
@@ -919,6 +962,8 @@ class AnthropicChatModelPerModelTest {
         ),
         toolChoice = choice,
     )
+
+    private fun betas() = httpClient.request?.headers?.get("anthropic-beta")?.split(",").orEmpty()
 
     private fun generate(modelId: String, settings: ChatSettings) =
         generateWith(modelId, ChatRequest(listOf(Message.user("Hola")), settings = settings))

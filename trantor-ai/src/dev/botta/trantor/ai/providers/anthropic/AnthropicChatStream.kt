@@ -107,7 +107,10 @@ internal class AnthropicChatStream(
             }
             "thinking_delta" -> delta["thinking"]?.asString()?.let {
                 block.append("thinking", it)
-                pending.add(StreamPart.ReasoningDelta(it))
+                // *"Treat a block as a progress update as soon as one of its thinking_delta events carries non-empty
+                // text"* (build-with-claude/thinking, on the notes asked for apart)
+                if (!mapper.notes) pending.add(StreamPart.ReasoningDelta(it))
+                else if (it.isNotEmpty()) pending.add(StreamPart.NoteDelta(it))
             }
             // The signature is what carries the thinking to the next turn, and it is not something to show
             "signature_delta" -> delta["signature"]?.asString()?.let { block.append("signature", it) }

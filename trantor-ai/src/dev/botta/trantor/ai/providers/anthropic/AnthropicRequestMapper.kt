@@ -41,6 +41,10 @@ internal class AnthropicRequestMapper(
         private val model: ModelCapabilities? = spec?.capabilities
         private val takes = WhatTheModelTakes(spec)
         private val warnings = MappingWarnings(modelId, takes.isGuess)
+
+        /** Whether the thinking blocks of the answer that carry text are notes between tool calls (see [withNotes]). */
+        private var notes = false
+        private val betas = mutableSetOf<String>()
         private val strictBudget = StrictBudget()
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
@@ -73,7 +77,7 @@ internal class AnthropicRequestMapper(
                 throw UnsupportedRequestError(ANTHROPIC_PROVIDER, warnings.toList())
             }
 
-            return MappedRequest(body, warnings.toList(), conversation.betas, conversation.stamp)
+            return MappedRequest(body, warnings.toList(), conversation.betas + betas, conversation.stamp, notes)
         }
 
         private fun applySettings(body: JsonObject, settings: ChatSettings): Unit = with(settings) {
@@ -325,6 +329,35 @@ internal class AnthropicRequestMapper(
          */
         private fun toThinking(reasoning: Reasoning?, options: AnthropicOptions?): JsonObject? {
             options?.thinking?.let { return toThinking(it) }
+
+            return withNotes(thinkingFor(reasoning, options))
+        }
+
+        /**
+         * On a model that writes notes between tool calls ([WhatTheModelTakes.progressNotes]), thinking that shows
+         * nothing of itself — none asked for, or no summary — asks for the notes apart, with `display: "updates"`:
+         * they come back with their text and the thinking blocks stay empty, so the two can be told apart
+         * (build-with-claude/thinking, "Progress updates between tool calls", read on 2026-09-30). With no thinking
+         * field these models think adaptively already, so asking for it changes nothing of how much they think.
+         * `between_tools` brings the notes with their text on its own. A summary is left as it is: its notes cannot
+         * be told from the thinking.
+         */
+        private fun withNotes(thinking: JsonObject?): JsonObject? {
+            if (!takes.progressNotes) return thinking
+
+            val type = thinking?.get("type")?.asString()
+            if (type == BETWEEN_TOOLS_THINKING) notes = true
+            if (thinking != null && (type != ADAPTIVE_THINKING || thinking["display"]?.asString() != OMITTED)) {
+                return thinking
+            }
+
+            notes = true
+            betas.add(NOTES_BETA)
+
+            return Json.obj("type" to ADAPTIVE_THINKING, "display" to NOTES_DISPLAY)
+        }
+
+        private fun thinkingFor(reasoning: Reasoning?, options: AnthropicOptions?): JsonObject? {
             if (reasoning == null) return null
             if (reasoning == Reasoning.Off) return thinkingOff(options?.effort)
 
@@ -386,7 +419,7 @@ internal class AnthropicRequestMapper(
             adaptiveThinking(summary != ReasoningSummaries.None)
 
         private fun adaptiveThinking(summary: Boolean) =
-            Json.obj("type" to "adaptive", "display" to displayFor(summary))
+            Json.obj("type" to ADAPTIVE_THINKING, "display" to displayFor(summary))
 
         private fun budgetThinking(tokens: Int, summary: ReasoningSummaries) =
             budgetThinking(tokens, summary != ReasoningSummaries.None)
@@ -402,7 +435,7 @@ internal class AnthropicRequestMapper(
         }
 
         /** Omitted still returns the signature, which is what carries the thinking to the next turn. */
-        private fun displayFor(summary: Boolean) = if (summary) "summarized" else "omitted"
+        private fun displayFor(summary: Boolean) = if (summary) "summarized" else OMITTED
 
         /**
          * A share of what the model can give, which is how a level becomes a number of tokens on a model that
@@ -560,10 +593,17 @@ internal data class MappedRequest(
     val warnings: List<ModelWarning>,
     val betas: Set<String> = emptySet(),
     val stamp: ThinkingStamp? = null,
+    /** Whether a thinking block of the answer that carries text is a note between tool calls, not thinking. */
+    val notes: Boolean = false,
 )
 
-/** The tool search of Anthropic by natural language, which the model writes more readily than a pattern. */
 private const val BETWEEN_TOOLS_THINKING = "between_tools"
+private const val ADAPTIVE_THINKING = "adaptive"
+private const val OMITTED = "omitted"
+private const val NOTES_DISPLAY = "updates"
+private const val NOTES_BETA = "thinking-display-updates-2026-08-18"
+
+/** The tool search of Anthropic by natural language, which the model writes more readily than a pattern. */
 private const val TOOL_SEARCH_TYPE = "tool_search_tool_bm25_20251119"
 private const val TOOL_SEARCH_NAME = "tool_search_tool_bm25"
 

@@ -25,6 +25,9 @@ internal class WhatTheModelTakes(private val spec: ModelSpec?) {
     val reasoningOff get() = has(ModelFeatures.ReasoningOff)
     val thinkingBetweenTools get() = has(ModelFeatures.ThinkingBetweenTools)
 
+    /** Not taken for granted without a spec: the notes are asked for with a beta a model without them may refuse. */
+    val progressNotes get() = model != null && ModelFeatures.ProgressNotes in model
+
     /** Not taken for granted without a spec: a model that does not search answers 400, and the loop can search. */
     val toolSearch get() = model != null && ModelFeatures.ToolSearch in model
 

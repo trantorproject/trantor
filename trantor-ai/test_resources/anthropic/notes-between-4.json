@@ -1,0 +1,43 @@
+{
+  "model": "claude-sonnet-5-5",
+  "id": "msg_011Cfa5X5MFHsNQrUosEqP26",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "Ya tengo los datos del pedido O-3, Ana: su código de seguimiento es ZX-12. Con ese código consulto ahora la ubicación actual del paquete y te cuento qué encuentro."
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01TNdWNc5EsaXRCwWGdajoqt",
+      "name": "trackPackage",
+      "input": {
+        "value": "ZX-12"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 1176,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 124,
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "diagnostics": null
+}

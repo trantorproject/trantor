@@ -11,14 +11,15 @@ import kotlin.time.Duration
 
 /**
  * Turns a response of the Anthropic Messages API into a [ChatResponse]. One is made for each call, with the [stamp]
- * of its request: what its thinking has to remember ([ThinkingStamp]).
+ * of its request: what its thinking has to remember ([ThinkingStamp]); and whether its request asked for the notes
+ * between tool calls apart from the thinking ([notes]), which makes a thinking block with text a note.
  */
-internal class AnthropicResponseMapper(private val stamp: ThinkingStamp? = null) {
+internal class AnthropicResponseMapper(private val stamp: ThinkingStamp? = null, val notes: Boolean = false) {
     fun map(json: JsonObject, modelId: String, latency: Duration, warnings: List<ModelWarning>): ChatResponse {
         val stopReason = json["stop_reason"]?.asString()
 
         return ChatResponse(
-            content = toContent(json),
+            content = toContent(json) + listOfNotNull(toRefusal(json)),
             finishReason = toFinishReason(stopReason),
             info = ResponseInfo(
                 id = json["id"]?.asString(),
@@ -29,6 +30,20 @@ internal class AnthropicResponseMapper(private val stamp: ThinkingStamp? = null)
             rawFinishReason = stopReason,
             usage = toUsage(json["usage"]?.asObject()),
             warnings = warnings,
+        )
+    }
+
+    /**
+     * Why the safeguards declined, which Anthropic gives apart from the content: *"A declined request returns HTTP
+     * 200 with `stop_reason: "refusal"` and a `stop_details` object naming the policy area"* (models/sonnet-5-5,
+     * read on 2026-09-30). The content may be empty, so the explanation is the text of the refusal.
+     */
+    private fun toRefusal(json: JsonObject): RefusalPart? {
+        val details = json["stop_details"]?.asObject()?.takeIf { it["type"]?.asString() == "refusal" } ?: return null
+
+        return RefusalPart(
+            text = details["explanation"]?.asString().orEmpty(),
+            category = details["category"]?.asString(),
         )
     }
 
@@ -72,14 +87,20 @@ internal class AnthropicResponseMapper(private val stamp: ThinkingStamp? = null)
      * encrypted copy of the whole reasoning, and not the text, which is a summary and may not even be there. It
      * has to travel back exactly as it came, and a run of them cannot be reordered or partly dropped.
      */
-    private fun toReasoning(block: JsonObject) = ReasoningPart(
-        text = block["thinking"]?.asString()?.ifBlank { null },
-        opaque = block,
-        metadata = ProviderMetadata.of(
-            ANTHROPIC_PROVIDER,
-            Json.obj("type" to (block["type"] ?: Json.value(""))).let { stamp?.on(it) ?: it },
-        ),
-    )
+    private fun toReasoning(block: JsonObject): ReasoningPart {
+        val text = block["thinking"]?.asString()?.ifBlank { null }
+
+        return ReasoningPart(
+            text = text,
+            opaque = block,
+            metadata = ProviderMetadata.of(
+                ANTHROPIC_PROVIDER,
+                Json.obj("type" to (block["type"] ?: Json.value(""))).let { stamp?.on(it) ?: it },
+            ),
+            // With the notes apart the thinking comes back empty, so what carries text is a note
+            note = notes && text != null,
+        )
+    }
 
     /**
      * What came with the text and we don't model: citations are the quotes of a document, and Anthropic wants

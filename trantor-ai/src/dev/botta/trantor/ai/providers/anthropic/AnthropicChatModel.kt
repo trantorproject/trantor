@@ -34,7 +34,7 @@ class AnthropicChatModel(
         options.cancellation?.throwIfCancelled()
 
         val mapped = requestMapper.map(modelId, request)
-        val responseMapper = AnthropicResponseMapper(mapped.stamp)
+        val responseMapper = AnthropicResponseMapper(mapped.stamp, mapped.notes)
         val startedAt = TimeSource.Monotonic.markNow()
 
         try {
@@ -76,7 +76,7 @@ class AnthropicChatModel(
             throw errorMapper.toError(response, body)
         }
 
-        val responseMapper = AnthropicResponseMapper(mapped.stamp)
+        val responseMapper = AnthropicResponseMapper(mapped.stamp, mapped.notes)
 
         return AnthropicChatStream(modelId, response, startedAt, mapped.warnings, responseMapper, options.cancellation)
     }

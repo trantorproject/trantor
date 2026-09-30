@@ -1094,6 +1094,13 @@ wherever the model takes one.
 `ProviderPart` for anything the adapter did not recognize. A `ProviderPart` carries the original payload
 and goes back where it came from, so a field the provider added is visible instead of lost.
 
+**A refusal says why, where the provider does.** When the safeguards of Claude decline a request, the answer can be
+empty but for the stop reason and its details; the `RefusalPart` then carries the explanation as its text and the
+policy area as its `category` — `cyber`, `bio`, `frontier_llm`, `reasoning_extraction`, `general_harms` — which tells
+an application whether trying another model or another prompt is worth it. `reasoning_extraction` is the one a prompt
+of the application can bring about: asking the model to write out its reasoning in the answer. A recording showed a
+system prompt asking for a detailed note of what was found and meant after each step turned down that way.
+
 **Warnings, not silence.** When a request asks for something the provider cannot do, the response carries
 a `ModelWarning`. `failOnWarnings` turns those into an error for an application that would rather stop.
 
@@ -1236,6 +1243,32 @@ Anthropic has are asked for with `AnthropicOptions.effort`.
 Reasoning content the provider will not show comes back as an opaque `ReasoningPart`, which is passed
 back on the next turn so the model keeps its own chain. It is signed or encrypted per provider, so an
 adapter only takes back reasoning its own provider produced.
+
+### Notes between tool calls
+
+Claude Fable 5.1, Mythos 5.1, Opus 5.5, Sonnet 5.5 and Fable 5 write, between tool calls, a note for whoever watches
+the run: what they found and what they will do next. A short one is text, like any other; a longer one comes back as a
+thinking block of its own, which by default is empty, so an interface that shows the text goes quiet between the
+calls.
+
+So on those models, when the application did not ask to see the reasoning, the adapter asks for the notes apart from
+it (`display: "updates"`, a beta of Anthropic): the thinking blocks stay empty and the notes come with their text.
+A note is a `ReasoningPart` with `note = true`, whose `text` is the note, and in a stream it arrives as
+`StreamPart.NoteDelta` — in a run, inside `RunEvent.Model` — instead of `ReasoningDelta`. It goes back to the provider
+like any thinking. `Reasoning.Off` on Sonnet 5.5 (`between_tools`) brings the notes with their text too.
+
+Asking for a summary of the reasoning (`ReasoningSummaries.Auto`) gets it, and then a note cannot be told from the
+summary: both are `ReasoningPart`s with text. What `AnthropicOptions.thinking` asks for goes as it was written.
+
+```kotlin
+stream.forEach { event ->
+    when (val part = (event as? RunEvent.Model)?.part) {
+        is StreamPart.TextDelta -> show(part.text)
+        is StreamPart.NoteDelta -> showStatus(part.text)
+        else -> {}
+    }
+}
+```
 
 ---
 
