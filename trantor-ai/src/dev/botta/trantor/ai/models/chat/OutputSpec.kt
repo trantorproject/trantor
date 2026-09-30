@@ -1,7 +1,8 @@
 package dev.botta.trantor.ai.models.chat
 
 import dev.botta.json.values.JsonObject
-import dev.botta.trantor.ai.schemas.JsonSchemas
+import dev.botta.trantor.primitives.serialization.JsonSchemaSource
+import kotlin.reflect.typeOf
 
 sealed interface OutputSpec {
     data object Text: OutputSpec
@@ -9,8 +10,11 @@ sealed interface OutputSpec {
     data class Json(val schema: JsonObject, val name: String = "response", val strict: Boolean = true): OutputSpec
 
     companion object {
-        /** The answer as a @Serializable type: its schema goes to the model and [objectAs] reads it back. */
-        inline fun <reified T> json(name: String = "response", strict: Boolean = true) =
-            Json(JsonSchemas.of<T>(), name, strict)
+        /**
+         * The answer as a [T], whose schema [serializer] tells the model and [objectAs] reads it back with: the
+         * serializer of the application, with the types it registered.
+         */
+        inline fun <reified T> json(serializer: JsonSchemaSource, name: String = "response", strict: Boolean = true) =
+            Json(serializer.schemaOf(typeOf<T>()), name, strict)
     }
 }

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
 import dev.botta.trantor.ai.testing.FakeCompactor
 import dev.botta.trantor.ai.models.Usage
+import dev.botta.trantor.ai.testing.SkuTool
 
 class DefaultAITest {
     @Nested
@@ -210,6 +211,18 @@ class DefaultAITest {
             assertThat(result.refusal).isEqualTo("No puedo")
             assertThat(result.error).isInstanceOf(NoObjectGeneratedError::class.java)
             assertThat(result.run.steps).hasSize(1)
+        }
+
+        @Test
+        fun `is described and read by the serializer of the AI, with the types the application registered`() {
+            model.answers(listOf(TextPart("""{"sku":"ABC-1","units":12}""")))
+            val ai = DefaultAI(registry, serializer = SkuTool.serializer())
+
+            val stocked = ai.generate<Stocked> { user("Cuanto hay de ABC-1?") }
+
+            val output = model.request?.output as OutputSpec.Json
+            assertThat(output.schema.path("properties.sku.pattern")?.asString()).isEqualTo(SkuTool.PATTERN)
+            assertThat(stocked).isEqualTo(Stocked(SkuTool.Sku("ABC-1"), 12))
         }
 
         @Test
@@ -456,6 +469,8 @@ class DefaultAITest {
 
     @Serializable
     data class Weather(val city: String, val celsius: Int)
+
+    data class Stocked(val sku: SkuTool.Sku, val units: Int)
 
     /** Hands out the same scripted model for every id, and remembers the ids it was asked for. */
     class FakeProvider(private val model: FakeChatModel): AIProvider {

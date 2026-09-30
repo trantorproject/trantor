@@ -19,6 +19,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.catchThrowableOfType
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /**
  * Guardrails against what the providers really answered. On the input, a guardrail that asks the same model whether
@@ -198,9 +199,9 @@ class AgentGuardrailsRecordedTest {
                     ),
                     conversation.last(),
                 ),
-                output = OutputSpec.json<Topic>(),
+                output = OutputSpec.json<Topic>(GsonSerializer()),
             )
-            val topic = model.generate(request).objectAs<Topic>()
+            val topic = model.generate(request).objectAs<Topic>(GsonSerializer())
 
             return if (topic.aboutTravel) GuardrailVerdict.Pass else GuardrailVerdict.Trip(topic.reason)
         }

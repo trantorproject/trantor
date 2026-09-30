@@ -14,7 +14,7 @@ import dev.botta.trantor.di.ServiceProvider
 import dev.botta.trantor.di.ServiceRegistry
 import io.opentelemetry.api.OpenTelemetry
 import dev.botta.trantor.primitives.serialization.JsonSerializer
-import dev.botta.trantor.ai.tools.defaultJsonSerializer
+import dev.botta.trantor.ai.serialization.defaultJsonSerializer
 
 /**
  * Registers everything an application needs to use models: [AI], the [AgentRunner], the [ModelRegistry] and the

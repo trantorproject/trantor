@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import dev.botta.trantor.serialization.gson.GsonSerializer
 
 class OpenAIChatModelStructuredOutputTest {
     @Test
@@ -42,7 +43,7 @@ class OpenAIChatModelStructuredOutputTest {
     @Test
     fun `without strict the schema goes as it is`() {
         httpClient.body = fixture("structured-output")
-        val output = OutputSpec.json<Order>(name = "order", strict = false)
+        val output = OutputSpec.json<Order>(GsonSerializer(), name = "order", strict = false)
 
         model.generate(ChatRequest(listOf(Message.user("Leé el pedido")), output = output))
 
@@ -65,7 +66,7 @@ class OpenAIChatModelStructuredOutputTest {
     fun `reads the answer as the object`() {
         httpClient.body = fixture("structured-output")
 
-        val order = model.generate(orderRequest()).objectAs<Order>()
+        val order = model.generate(orderRequest()).objectAs<Order>(GsonSerializer())
 
         assertThat(order).isEqualTo(
             Order("Nico Bottarini", listOf(Item("ABC-100", 3), Item("XYZ-7", 2)), deliverBefore = "2024-04-25")
@@ -78,7 +79,7 @@ class OpenAIChatModelStructuredOutputTest {
 
         val response = model.generate(orderRequest())
 
-        assertThatThrownBy { response.objectAs<Order>() }
+        assertThatThrownBy { response.objectAs<Order>(GsonSerializer()) }
             .isInstanceOfSatisfying(NoObjectGeneratedError::class.java) {
                 assertThat(it.refusal).isEqualTo("I'm sorry, I can't help with that.")
                 assertThat(it.finishReason).isEqualTo(FinishReasons.Refusal)
@@ -91,7 +92,7 @@ class OpenAIChatModelStructuredOutputTest {
 
         val response = model.generate(orderRequest())
 
-        assertThatThrownBy { response.objectAs<Order>() }
+        assertThatThrownBy { response.objectAs<Order>(GsonSerializer()) }
             .isInstanceOfSatisfying(NoObjectGeneratedError::class.java) {
                 assertThat(it.text).isEqualTo("Hola, ¿en qué puedo ayudarte?")
             }
@@ -99,7 +100,7 @@ class OpenAIChatModelStructuredOutputTest {
 
     private fun orderRequest() = ChatRequest(
         messages = listOf(Message.user("Leé el pedido")),
-        output = OutputSpec.json<Order>(name = "order"),
+        output = OutputSpec.json<Order>(GsonSerializer(), name = "order"),
     )
 
     private fun sentBody() = Json.parse(httpClient.requestBody!!).asObject()!!

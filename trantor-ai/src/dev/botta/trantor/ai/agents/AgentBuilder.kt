@@ -7,8 +7,6 @@ import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatSettings
 import dev.botta.trantor.ai.providers.ProviderOption
 import dev.botta.trantor.ai.tools.Tool
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.serializer
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
@@ -56,11 +54,10 @@ class AgentBuilder internal constructor(private val name: String) {
     fun options(vararg options: ProviderOption) = apply { this.options.addAll(options) }
 
     /** Answers with a [T] instead of text. */
-    inline fun <reified T: Any> output(mode: OutputMode = OutputMode.Native) =
-        output(serializer<T>(), typeOf<T>(), mode)
+    inline fun <reified T: Any> output(mode: OutputMode = OutputMode.Native) = output<T>(typeOf<T>(), mode)
 
-    fun <T: Any> output(serializer: KSerializer<T>, type: KType, mode: OutputMode = OutputMode.Native) =
-        apply { output = AgentOutput(serializer, type, mode) }
+    fun <T: Any> output(type: KType, mode: OutputMode = OutputMode.Native) =
+        apply { output = AgentOutput<T>(type, mode) }
 
     /** Called around the steps this agent runs, after the global hooks and before those of the run. */
     fun hooks(vararg hooks: AgentHooks) = apply { this.hooks.addAll(hooks) }

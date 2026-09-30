@@ -30,7 +30,7 @@ import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.context.Context
 import java.util.UUID
 import dev.botta.trantor.primitives.serialization.JsonSerializer
-import dev.botta.trantor.ai.tools.defaultJsonSerializer
+import dev.botta.trantor.ai.serialization.defaultJsonSerializer
 
 /**
  * Runs agents on the [ToolLoop], the same one a generation runs on: the loop keeps the conversation, the limit of
@@ -393,7 +393,8 @@ class AgentRunner(
                     messages = listOfNotNull(agent.instructions(run)?.let(Message::system)) +
                         projected(options.contextPolicies, OtherAgentsTurns.toldTo(agent.name, request.messages), run),
                     dynamicSystem = agent.dynamicInstructions(run),
-                    output = agent.output?.takeIf { it.mode == OutputMode.Native }?.let { OutputSpec.Json(it.schema) }
+                    output = agent.output?.takeIf { it.mode == OutputMode.Native }
+                        ?.let { OutputSpec.Json(it.schema(serializer)) }
                         ?: OutputSpec.Text,
                     settings = agent.settings,
                     providerOptions = ProviderOptions.of(*(agent.options + options.providerOptions).toTypedArray()),

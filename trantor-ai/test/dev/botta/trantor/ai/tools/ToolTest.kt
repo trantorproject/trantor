@@ -67,6 +67,17 @@ class ToolTest {
         }
 
         @Test
+        fun `is the one of each serializer, for a tool that runs with more than one`() {
+            val tool = OrderTool()
+
+            tool.spec(storeSerializer)
+
+            val another = GsonSerializer().apply { registerTypeAdapter(Sku::class.java, SkuAdapter) }
+
+            assertThatThrownBy { tool.spec(another) }.isInstanceOf(JsonSchemaError::class.java)
+        }
+
+        @Test
         fun `a tool is strict, holding the model to its schema`() {
             assertThat(RenameTool().spec(serializer).strict).isTrue()
         }

@@ -15,6 +15,9 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import dev.botta.trantor.serialization.gson.GsonSerializer
+import dev.botta.trantor.ai.testing.SkuTool
+import kotlin.reflect.typeOf
+import dev.botta.trantor.primitives.serialization.schemaOf
 
 class AgentTest {
     @Test
@@ -132,8 +135,19 @@ class AgentTest {
             val output = Agent("support").output<Invoice>().build().output!!
 
             assertThat(output.mode).isEqualTo(OutputMode.Native)
-            assertThat(output.schema).isEqualTo(JsonSchemas.of<Invoice>())
-            assertThat(output.serializer).isEqualTo(Invoice.serializer())
+            assertThat(output.schema(GsonSerializer())).isEqualTo(GsonSerializer().schemaOf<Invoice>())
+            assertThat(output.type).isEqualTo(typeOf<Invoice>())
+        }
+
+        @Test
+        fun `is described by each serializer, for an agent that runs with more than one`() {
+            val output = Agent("support").output<Stocked>().build().output!!
+
+            val plain = output.schema(GsonSerializer())
+            val registered = output.schema(SkuTool.serializer())
+
+            assertThat(plain.path("properties.sku.pattern")).isNull()
+            assertThat(registered.path("properties.sku.pattern")?.asString()).isEqualTo(SkuTool.PATTERN)
         }
 
         @Test
@@ -247,6 +261,8 @@ class AgentTest {
 
     @Serializable
     data class City(val city: String)
+
+    data class Stocked(val sku: SkuTool.Sku, val units: Int)
 
     class WeatherTool: Tool<City>() {
         override val name = "getWeather"

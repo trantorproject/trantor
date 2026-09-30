@@ -9,10 +9,10 @@ import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.Step
 import dev.botta.trantor.ai.models.chat.ToolCallPart
 import dev.botta.trantor.ai.models.chat.objectAs
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.serializer
 import dev.botta.trantor.primitives.serialization.JsonSerializer
-import dev.botta.trantor.ai.tools.defaultJsonSerializer
+import dev.botta.trantor.ai.serialization.defaultJsonSerializer
+import kotlin.reflect.typeOf
+import kotlin.reflect.KType
 
 /**
  * What a run of the agents left: what [RunResult] says about any run, plus which agent ran each step and the id of
@@ -59,7 +59,7 @@ class AgentRunResult internal constructor(
 
     val toolFailures get() = result.toolFailures
 
-    inline fun <reified T: Any> output(): T = output(serializer<T>())
+    inline fun <reified T: Any> output(): T = output(typeOf<T>())
 
     /**
      * The object the last agent answered with: the args of its call to the output tool in [OutputMode.Tool], and
@@ -68,7 +68,7 @@ class AgentRunResult internal constructor(
      * @throws NoObjectGeneratedError when the answer is not one: the model answered without calling the output tool,
      * or its text is not the object, or the run [paused] before answering.
      */
-    fun <T: Any> output(serializer: KSerializer<T>): T {
+    fun <T: Any> output(type: KType): T {
         if (paused) throw NoObjectGeneratedError(
             "The run is waiting for approval of ${pending.joinToString { it.call.toolName }}, so it has no answer yet",
             finishReason,
@@ -77,7 +77,7 @@ class AgentRunResult internal constructor(
 
         val output = lastAgent.output
 
-        if (output?.mode != OutputMode.Tool) return response.objectAs(serializer)
+        if (output?.mode != OutputMode.Tool) return response.objectAs(type, serializer)
 
         val call = outputCall() ?: throw NoObjectGeneratedError(
             "The model answered without calling ${OutputTool.NAME}",
@@ -86,7 +86,7 @@ class AgentRunResult internal constructor(
         )
 
         @Suppress("UNCHECKED_CAST")
-        return output.fromArgs(call.input, this.serializer) as T
+        return output.fromArgs(call.input, serializer) as T
     }
 
     /**

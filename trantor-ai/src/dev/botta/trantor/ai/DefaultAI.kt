@@ -14,13 +14,13 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.OutputSpec
 import dev.botta.trantor.ai.models.chat.objectAs
-import dev.botta.trantor.ai.schemas.JsonSchemas
 import dev.botta.trantor.ai.tools.ToolErrorHandlers
 import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import io.opentelemetry.api.OpenTelemetry
-import kotlinx.serialization.KSerializer
 import dev.botta.trantor.primitives.serialization.JsonSerializer
-import dev.botta.trantor.ai.tools.defaultJsonSerializer
+import dev.botta.trantor.ai.serialization.defaultJsonSerializer
+import kotlin.reflect.KType
+import dev.botta.trantor.ai.serialization.schemaFor
 
 /**
  * [AI] over the models of the [ModelRegistry], running every generation on the [ToolLoop]. Each step sends what the
@@ -43,13 +43,13 @@ class DefaultAI(
 
     override fun generate(request: GenerateRequest) = run(request, request.toChatRequest())
 
-    override fun <T> generateObject(request: GenerateRequest, serializer: KSerializer<T>): ObjectResult<T> {
+    override fun <T> generateObject(request: GenerateRequest, type: KType): ObjectResult<T> {
         // Into a request of its own, so that a builder the application reuses does not keep asking for this type
-        val output = OutputSpec.Json(JsonSchemas.of(serializer.descriptor))
+        val output = OutputSpec.Json(serializer.schemaFor(type, "The answer"))
         val run = run(request, request.toChatRequest().copy(output = output))
 
         return try {
-            ObjectResult(run.response.objectAs(serializer), run)
+            ObjectResult(run.response.objectAs(type, serializer), run)
         } catch (e: NoObjectGeneratedError) {
             ObjectResult(null, run, e)
         }

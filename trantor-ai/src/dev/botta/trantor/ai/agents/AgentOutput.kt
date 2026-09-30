@@ -1,15 +1,25 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.json.values.JsonObject
-import dev.botta.trantor.ai.schemas.JsonSchemas
 import dev.botta.trantor.primitives.serialization.JsonSerializer
-import kotlinx.serialization.KSerializer
 import kotlin.reflect.KType
+import dev.botta.trantor.ai.serialization.schemaFor
 
 /** The object an agent answers with, and how it asks the model for it. */
-class AgentOutput<T: Any>(val serializer: KSerializer<T>, val type: KType, val mode: OutputMode) {
-    /** What the model is told the object looks like, from the same descriptor that decodes it. */
-    val schema = JsonSchemas.of(serializer.descriptor)
+class AgentOutput<T: Any>(
+    /** The type of the object, which the serializer of the run describes to the model and reads back. */
+    val type: KType,
+    val mode: OutputMode,
+) {
+    @Volatile
+    private var described: Pair<JsonSerializer, JsonObject>? = null
+
+    /** What the model is told the object looks like, by [serializer], worked out the first time for it. */
+    internal fun schema(serializer: JsonSerializer): JsonObject {
+        described?.takeIf { it.first === serializer }?.let { return it.second }
+
+        return serializer.schemaFor(type, "The output of an agent").also { described = serializer to it }
+    }
 
     private val outputTool = OutputTool<T>(type)
 

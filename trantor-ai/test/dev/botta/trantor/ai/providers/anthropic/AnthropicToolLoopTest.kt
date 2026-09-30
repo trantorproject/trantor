@@ -11,6 +11,7 @@ import dev.botta.trantor.ai.tools.ToolResult
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /**
  * The tool loop against what Anthropic really answered: Claude Sonnet 4.5 thinking, asking for the weather and
@@ -56,10 +57,11 @@ class AnthropicToolLoopTest {
     fun `with an object asked for, the model calls the tool first and answers with the object`() {
         http.answers(fixture("tool-loop-object-1"), fixture("tool-loop-object-2"))
 
-        val result = loop().run(request(OutputSpec.json<CityWeather>()))
+        val result = loop().run(request(OutputSpec.json<CityWeather>(GsonSerializer())))
 
         assertThat(weather.cities).containsExactly("Bariloche, Argentina")
-        assertThat(result.response.objectAs<CityWeather>()).isEqualTo(CityWeather("Bariloche, Argentina", 7))
+        assertThat(result.response.objectAs<CityWeather>(GsonSerializer()))
+            .isEqualTo(CityWeather("Bariloche, Argentina", 7))
         assertThat(http.requests.map { body(it.body).outputFormat() }).containsExactly("json_schema", "json_schema")
     }
 

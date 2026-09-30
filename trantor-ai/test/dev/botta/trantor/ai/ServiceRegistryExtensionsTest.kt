@@ -474,6 +474,21 @@ class ServiceRegistryExtensionsTest {
         }
 
         @Test
+        fun `an answer that is an object is described and read by the serializer of the application`() {
+            val model = FakeChatModel(provider = "scripted").answers(listOf(TextPart("""{"sku":"ABC-1"}""")))
+            registry.addSingleton<JsonSerializer>(SkuTool.serializer())
+            registry.addAI()
+            registry.configure<ModelRegistry> { models, _ -> models.addProvider(ScriptedProvider(model)) }
+
+            val args = provider.get<AI>().generate<SkuTool.Args> {
+                model("scripted/a-model")
+                user("Que producto?")
+            }
+
+            assertThat(args).isEqualTo(SkuTool.Args(SkuTool.Sku("ABC-1")))
+        }
+
+        @Test
         fun `and so do the tools of an agent`() {
             val stock = SkuTool()
             val model = FakeChatModel(provider = "scripted")

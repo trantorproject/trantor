@@ -22,6 +22,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
+import dev.botta.trantor.ai.testing.SkuTool
 
 class AgentRunnerTest {
     @Test
@@ -160,6 +161,18 @@ class AgentRunnerTest {
         }
 
         @Test
+        fun `natively is described and read by the serializer of the run, with the types the application registered`() {
+            model.answers(listOf(TextPart("""{"sku":"ABC-1","units":12}""")))
+            val agent = support().output<Stocked>().build()
+
+            val result = AgentRunner(registry, serializer = SkuTool.serializer()).run(agent, Message.user("Hay ABC-1?"))
+
+            val output = model.requests[0].output as OutputSpec.Json
+            assertThat(output.schema.path("properties.sku.pattern")?.asString()).isEqualTo(SkuTool.PATTERN)
+            assertThat(result.output<Stocked>()).isEqualTo(Stocked(SkuTool.Sku("ABC-1"), 12))
+        }
+
+        @Test
         fun `as a tool is the args of the call that ended the run`() {
             model.answers(listOf(weatherCall), listOf(finalResult("""{"city":"Bariloche","celsius":7}""")))
             val agent = support().tools(weather).output<Weather>(OutputMode.Tool).build()
@@ -232,6 +245,8 @@ class AgentRunnerTest {
     // Serializable only until structured output leaves kotlinx, which still reads the answer in the native mode
     @Serializable
     data class Picked(val code: Code)
+
+    data class Stocked(val sku: SkuTool.Sku, val units: Int)
 
     @Serializable
     data class Code(val value: String)

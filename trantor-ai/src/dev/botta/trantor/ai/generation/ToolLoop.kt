@@ -17,6 +17,7 @@ import dev.botta.trantor.primitives.ContextPropagation
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.context.Context
 import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.ai.serialization.defaultJsonSerializer
 
 /**
  * Calls the model, runs the tools it asks for and calls it again with their results, until it answers without

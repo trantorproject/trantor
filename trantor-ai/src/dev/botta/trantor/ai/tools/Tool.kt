@@ -6,12 +6,13 @@ import dev.botta.json.values.JsonObject
 import dev.botta.trantor.primitives.lang.Maybe
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.primitives.serialization.JsonSchemaError
-import dev.botta.trantor.primitives.serialization.JsonSchemaSource
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.allSupertypes
 import kotlin.reflect.full.primaryConstructor
+import dev.botta.trantor.ai.serialization.schemaFor
+import dev.botta.trantor.ai.serialization.read
 
 /**
  * A tool the application runs when the model asks for it.
@@ -112,7 +113,7 @@ abstract class Tool<TArgs: Any> {
         if (isJson) return input as TArgs
 
         try {
-            return serializer.deserialize(input.toString(), (argsType.classifier as KClass<*>).java) as TArgs
+            return serializer.read(input.toString(), argsType)
         } catch (e: JsonParseException) {
             throw InvalidToolInputError(name, "The input of $name does not fit its args: ${e.message}", e)
         } catch (e: IllegalArgumentException) {
@@ -128,10 +129,6 @@ abstract class Tool<TArgs: Any> {
 
         if (isJson) return Described(serializer, Json.obj("type" to "object"), strict = false).also { described = it }
 
-        val source = serializer as? JsonSchemaSource ?: throw JsonSchemaError(
-            "The tool $name needs the schema of $argsType, and ${serializer::class.simpleName} cannot tell it: the " +
-                "serializer of the run has to be a JsonSchemaSource, like the GsonSerializer",
-        )
         val maybe = maybeOfNullableIn(argsType)
         if (maybe != null) {
             logger.warn(
@@ -140,7 +137,8 @@ abstract class Tool<TArgs: Any> {
             )
         }
 
-        return Described(serializer, source.schemaOf(argsType), strict = maybe == null).also { described = it }
+        val schema = serializer.schemaFor(argsType, "The tool $name")
+        return Described(serializer, schema, strict = maybe == null).also { described = it }
     }
 
     private class Described(val serializer: JsonSerializer, val parameters: JsonObject, val strict: Boolean)
