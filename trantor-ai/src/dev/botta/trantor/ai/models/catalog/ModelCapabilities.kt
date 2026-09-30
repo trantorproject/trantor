@@ -53,9 +53,9 @@ enum class ModelFeatures {
      */
     StructuredOutput,
     /**
-     * The provider searches the tools of a call it was told to defer, and loads the ones the model needs: Anthropic
-     * with its BM25 tool search, from the 4.5 generation on, and OpenAI with `tool_search`, from GPT-5.4 on. Without
-     * it, the tool loop searches them itself.
+     * The provider loads the tools of a call it was told to defer once they are found, by its own search or by one
+     * the client runs: Anthropic from the 4.5 generation on, and OpenAI from GPT-5.4 on. Without it, the tool loop
+     * tells the model about the tools found like any other.
      */
     ToolSearch,
     Images,
@@ -68,12 +68,19 @@ enum class ModelFeatures {
     ForcedToolUse,
     /**
      * The model can be told not to reason at all. A model that always reasons answers 400 to being told that:
-     * GPT-6 Astra refuses an effort of none, and Claude Opus 5.5, Fable and Mythos refuse thinking disabled.
+     * GPT-6 Astra and GPT-6.1 Sol refuse an effort of none, and Claude Opus 5.5, Sonnet 5.5, Fable and Mythos refuse
+     * thinking disabled.
      *
      * On OpenAI it is also what gives the sampling settings back: the GPT-5.x families take a `temperature`
      * alongside an effort of none, and refuse it while they reason.
      */
     ReasoningOff,
+    /**
+     * The model cannot be told not to reason, but its lowest setting is not thinking before it answers, only between
+     * tool calls, where it writes short progress notes. That is what being told not to reason becomes there. Claude
+     * Sonnet 5.5, whose `between_tools` Anthropic takes only at an effort of high or below.
+     */
+    ThinkingBetweenTools,
     /**
      * The model takes a system message anywhere in the conversation, not only at the start. It is what lets an
      * instruction that changes go after the conversation instead of before it, where changing it would undo the

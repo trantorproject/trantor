@@ -326,7 +326,7 @@ internal class AnthropicRequestMapper(
         private fun toThinking(reasoning: Reasoning?, options: AnthropicOptions?): JsonObject? {
             options?.thinking?.let { return toThinking(it) }
             if (reasoning == null) return null
-            if (reasoning == Reasoning.Off) return thinkingOff()
+            if (reasoning == Reasoning.Off) return thinkingOff(options?.effort)
 
             reasoning.budgetTokens?.let {
                 if (takes.budget) return budgetThinking(it, reasoning.summary)
@@ -348,11 +348,28 @@ internal class AnthropicRequestMapper(
             is AnthropicThinking.Off -> Json.obj("type" to "disabled")
             is AnthropicThinking.Adaptive -> adaptiveThinking(thinking.summary)
             is AnthropicThinking.Budget -> budgetThinking(thinking.tokens, thinking.summary)
+            is AnthropicThinking.BetweenTools -> Json.obj("type" to BETWEEN_TOOLS_THINKING)
         }
 
-        /** A model that always thinks answers 400 to thinking disabled: there, thinking less is a lower effort. */
-        private fun thinkingOff(): JsonObject? {
+        /**
+         * A model that always thinks answers 400 to thinking disabled: there, thinking less is a lower effort. Sonnet
+         * 5.5 has a lowest setting instead, `between_tools`, which does not think before answering and only writes
+         * short notes between tool calls; it takes no other field, and Anthropic refuses it above an effort of high
+         * (build-with-claude/thinking, read on 2026-09-30).
+         */
+        private fun thinkingOff(effort: AnthropicEfforts?): JsonObject? {
             if (takes.reasoningOff) return Json.obj("type" to "disabled")
+
+            if (takes.thinkingBetweenTools) {
+                if (effort != AnthropicEfforts.XHigh && effort != AnthropicEfforts.Max) {
+                    return Json.obj("type" to BETWEEN_TOOLS_THINKING)
+                }
+
+                val message = "$modelId takes between_tools, its lowest thinking, only at an effort of high or " +
+                    "below, so Reasoning.Off was not sent with an effort of ${effort.wireName}"
+                warnings.add(ModelWarning(message, "reasoning"))
+                return null
+            }
 
             warnings.add(
                 ModelWarning(
@@ -546,6 +563,7 @@ internal data class MappedRequest(
 )
 
 /** The tool search of Anthropic by natural language, which the model writes more readily than a pattern. */
+private const val BETWEEN_TOOLS_THINKING = "between_tools"
 private const val TOOL_SEARCH_TYPE = "tool_search_tool_bm25_20251119"
 private const val TOOL_SEARCH_NAME = "tool_search_tool_bm25"
 

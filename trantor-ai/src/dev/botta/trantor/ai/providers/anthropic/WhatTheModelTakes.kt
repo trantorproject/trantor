@@ -23,6 +23,7 @@ internal class WhatTheModelTakes(private val spec: ModelSpec?) {
     val forcedToolUse get() = has(ModelFeatures.ForcedToolUse)
     val midConversationSystem get() = has(ModelFeatures.MidConversationSystem)
     val reasoningOff get() = has(ModelFeatures.ReasoningOff)
+    val thinkingBetweenTools get() = has(ModelFeatures.ThinkingBetweenTools)
 
     /** Not taken for granted without a spec: a model that does not search answers 400, and the loop can search. */
     val toolSearch get() = model != null && ModelFeatures.ToolSearch in model

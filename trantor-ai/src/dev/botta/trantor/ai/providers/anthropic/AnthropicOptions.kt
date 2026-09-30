@@ -50,6 +50,13 @@ sealed interface AnthropicThinking {
 
     /** A fixed budget in tokens, which models from Claude 4.7 on reject. Minimum 1024. */
     data class Budget(val tokens: Int, val summary: Boolean = true): AnthropicThinking
+
+    /**
+     * No thinking before answering, and short progress notes between tool calls, which come back as thinking blocks
+     * with their text. Only Claude Sonnet 5.5 takes it, where it is the lowest setting, and only at an effort of high
+     * or below.
+     */
+    data object BetweenTools: AnthropicThinking
 }
 
 enum class ServiceTiers { Auto, StandardOnly }

@@ -1339,8 +1339,10 @@ Luna can be told not to reason, but nothing says they take a `temperature` then,
 
 Being told not to reason is itself something a model can refuse: GPT-6 Astra and GPT-6.1 Sol answer 400 to an
 effort of `none`, and Claude Opus 5.5, Sonnet 5.5, Fable and Mythos always think and answer 400 to thinking
-disabled. There
-`Reasoning.Off` is not sent, and the warning says that a lower effort is how they think less.
+disabled. There `Reasoning.Off` is not sent, and the warning says that a lower effort is how they think less. Sonnet
+5.5 has a lowest setting instead, `between_tools`: no thinking before it answers, only short progress notes between
+tool calls. `Reasoning.Off` becomes that there, except at an effort of `xhigh` or `max`, which Anthropic refuses it
+at, and the warning says so.
 
 Anthropic has one of its own: every Claude refuses a forced tool call while it is thinking to a budget,
 whichever model it is.
@@ -1811,8 +1813,8 @@ ProviderToolSpec("anthropic.web_search_20260209", Json.obj("name" to "web_search
 
 **`AnthropicOptions`** is the way past the catalog. It is sent as it was written, without asking what the
 model takes, so whoever knows their model gets exactly what they asked for: `effort` reaches the `xhigh`
-and `max` levels `Reasoning` does not have, `thinking` names a budget or the adaptive mode, and there are
-`cache`, `userId` and `serviceTier`.
+and `max` levels `Reasoning` does not have, `thinking` names a budget, the adaptive mode or `BetweenTools`, and
+there are `cache`, `userId` and `serviceTier`.
 
 ### Thinking tied to the conversation
 

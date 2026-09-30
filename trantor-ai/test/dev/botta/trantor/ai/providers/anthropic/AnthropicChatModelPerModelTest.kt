@@ -136,6 +136,42 @@ class AnthropicChatModelPerModelTest {
         }
 
         @Test
+        fun `and on one whose lowest setting thinks only between tool calls, Off asks for that`() {
+            val response = generate("claude-sonnet-5-5", ChatSettings(reasoning = Reasoning.Off))
+
+            assertThat(sentBody()["thinking"].toString()).isEqualTo("""{"type":"between_tools"}""")
+            assertThat(response.warnings).isEmpty()
+        }
+
+        @Test
+        fun `but not at an effort above high, which Anthropic refuses it at`() {
+            val response = generateWith(
+                "claude-sonnet-5-5",
+                ChatRequest(
+                    listOf(Message.user("Hola")),
+                    settings = ChatSettings(reasoning = Reasoning.Off),
+                    providerOptions = ProviderOptions.of(AnthropicOptions(effort = AnthropicEfforts.XHigh)),
+                ),
+            )
+
+            assertThat(sentBody().containsKey("thinking")).isFalse()
+            assertThat(response.warnings.single().message).contains("between_tools", "xhigh")
+        }
+
+        @Test
+        fun `and asked for on its own, it goes as it was asked`() {
+            generateWith(
+                "claude-sonnet-5-5",
+                ChatRequest(
+                    listOf(Message.user("Hola")),
+                    providerOptions = ProviderOptions.of(AnthropicOptions(thinking = AnthropicThinking.BetweenTools)),
+                ),
+            )
+
+            assertThat(sentBody()["thinking"].toString()).isEqualTo("""{"type":"between_tools"}""")
+        }
+
+        @Test
         fun `and saying nothing sends nothing, so the model keeps its own default`() {
             generate("claude-opus-5", ChatSettings())
 

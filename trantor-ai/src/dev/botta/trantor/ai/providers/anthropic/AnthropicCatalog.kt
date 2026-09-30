@@ -30,8 +30,8 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
 internal fun ModelCatalog.addAnthropicModels() = apply {
     add("anthropic/claude-opus-5-5", boundThinking.searchingTools(), opus55Price)
     add("anthropic/claude-opus-5", systemAnywhere.searchingTools(), opusPrice)
-    // Takes what Opus 5.5 takes, and costs what Sonnet 5 does (models/sonnet-5-5/whats-new, read on 2026-09-30)
-    add("anthropic/claude-sonnet-5-5", boundThinking.searchingTools(), sonnet5Price)
+    // Costs what Sonnet 5 does (models/sonnet-5-5/whats-new, read on 2026-09-30)
+    add("anthropic/claude-sonnet-5-5", thinkingBetweenTools.searchingTools(), sonnet5Price)
     add("anthropic/claude-sonnet-5", effortOnly, sonnet5Price)
     add("anthropic/claude-opus-4-8", systemAnywhere.searchingTools(), opusPrice)
     add("anthropic/claude-opus-4-7", effortOnly.searchingTools(), opusPrice)
@@ -101,6 +101,12 @@ private val withoutForcedToolUse = alwaysThinking.copy(features = alwaysThinking
  * changed; Mythos 5.1 does not (platform.claude.com/docs/en/build-with-claude/preserved-thinking, read on 2026-09-23).
  */
 private val boundThinking = withoutForcedToolUse.copy(features = withoutForcedToolUse.features + BoundThinking)
+
+/**
+ * Sonnet 5.5 takes what Opus 5.5 takes, and one thing more: thinking only between tool calls, which is its lowest
+ * setting (build-with-claude/thinking, read on 2026-09-30).
+ */
+private val thinkingBetweenTools = boundThinking.copy(features = boundThinking.features + ThinkingBetweenTools)
 
 /** The generation in the middle takes both ways of asking, though the budget is already deprecated there. */
 private val bothWays = effortOnly.copy(
