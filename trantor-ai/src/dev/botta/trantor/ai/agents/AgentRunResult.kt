@@ -11,6 +11,8 @@ import dev.botta.trantor.ai.models.chat.ToolCallPart
 import dev.botta.trantor.ai.models.chat.objectAs
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
+import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.ai.tools.defaultJsonSerializer
 
 /**
  * What a run of the agents left: what [RunResult] says about any run, plus which agent ran each step and the id of
@@ -22,6 +24,8 @@ class AgentRunResult internal constructor(
     agents: List<Agent>,
     /** Tells this run apart from the others, and is what its tools see in their context. */
     val runId: String,
+    /** The serializer of the run, which reads the object of the output tool. */
+    private val serializer: JsonSerializer = defaultJsonSerializer,
 ) {
     /** The conversation the run keeps, compacted, when it compacted it. See [RunResult.compacted]. */
     val compacted get() = result.compacted
@@ -82,7 +86,7 @@ class AgentRunResult internal constructor(
         )
 
         @Suppress("UNCHECKED_CAST")
-        return output.fromArgs(call.input) as T
+        return output.fromArgs(call.input, this.serializer) as T
     }
 
     /**

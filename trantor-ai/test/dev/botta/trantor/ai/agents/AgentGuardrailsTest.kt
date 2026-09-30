@@ -415,7 +415,7 @@ class AgentGuardrailsTest {
     class CityTool(
         override val name: String,
         private val ran: MutableList<String>,
-    ): Tool<CityTool.Args>(Args.serializer()) {
+    ): Tool<CityTool.Args>() {
         override val description = "About the weather of a city"
         override val readOnly = true
 

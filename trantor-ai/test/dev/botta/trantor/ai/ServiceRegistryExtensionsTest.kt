@@ -27,6 +27,8 @@ import dev.botta.trantor.ai.providers.openai.OpenAIConfig
 import dev.botta.trantor.ai.providers.openai.addOpenAI
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.ai.testing.SkuTool
+import dev.botta.trantor.ai.tools.FunctionToolSpec
 import dev.botta.trantor.ai.testing.TestTelemetry
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
@@ -452,6 +454,41 @@ class ServiceRegistryExtensionsTest {
         }
 
         @Test
+        fun `the tools of a generation read and describe their args with the serializer of the application`() {
+            val stock = SkuTool()
+            val model = FakeChatModel(provider = "scripted")
+                .answers(listOf(ToolCallPart("call_1", "stock", Json.obj("sku" to "ABC-1"))), listOf(TextPart("12")))
+            registry.addSingleton<JsonSerializer>(SkuTool.serializer())
+            registry.addAI()
+            registry.configure<ModelRegistry> { models, _ -> models.addProvider(ScriptedProvider(model)) }
+
+            provider.get<AI>().generate {
+                model("scripted/a-model")
+                user("Hay stock?")
+                tools(stock)
+            }
+
+            val spec = model.requests.first().tools.single() as FunctionToolSpec
+            assertThat(spec.parameters.path("properties.sku.pattern")?.asString()).isEqualTo(SkuTool.PATTERN)
+            assertThat(stock.received).isEqualTo(SkuTool.Args(SkuTool.Sku("ABC-1")))
+        }
+
+        @Test
+        fun `and so do the tools of an agent`() {
+            val stock = SkuTool()
+            val model = FakeChatModel(provider = "scripted")
+                .answers(listOf(ToolCallPart("call_1", "stock", Json.obj("sku" to "ABC-1"))), listOf(TextPart("12")))
+            registry.addSingleton<JsonSerializer>(SkuTool.serializer())
+            registry.addAI()
+
+            val agent = Agent("seller").model(model).tools(stock).build()
+
+            provider.get<AgentRunner>().run(agent, Message.user("Hay stock?"))
+
+            assertThat(stock.received).isEqualTo(SkuTool.Args(SkuTool.Sku("ABC-1")))
+        }
+
+        @Test
         fun `the global hooks of the agents reach every run of the runner`() {
             val model = FakeChatModel(provider = "scripted").answers(listOf(TextPart("Hola")))
             val called = mutableListOf<String>()
@@ -563,7 +600,7 @@ class ServiceRegistryExtensionsTest {
         override fun chatModel(modelId: String) = model
     }
 
-    private class FailingTool: Tool<FailingTool.Args>(Args.serializer()) {
+    private class FailingTool: Tool<FailingTool.Args>() {
         override val name = "fail"
         override val description = "Always fails"
 

@@ -156,7 +156,7 @@ class AgentHandoffTest {
     @Serializable
     class NoArgs
 
-    class WeatherTool: Tool<NoArgs>(NoArgs.serializer()) {
+    class WeatherTool: Tool<NoArgs>() {
         override val name = "getWeather"
         override val description = "The weather"
         override val readOnly = true
@@ -169,7 +169,7 @@ class AgentHandoffTest {
         }
     }
 
-    class PriceTool: Tool<NoArgs>(NoArgs.serializer()) {
+    class PriceTool: Tool<NoArgs>() {
         override val name = "getPrice"
         override val description = "The price"
 
@@ -177,7 +177,7 @@ class AgentHandoffTest {
     }
 
     /** Assigns the conversation to an area of the application, which is also handing it over to its agent. */
-    class AssignTool: Tool<NoArgs>(NoArgs.serializer()) {
+    class AssignTool: Tool<NoArgs>() {
         override val name = "assign"
         override val description = "Assigns the conversation to sales"
 

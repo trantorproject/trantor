@@ -219,6 +219,13 @@ class GsonSerializerKotlinTest {
         }
 
         @Test
+        fun `a number that is not one fails as input that cannot be read, naming the field`() {
+            assertThatThrownBy { serializer.deserialize<Priced>("""{"price":"cheap"}""") }
+                .isInstanceOf(JsonParseException::class.java)
+                .hasMessageContaining("price")
+        }
+
+        @Test
         fun `an id, an amount or a date that cannot be read fail as input that cannot be read`() {
             assertThatThrownBy { serializer.deserialize<Account>("""{"id":"123","balance":"1"}""") }
                 .isInstanceOf(JsonParseException::class.java)
@@ -320,6 +327,8 @@ class GsonSerializerKotlinTest {
     }
 
     data class Switch(val on: Boolean, val maybe: Boolean? = null)
+
+    data class Priced(val price: Double)
 
     data class Notes(val lines: List<String?>)
 

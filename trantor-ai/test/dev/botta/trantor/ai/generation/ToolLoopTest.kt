@@ -9,12 +9,14 @@ import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.testing.SkuTool
 import dev.botta.trantor.ai.tools.*
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import dev.botta.trantor.serialization.gson.GsonSerializer
 
 class ToolLoopTest {
     @Test
@@ -47,7 +49,7 @@ class ToolLoopTest {
 
         loop().run(ChatRequest(listOf(Message.user("Hola")), tools = listOf(webSearch)))
 
-        assertThat(model.request?.tools).containsExactly(webSearch, weather.spec())
+        assertThat(model.request?.tools).containsExactly(webSearch, weather.spec(GsonSerializer()))
     }
 
     @Test
@@ -229,6 +231,18 @@ class ToolLoopTest {
         }
     }
 
+    @Test
+    fun `reads and describes the args of its tools with the serializer it is given`() {
+        val stock = SkuTool()
+        model.answers(listOf(ToolCallPart("call_1", "stock", Json.obj("sku" to "ABC-1"))), listOf(TextPart("Hay 12")))
+
+        ToolLoop(model, listOf(stock), serializer = SkuTool.serializer()).run(ChatRequest("Hay stock?"))
+
+        val spec = model.requests.first().tools.single() as FunctionToolSpec
+        assertThat(spec.parameters.path("properties.sku.pattern")?.asString()).isEqualTo(SkuTool.PATTERN)
+        assertThat(stock.received).isEqualTo(SkuTool.Args(SkuTool.Sku("ABC-1")))
+    }
+
     private fun loop(maxSteps: Int = 5, run: RunContext = RunContext()) =
         ToolLoop(model, listOf(weather), maxSteps, run)
 
@@ -238,7 +252,7 @@ class ToolLoopTest {
     private val model = FakeChatModel()
     private val weather = WeatherTool()
 
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city"
 

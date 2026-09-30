@@ -17,6 +17,8 @@ import dev.botta.trantor.core.auth.UnauthorizedAccessError
 import dev.botta.trantor.core.validation.ValidationError
 import dev.botta.trantor.domain.errors.DomainError
 import dev.botta.trantor.primitives.logging.getLogger
+import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import io.opentelemetry.api.OpenTelemetry
 
 /**
@@ -47,6 +49,11 @@ class McpEndpoint(
      * on from the trace the client sent in `_meta`, and `mcp.server.operation.duration`. The no-op one costs nothing.
      */
     openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
+    /**
+     * How the tools read their args and write what they answer, and what tells the model their schema: the
+     * serializer of the application, or Gson with the adapters of Trantor where the endpoint does not know it.
+     */
+    private val serializer: JsonSerializer = GsonSerializer(),
 ) {
     private val tools = tools.toList()
     private val telemetry = McpServerTelemetry(openTelemetry)
@@ -209,7 +216,7 @@ class McpEndpoint(
     private fun described(visible: Map<String, Tool<*>>) = Json.array(visible.values.map { describe(it) })
 
     private fun describe(tool: Tool<*>): JsonObject {
-        val spec = tool.spec()
+        val spec = tool.spec(serializer)
         val description = Json.obj(
             "name" to tool.name,
             "description" to tool.description,
@@ -235,7 +242,8 @@ class McpEndpoint(
         val arguments = params["arguments"]?.asObject() ?: JsonObject()
 
         val output = try {
-            val context = ToolContext(callId = id.asString() ?: id.toString(), toolName = tool.name, run = run)
+            val callId = id.asString() ?: id.toString()
+            val context = ToolContext(callId, tool.name, run, serializer = serializer)
             tool.call(arguments, context).output
         } catch (e: InvalidToolInputError) {
             return failed(id, e.message, complete, operation)

@@ -3,7 +3,7 @@ package dev.botta.trantor.ai.agents
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.serialization.KSerializer
+import kotlin.reflect.KType
 
 /**
  * The tool an agent in [OutputMode.Tool] answers with: its args are the object. Calling it right ends the run, once
@@ -12,7 +12,7 @@ import kotlinx.serialization.KSerializer
  *
  * The name and what it answers are the ones of PydanticAI, whose default this is.
  */
-internal class OutputTool<T: Any>(serializer: KSerializer<T>): Tool<T>(serializer) {
+internal class OutputTool<T: Any>(type: KType): Tool<T>(type) {
     override val name = NAME
     override val description = "Gives the final answer, as its arguments. Call it once you have everything the answer needs."
     override val readOnly = true

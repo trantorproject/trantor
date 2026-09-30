@@ -2,10 +2,6 @@ package dev.botta.trantor.ai.tools
 
 import dev.botta.json.values.JsonValue
 import dev.botta.trantor.ai.generation.RunResult
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.serializer
-import dev.botta.json.Json as BottaJson
-import kotlinx.serialization.json.Json as KotlinxJson
 
 /**
  * What a tool answers, which goes back to the model as the result of its call.
@@ -35,12 +31,7 @@ data class ToolResult(
     companion object {
         fun text(value: String) = ToolResult(ToolOutput.Text(value))
 
+        /** JSON the tool has as such. An object of the application goes with [ToolContext.json]. */
         fun json(value: JsonValue) = ToolResult(ToolOutput.Json(value))
-
-        /** A @Serializable object, as its JSON. */
-        fun <T> json(value: T, serializer: KSerializer<T>) =
-            json(BottaJson.parse(KotlinxJson.encodeToString(serializer, value)))
-
-        inline fun <reified T> json(value: T) = json(value, serializer<T>())
     }
 }

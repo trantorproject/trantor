@@ -315,7 +315,7 @@ class McpServerTest {
         override val properties = emptyMap<String, Any>()
     }
 
-    class EchoTool: Tool<EchoTool.Args>(Args.serializer()) {
+    class EchoTool: Tool<EchoTool.Args>() {
         override val name = "echo"
         override val description = "Says back what it is given"
         override val readOnly = true
@@ -326,7 +326,7 @@ class McpServerTest {
         data class Args(val text: String)
     }
 
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "weather"
         override val description = "The weather of a city"
 
@@ -337,7 +337,7 @@ class McpServerTest {
         data class Args(val city: String)
     }
 
-    class RefundTool: Tool<RefundTool.Args>(Args.serializer()) {
+    class RefundTool: Tool<RefundTool.Args>() {
         override val name = "refund"
         override val description = "Gives the money of an order back"
 

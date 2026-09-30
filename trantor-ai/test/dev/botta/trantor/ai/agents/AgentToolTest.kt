@@ -21,6 +21,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
+import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /** An agent that another one uses as a tool: it runs a run of its own, and the one that called it goes on. */
 class AgentToolTest {
@@ -40,7 +41,7 @@ class AgentToolTest {
 
     @Test
     fun `the model is told what the agent is for, and to ask it with everything it needs`() {
-        val spec = researcher.asTool(runner, "Averigua el clima de un destino").spec()
+        val spec = researcher.asTool(runner, "Averigua el clima de un destino").spec(GsonSerializer())
 
         assertThat(spec.name).isEqualTo("researcher")
         assertThat(spec.description).isEqualTo("Averigua el clima de un destino")
@@ -193,7 +194,7 @@ class AgentToolTest {
     class NoArgs
 
     /** Writes down whom the run is for. */
-    class WhoAmI(private val seen: MutableList<Tenant>): Tool<NoArgs>(NoArgs.serializer()) {
+    class WhoAmI(private val seen: MutableList<Tenant>): Tool<NoArgs>() {
         override val name = "whoAmI"
         override val description = "Who the run is for"
 
@@ -204,7 +205,7 @@ class AgentToolTest {
     }
 
     /** Cancels the run, as a user who closes the page would. */
-    class Cancel(private val cancellation: Cancellation): Tool<NoArgs>(NoArgs.serializer()) {
+    class Cancel(private val cancellation: Cancellation): Tool<NoArgs>() {
         override val name = "cancel"
         override val description = "Cancels"
 

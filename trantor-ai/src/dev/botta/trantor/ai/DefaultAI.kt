@@ -19,6 +19,8 @@ import dev.botta.trantor.ai.tools.ToolErrorHandlers
 import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import io.opentelemetry.api.OpenTelemetry
 import kotlinx.serialization.KSerializer
+import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.ai.tools.defaultJsonSerializer
 
 /**
  * [AI] over the models of the [ModelRegistry], running every generation on the [ToolLoop]. Each step sends what the
@@ -33,6 +35,8 @@ class DefaultAI(
     private val openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
     /** Whether the spans carry what was said, which they do not unless asked. */
     private val telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
+    /** The serializer of the application, which reads and describes the args of the tools. */
+    private val serializer: JsonSerializer = defaultJsonSerializer,
 ): AI {
     override fun text(prompt: String, model: String?, options: CallOptions) =
         generate(GenerateRequest().model(model).user(prompt).callOptions(options)).text
@@ -71,7 +75,9 @@ class DefaultAI(
             StepSetup(model, chat.copy(messages = projected(policies, chat.messages, request.context)), tools)
         }
 
-        return ToolLoop(next, request.maxSteps, request.context, errorHandlers.all, openTelemetry, telemetrySettings)
+        return ToolLoop(
+            next, request.maxSteps, request.context, errorHandlers.all, openTelemetry, telemetrySettings, serializer,
+        )
     }
 
     /**

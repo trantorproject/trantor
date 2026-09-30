@@ -7,6 +7,8 @@ dependencies {
     api(project(":trantor-domain"))
     api(project(":trantor-web-client"))
     api(project(":trantor-di"))
+    // The serializer of a run that was given none
+    implementation(project(":trantor-gson"))
     // To end the processes of the MCP servers with the application
     implementation(project(":trantor-hosting"))
     api("org.jetbrains.kotlinx:kotlinx-serialization-json")

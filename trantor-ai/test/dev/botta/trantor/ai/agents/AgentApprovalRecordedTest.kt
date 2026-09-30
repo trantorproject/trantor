@@ -19,7 +19,7 @@ import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.schema.generator.json.SerialDescription
+import dev.botta.trantor.primitives.serialization.Description
 import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -198,7 +198,7 @@ class AgentApprovalRecordedTest {
     private val newMessage = "Mejor dejalo. ¿Cuándo llega el pedido 42?"
 
     /** The tools the recordings were made with, answering what they answered then. */
-    class OrderTool: Tool<OrderTool.Args>(Args.serializer()) {
+    class OrderTool: Tool<OrderTool.Args>() {
         override val name = "getOrder"
         override val description = "The state of an order of the store"
         override val readOnly = true
@@ -211,10 +211,10 @@ class AgentApprovalRecordedTest {
         }
 
         @Serializable
-        data class Args(@SerialDescription("The number of the order") val order: Int)
+        data class Args(@Description("The number of the order") val order: Int)
     }
 
-    class RefundTool: Tool<RefundTool.Args>(Args.serializer()) {
+    class RefundTool: Tool<RefundTool.Args>() {
         override val name = "refund"
         override val description = "Gives back the money of an order, in dollars"
 
@@ -229,8 +229,8 @@ class AgentApprovalRecordedTest {
 
         @Serializable
         data class Args(
-            @SerialDescription("The number of the order") val order: Int,
-            @SerialDescription("How many dollars to give back") val amount: Int,
+            @Description("The number of the order") val order: Int,
+            @Description("How many dollars to give back") val amount: Int,
         )
     }
 }

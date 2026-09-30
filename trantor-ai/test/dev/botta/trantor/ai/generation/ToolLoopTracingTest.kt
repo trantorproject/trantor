@@ -438,7 +438,7 @@ class ToolLoopTracingTest {
     }
 
     /** A tool that only reads, so two calls of a step run at the same time, each one on its own thread. */
-    private class CityTool: Tool<CityTool.Args>(Args.serializer()) {
+    private class CityTool: Tool<CityTool.Args>() {
         override val name = "getCity"
         override val description = "A city"
         override val readOnly = true
@@ -466,7 +466,7 @@ class ToolLoopTracingTest {
         override fun stream(request: ChatRequest, options: CallOptions): ChatStream = throw error
     }
 
-    private class BrokenTool: Tool<BrokenTool.Args>(Args.serializer()) {
+    private class BrokenTool: Tool<BrokenTool.Args>() {
         override val name = "broken"
         override val description = "Always fails"
 

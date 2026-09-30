@@ -122,7 +122,7 @@ class AnthropicToolLoopTest {
     data class CityWeather(val city: String, val celsius: Int)
 
     /** The tool the recording was made with, answering what it answered then. */
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city, in celsius"
 

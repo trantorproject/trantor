@@ -16,6 +16,7 @@ import dev.botta.trantor.ai.telemetry.GenAITelemetry
 import dev.botta.trantor.primitives.ContextPropagation
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.context.Context
+import dev.botta.trantor.primitives.serialization.JsonSerializer
 
 /**
  * Calls the model, runs the tools it asks for and calls it again with their results, until it answers without
@@ -59,6 +60,11 @@ class ToolLoop(
     openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
     /** Whether those spans carry what was said, which they do not unless asked. */
     telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
+    /**
+     * How the tools read their args and write what they answer, and what tells the model their schema: the
+     * serializer of the application, with the types it registered.
+     */
+    private val serializer: JsonSerializer = defaultJsonSerializer,
 ) {
     /** A loop whose every step goes out with the same model and tools, as a generation does. */
     constructor(
@@ -69,7 +75,8 @@ class ToolLoop(
         errorHandlers: List<ToolErrorHandler> = emptyList(),
         openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
         telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
-    ): this(NextStep.fixed(model, tools), maxSteps, run, errorHandlers, openTelemetry, telemetrySettings)
+        serializer: JsonSerializer = defaultJsonSerializer,
+    ): this(NextStep.fixed(model, tools), maxSteps, run, errorHandlers, openTelemetry, telemetrySettings, serializer)
 
     /**
      * A loop whose run is traced by whoever runs it, as the [dev.botta.trantor.ai.agents.AgentRunner] does: the spans
@@ -82,8 +89,9 @@ class ToolLoop(
         errorHandlers: List<ToolErrorHandler>,
         openTelemetry: OpenTelemetry,
         telemetrySettings: AITelemetrySettings,
+        serializer: JsonSerializer,
         tracesItsRun: Boolean,
-    ): this(nextStep, maxSteps, run, errorHandlers, openTelemetry, telemetrySettings) {
+    ): this(nextStep, maxSteps, run, errorHandlers, openTelemetry, telemetrySettings, serializer) {
         this.tracesItsRun = tracesItsRun
     }
 
@@ -493,7 +501,7 @@ class ToolLoop(
         // Asked again on every step, so that a description that depends on the moment is up to date; and built when
         // the step goes out, so that the hooks see the results of the calls the run resolved before it
         val request by lazy {
-            val tools = setup.request.tools + setup.tools.map { it.spec() }
+            val tools = setup.request.tools + setup.tools.map { it.spec(serializer) }
             failOnDuplicates(tools)
 
             hooks.beforeModel(setup.request.copy(messages = paired.first, tools = tools))
@@ -638,7 +646,7 @@ class ToolLoop(
         }
 
         private fun contextOf(call: ToolCallPart) =
-            setup.toolContext?.invoke(call) ?: ToolContext(call.callId, call.toolName, run, options)
+            setup.toolContext?.invoke(call) ?: ToolContext(call.callId, call.toolName, run, options, serializer)
 
         private fun unknown(call: ToolCallPart) = ToolError(
             "There is no tool called ${call.toolName}. The tools are: ${toolsByName.keys.joinToString()}",

@@ -326,7 +326,7 @@ class ToolLoopStepsTest {
     private val price = PriceTool()
 
     /** Its description counts its calls, as one that says what the application has at that moment would change. */
-    class WeatherTool: Tool<City>(City.serializer()) {
+    class WeatherTool: Tool<City>() {
         override val name = "getWeather"
         override val description get() = "The weather, asked $calls times"
 
@@ -340,7 +340,7 @@ class ToolLoopStepsTest {
         }
     }
 
-    class OutputTool: Tool<City>(City.serializer()) {
+    class OutputTool: Tool<City>() {
         override val name = "final"
         override val description = "The city asked for"
 
@@ -348,7 +348,7 @@ class ToolLoopStepsTest {
     }
 
     /** A tool that asks a model of its own, as an agent that runs as a tool does. */
-    class ResearchTool: Tool<City>(City.serializer()) {
+    class ResearchTool: Tool<City>() {
         override val name = "research"
         override val description = "Researches a city"
 
@@ -368,7 +368,7 @@ class ToolLoopStepsTest {
         override fun execute(args: City, context: ToolContext) = ToolResult.text("7 grados").withRun(ran)
     }
 
-    class PriceTool: Tool<City>(City.serializer()) {
+    class PriceTool: Tool<City>() {
         override val name = "getPrice"
         override val description = "The price of a trip to a city"
 

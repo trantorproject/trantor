@@ -81,7 +81,7 @@ class AgentHooksRecordedTest {
     private val http = FakeHttpClient()
     private val runner = AgentRunner(ModelRegistry())
 
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city, in celsius"
 

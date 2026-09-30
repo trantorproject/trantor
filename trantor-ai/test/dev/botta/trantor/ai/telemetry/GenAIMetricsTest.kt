@@ -196,14 +196,14 @@ class GenAIMetricsTest {
         override fun stream(request: ChatRequest, options: CallOptions): ChatStream = throw error
     }
 
-    private class WeatherTool: Tool<NoArgs>(NoArgs.serializer()) {
+    private class WeatherTool: Tool<NoArgs>() {
         override val name = "getWeather"
         override val description = "The weather"
 
         override fun execute(args: NoArgs, context: ToolContext) = ToolResult.text("7 grados")
     }
 
-    private class BrokenTool: Tool<NoArgs>(NoArgs.serializer()) {
+    private class BrokenTool: Tool<NoArgs>() {
         override val name = "broken"
         override val description = "Always fails"
 

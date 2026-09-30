@@ -98,7 +98,13 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
                 return Maybe.None
             }
 
-            return constructorAdapters.getValue(parameter).read(reader)
+            try {
+                return constructorAdapters.getValue(parameter).read(reader)
+            } catch (e: NumberFormatException) {
+                // What Gson throws for a number that is not one, which says nothing of where it was
+                val message = "${parameter.name} cannot be read in type '${kClass.simpleName}': ${e.message}"
+                throw JsonParseException(message, e)
+            }
         }
 
         private fun KParameter.isMaybeOfNotNull() =

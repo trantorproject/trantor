@@ -125,7 +125,7 @@ class AgentSessionRecordedTest {
     )
 
     /** The tool the recordings were made with, answering what it answered then. */
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city, in celsius"
 

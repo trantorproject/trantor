@@ -82,7 +82,7 @@ class AgentToolRecordedTest {
     private val agents = AgentRunner(ModelRegistry())
 
     /** The tools the recordings were made with, answering what they answered then. */
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city, in celsius"
 
@@ -92,7 +92,7 @@ class AgentToolRecordedTest {
         data class Args(val city: String)
     }
 
-    class PriceTool: Tool<PriceTool.Args>(Args.serializer()) {
+    class PriceTool: Tool<PriceTool.Args>() {
         override val name = "getPrice"
         override val description = "The price of a one-week package to a city, per person, in dollars"
 

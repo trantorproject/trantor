@@ -1,7 +1,9 @@
 package dev.botta.trantor.ai.tools
 
+import dev.botta.json.Json
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.primitives.serialization.JsonSerializer
 
 /**
  * What a tool knows about the call it is answering. It carries only what every tool can count on, whether it runs
@@ -22,4 +24,12 @@ open class ToolContext(
      * cancellation of the run stops that call too.
      */
     val callOptions: CallOptions = CallOptions(),
-)
+    /** How the run reads and writes JSON: the serializer of the application, with the types it registered. */
+    val serializer: JsonSerializer = defaultJsonSerializer,
+) {
+    /**
+     * [value], an object of the application, as the answer of the tool, written as the application writes JSON: with
+     * the types it registered, like an id or `Money`.
+     */
+    fun json(value: Any): ToolResult = ToolResult.json(Json.parse(serializer.serialize(value)))
+}

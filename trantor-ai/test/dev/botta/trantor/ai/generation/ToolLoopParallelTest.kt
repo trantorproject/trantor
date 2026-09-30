@@ -141,7 +141,7 @@ class ToolLoopParallelTest {
     private val bookCall = ToolCallPart("call_2", "bookTrip", Json.obj("city" to "Bariloche"))
 
     /** Only reads, so two calls to it can run at the same time. */
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city"
         override val readOnly = true
@@ -163,7 +163,7 @@ class ToolLoopParallelTest {
     }
 
     /** Writes, so a step that has it goes in order. */
-    class TripTool: Tool<TripTool.Args>(Args.serializer()) {
+    class TripTool: Tool<TripTool.Args>() {
         override val name = "bookTrip"
         override val description = "Books a trip to a city"
 

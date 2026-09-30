@@ -10,6 +10,7 @@ import dev.botta.trantor.web.server.RouteRegister
 import dev.botta.trantor.web.server.clientAddress
 import io.javalin.http.Context
 import io.javalin.http.Handler
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import io.opentelemetry.api.OpenTelemetry
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -107,7 +108,16 @@ class McpEndpointBuilder internal constructor(
         apply { visibleTools = filter }
 
     internal fun build() =
-        McpEndpoint(name, version, tools.toList(), instructions, authenticated, visibleTools, openTelemetry)
+        McpEndpoint(
+            name,
+            version,
+            tools.toList(),
+            instructions,
+            authenticated,
+            visibleTools,
+            openTelemetry,
+            serializer ?: GsonSerializer(),
+        )
 }
 
 private fun execute(application: ApplicationRouteRegister?, request: Request<*>, context: Context): Any? {

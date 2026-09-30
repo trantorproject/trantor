@@ -17,12 +17,12 @@ import dev.botta.trantor.ai.tools.FunctionToolSpec
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolError
 import dev.botta.trantor.ai.tools.ToolOutput
-import kotlinx.serialization.json.buildJsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
+import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /** The tools of an MCP server, as tools of trantor-ai for a generation or an agent. */
 class McpToolsTest {
@@ -74,7 +74,7 @@ class McpToolsTest {
             val schema = Json.parse(WEATHER_SCHEMA).asObject()!!
             val client = FakeMcpClient("tester", definition("get_weather", "The weather of a city", schema))
 
-            val spec = client.tools().single().spec()
+            val spec = client.tools().single().spec(GsonSerializer())
 
             assertThat(spec)
                 .isEqualTo(FunctionToolSpec("tester_get_weather", "The weather of a city", schema, strict = false))
@@ -117,9 +117,9 @@ class McpToolsTest {
                 .associateBy { it.definition.name }
 
             assertThat(tools.getValue("search_issues").readOnly).isTrue()
-            assertThat(tools.getValue("search_issues").needsApproval(buildJsonObject {}, context)).isFalse()
+            assertThat(tools.getValue("search_issues").needsApproval(Json.obj(), context)).isFalse()
             assertThat(tools.getValue("create_issue").readOnly).isFalse()
-            assertThat(tools.getValue("create_issue").needsApproval(buildJsonObject {}, context)).isTrue()
+            assertThat(tools.getValue("create_issue").needsApproval(Json.obj(), context)).isTrue()
         }
     }
 

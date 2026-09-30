@@ -3,6 +3,8 @@ package dev.botta.trantor.ai.agents
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.tools.ToolContext
+import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.ai.tools.defaultJsonSerializer
 
 /** What a tool knows about its call when an agent makes it: also the agent and the run it belongs to. */
 class AgentToolContext(
@@ -21,7 +23,8 @@ class AgentToolContext(
      * of an agent another one used as a tool, and so on. See [AgentTool].
      */
     val depth: Int = 0,
-): ToolContext(callId, toolName, run, callOptions)
+    serializer: JsonSerializer = defaultJsonSerializer,
+): ToolContext(callId, toolName, run, callOptions, serializer)
 
 /**
  * The context of a tool that only makes sense inside an agent, like one that hands the conversation over. It fails

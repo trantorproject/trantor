@@ -6,8 +6,7 @@ import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolError
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.schema.generator.json.SerialDescription
-import kotlinx.serialization.Serializable
+import dev.botta.trantor.primitives.serialization.Description
 
 /**
  * An [Agent] another one uses as a tool, made with [Agent.asTool]. The model calls it with a task, the agent runs a
@@ -41,7 +40,7 @@ class AgentTool internal constructor(
     override val description: String,
     private val maxDepth: Int,
     private val configure: AgentRunOptions.() -> Unit,
-): Tool<AgentTool.Args>(Args.serializer()) {
+): Tool<AgentTool.Args>() {
     override fun execute(args: Args, context: ToolContext): ToolResult {
         val depth = ((context as? AgentToolContext)?.depth ?: 0) + 1
 
@@ -68,9 +67,8 @@ class AgentTool internal constructor(
         return answer.withRun(result.result)
     }
 
-    @Serializable
     data class Args(
-        @SerialDescription(
+        @Description(
             "What to ask of the agent. It sees nothing of this conversation, so the task has to carry everything it " +
                 "needs to know.",
         )

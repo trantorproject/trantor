@@ -201,7 +201,7 @@ class ToolLoopApprovalTest {
     private val refund = RefundTool(approvalOver = 100)
 
     /** Gives money back, which needs a person to approve it past [approvalOver]. */
-    class RefundTool(private val approvalOver: Int): Tool<RefundTool.Args>(Args.serializer()) {
+    class RefundTool(private val approvalOver: Int): Tool<RefundTool.Args>() {
         override val name = "refund"
         override val description = "Gives the money of a purchase back"
 

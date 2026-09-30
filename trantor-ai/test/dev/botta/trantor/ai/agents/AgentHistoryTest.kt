@@ -147,7 +147,7 @@ class AgentHistoryTest {
     )
     private val question = Message.user("Que temperatura hay?")
 
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The weather"
 

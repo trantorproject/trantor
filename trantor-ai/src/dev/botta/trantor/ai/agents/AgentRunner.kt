@@ -29,6 +29,8 @@ import dev.botta.trantor.ai.telemetry.GenAITelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.context.Context
 import java.util.UUID
+import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.ai.tools.defaultJsonSerializer
 
 /**
  * Runs agents on the [ToolLoop], the same one a generation runs on: the loop keeps the conversation, the limit of
@@ -74,6 +76,8 @@ class AgentRunner(
     private val openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
     /** Whether the spans carry what was said, which they do not unless asked. */
     private val telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
+    /** The serializer of the application, which reads and describes the args of the tools and what agents answer. */
+    private val serializer: JsonSerializer = defaultJsonSerializer,
 ) {
     private val telemetry = GenAITelemetry(openTelemetry, telemetrySettings)
 
@@ -207,7 +211,8 @@ class AgentRunner(
 
         /** The tool loop the run goes on, asking this run what each step goes out with. */
         val loop = ToolLoop(
-            this, options.maxSteps, options.context, errorHandlers.all, openTelemetry, telemetrySettings, false,
+            this, options.maxSteps, options.context, errorHandlers.all, openTelemetry, telemetrySettings, serializer,
+            false,
         )
 
         /** Runs the steps on the loop, and ends the span of the last agent with them. */
@@ -247,7 +252,7 @@ class AgentRunner(
             stretch = null
         }
 
-        override fun resultOf(result: RunResult) = AgentRunResult(result, agents, id)
+        override fun resultOf(result: RunResult) = AgentRunResult(result, agents, id, serializer)
 
         override fun handedOver(to: String) {
             agent = team.getValue(to)
@@ -371,7 +376,9 @@ class AgentRunner(
             val run = options.context
             val hooks = hooksOf(agent)
             val toolContext = { callId: String, toolName: String ->
-                AgentToolContext(callId, toolName, run, agent, id, team.keys, options.callOptions, options.depth)
+                AgentToolContext(
+                    callId, toolName, run, agent, id, team.keys, options.callOptions, options.depth, serializer,
+                )
             }
 
             // An approved call that handed the conversation over sets the first step up again, as the other agent

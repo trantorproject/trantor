@@ -201,7 +201,7 @@ class ContentCaptureTest {
     private val model = FakeChatModel()
     private val weather = WeatherTool()
 
-    private class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    private class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The weather of a city"
 

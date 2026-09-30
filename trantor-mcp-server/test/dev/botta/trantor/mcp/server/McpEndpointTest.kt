@@ -393,7 +393,7 @@ class McpEndpointTest {
         instructions = "Tools of the store",
     )
 
-    class EchoTool: Tool<EchoTool.Args>(Args.serializer()) {
+    class EchoTool: Tool<EchoTool.Args>() {
         override val name = "echo"
         override val description = "Says back what it is given"
         override val readOnly = true
@@ -408,7 +408,7 @@ class McpEndpointTest {
         data class Args(val text: String)
     }
 
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "weather"
         override val description = "The weather of a city"
         override val readOnly = true
@@ -420,7 +420,7 @@ class McpEndpointTest {
         data class Args(val city: String)
     }
 
-    class RefundTool: Tool<RefundTool.Args>(Args.serializer()) {
+    class RefundTool: Tool<RefundTool.Args>() {
         override val name = "refund"
         override val description = "Gives the money of an order back"
 
@@ -433,7 +433,7 @@ class McpEndpointTest {
         data class Args(val amount: Int)
     }
 
-    class ExplodingTool: Tool<ExplodingTool.Args>(Args.serializer()) {
+    class ExplodingTool: Tool<ExplodingTool.Args>() {
         override val name = "explode"
         override val description = "Fails as nobody expected"
 

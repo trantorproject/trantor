@@ -152,7 +152,7 @@ class ToolLoopStreamTest {
     private val weather = WeatherTool()
     private val weatherCall = ToolCallPart("call_1", "getWeather", Json.obj("city" to "Bariloche"))
 
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city"
 

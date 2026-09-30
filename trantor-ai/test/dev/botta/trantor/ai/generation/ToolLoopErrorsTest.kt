@@ -210,7 +210,7 @@ class ToolLoopErrorsTest {
 
     class NotFound(message: String): Exception(message)
 
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city"
 
@@ -229,7 +229,7 @@ class ToolLoopErrorsTest {
         }
     }
 
-    class TimeTool: Tool<TimeTool.Args>(Args.serializer()) {
+    class TimeTool: Tool<TimeTool.Args>() {
         override val name = "getTime"
         override val description = "The time"
 
@@ -248,7 +248,7 @@ class ToolLoopErrorsTest {
     class DownloadTool(
         private val cancellation: Cancellation,
         override val onError: ToolErrorModes = ToolErrorModes.SendToModel,
-    ): Tool<DownloadTool.Args>(Args.serializer()) {
+    ): Tool<DownloadTool.Args>() {
         override val name = "download"
         override val description = "Downloads a file"
 
@@ -261,7 +261,7 @@ class ToolLoopErrorsTest {
         class Args
     }
 
-    class LedgerTool(private val failure: Exception): Tool<LedgerTool.Args>(Args.serializer()) {
+    class LedgerTool(private val failure: Exception): Tool<LedgerTool.Args>() {
         override val name = "postEntry"
         override val description = "Posts an entry to the ledger"
         override val onError = ToolErrorModes.FailRun

@@ -13,6 +13,8 @@ import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceProvider
 import dev.botta.trantor.di.ServiceRegistry
 import io.opentelemetry.api.OpenTelemetry
+import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.ai.tools.defaultJsonSerializer
 
 /**
  * Registers everything an application needs to use models: [AI], the [AgentRunner], the [ModelRegistry] and the
@@ -45,9 +47,9 @@ fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = {
     addAnthropic()
     configure(configuration)
     if (!has<AITelemetrySettings>()) addConfig<AITelemetrySettings>("ai.telemetry")
-    addSingletonIfMissing<AI> { DefaultAI(it.get(), it.get(), it.openTelemetry(), it.get()) }
+    addSingletonIfMissing<AI> { DefaultAI(it.get(), it.get(), it.openTelemetry(), it.get(), it.serializer()) }
     addSingletonIfMissing<AgentRunner> {
-        AgentRunner(it.get(), it.get(), it.get(), it.get(), it.openTelemetry(), it.get())
+        AgentRunner(it.get(), it.get(), it.get(), it.get(), it.openTelemetry(), it.get(), it.serializer())
     }
 }
 
@@ -125,3 +127,6 @@ fun ServiceRegistry.addModelCatalog(configuration: ServiceConfiguration<ModelCat
 
 // Whether it was registered before or after, since it is asked for when AI and the runner are built
 private fun ServiceProvider.openTelemetry() = getOrDefault<OpenTelemetry> { OpenTelemetry.noop() }
+
+/** The serializer of the application, which reads and describes the args of its tools; Gson when it has none. */
+private fun ServiceProvider.serializer() = getOrDefault<JsonSerializer> { defaultJsonSerializer }

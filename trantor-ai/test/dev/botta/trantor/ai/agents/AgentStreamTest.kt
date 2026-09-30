@@ -90,7 +90,7 @@ class AgentStreamTest {
     @Serializable
     class NoArgs
 
-    class AssignTool: Tool<NoArgs>(NoArgs.serializer()) {
+    class AssignTool: Tool<NoArgs>() {
         override val name = "assign"
         override val description = "Assigns the conversation to sales"
 

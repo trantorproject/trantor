@@ -209,7 +209,7 @@ class AgentHandoffRecordedTest {
     }
 
     /** The tools the recordings were made with, answering what they answered then. */
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city, in celsius"
 
@@ -219,7 +219,7 @@ class AgentHandoffRecordedTest {
         data class Args(val city: String)
     }
 
-    class PriceTool: Tool<PriceTool.Args>(Args.serializer()) {
+    class PriceTool: Tool<PriceTool.Args>() {
         override val name = "getPrice"
         override val description = "The price of a one-week package to a city, per person, in dollars"
 
@@ -229,7 +229,7 @@ class AgentHandoffRecordedTest {
         data class Args(val city: String)
     }
 
-    class AssignTool: Tool<AssignTool.Args>(Args.serializer()) {
+    class AssignTool: Tool<AssignTool.Args>() {
         override val name = "assignToSales"
         override val description = "Assigns the conversation to the sales team, for prices and purchases"
 

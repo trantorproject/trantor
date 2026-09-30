@@ -14,6 +14,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import dev.botta.trantor.serialization.gson.GsonSerializer
 
 class AgentTest {
     @Test
@@ -107,7 +108,7 @@ class AgentTest {
             assertThat(agent.tools.map { it.name }).containsExactly("getWeather", "transfer_to_sales")
             assertThat(agent.handoffs).containsExactly("sales")
             assertThat(transfer.description).isEqualTo("Hands the conversation over to the sales agent.")
-            assertThat(transfer.spec().parameters["properties"]).isEqualTo(Json.obj())
+            assertThat(transfer.spec(GsonSerializer()).parameters["properties"]).isEqualTo(Json.obj())
             assertThat(result).isEqualTo(ToolResult.text("Transferred to sales.").handoffTo("sales"))
         }
 
@@ -247,21 +248,21 @@ class AgentTest {
     @Serializable
     data class City(val city: String)
 
-    class WeatherTool: Tool<City>(City.serializer()) {
+    class WeatherTool: Tool<City>() {
         override val name = "getWeather"
         override val description = "The current weather of a city"
 
         override fun execute(args: City, context: ToolContext) = ToolResult.text("7 grados")
     }
 
-    class PriceTool: Tool<City>(City.serializer()) {
+    class PriceTool: Tool<City>() {
         override val name = "getPrice"
         override val description = "The price of a trip to a city"
 
         override fun execute(args: City, context: ToolContext) = ToolResult.text("100 dólares")
     }
 
-    class TransferTool: Tool<City>(City.serializer()) {
+    class TransferTool: Tool<City>() {
         override val name = "transfer_to_sales"
         override val description = "A tool of the application that happens to have that name"
 

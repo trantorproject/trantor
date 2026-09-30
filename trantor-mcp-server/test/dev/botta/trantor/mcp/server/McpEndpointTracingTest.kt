@@ -300,7 +300,7 @@ class McpEndpointTracingTest {
         openTelemetry = telemetry.openTelemetry,
     )
 
-    class EchoTool: Tool<EchoTool.Args>(Args.serializer()) {
+    class EchoTool: Tool<EchoTool.Args>() {
         override val name = "echo"
         override val description = "Says back what it is given"
 
@@ -310,7 +310,7 @@ class McpEndpointTracingTest {
         data class Args(val text: String)
     }
 
-    class RefundTool: Tool<RefundTool.Args>(Args.serializer()) {
+    class RefundTool: Tool<RefundTool.Args>() {
         override val name = "refund"
         override val description = "Gives the money of an order back"
 
@@ -323,7 +323,7 @@ class McpEndpointTracingTest {
         data class Args(val amount: Int)
     }
 
-    class ExplodingTool: Tool<ExplodingTool.Args>(Args.serializer()) {
+    class ExplodingTool: Tool<ExplodingTool.Args>() {
         override val name = "explode"
         override val description = "Fails as nobody expected"
 
@@ -335,7 +335,7 @@ class McpEndpointTracingTest {
     }
 
     /** Does what a use case does in its span, and keeps the baggage it was given. */
-    class TracingTool(private val telemetry: TestTelemetry): Tool<TracingTool.Args>(Args.serializer()) {
+    class TracingTool(private val telemetry: TestTelemetry): Tool<TracingTool.Args>() {
         override val name = "trace"
         override val description = "Loads an order"
         var baggage: String? = null

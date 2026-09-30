@@ -364,7 +364,7 @@ class AgentRunnerTracingTest {
         override fun stream(request: ChatRequest, options: CallOptions): ChatStream = throw error
     }
 
-    private class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    private class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The weather"
 
@@ -375,7 +375,7 @@ class AgentRunnerTracingTest {
     }
 
     /** A tool that only reads, so two calls of a step run at the same time, each one on its own thread. */
-    private class CityTool: Tool<CityTool.Args>(Args.serializer()) {
+    private class CityTool: Tool<CityTool.Args>() {
         override val name = "getCity"
         override val description = "A city"
         override val readOnly = true

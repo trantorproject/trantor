@@ -5,7 +5,8 @@ import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolError
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.serialization.json.JsonObject
+import dev.botta.json.values.JsonObject
+import dev.botta.trantor.primitives.serialization.JsonSerializer
 import java.security.MessageDigest
 import dev.botta.json.Json as BottaJson
 
@@ -69,7 +70,7 @@ class McpTool internal constructor(
     override val name: String,
     override val readOnly: Boolean,
     private val approval: Boolean,
-): Tool<JsonObject>(JsonObject.serializer()) {
+): Tool<JsonObject>() {
     override val description = definition.description ?: definition.title ?: ""
 
     override fun needsApproval(args: JsonObject, context: ToolContext) = approval
@@ -78,7 +79,7 @@ class McpTool internal constructor(
      * The schema as the server wrote it, not strictly: strict mode would ask the provider to rewrite a schema this
      * client did not write, and to fill in fields the server may want left out.
      */
-    override fun spec() =
+    override fun spec(serializer: JsonSerializer) =
         FunctionToolSpec(name, description.ifEmpty { null }, definition.inputSchema, strict = false)
 
     /**
@@ -86,9 +87,8 @@ class McpTool internal constructor(
      * can fix the call; a call the server turned down is an [McpError], which the model reads as any failure.
      */
     override fun execute(args: JsonObject, context: ToolContext): ToolResult {
-        val arguments = BottaJson.parse(args.toString()).asObject()!!
         // Within the timeout and the cancellation of the run, and on the span of this tool
-        val result = McpTelemetry.calledByTool { client.callTool(definition.name, arguments, context.callOptions) }
+        val result = McpTelemetry.calledByTool { client.callTool(definition.name, args, context.callOptions) }
         val texts = result.content.filterIsInstance<McpContent.Text>()
 
         if (result.isError) throw ToolError(textOf(result).ifEmpty { "The tool ${definition.name} failed" })

@@ -15,6 +15,8 @@ import dev.botta.trantor.ai.providers.openai.ServiceTiers
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
 import kotlinx.serialization.Serializable
+import dev.botta.trantor.serialization.gson.GsonSerializer
+import dev.botta.trantor.serialization.gson.adapters.StringValueSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -171,6 +173,19 @@ class AgentRunnerTest {
         }
 
         @Test
+        fun `as a tool is read by the serializer of the run, with the types the application registered`() {
+            model.answers(listOf(finalResult("""{"code":"ABC-1"}""")))
+            val serializer = GsonSerializer().apply {
+                registerTypeAdapter(Code::class.java, StringValueSerializer({ Code(it) }, { it.value }))
+            }
+            val agent = support().output<Picked>(OutputMode.Tool).build()
+
+            val result = AgentRunner(registry, serializer = serializer).run(agent, Message.user("Cual elegis?"))
+
+            assertThat(result.output<Picked>()).isEqualTo(Picked(Code("ABC-1")))
+        }
+
+        @Test
         fun `as a tool, an answer without calling it gets a reminder`() {
             model.answers(listOf(TextPart("Hacen 7")), listOf(finalResult("""{"city":"Bariloche","celsius":7}""")))
             val agent = support().output<Weather>(OutputMode.Tool).build()
@@ -214,6 +229,13 @@ class AgentRunnerTest {
     @Serializable
     data class Weather(val city: String, val celsius: Int)
 
+    // Serializable only until structured output leaves kotlinx, which still reads the answer in the native mode
+    @Serializable
+    data class Picked(val code: Code)
+
+    @Serializable
+    data class Code(val value: String)
+
     class FakeProvider(private val model: FakeChatModel): AIProvider {
         override val name = "fake"
         val asked = mutableListOf<String>()
@@ -224,7 +246,7 @@ class AgentRunnerTest {
         }
     }
 
-    class WeatherTool: Tool<WeatherTool.Args>(Args.serializer()) {
+    class WeatherTool: Tool<WeatherTool.Args>() {
         override val name = "getWeather"
         override val description = "The current weather of a city"
 
