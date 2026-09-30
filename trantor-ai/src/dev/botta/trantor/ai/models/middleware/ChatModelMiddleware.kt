@@ -46,6 +46,7 @@ private class MiddlewareChatModel(
 ): ChatModel {
     override val provider = model.provider
     override val modelId = model.modelId
+    override val searchesTools = model.searchesTools
 
     // Built once and not per call: the registry hands out the same model to everyone who asks for it
     private val generateChain: Call<ChatResponse> =

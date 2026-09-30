@@ -4,6 +4,7 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.AuthenticationError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
+import dev.botta.trantor.ai.models.catalog.ModelFeatures.ToolSearch
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.throwIfCancelled
 import dev.botta.trantor.web.client.*
@@ -25,6 +26,9 @@ class OpenAIChatModel(
     constructor(modelId: String, apiKey: String): this(modelId, OpenAIConfig(apiKey))
 
     override val provider = OPENAI_PROVIDER
+
+    /** Not taken for granted of a model the catalog does not know: one that does not search answers 400. */
+    override val searchesTools = catalog.find(OPENAI_PROVIDER, modelId)?.capabilities?.contains(ToolSearch) == true
 
     private val requestMapper = OpenAIRequestMapper(config, catalog)
     private val errorMapper = OpenAIErrorMapper()

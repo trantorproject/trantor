@@ -26,23 +26,27 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  * [AnthropicOptions.effort], which is not checked against any of this.
  */
 internal fun ModelCatalog.addAnthropicModels() = apply {
-    add("anthropic/claude-opus-5-5", boundThinking, opus55Price)
-    add("anthropic/claude-opus-5", systemAnywhere, opusPrice)
+    add("anthropic/claude-opus-5-5", boundThinking.searchingTools(), opus55Price)
+    add("anthropic/claude-opus-5", systemAnywhere.searchingTools(), opusPrice)
     add("anthropic/claude-sonnet-5", effortOnly, sonnet5Price)
-    add("anthropic/claude-opus-4-8", systemAnywhere, opusPrice)
-    add("anthropic/claude-opus-4-7", effortOnly, opusPrice)
-    add("anthropic/claude-fable-5", alwaysThinking, fablePrice)
-    add("anthropic/claude-mythos-5", alwaysThinking, fablePrice)
-    add("anthropic/claude-fable-5-1", boundThinking, fable51Price)
-    add("anthropic/claude-mythos-5-1", withoutForcedToolUse, fable51Price)
+    add("anthropic/claude-opus-4-8", systemAnywhere.searchingTools(), opusPrice)
+    add("anthropic/claude-opus-4-7", effortOnly.searchingTools(), opusPrice)
+    add("anthropic/claude-fable-5", alwaysThinking.searchingTools(), fablePrice)
+    add("anthropic/claude-mythos-5", alwaysThinking.searchingTools(), fablePrice)
+    add("anthropic/claude-fable-5-1", boundThinking.searchingTools(), fable51Price)
+    add("anthropic/claude-mythos-5-1", withoutForcedToolUse.searchingTools(), fable51Price)
 
-    add("anthropic/claude-opus-4-6", bothWays, opusPrice)
-    add("anthropic/claude-sonnet-4-6", bothWays, sonnetPrice)
+    add("anthropic/claude-opus-4-6", bothWays.searchingTools(), opusPrice)
+    add("anthropic/claude-sonnet-4-6", bothWays.searchingTools(), sonnetPrice)
 
     // The only one of its generation that takes an effort, alongside the budget
-    add("anthropic/claude-opus-4-5", budgetOnly.copy(reasoningEfforts = setOf(Low, Medium, High)), opusPrice)
-    add("anthropic/claude-sonnet-4-5", budgetOnly, sonnetPrice)
-    add("anthropic/claude-haiku-4-5", budgetOnly, haikuPrice)
+    add(
+        "anthropic/claude-opus-4-5",
+        budgetOnly.copy(reasoningEfforts = setOf(Low, Medium, High)).searchingTools(),
+        opusPrice,
+    )
+    add("anthropic/claude-sonnet-4-5", budgetOnly.searchingTools(), sonnetPrice)
+    add("anthropic/claude-haiku-4-5", budgetOnly.searchingTools(), haikuPrice)
 
     add("anthropic/claude-opus-4-1", earlyOpus, earlyOpusPrice)
     // Before structured output existed
@@ -63,6 +67,14 @@ internal fun ModelCatalog.addAnthropicModels() = apply {
     // A model that came out today is the newest one with something taken away, far more often than not
     setLatest("anthropic", "anthropic/claude-opus-5-5")
 }
+
+/**
+ * The models that search the tools of a call on Anthropic's side, as "Model compatibility" of its tool search lists
+ * them (read on 2026-09-30): every Claude from Haiku, Sonnet and Opus 4.5 on, but not Sonnet 5, which the list leaves
+ * out, nor Opus 4.1 and before. Named model by model, since a profile is shared by some that have it and some that
+ * do not.
+ */
+private fun ModelCapabilities.searchingTools() = copy(features = features + ToolSearch)
 
 /**
  * Effort and no budget: a budget is a 400 here. And no sampling settings at all, which is also a 400. Thinking can

@@ -23,6 +23,13 @@ class ChatModelMiddlewareTest {
     }
 
     @Test
+    fun `keeps saying whether its provider searches tools, so the tool loop defers them`() {
+        val wrapped = FakeChatModel(searchesTools = true).with(Recorder("a"))
+
+        assertThat(wrapped.searchesTools).isTrue()
+    }
+
+    @Test
     fun `the first middleware is the outermost`() {
         model.with(Recorder("a"), Recorder("b")).generate(ChatRequest("Hola"))
 

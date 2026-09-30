@@ -16,6 +16,7 @@ class AgentBuilder internal constructor(private val name: String) {
     private var instructions: ((RunContext) -> String)? = null
     private var dynamicInstructions: ((RunContext) -> String)? = null
     private val tools = mutableListOf<Tool<*>>()
+    private val searchableTools = mutableListOf<Tool<*>>()
     private val handoffs = mutableListOf<HandoffTool>()
     private val settings = ChatSettings()
     private val options = mutableListOf<ProviderOption>()
@@ -41,6 +42,12 @@ class AgentBuilder internal constructor(private val name: String) {
     fun dynamicInstructions(instructions: (RunContext) -> String) = apply { dynamicInstructions = instructions }
 
     fun tools(vararg tools: Tool<*>) = apply { this.tools.addAll(tools) }
+
+    /**
+     * Tools the agent searches for instead of being told about them up front, for a catalog too large to send whole.
+     * See [Tool search](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai.md#tool-search).
+     */
+    fun searchableTools(vararg tools: Tool<*>) = apply { searchableTools.addAll(tools) }
 
     /** Agents of the team it can hand the conversation over to, each with a tool `transfer_to_<name>`. */
     fun handoffs(vararg agents: String) = apply { agents.forEach { handoff(it) } }
@@ -83,7 +90,7 @@ class AgentBuilder internal constructor(private val name: String) {
         requireNameForATool(name)
         handoffs.forEach { requireNameForATool(it.agent) }
         require(handoffs.none { it.agent == name }) { "$holder hands over to itself" }
-        tools.groupBy { it.name }.entries.firstOrNull { it.value.size > 1 }?.let {
+        (tools + searchableTools).groupBy { it.name }.entries.firstOrNull { it.value.size > 1 }?.let {
             throw IllegalArgumentException("$holder has more than one tool called ${it.key}")
         }
         values.repeatedClass()?.let {
@@ -96,6 +103,7 @@ class AgentBuilder internal constructor(private val name: String) {
             instructions = instructions,
             dynamicInstructions = dynamicInstructions,
             tools = tools,
+            searchableTools = searchableTools.toList(),
             handoffs = handoffs.map { it.agent },
             chatSettings = settings.copy(),
             options = options.toList(),

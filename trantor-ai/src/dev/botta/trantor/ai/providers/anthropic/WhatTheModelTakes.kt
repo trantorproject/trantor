@@ -24,6 +24,9 @@ internal class WhatTheModelTakes(private val spec: ModelSpec?) {
     val midConversationSystem get() = has(ModelFeatures.MidConversationSystem)
     val reasoningOff get() = has(ModelFeatures.ReasoningOff)
 
+    /** Not taken for granted without a spec: a model that does not search answers 400, and the loop can search. */
+    val toolSearch get() = model != null && ModelFeatures.ToolSearch in model
+
     /** Not something the model takes but something it demands, so a model with no spec is taken not to. */
     val boundThinking get() = model != null && ModelFeatures.BoundThinking in model
 

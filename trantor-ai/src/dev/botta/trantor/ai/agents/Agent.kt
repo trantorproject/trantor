@@ -33,6 +33,8 @@ class Agent internal constructor(
     private val dynamicInstructions: ((RunContext) -> String)?,
     /** Its own tools, then the ones its handoffs turned into, then the one it answers with in [OutputMode.Tool]. */
     val tools: List<Tool<*>>,
+    /** The tools it searches for instead of being told about them up front. */
+    val searchableTools: List<Tool<*>>,
     /** The agents it can hand the conversation over to, by name. */
     val handoffs: List<String>,
     private val chatSettings: ChatSettings,

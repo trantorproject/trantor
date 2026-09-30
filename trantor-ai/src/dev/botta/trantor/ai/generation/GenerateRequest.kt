@@ -33,6 +33,7 @@ class GenerateRequest {
         private set
     val messages = mutableListOf<Message>()
     val tools = mutableListOf<Tool<*>>()
+    val searchableTools = mutableListOf<Tool<*>>()
     var toolChoice: ToolChoice = ToolChoice.Auto
         private set
     var maxSteps = ToolLoop.DEFAULT_MAX_STEPS
@@ -93,6 +94,12 @@ class GenerateRequest {
     fun contextPolicy(vararg policies: ContextPolicy) = apply { contextPolicies.addAll(policies) }
 
     fun tools(vararg tools: Tool<*>) = apply { this.tools.addAll(tools) }
+
+    /**
+     * Tools the model searches for instead of being told about them up front, for a catalog too large to send whole
+     * on every call. See [Tool search](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai.md#tool-search).
+     */
+    fun searchableTools(vararg tools: Tool<*>) = apply { searchableTools.addAll(tools) }
 
     fun toolChoice(choice: ToolChoice) = apply { toolChoice = choice }
 

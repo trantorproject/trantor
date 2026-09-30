@@ -106,6 +106,18 @@ class DefaultAITest {
         }
 
         @Test
+        fun `a tool to search for is not told about until it is found`() {
+            model.answers(listOf(TextPart("Hola")))
+
+            ai.generate {
+                user("Que temperatura hay en Bariloche?")
+                searchableTools(weather)
+            }
+
+            assertThat(model.request?.tools?.map { it.name }).containsExactly("search_tools")
+        }
+
+        @Test
         fun `stops at the steps it is given`() {
             model.answers(listOf(weatherCall), listOf(weatherCall))
 

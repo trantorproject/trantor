@@ -40,6 +40,7 @@ internal class OpenAIRequestMapper(
 
         private val takesReasoning get() = model == null || model.reasoningEfforts.isNotEmpty()
         private val reasons get() = model != null && model.reasoningEfforts.isNotEmpty()
+        private val searchesTools get() = model != null && ModelFeatures.ToolSearch in model
 
         /**
          * A reasoning model refuses every sampling setting **while it is reasoning**, which is the one capability
@@ -66,7 +67,7 @@ internal class OpenAIRequestMapper(
             toOutputFormat(request.output)?.let { body["text"] = Json.obj("format" to it) }
 
             if (request.tools.isNotEmpty()) {
-                body["tools"] = Json.array(request.tools.mapNotNull { toTool(it) })
+                body["tools"] = Json.array(toTools(request.tools))
                 body["tool_choice"] = toToolChoice(request.toolChoice)
             }
 
@@ -248,6 +249,24 @@ internal class OpenAIRequestMapper(
         private fun schemaFor(schema: JsonObject, strict: Boolean) =
             if (strict) StrictSchema.of(schema, OpenAIStrictRules) else schema
 
+        /**
+         * The tools as OpenAI takes them. On a model that searches, a deferred one goes with `defer_loading` and its
+         * tool search after them all; any other model gets them all up front, with a warning.
+         */
+        private fun toTools(tools: List<ToolSpec>): List<JsonObject> {
+            val sent = tools.mapNotNull { toTool(it) }
+            val deferred = tools.filter { it is FunctionToolSpec && it.deferLoading }
+            if (deferred.isEmpty()) return sent
+
+            if (!searchesTools) {
+                val names = deferred.joinToString { it.name }
+                warnings.add(ModelWarning("$modelId does not search tools, so $names went up front", "tools"))
+                return sent
+            }
+
+            return sent + Json.obj("type" to TOOL_SEARCH_TYPE)
+        }
+
         private fun toTool(tool: ToolSpec) = when (tool) {
             is FunctionToolSpec -> Json.obj(
                 "type" to "function",
@@ -255,7 +274,7 @@ internal class OpenAIRequestMapper(
                 "description" to tool.description,
                 "strict" to tool.strict,
                 "parameters" to schemaFor(tool.parameters, tool.strict),
-            )
+            ).apply { if (tool.deferLoading && searchesTools) this["defer_loading"] = true }
             is ProviderToolSpec -> if (tool.name.startsWith("$OPENAI_PROVIDER.")) {
                 tool.args.with("type", tool.name.removePrefix("$OPENAI_PROVIDER."))
             } else {
@@ -349,7 +368,7 @@ internal class OpenAIRequestMapper(
             "call_id" to part.callId,
             "name" to part.toolName,
             "arguments" to part.input.toString(),
-        )
+        ).apply { part.metadata[OPENAI_PROVIDER]?.get("namespace")?.let { this["namespace"] = it } }
 
         private fun toToolResultItem(part: ToolResultPart) = Json.obj(
             "type" to "function_call_output",
@@ -377,5 +396,6 @@ internal class OpenAIRequestMapper(
 internal data class MappedRequest(val body: JsonObject, val warnings: List<ModelWarning>)
 
 private const val ENCRYPTED_REASONING = "reasoning.encrypted_content"
+private const val TOOL_SEARCH_TYPE = "tool_search"
 
 private const val NO_EFFORT = "none"

@@ -25,6 +25,7 @@ class AnthropicChatModel(
     constructor(modelId: String, apiKey: String): this(modelId, AnthropicConfig(apiKey))
 
     override val provider = ANTHROPIC_PROVIDER
+    override val searchesTools = WhatTheModelTakes(catalog.find(ANTHROPIC_PROVIDER, modelId)).toolSearch
 
     private val requestMapper = AnthropicRequestMapper(config, catalog)
     private val errorMapper = AnthropicErrorMapper()

@@ -40,6 +40,7 @@ internal class AnthropicRequestMapper(
         private val model: ModelCapabilities? = spec?.capabilities
         private val takes = WhatTheModelTakes(spec)
         private val warnings = MappingWarnings(modelId, takes.isGuess)
+        private val strictBudget = StrictBudget()
 
         fun map(modelId: String, request: ChatRequest, stream: Boolean = false): MappedRequest {
             val options = anthropicOptionsOf(request.providerOptions)
@@ -56,8 +57,9 @@ internal class AnthropicRequestMapper(
             if (stream) body["stream"] = true
 
             applySettings(body, request.settings)
-            applyTools(body, request, thinking)
+            // The answer in JSON before the tools: it takes its share of what can go strict, and a tool can do without
             applyOutputConfig(body, request.output, request.settings.reasoning, options)
+            applyTools(body, request, thinking)
             conversation.bindThinking(body)
             applyCache(body, cache, conversation)
 
@@ -134,8 +136,42 @@ internal class AnthropicRequestMapper(
                 return
             }
 
-            body["tools"] = Json.array(request.tools.mapNotNull { toTool(it) })
+            body["tools"] = Json.array(toTools(request.tools))
             body["tool_choice"] = toToolChoice(request.toolChoice, request.settings.parallelToolCalls, thinking)
+        }
+
+        /**
+         * The tools as Anthropic takes them. The deferred ones go after the rest and before its tool search, which
+         * goes last: a deferred tool cannot carry the mark of the cache, which goes on the last tool, and one tool at
+         * least has to be told up front. A model that does not search gets them all up front, with a warning.
+         *
+         * They go strict in that order while they fit in [StrictBudget], so that the ones the model has at hand are
+         * the last to lose it; the rest go without, which Anthropic takes, and a warning names them.
+         */
+        private fun toTools(tools: List<ToolSpec>): List<JsonObject> {
+            val (deferred, upFront) = tools.partition { it is FunctionToolSpec && it.deferLoading }
+            val searching = deferred.isNotEmpty() && takes.toolSearch
+
+            if (deferred.isNotEmpty() && !searching) {
+                val names = deferred.joinToString { it.name }
+                warnings.add(ModelWarning("$modelId does not search tools, so $names went up front", "tools"))
+            }
+
+            val sent = (if (searching) upFront + deferred else tools).mapNotNull { toTool(it) }
+            warnBeyondStrictBudget()
+
+            return if (searching) sent + Json.obj("type" to TOOL_SEARCH_TYPE, "name" to TOOL_SEARCH_NAME) else sent
+        }
+
+        private val beyondStrictBudget = mutableListOf<String>()
+
+        private fun warnBeyondStrictBudget() {
+            if (beyondStrictBudget.isEmpty()) return
+
+            val message = "Anthropic holds a call to at most ${StrictBudget.MAX_TOOLS} strict tools and " +
+                "${StrictBudget.MAX_UNIONS} parameters that can be null, so ${beyondStrictBudget.joinToString()} " +
+                "went without strict mode"
+            warnings.add(ModelWarning(message, "tools"))
         }
 
         private fun toTool(tool: ToolSpec): JsonObject? = when (tool) {
@@ -150,11 +186,15 @@ internal class AnthropicRequestMapper(
         }
 
         private fun toFunctionTool(tool: FunctionToolSpec): JsonObject {
-            val strict = strictly(tool)
-            val json = Json.obj("name" to tool.name, "input_schema" to schemaFor(tool.parameters, strict))
+            val closed = if (strictly(tool)) schemaFor(tool.parameters, strict = true) else null
+            val strict = closed != null && strictBudget.take(closed)
+            if (closed != null && !strict) beyondStrictBudget.add(tool.name)
+
+            val json = Json.obj("name" to tool.name, "input_schema" to if (strict) closed else tool.parameters)
 
             tool.description?.let { json["description"] = it }
             if (strict) json["strict"] = true
+            if (tool.deferLoading && takes.toolSearch) json["defer_loading"] = true
 
             return json
         }
@@ -408,7 +448,8 @@ internal class AnthropicRequestMapper(
                 }
 
                 // Anthropic names no schema and takes no strict flag: closing the schema is the whole of it
-                Json.obj("type" to "json_schema", "schema" to schemaFor(output.schema, strict = true))
+                val schema = schemaFor(output.schema, strict = true).also { strictBudget.spend(it) }
+                Json.obj("type" to "json_schema", "schema" to schema)
             } else {
                 warnings.droppedByTheModel("output")
                 null
@@ -492,6 +533,10 @@ internal data class MappedRequest(
     val betas: Set<String> = emptySet(),
     val stamp: ThinkingStamp? = null,
 )
+
+/** The tool search of Anthropic by natural language, which the model writes more readily than a pattern. */
+private const val TOOL_SEARCH_TYPE = "tool_search_tool_bm25_20251119"
+private const val TOOL_SEARCH_NAME = "tool_search_tool_bm25"
 
 /** Only reached by a model nobody described, where there is nothing to derive a ceiling from. */
 private const val FALLBACK_MAX_TOKENS = 4_096

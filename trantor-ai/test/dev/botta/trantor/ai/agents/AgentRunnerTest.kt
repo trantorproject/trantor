@@ -138,6 +138,15 @@ class AgentRunnerTest {
         }
 
         @Test
+        fun `the ones to search for are not told about until they are found`() {
+            model.answers(listOf(TextPart("Hola")))
+
+            runner.run(support().searchableTools(weather).build(), Message.user("Hola"))
+
+            assertThat(model.request?.tools?.map { it.name }).containsExactly("search_tools")
+        }
+
+        @Test
         fun `one that needs an agent says so when it is called without one`() {
             val context = ToolContext("call_1", "assign")
 

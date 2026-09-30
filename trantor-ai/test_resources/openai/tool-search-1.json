@@ -1,0 +1,217 @@
+{
+  "id": "resp_06aa30a1ad68a69c006abcf7ab207087d29c7d6465e9714a6a",
+  "object": "response",
+  "created_at": 1790769067,
+  "status": "completed",
+  "access_programs": null,
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1790769069,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-5.4-2026-03-05",
+  "moderation": null,
+  "output": [
+    {
+      "id": "tsc_06aa30a1ad68a69c006abcf7ac59e487d2b10de646b21adcc0",
+      "type": "tool_search_call",
+      "status": "completed",
+      "arguments": {
+        "paths": [
+          "getWeather"
+        ]
+      },
+      "call_id": null,
+      "execution": "server"
+    },
+    {
+      "id": "tso_06aa30a1ad68a69c006abcf7ac82d487d296f79f76915d9f4e",
+      "type": "tool_search_output",
+      "status": "completed",
+      "call_id": null,
+      "execution": "server",
+      "tools": [
+        {
+          "type": "function",
+          "defer_loading": true,
+          "description": "The current weather of a city, in celsius",
+          "name": "getWeather",
+          "output_schema": null,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string",
+                "description": "The city and country"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      ]
+    },
+    {
+      "id": "fc_06aa30a1ad68a69c006abcf7acf15487d2b80b54611ab5266b",
+      "type": "function_call",
+      "status": "completed",
+      "arguments": "{\"city\":\"Bariloche, Argentina\"}",
+      "call_id": "call_OSnXN7agrAxErZPUdvev3u0h",
+      "name": "getWeather",
+      "namespace": "getWeather"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "current_turn",
+    "effort": "none",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [
+    {
+      "type": "function",
+      "description": "The current time",
+      "name": "getTime",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          
+        },
+        "additionalProperties": false,
+        "required": [
+          
+        ]
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "defer_loading": true,
+      "description": "The current weather of a city, in celsius",
+      "name": "getWeather",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "The city and country"
+          }
+        },
+        "required": [
+          "city"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "defer_loading": true,
+      "description": "Gives the money of an order back",
+      "name": "refund",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "order"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    },
+    {
+      "type": "function",
+      "defer_loading": true,
+      "description": "The invoices of a customer",
+      "name": "listInvoices",
+      "output_schema": null,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "customer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    },
+    {
+      "type": "tool_search",
+      "description": null,
+      "parameters": null
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 658,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 42,
+    "output_tokens_details": {
+      "reasoning_tokens": 20
+    },
+    "total_tokens": 700
+  },
+  "user": null,
+  "metadata": {
+    
+  }
+}

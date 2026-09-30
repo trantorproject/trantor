@@ -22,6 +22,8 @@ class FakeChatModel(
     var usage: Usage = Usage.Unknown,
     /** What each answer says it cost, as the CostMiddleware would leave it. */
     var cost: CostEstimate? = null,
+    /** Whether it plays a model whose provider searches the tools of a call. */
+    override var searchesTools: Boolean = false,
 ): ChatModel {
 
     val responses = ArrayDeque<ChatResponse>()

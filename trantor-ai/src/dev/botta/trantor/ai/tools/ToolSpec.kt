@@ -12,6 +12,11 @@ data class FunctionToolSpec(
     val description: String? = null,
     val parameters: JsonObject,
     val strict: Boolean = true,
+    /**
+     * Told to a provider that searches tools ([ChatModel.searchesTools][dev.botta.trantor.ai.models.chat.ChatModel]
+     * .searchesTools) as one the model finds when it needs it, instead of up front.
+     */
+    val deferLoading: Boolean = false,
 ): ToolSpec
 
 /** A tool the provider runs on its side, like "openai.web_search". */

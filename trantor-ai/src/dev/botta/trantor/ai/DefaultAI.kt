@@ -70,9 +70,11 @@ class DefaultAI(
     private fun loopFor(request: GenerateRequest): ToolLoop {
         val model = request.model?.let { models.chat(it) } ?: models.chat()
         val tools = request.tools.toList()
+        val searchable = request.searchableTools.toList()
         val policies = request.contextPolicies.toList()
         val next = NextStep { chat, _ ->
-            StepSetup(model, chat.copy(messages = projected(policies, chat.messages, request.context)), tools)
+            val messages = projected(policies, chat.messages, request.context)
+            StepSetup(model, chat.copy(messages = messages), tools, searchable = searchable)
         }
 
         return ToolLoop(

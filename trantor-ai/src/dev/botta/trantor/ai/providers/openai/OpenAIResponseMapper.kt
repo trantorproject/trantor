@@ -45,10 +45,20 @@ internal class OpenAIResponseMapper {
         callId = item["call_id"]?.asString() ?: "",
         toolName = item["name"]?.asString() ?: "",
         input = Json.parse(item["arguments"]?.asString() ?: "{}").asObject() ?: Json.obj(),
-        // The item id is what OpenAI needs to match the call when the conversation goes on
-        metadata = item["id"]?.asString()?.let { ProviderMetadata.of(OPENAI_PROVIDER, Json.obj("id" to it)) }
-            ?: ProviderMetadata.None,
+        metadata = toCallMetadata(item),
     )
+
+    /**
+     * The item id, to match the call when the conversation goes on, and the namespace of a tool its tool search
+     * found, which OpenAI refuses the call back without: *"Missing namespace for function_call 'getWeather'"*.
+     */
+    private fun toCallMetadata(item: JsonObject): ProviderMetadata {
+        val kept = Json.obj()
+        item["id"]?.asString()?.let { kept["id"] = it }
+        item["namespace"]?.asString()?.let { kept["namespace"] = it }
+
+        return if (kept.keys.isEmpty()) ProviderMetadata.None else ProviderMetadata.of(OPENAI_PROVIDER, kept)
+    }
 
     /**
      * The item is kept whole in [ReasoningPart.opaque]: what lets the conversation go on is the encrypted content

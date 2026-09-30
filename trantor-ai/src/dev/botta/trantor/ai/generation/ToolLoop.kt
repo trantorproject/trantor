@@ -10,6 +10,7 @@ import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.throwIfCancelled
 import dev.botta.trantor.ai.tools.*
+import dev.botta.trantor.ai.tools.search.SearchToolsTool
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import dev.botta.trantor.ai.telemetry.GenAITelemetry
@@ -77,7 +78,17 @@ class ToolLoop(
         openTelemetry: OpenTelemetry = OpenTelemetry.noop(),
         telemetrySettings: AITelemetrySettings = AITelemetrySettings(),
         serializer: JsonSerializer = defaultJsonSerializer,
-    ): this(NextStep.fixed(model, tools), maxSteps, run, errorHandlers, openTelemetry, telemetrySettings, serializer)
+        /** The tools the model searches for, instead of being told about them up front. */
+        searchableTools: List<Tool<*>> = emptyList(),
+    ): this(
+        NextStep.fixed(model, tools, searchableTools),
+        maxSteps,
+        run,
+        errorHandlers,
+        openTelemetry,
+        telemetrySettings,
+        serializer,
+    )
 
     /**
      * A loop whose run is traced by whoever runs it, as the [dev.botta.trantor.ai.agents.AgentRunner] does: the spans
@@ -485,7 +496,9 @@ class ToolLoop(
         val agent = setup.agent
         val handoffs = Handoffs(setup.team)
         private val hooks = setup.hooks ?: NoStepHooks
-        private val toolsByName = setup.tools.associateBy { it.name }
+        /** The tools of the step: the ones it always has, and with some to search for, the search and those found. */
+        private val tools = setup.tools + searching(setup)
+        private val toolsByName = tools.associateBy { it.name }
 
         /** The calls of the step that will not run, by id, with what the model reads instead. */
         private var refusals = emptyMap<String, ToolRefusal>()
@@ -502,8 +515,18 @@ class ToolLoop(
         // Asked again on every step, so that a description that depends on the moment is up to date; and built when
         // the step goes out, so that the hooks see the results of the calls the run resolved before it
         val request by lazy {
-            val tools = setup.request.tools + setup.tools.map { it.spec(serializer) }
-            failOnDuplicates(tools)
+            // Every tool the step may come to have, the ones to search for included, so that a clash fails before
+            // they are found
+            val search = if (setup.searchable.isEmpty() || searchesOnItsOwn(setup)) emptyList()
+            else listOf(SearchToolsTool.NAME)
+            failOnDuplicates(
+                setup.request.tools.map { it.name } + setup.tools.map { it.name } + setup.searchable.map { it.name } +
+                    search,
+            )
+            val deferred = if (searchesOnItsOwn(setup)) setup.searchable.map { it.name }.toSet() else emptySet()
+            val tools = setup.request.tools + tools.map { tool ->
+                tool.spec(serializer).let { if (tool.name in deferred) it.copy(deferLoading = true) else it }
+            }
 
             hooks.beforeModel(setup.request.copy(messages = paired.first, tools = tools))
         }
@@ -638,8 +661,8 @@ class ToolLoop(
             }
         }
 
-        private fun failOnDuplicates(tools: List<ToolSpec>) {
-            val duplicates = tools.groupingBy { it.name }.eachCount().filterValues { it > 1 }.keys.toList()
+        private fun failOnDuplicates(names: List<String>) {
+            val duplicates = names.groupingBy { it }.eachCount().filterValues { it > 1 }.keys.toList()
             if (duplicates.isEmpty()) return
 
             val names = duplicates.joinToString()

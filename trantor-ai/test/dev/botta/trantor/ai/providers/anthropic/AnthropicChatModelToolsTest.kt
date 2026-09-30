@@ -49,6 +49,31 @@ class AnthropicChatModelToolsTest {
         }
 
         @Test
+        fun `a deferred tool goes after the rest, and the tool search of Anthropic last, where the cache mark goes`() {
+            val request = requestWith(weatherTool.copy(deferLoading = true))
+
+            generate(request.copy(tools = request.tools + timeTool))
+
+            assertThat(sentBody()["tools"]!!.asArray()!!.map { it.asObject()!!["name"]?.asString() })
+                .containsExactly("getTime", "getWeather", "tool_search_tool_bm25")
+            assertThat(sentTool(1)["defer_loading"]?.asBoolean()).isTrue()
+            assertThat(sentTool(2)["type"]?.asString()).isEqualTo("tool_search_tool_bm25_20251119")
+            assertThat(sentTool(0).containsKey("defer_loading")).isFalse()
+        }
+
+        @Test
+        fun `a model that does not search tools gets them up front, and says so`() {
+            val model = AnthropicChatModel("claude-opus-4-1", AnthropicConfig(apiKey = "sk-ant-test"), httpClient)
+
+            val response = model.generate(requestWith(weatherTool.copy(deferLoading = true)))
+
+            assertThat(sentBody()["tools"]!!.asArray()!!.map { it.asObject()!!["name"]?.asString() })
+                .containsExactly("getWeather")
+            assertThat(sentTool().containsKey("defer_loading")).isFalse()
+            assertThat(response.warnings.single().message).contains("does not search tools", "getWeather")
+        }
+
+        @Test
         fun `and a tool that is not strict keeps the schema as it was written`() {
             generate(requestWith(weatherTool.copy(strict = false)))
 
@@ -74,6 +99,80 @@ class AnthropicChatModelToolsTest {
             assertThat(sentBody()["tools"].toString()).isEqualTo("[]")
             assertThat(response.warnings.map { it.message })
                 .containsExactly("Tool openai.web_search is not an Anthropic tool and was dropped")
+        }
+    }
+
+    @Nested
+    inner class `what Anthropic holds to their schemas in one call` {
+        @Test
+        fun `is 20 tools, and the ones after go without strict mode, named in a warning`() {
+            val response = generate(requestWith((0..20).map { tool("t$it") }))
+
+            assertThat(sentTools().map { it.containsKey("strict") }).containsExactly(*Array(21) { it < 20 })
+            assertThat(sentTool(20)["input_schema"]).isEqualTo(tool("t20").parameters)
+            assertThat(response.warnings.single().message).contains("t20", "strict")
+        }
+
+        @Test
+        fun `the tools to search for are the first to go without it, since they are the ones sent last`() {
+            val deferred = (0..19).map { tool("d$it").copy(deferLoading = true) }
+
+            generate(requestWith(deferred + tool("u")))
+
+            assertThat(sentTools().filter { it.containsKey("strict") }.map { it["name"]?.asString() })
+                .containsExactly("u", *Array(19) { "d$it" })
+        }
+
+        @Test
+        fun `is 16 parameters that can be null, however they are written`() {
+            val response = generate(requestWith(listOf(tool("a", typeLists = 9), tool("b", anyOfs = 8))))
+
+            assertThat(sentTool(0).containsKey("strict")).isTrue()
+            assertThat(sentTool(1).containsKey("strict")).isFalse()
+            assertThat(response.warnings.single().message).contains("b")
+        }
+
+        @Test
+        fun `counts the ones inside an object too`() {
+            val nested = tool("b", anyOfs = 8).let { inner ->
+                inner.copy(parameters = Json.obj("type" to "object", "properties" to Json.obj("n" to inner.parameters)))
+            }
+
+            generate(requestWith(listOf(tool("a", typeLists = 9), nested)))
+
+            assertThat(sentTool(1).containsKey("strict")).isFalse()
+        }
+
+        @Test
+        fun `and a tool that does not fit leaves room for a smaller one after it`() {
+            generate(requestWith(listOf(tool("a", typeLists = 9), tool("b", anyOfs = 8), tool("c", anyOfs = 7))))
+
+            assertThat(sentTools().map { it.containsKey("strict") }).containsExactly(true, false, true)
+        }
+
+        @Test
+        fun `the answer in JSON counts first, since it has nothing to fall back to`() {
+            val output = OutputSpec.Json(tool("answer", typeLists = 10).parameters)
+
+            generate(requestWith(listOf(tool("a", anyOfs = 7))).copy(output = output))
+
+            assertThat(sentTool().containsKey("strict")).isFalse()
+        }
+
+        private fun requestWith(tools: List<ToolSpec>) =
+            ChatRequest(messages = listOf(Message.user("Hola")), tools = tools)
+
+        private fun sentTools() = sentBody()["tools"]!!.asArray()!!.map { it.asObject()!! }
+            .filter { it["name"]?.asString() != "tool_search_tool_bm25" }
+
+        /** A tool with a required string, and parameters that can be null written as a list of types or as anyOf. */
+        private fun tool(name: String, typeLists: Int = 0, anyOfs: Int = 0): FunctionToolSpec {
+            val properties = Json.obj("x" to Json.obj("type" to "string"))
+            repeat(typeLists) { properties["l$it"] = Json.obj("type" to Json.array("string", "null")) }
+            val nullable = Json.array(Json.obj("type" to "string"), Json.obj("type" to "null"))
+            repeat(anyOfs) { properties["a$it"] = Json.obj("anyOf" to nullable) }
+
+            return FunctionToolSpec(name, "A tool", Json.obj("type" to "object", "properties" to properties))
         }
     }
 
@@ -219,6 +318,12 @@ class AnthropicChatModelToolsTest {
             "type" to "object",
             "properties" to Json.obj("city" to Json.obj("type" to "string")),
         ),
+    )
+
+    private val timeTool = FunctionToolSpec(
+        name = "getTime",
+        description = "The time",
+        parameters = Json.obj("type" to "object", "properties" to Json.obj()),
     )
 
     private val tree = Json.obj(

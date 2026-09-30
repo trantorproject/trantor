@@ -400,6 +400,7 @@ class AgentRunner(
                     providerOptions = ProviderOptions.of(*(agent.options + options.providerOptions).toTypedArray()),
                 ),
                 tools = agent.tools,
+                searchable = agent.searchableTools,
                 outputTool = agent.output?.tool?.name,
                 toolContext = { call -> toolContext(call.callId, call.toolName) },
                 team = team.keys,

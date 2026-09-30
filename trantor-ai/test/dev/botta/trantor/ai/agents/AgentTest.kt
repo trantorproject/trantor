@@ -225,6 +225,12 @@ class AgentTest {
         }
 
         @Test
+        fun `with a tool to search for called like one it always has`() {
+            assertThatThrownBy { Agent("support").tools(weather).searchableTools(WeatherTool()).build() }
+                .hasMessage("The agent support has more than one tool called getWeather")
+        }
+
+        @Test
         fun `with a tool called like one of its handoffs`() {
             assertThatThrownBy { Agent("support").tools(TransferTool()).handoffs("sales").build() }
                 .hasMessage("The agent support has more than one tool called transfer_to_sales")

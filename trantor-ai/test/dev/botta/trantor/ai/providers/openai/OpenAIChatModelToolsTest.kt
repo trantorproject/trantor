@@ -160,6 +160,45 @@ class OpenAIChatModelToolsTest {
         assertThat(sentBody()["input"]?.asArray()?.get(0)?.asObject()?.get("output")?.asString()).isEqualTo("7 grados")
     }
 
+    @Test
+    fun `a deferred tool goes with defer_loading, and the tool search of OpenAI after the tools`() {
+        httpClient.body = fixture("tool-call")
+        val searching = OpenAIChatModel("gpt-5.4", OpenAIConfig(apiKey = "sk-test"), httpClient)
+        val request = requestWith(weatherTool.copy(deferLoading = true))
+
+        searching.generate(request.copy(tools = request.tools + timeTool))
+
+        val tools = sentBody()["tools"]!!.asArray()!!.map { it.asObject()!! }
+        assertThat(tools.map { it["name"]?.asString() ?: it["type"]?.asString() })
+            .containsExactly("getWeather", "getTime", "tool_search")
+        assertThat(tools.map { it["defer_loading"]?.asBoolean() }).containsExactly(true, null, null)
+    }
+
+    @Test
+    fun `a model that does not search tools gets them up front, and says so`() {
+        httpClient.body = fixture("tool-call")
+
+        val response = model.generate(requestWith(weatherTool.copy(deferLoading = true)))
+
+        val tools = sentBody()["tools"]!!.asArray()!!.map { it.asObject()!! }
+        assertThat(tools.map { it["name"]?.asString() }).containsExactly("getWeather")
+        assertThat(tools.single().containsKey("defer_loading")).isFalse()
+        assertThat(response.warnings.single().message).contains("does not search tools", "getWeather")
+    }
+
+    @Test
+    fun `sends back the namespace OpenAI gave the call of a tool it found, which it needs to match it`() {
+        httpClient.body = fixture("tool-search-1")
+        val searching = OpenAIChatModel("gpt-5.4", OpenAIConfig(apiKey = "sk-test"), httpClient)
+        val answer = searching.generate(requestWith(weatherTool.copy(deferLoading = true)))
+
+        searching.generate(requestWith(weatherTool.copy(deferLoading = true)).copy(messages = listOf(answer.asMessage())))
+
+        val call = sentBody()["input"]!!.asArray()!!.map { it.asObject()!! }
+            .single { it["type"]?.asString() == "function_call" }
+        assertThat(call["namespace"]?.asString()).isEqualTo("getWeather")
+    }
+
     private fun requestWith(tool: ToolSpec, choice: ToolChoice = ToolChoice.Auto) = ChatRequest(
         messages = listOf(Message.user("Que temperatura hay en Bariloche?")),
         tools = listOf(tool),
@@ -178,6 +217,12 @@ class OpenAIChatModelToolsTest {
             "type" to "object",
             "properties" to Json.obj("city" to Json.obj("type" to "string")),
         ),
+    )
+
+    private val timeTool = FunctionToolSpec(
+        name = "getTime",
+        description = "The time",
+        parameters = Json.obj("type" to "object", "properties" to Json.obj()),
     )
 
     private val httpClient = FakeHttpClient()

@@ -26,7 +26,8 @@ fun interface NextStep {
 
     companion object {
         /** Every step with the same model and tools and the request as it is, which is what a generation does. */
-        fun fixed(model: ChatModel, tools: List<Tool<*>>) = NextStep { request, _ -> StepSetup(model, request, tools) }
+        fun fixed(model: ChatModel, tools: List<Tool<*>>, searchable: List<Tool<*>> = emptyList()) =
+            NextStep { request, _ -> StepSetup(model, request, tools, searchable = searchable) }
     }
 }
 
@@ -56,6 +57,11 @@ class StepSetup(
     val agent: String? = null,
     /** What the loop calls around the model and the tools of the step. */
     val hooks: StepHooks? = null,
+    /**
+     * The tools the model searches for instead of being told about them up front. The loop tells it about the ones
+     * it found, which the conversation says, and gives it the tool to search with.
+     */
+    val searchable: List<Tool<*>> = emptyList(),
 ) {
     /**
      * The invocation the step is part of — the agent or the stretch of an agent — when whoever runs the loop traces

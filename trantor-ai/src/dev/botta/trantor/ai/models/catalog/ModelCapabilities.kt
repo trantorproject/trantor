@@ -52,6 +52,12 @@ enum class ModelFeatures {
      * Anthropic compiles both through the same grammar, and documents one list of models for the two.
      */
     StructuredOutput,
+    /**
+     * The provider searches the tools of a call it was told to defer, and loads the ones the model needs: Anthropic
+     * with its BM25 tool search, from the 4.5 generation on, and OpenAI with `tool_search`, from GPT-5.4 on. Without
+     * it, the tool loop searches them itself.
+     */
+    ToolSearch,
     Images,
     Audio,
     PromptCaching,

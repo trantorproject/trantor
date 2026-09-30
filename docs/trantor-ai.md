@@ -88,7 +88,7 @@ left out because it also means an exchange between the user and the application.
 The builder takes the messages in the order they are written — `system`, `user`, `messages(history)` —
 and `dynamicSystem` for the part of the instructions that changes from one call to the next (see [What
 changes goes last](#what-changes-goes-last)). It also takes `model` (a reference or an alias, `default` when
-left out), `tools`, `toolChoice`, `maxSteps`,
+left out), `tools`, `searchableTools` (see [Tool search](#tool-search)), `toolChoice`, `maxSteps`,
 `settings { }`, `options(...)` for the provider, `context(RunContext)` for the tools and
 `callOptions(...)` for the timeout and the cancellation, which reach every step.
 
@@ -268,6 +268,61 @@ Otherwise the run spends without anyone seeing it. An agent that runs as a tool 
 
 Tools the provider runs on its side, like a web search, are not run again: their results came in the
 answer.
+
+### Tool search
+
+```kotlin
+val result = ai.generate {
+    system("Sos el soporte de la tienda. Podés buscar tools de envíos, pagos, pedidos y devoluciones.")
+    user(question)
+    tools(orders)
+    searchableTools(*storeTools.toTypedArray(), *mcp["github"].tools().toTypedArray())
+}
+
+val support = Agent("support").tools(orders).searchableTools(*storeTools.toTypedArray()).build()
+```
+
+A catalog of tens of tools costs the tokens of all of them on every call, and a model picks worse among many.
+`searchableTools(...)` gives tools the model **searches for** instead of being told about them up front; `tools(...)`
+stays for the ones it always needs. Whether a tool is searched depends on the run, not on the tool, so any tool can
+be one, those of an MCP server included.
+
+- **Where the provider searches, it does.** Claude from Haiku, Sonnet and Opus 4.5 on (Sonnet 5 is not on
+  Anthropic's list) and GPT from 5.4 on: the tools go deferred, the provider finds the ones the model needs and loads
+  them, and the model calls them in the same answer. The catalog says which model does (`ModelFeatures.ToolSearch`),
+  and a model it does not know is taken not to, since a model that does not search answers 400.
+- **Elsewhere, the loop searches.** The model gets one more tool, `search_tools(query)`, which looks for the words of
+  the query in the name, the description and the args of the searchable tools and answers up to five, with their
+  name and description. The ones it found are told to the model from the next step on. A search that finds nothing
+  answers the names of all of them (up to a hundred), so the model can search again with their words: a model asked
+  in Spanish searches Spanish words, and the tools may be named in English.
+- **What was found lives in the conversation**: the results of `search_tools`, or the blocks of the provider's
+  search, stay in the history like any other part, so a `Session` keeps them and a later turn has those tools
+  without searching again. After a [compaction](#compacting-the-old-part) the model searches again.
+- **A searchable tool is still a tool of the run**: one with the name of another fails the run with
+  `DuplicateToolError` before the model is called, even if it would never be found.
+
+What it saves depends on who searches. A catalog of 47 small tools, one question, the input tokens of the whole run:
+
+| | all up front | searchable |
+|---|---|---|
+| Claude Sonnet 4.5, searched by Anthropic | 9,939 | 2,704 |
+| GPT-5.4, searched by OpenAI | 4,335 | 4,185 |
+| GPT-4.1 mini, searched by the loop | 4,316 | 1,450 |
+
+- **Anthropic** leaves the deferred tools out of the prompt, and what its search loads is added in the conversation,
+  so the cached prefix does not change. That prefix is now small — the tools up front and the search — and may be
+  below the minimum Anthropic caches.
+- **OpenAI** still shows the model the name and description of every deferred tool: *"in practice tool search is
+  mostly deferring the parameter schema"*. With the large schemas of many MCP servers that is most of it; with small
+  ones it is little. OpenAI saves more with tools grouped in namespaces, which Trantor does not have yet.
+- **The loop's own search** saves the most, at the cost of a step per search, and adds what it found to the tools of
+  the next step, which breaks the cache from there on.
+
+**The search is only as good as the words.** Both the loop's search and Anthropic's (BM25) match words, and the model
+searches with the words of the question. A searchable tool wants a name and a description with the words a user
+would say, and the instructions should say what kinds of tools there are to search, as Anthropic recommends: in one
+recording Claude searched only Spanish words for tools described in English, found nothing and gave up.
 
 ### When a tool fails
 
@@ -1091,6 +1146,11 @@ request but part of the choice.
 closed exactly the way structured output closes it. Where the model has no grammar for it the tool still
 goes, without the guarantee and with a warning: half a tool beats no tool.
 
+**`deferLoading = true`** asks a provider that searches tools (`ChatModel.searchesTools`) to load the tool only when
+the model finds it. The adapter adds the provider's search tool and sends back what it searched, as it came; on a
+model that does not search the tool goes up front, with a warning. The tool loop sets it for the [searchable
+tools](#tool-search).
+
 **Being told to call one is not something every model takes.** Claude Opus 5.5, Fable 5.1 and Mythos 5.1
 answer 400 to a forced call, and any Claude refuses it while it is thinking to a budget — the second capability that
 is not a property of the model but of two settings meeting. Either way the choice goes back to `auto`,
@@ -1708,6 +1768,15 @@ matches one to its call by id alone, so the name of the tool has nowhere to go. 
 message that has anything before its results — *"tool_use ids were found without tool_result blocks
 immediately after"* — so the adapter moves them to the front: that is a rule about the wire, and asking
 the next question right after the answer is a reasonable way to build a conversation.
+
+**Strict mode has a budget per call.** Anthropic takes at most 20 strict tools and 16 parameters that can be null
+(`anyOf` or a list of types, at any depth) in one call, adding up every strict schema — the answer in JSON and the
+deferred tools of its search included — and answers 400 to the whole call past that. The adapter holds as many tools
+to their schema as fit, in the order they go: the answer first, since it has nothing to fall back to, then the tools
+up front, then the deferred ones. The rest go without strict mode and a warning names them; their args are still
+read and checked, and a call that does not fit goes back to the model. Its third limit, 24 optional parameters,
+never adds up, since a closed schema requires every property. A grammar can still be too complex in ways with no
+number to check beforehand, and that one fails the call.
 
 **A tool of the provider is named by the versioned type** Anthropic gave it, with its own name as an
 argument, since a server tool carries both:
