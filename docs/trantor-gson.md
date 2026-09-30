@@ -123,6 +123,20 @@ data class UpdateCustomer(
 
 It is written the same way: `None` is left out, and `Value(null)` is written as `null`.
 
+A `Maybe` of what cannot be null has no null to change to, so there `null` says what leaving the field out says:
+
+```kotlin
+data class RenameCustomer(val id: CustomerId, val name: Maybe<String> = Maybe.None)
+```
+
+| JSON | `name` |
+|---|---|
+| `{"id": "…"}` or `{"id": "…", "name": null}` | `Maybe.None`: leave it as it is |
+| `{"id": "…", "name": "Ana"}` | `Maybe.Value("Ana")` |
+
+That is how a model says it has nothing to change in the strict mode of OpenAI, which sends every field and `null`
+for the ones it has nothing for.
+
 ---
 
 ## Value objects of the application
@@ -181,8 +195,8 @@ val schema = serializer.schemaOf<PlaceOrder>()
   and `null`. Neither OpenAI nor Anthropic take `oneOf`.
 - Ids and uuids are strings with `format: uuid`, `Email` with `format: email`, `LocalDate` with `format: date`,
   `LocalDateTime` with `format: date-time` (its parser needs an offset, as that format does), and `LocalTime` and
-  `YearMonth` with a `pattern`. `Money` is a string. A `Maybe` is what it holds, never required, and a value class
-  is its value.
+  `YearMonth` with a `pattern`. `Money` is a string. A `Maybe` is what it holds or `null`, never required, and a
+  value class is its value.
 - The validations of Jakarta say up front what the validation will ask for: `@NotBlank` is `minLength: 1`, `@Size`,
   `@Min`, `@Max`, `@DecimalMin`, `@Positive` and the like are their keywords, `@Pattern` is `pattern` and `@Email`
   is `format: email`. They are read from the parameter or from the field behind it, where Kotlin also puts them.

@@ -98,7 +98,8 @@ internal class GsonJsonSchemas(
                 klass.isSubclassOf(Id::class) -> Json.obj("type" to "string", "format" to "uuid")
                 klass == Any::class -> Json.obj()
                 klass.java.isEnum -> enum(type, klass)
-                klass == Maybe::class -> describe(argument(type, 0, path), path)
+                // null is always something it takes: of what can be null, a change to null; of what cannot, no change
+                klass == Maybe::class -> describe(argument(type, 0, path).withNullability(true), path)
                 klass.isValue -> describe(valueOf(type, klass), path)
                 klass.isSubclassOf(Map::class) ->
                     Json.obj("type" to "object", "additionalProperties" to describe(argument(type, 1, path), "$path[]"))

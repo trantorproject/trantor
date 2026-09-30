@@ -4,6 +4,7 @@ import com.google.gson.*
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.reflect.TypeToken
 import com.google.gson.stream.*
+import dev.botta.trantor.primitives.lang.Maybe
 import java.lang.reflect.*
 import java.util.*
 import kotlin.reflect.*
@@ -85,6 +86,24 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
             delegateAdapter.write(writer, value)
         }
 
+        /**
+         * A null for a Maybe of what cannot be null is None: null is no value it can change to, so it says what
+         * leaving it out says, which is how the strict mode of OpenAI, sending every field, says it is not to change.
+         * The adapter of Maybe cannot tell it apart from a Maybe of what can be null, whose null is a change to null:
+         * Java does not know that `Maybe<String>` cannot hold one, and the Kotlin type of the parameter does.
+         */
+        private fun readParameter(parameter: KParameter, reader: JsonReader): Any? {
+            if (reader.peek() == JsonToken.NULL && parameter.isMaybeOfNotNull()) {
+                reader.nextNull()
+                return Maybe.None
+            }
+
+            return constructorAdapters.getValue(parameter).read(reader)
+        }
+
+        private fun KParameter.isMaybeOfNotNull() =
+            type.classifier == Maybe::class && type.arguments.firstOrNull()?.type?.isMarkedNullable == false
+
         override fun read(reader: JsonReader): T? {
             require(!kClass.isAbstract) { "Cannot deserialize abstract class '${kClass.simpleName}'" }
             require(!kClass.isSealed) { "Cannot deserialize sealed class '${kClass.simpleName}'" }
@@ -99,10 +118,7 @@ class KotlinReflectiveTypeAdapterFactory private constructor() : TypeAdapterFact
                 val propertyName = reader.nextName()
                 if (constructorMap.containsKey(propertyName)) {
                     val parameter = constructorMap[propertyName]!!
-                    val replacedValue: Any? = constructorParams.put(
-                        parameter,
-                        constructorAdapters.getValue(parameter).read(reader)
-                    )
+                    val replacedValue: Any? = constructorParams.put(parameter, readParameter(parameter, reader))
                     require(replacedValue == null) {
                         "${kClass.simpleName} declares multiple JSON fields named ${parameter.name}"
                     }

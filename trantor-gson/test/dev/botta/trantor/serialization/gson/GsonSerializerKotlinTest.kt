@@ -233,6 +233,29 @@ class GsonSerializerKotlinTest {
     }
 
     @Nested
+    inner class `reading a Maybe, for a partial update` {
+        @Test
+        fun `left out is None, what is not to change`() {
+            assertThat(serializer.deserialize<Rename>("""{"id":"x"}""").name).isEqualTo(Maybe.None)
+        }
+
+        @Test
+        fun `with a value is that value`() {
+            assertThat(serializer.deserialize<Rename>("""{"id":"x","name":"Ana"}""").name).isEqualTo(Maybe.Value("Ana"))
+        }
+
+        @Test
+        fun `null, of what can be null, is null, which is what it changes to`() {
+            assertThat(serializer.deserialize<Patch>("""{"id":"x","name":null}""").name).isEqualTo(Maybe.Value(null))
+        }
+
+        @Test
+        fun `null, of what cannot be null, is None, since null is not a value it can change to`() {
+            assertThat(serializer.deserialize<Rename>("""{"id":"x","name":null}""").name).isEqualTo(Maybe.None)
+        }
+    }
+
+    @Nested
     inner class `reading a hierarchy` {
         @Test
         fun `each object is the subtype its label names, also inside a list`() {
@@ -374,6 +397,8 @@ class GsonSerializerKotlinTest {
     }
 
     data class Patch(val id: String, val name: Maybe<String?> = Maybe.None)
+
+    data class Rename(val id: String, val name: Maybe<String> = Maybe.None)
 
     private val serializer = GsonSerializer()
 

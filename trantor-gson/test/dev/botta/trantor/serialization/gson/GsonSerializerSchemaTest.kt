@@ -194,6 +194,14 @@ class GsonSerializerSchemaTest {
         }
 
         @Test
+        fun `a Maybe of what cannot be null takes null too, which leaves it as it is`() {
+            val schema = serializer.schemaOf<Rename>()
+
+            assertThat(schema.path("properties.name")).isEqualTo(json("""{"type": ["string", "null"]}"""))
+            assertThat(schema["required"]).isEqualTo(Json.array("id"))
+        }
+
+        @Test
         fun `a value class is its value`() {
             assertThat(serializer.schemaOf<Country>().path("properties")).isEqualTo(
                 json("""{"code": {"type": "string"}, "region": {"type": ["string", "null"]}}"""),
@@ -404,6 +412,8 @@ class GsonSerializerSchemaTest {
     )
 
     data class Patch(val id: String, val phone: Maybe<String?> = Maybe.None)
+
+    data class Rename(val id: String, val name: Maybe<String> = Maybe.None)
 
     @JvmInline
     value class Iso(val value: String)
