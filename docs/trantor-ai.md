@@ -1512,8 +1512,9 @@ until one is written for it. A model standing in for the newest one gets nothing
 price, but keeps its own if somebody wrote it: what it takes is still a guess, what it costs is not.
 
 The prices shipped with Trantor are the standard ones, read off the pricing pages of each provider. For
-OpenAI that is the short-context price; GPT-6 Astra, GPT-5.6, GPT-5.5 and GPT-5.4 charge more past a long
-prompt. Claude 3 Haiku has no price, because Anthropic no longer lists one.
+OpenAI that is the short-context price; GPT-6 Astra, GPT-6.1 Sol, GPT-5.6, GPT-5.5 and GPT-5.4 charge more past a
+long prompt. A model the provider retired is not in the catalog at all: it answers 404, and describing it would only
+make it look usable.
 
 ---
 

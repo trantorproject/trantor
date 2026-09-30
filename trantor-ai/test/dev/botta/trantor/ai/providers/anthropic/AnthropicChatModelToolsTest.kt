@@ -64,7 +64,7 @@ class AnthropicChatModelToolsTest {
 
         @Test
         fun `a model that does not search tools gets them up front, and says so`() {
-            val model = AnthropicChatModel("claude-opus-4-1", AnthropicConfig(apiKey = "sk-ant-test"), httpClient)
+            val model = AnthropicChatModel("claude-sonnet-5", AnthropicConfig(apiKey = "sk-ant-test"), httpClient)
 
             val response = model.generate(requestWith(weatherTool.copy(deferLoading = true)))
 
@@ -230,7 +230,7 @@ class AnthropicChatModelToolsTest {
         @Test
         fun `on a model that does not search tools, what it found goes back as it was written`() {
             val answer = Json.obj("tools" to Json.array(Json.obj("name" to "getWeather")))
-            val model = AnthropicChatModel("claude-sonnet-4", AnthropicConfig(apiKey = "sk-ant-test"), httpClient)
+            val model = AnthropicChatModel("claude-sonnet-5", AnthropicConfig(apiKey = "sk-ant-test"), httpClient)
 
             model.generate(searchedFor(answer))
 

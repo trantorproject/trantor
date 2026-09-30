@@ -255,11 +255,10 @@ class ModelCatalogTest {
     @Nested
     inner class `what each provider brought` {
         @Test
-        fun `has a price for every model the provider still lists one for`() {
-            // Claude 3 Haiku is off the price list of Anthropic, and a price nobody publishes is not one to write
+        fun `has a price for every model`() {
             val unpriced = catalog.all().filter { it.pricing == null }.map { it.reference }
 
-            assertThat(unpriced).containsExactly("anthropic/claude-3-haiku")
+            assertThat(unpriced).isEmpty()
         }
 
         @Test

@@ -83,10 +83,12 @@ internal fun ModelCatalog.addOpenAIModels() = apply {
         ModelPricing(input = "2.50", output = "15", cacheRead = "0.25"),
     )
 
+    // Deprecated, and out of the API on 2026-12-11 (developers.openai.com/api/docs/deprecations, read on 2026-09-30)
     add("openai/gpt-5", gpt5, ModelPricing(input = "1.25", output = "10", cacheRead = "0.125"))
     add("openai/gpt-5-mini", gpt5, ModelPricing(input = "0.25", output = "2", cacheRead = "0.025"))
     add("openai/gpt-5-nano", gpt5, ModelPricing(input = "0.05", output = "0.40", cacheRead = "0.005"))
 
+    // Deprecated: o3 out of the API on 2026-12-11, and the rest on 2026-10-23 (the same page)
     add("openai/o1", reasoning, ModelPricing(input = "15", output = "60", cacheRead = "7.50"))
     add("openai/o3", reasoning, ModelPricing(input = "2", output = "8", cacheRead = "0.50"))
     add("openai/o3-mini", reasoning, ModelPricing(input = "1.10", output = "4.40", cacheRead = "0.55"))

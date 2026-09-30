@@ -13,6 +13,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import dev.botta.trantor.serialization.gson.GsonSerializer
+import dev.botta.trantor.ai.models.catalog.ModelCatalog
+import dev.botta.trantor.ai.models.catalog.ModelFeatures
 
 /**
  * The same request against models of different generations.
@@ -181,7 +183,7 @@ class AnthropicChatModelPerModelTest {
         @Test
         fun `and is dropped with a warning on a model that does not have one`() {
             val response = generateWith(
-                "claude-sonnet-4",
+                BEFORE_STRUCTURED_OUTPUT,
                 ChatRequest(listOf(Message.user("Hola")), output = jsonOutput()),
             )
 
@@ -242,7 +244,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `and the tool still goes without it where it does not, because half a tool beats none`() {
-            val response = generateWith("claude-sonnet-4", requestWith(ToolChoice.Auto))
+            val response = generateWith(BEFORE_STRUCTURED_OUTPUT, requestWith(ToolChoice.Auto))
 
             val tool = sentBody()["tools"]!!.asArray()!![0].asObject()!!
             assertThat(tool.containsKey("strict")).isFalse()
@@ -886,9 +888,20 @@ class AnthropicChatModelPerModelTest {
         generateWith(modelId, ChatRequest(listOf(Message.user("Hola")), settings = settings))
 
     private fun generateWith(modelId: String, request: ChatRequest) =
-        AnthropicChatModel(modelId, AnthropicConfig(apiKey = "sk-ant-test"), httpClient).generate(request)
+        AnthropicChatModel(modelId, AnthropicConfig(apiKey = "sk-ant-test"), httpClient, catalog).generate(request)
+
+    /**
+     * No Claude still offered lacks structured output, so this is one an application describes, as it may for a
+     * model of another platform: the adapter still drops what the catalog says it does not take.
+     */
+    private val catalog = ModelCatalog().addAnthropicModels()
+        .add("anthropic/$BEFORE_STRUCTURED_OUTPUT", like = "anthropic/claude-sonnet-4-5") {
+            copy(features = features - ModelFeatures.StructuredOutput)
+        }
 
     private fun sentBody() = Json.parse(httpClient.requestBody!!).asObject()!!
 
     private val httpClient = FakeHttpClient()
 }
+
+private const val BEFORE_STRUCTURED_OUTPUT = "claude-before-structured-output"

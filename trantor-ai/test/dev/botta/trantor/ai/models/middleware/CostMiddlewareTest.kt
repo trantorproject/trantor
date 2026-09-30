@@ -39,7 +39,9 @@ class CostMiddlewareTest {
 
         @Test
         fun `of a model with no price comes back without one`() {
-            val unpriced = FakeChatModel(modelId = "claude-3-haiku", provider = "anthropic", usage = model.usage)
+            // As an application adds a model the price list does not have yet
+            val catalog = catalog.add("anthropic/claude-unpriced", like = "anthropic/claude-sonnet-4-5")
+            val unpriced = FakeChatModel(modelId = "claude-unpriced", provider = "anthropic", usage = model.usage)
 
             val response = unpriced.with(CostMiddleware(catalog)).generate(ChatRequest("Hola"))
 
