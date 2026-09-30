@@ -11,6 +11,7 @@ import dev.botta.trantor.ai.providers.ProviderOption
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolChoice
+import dev.botta.trantor.ai.tools.search.ToolSearcher
 
 /**
  * What to ask the model in a run, written in the order it is sent:
@@ -34,6 +35,8 @@ class GenerateRequest {
     val messages = mutableListOf<Message>()
     val tools = mutableListOf<Tool<*>>()
     val searchableTools = mutableListOf<Tool<*>>()
+    var toolSearcher: ToolSearcher? = null
+        private set
     var toolChoice: ToolChoice = ToolChoice.Auto
         private set
     var maxSteps = ToolLoop.DEFAULT_MAX_STEPS
@@ -100,6 +103,12 @@ class GenerateRequest {
      * on every call. See [Tool search](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai.md#tool-search).
      */
     fun searchableTools(vararg tools: Tool<*>) = apply { searchableTools.addAll(tools) }
+
+    /**
+     * How the [searchableTools] are searched: by their words unless told otherwise, and by the provider with
+     * [ProviderToolSearcher][dev.botta.trantor.ai.tools.search.ProviderToolSearcher]; see [ToolSearcher].
+     */
+    fun toolSearcher(searcher: ToolSearcher) = apply { toolSearcher = searcher }
 
     fun toolChoice(choice: ToolChoice) = apply { toolChoice = choice }
 

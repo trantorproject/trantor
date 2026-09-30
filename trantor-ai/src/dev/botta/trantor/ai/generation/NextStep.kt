@@ -6,6 +6,7 @@ import dev.botta.trantor.ai.models.chat.ToolCallPart
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.telemetry.GenAITelemetry
+import dev.botta.trantor.ai.tools.search.ToolSearcher
 
 /**
  * Decides what each step of a [ToolLoop] goes out with. The loop asks before every step, so that each one can go out
@@ -26,8 +27,14 @@ fun interface NextStep {
 
     companion object {
         /** Every step with the same model and tools and the request as it is, which is what a generation does. */
-        fun fixed(model: ChatModel, tools: List<Tool<*>>, searchable: List<Tool<*>> = emptyList()) =
-            NextStep { request, _ -> StepSetup(model, request, tools, searchable = searchable) }
+        fun fixed(
+            model: ChatModel,
+            tools: List<Tool<*>>,
+            searchable: List<Tool<*>> = emptyList(),
+            searcher: ToolSearcher? = null,
+        ) = NextStep { request, _ ->
+            StepSetup(model, request, tools, searchable = searchable, searcher = searcher)
+        }
     }
 }
 
@@ -62,6 +69,8 @@ class StepSetup(
      * it found, which the conversation says, and gives it the tool to search with.
      */
     val searchable: List<Tool<*>> = emptyList(),
+    /** How [searchable] are searched, by their words when null; see [ToolSearcher]. */
+    val searcher: ToolSearcher? = null,
 ) {
     /**
      * The invocation the step is part of — the agent or the stretch of an agent — when whoever runs the loop traces

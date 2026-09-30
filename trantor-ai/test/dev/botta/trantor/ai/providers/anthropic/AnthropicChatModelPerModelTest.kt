@@ -356,6 +356,20 @@ class AnthropicChatModelPerModelTest {
         }
 
         @Test
+        fun `of the tools skips the deferred ones, which Anthropic refuses a mark on and leaves out of the prefix`() {
+            val config = AnthropicConfig(apiKey = "sk-ant-test", cache = AnthropicCache(tools = true))
+            val schema = Json.obj("type" to "object")
+            val search = FunctionToolSpec("search_tools", parameters = schema, searchesTools = true)
+            val deferred = FunctionToolSpec("getWeather", parameters = schema, deferLoading = true)
+
+            AnthropicChatModel("claude-opus-5", config, httpClient)
+                .generate(ChatRequest(listOf(Message.user("Hola")), tools = listOf(search, deferred)))
+
+            val tools = sentBody()["tools"]!!.asArray()!!.map { it.asObject()!! }
+            assertThat(tools.map { it.containsKey("cache_control") }).containsExactly(true, false)
+        }
+
+        @Test
         fun `of the conversation is Anthropic's own mark, which moves forward as the conversation grows`() {
             cached(AnthropicCache(conversation = true))
 

@@ -11,6 +11,8 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.throwIfCancelled
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.ai.tools.search.SearchToolsTool
+import dev.botta.trantor.ai.tools.search.ToolSearcher
+import dev.botta.trantor.ai.generation.ToolSearchRoutes.*
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import dev.botta.trantor.ai.telemetry.GenAITelemetry
@@ -80,8 +82,10 @@ class ToolLoop(
         serializer: JsonSerializer = defaultJsonSerializer,
         /** The tools the model searches for, instead of being told about them up front. */
         searchableTools: List<Tool<*>> = emptyList(),
+        /** How [searchableTools] are searched, by their words when null; see [ToolSearcher]. */
+        toolSearcher: ToolSearcher? = null,
     ): this(
-        NextStep.fixed(model, tools, searchableTools),
+        NextStep.fixed(model, tools, searchableTools, toolSearcher),
         maxSteps,
         run,
         errorHandlers,
@@ -517,15 +521,21 @@ class ToolLoop(
         val request by lazy {
             // Every tool the step may come to have, the ones to search for included, so that a clash fails before
             // they are found
-            val search = if (setup.searchable.isEmpty() || searchesOnItsOwn(setup)) emptyList()
-            else listOf(SearchToolsTool.NAME)
+            val route = ToolSearchRoutes.of(setup)
+            val search = if (route == Loop || route == Client) listOf(SearchToolsTool.NAME) else emptyList()
             failOnDuplicates(
                 setup.request.tools.map { it.name } + setup.tools.map { it.name } + setup.searchable.map { it.name } +
                     search,
             )
-            val deferred = if (searchesOnItsOwn(setup)) setup.searchable.map { it.name }.toSet() else emptySet()
+            val deferred = if (route == Provider || route == Client) setup.searchable.map { it.name }.toSet()
+            else emptySet()
             val tools = setup.request.tools + tools.map { tool ->
-                tool.spec(serializer).let { if (tool.name in deferred) it.copy(deferLoading = true) else it }
+                val spec = tool.spec(serializer)
+                when {
+                    tool.name in deferred -> spec.copy(deferLoading = true)
+                    tool is SearchToolsTool && route == Client -> spec.copy(searchesTools = true)
+                    else -> spec
+                }
             }
 
             hooks.beforeModel(setup.request.copy(messages = paired.first, tools = tools))

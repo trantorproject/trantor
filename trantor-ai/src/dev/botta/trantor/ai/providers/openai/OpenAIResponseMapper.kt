@@ -8,6 +8,7 @@ import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.providers.ProviderMetadata
 import dev.botta.trantor.ai.models.chat.*
 import kotlin.time.Duration
+import dev.botta.trantor.ai.tools.search.SearchToolsTool
 
 /** Turns a response of the OpenAI Responses API into a [ChatResponse]. */
 internal class OpenAIResponseMapper {
@@ -36,6 +37,7 @@ internal class OpenAIResponseMapper {
     fun toParts(item: JsonObject): List<Part> = when (item["type"]?.asString()) {
         "message" -> toMessageParts(item)
         "function_call" -> listOf(toToolCall(item))
+        "tool_search_call" if item["execution"]?.asString() == "client" -> listOf(toClientSearch(item))
         "reasoning" -> listOf(toReasoning(item))
         // Anything we don't model yet is kept whole, to send it back on the next turn
         else -> listOf(ProviderPart(OPENAI_PROVIDER, item["type"]?.asString() ?: "unknown", item))
@@ -45,6 +47,18 @@ internal class OpenAIResponseMapper {
         callId = item["call_id"]?.asString() ?: "",
         toolName = item["name"]?.asString() ?: "",
         input = Json.parse(item["arguments"]?.asString() ?: "{}").asObject() ?: Json.obj(),
+        metadata = toCallMetadata(item),
+    )
+
+    /**
+     * A tool search the model asks the client to run, which is the search of the application. OpenAI gives it no name,
+     * since a request has one search: it is read as a call to `search_tools`, the one the tool loop gives, which is
+     * the name the request mapper sends it back by.
+     */
+    private fun toClientSearch(item: JsonObject) = ToolCallPart(
+        callId = item["call_id"]?.asString() ?: "",
+        toolName = SearchToolsTool.NAME,
+        input = item["arguments"]?.asObject() ?: Json.obj(),
         metadata = toCallMetadata(item),
     )
 

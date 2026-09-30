@@ -12,6 +12,7 @@ import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.providers.RawOptions
 import dev.botta.trantor.ai.schemas.StrictSchema
 import dev.botta.trantor.ai.tools.*
+import dev.botta.trantor.ai.tools.search.ClientToolSearch
 
 /**
  * Turns a [ChatRequest] into the body of a call to the Anthropic Messages API.
@@ -46,7 +47,7 @@ internal class AnthropicRequestMapper(
             val options = anthropicOptionsOf(request.providerOptions)
             val cache = options?.cache ?: config.cache
             val thinking = toThinking(request.settings.reasoning, options)
-            val conversation = AnthropicConversation(takes, warnings, cache, modelId)
+            val conversation = AnthropicConversation(takes, warnings, cache, modelId, ClientToolSearch(request.tools))
             val body = Json.obj("model" to modelId)
 
             conversation.writeTo(body, request.messages, request.dynamicSystem)
@@ -141,9 +142,9 @@ internal class AnthropicRequestMapper(
         }
 
         /**
-         * The tools as Anthropic takes them. The deferred ones go after the rest and before its tool search, which
-         * goes last: a deferred tool cannot carry the mark of the cache, which goes on the last tool, and one tool at
-         * least has to be told up front. A model that does not search gets them all up front, with a warning.
+         * The tools as Anthropic takes them: the deferred ones after the rest, and its tool search last, unless the
+         * application searches on its own. One tool at least has to be told up front, which the search always is. A
+         * model that does not search gets them all up front, with a warning.
          *
          * They go strict in that order while they fit in [StrictBudget], so that the ones the model has at hand are
          * the last to lose it; the rest go without, which Anthropic takes, and a warning names them.
@@ -151,6 +152,8 @@ internal class AnthropicRequestMapper(
         private fun toTools(tools: List<ToolSpec>): List<JsonObject> {
             val (deferred, upFront) = tools.partition { it is FunctionToolSpec && it.deferLoading }
             val searching = deferred.isNotEmpty() && takes.toolSearch
+            // A search of the application is the search, and Anthropic's own would be a second one
+            val ownSearch = ClientToolSearch(tools).spec == null
 
             if (deferred.isNotEmpty() && !searching) {
                 val names = deferred.joinToString { it.name }
@@ -160,7 +163,8 @@ internal class AnthropicRequestMapper(
             val sent = (if (searching) upFront + deferred else tools).mapNotNull { toTool(it) }
             warnBeyondStrictBudget()
 
-            return if (searching) sent + Json.obj("type" to TOOL_SEARCH_TYPE, "name" to TOOL_SEARCH_NAME) else sent
+            return if (searching && ownSearch) sent + Json.obj("type" to TOOL_SEARCH_TYPE, "name" to TOOL_SEARCH_NAME)
+            else sent
         }
 
         private val beyondStrictBudget = mutableListOf<String>()
@@ -467,9 +471,16 @@ internal class AnthropicRequestMapper(
          * One mark for each part the application asked to cache. The ones of the system prompt and the conversation
          * go on in [AnthropicConversation], and a missing tool list is simply nothing to mark. A cut somewhere
          * precise is marked on the part instead, and travels in its metadata.
+         *
+         * The mark of the tools goes on the last one that is not deferred: Anthropic answers 400 to a deferred tool
+         * with a mark, and leaves the deferred ones out of the prefix it caches anyway.
          */
         private fun applyCache(body: JsonObject, cache: AnthropicCache, conversation: AnthropicConversation) {
-            if (cache.tools) body["tools"]?.asArray()?.lastOrNull()?.asObject()?.set("cache_control", markOf(cache))
+            if (cache.tools) {
+                body["tools"]?.asArray()?.mapNotNull { it.asObject() }
+                    ?.lastOrNull { it["defer_loading"]?.asBoolean() != true }
+                    ?.set("cache_control", markOf(cache))
+            }
 
             conversation.markCache(body)
         }

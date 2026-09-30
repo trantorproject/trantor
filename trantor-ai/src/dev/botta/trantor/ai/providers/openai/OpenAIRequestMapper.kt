@@ -13,6 +13,7 @@ import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.providers.RawOptions
 import dev.botta.trantor.ai.schemas.StrictSchema
 import dev.botta.trantor.ai.tools.*
+import dev.botta.trantor.ai.tools.search.ClientToolSearch
 
 /**
  * Turns a [ChatRequest] into the body of a call to the OpenAI Responses API.
@@ -31,10 +32,18 @@ internal class OpenAIRequestMapper(
     private val catalog: ModelCatalog = ModelCatalog().addOpenAIModels(),
 ) {
     fun map(modelId: String, request: ChatRequest, stream: Boolean = false) =
-        Mapping(catalog.find(OPENAI_PROVIDER, modelId), modelId).map(modelId, request, stream)
+        Mapping(catalog.find(OPENAI_PROVIDER, modelId), modelId, ClientToolSearch(request.tools))
+            .map(modelId, request, stream)
 
-    /** [spec] is null when the provider has no latest set either, and then nothing here holds anything back. */
-    private inner class Mapping(private val spec: ModelSpec?, private val modelId: String) {
+    /**
+     * [spec] is null when the provider has no latest set either, and then nothing here holds anything back. [search]
+     * is the search of the application among the tools of the request, which the model asks the client to run.
+     */
+    private inner class Mapping(
+        private val spec: ModelSpec?,
+        private val modelId: String,
+        private val search: ClientToolSearch,
+    ) {
         private val warnings = mutableListOf<ModelWarning>()
         private val model: ModelCapabilities? = spec?.capabilities
 
@@ -250,13 +259,15 @@ internal class OpenAIRequestMapper(
             if (strict) StrictSchema.of(schema, OpenAIStrictRules) else schema
 
         /**
-         * The tools as OpenAI takes them. On a model that searches, a deferred one goes with `defer_loading` and its
-         * tool search after them all; any other model gets them all up front, with a warning.
+         * The tools as OpenAI takes them. On a model that searches, a deferred one goes with `defer_loading` and a
+         * tool search after them all: the search of the application, run by the client, when the request has one,
+         * and OpenAI's own otherwise. Any other model gets them all up front, with a warning.
          */
         private fun toTools(tools: List<ToolSpec>): List<JsonObject> {
-            val sent = tools.mapNotNull { toTool(it) }
+            val clientSearch = searchesTools && search.spec != null
+            val sent = tools.mapNotNull { if (clientSearch && it == search.spec) null else toTool(it) }
             val deferred = tools.filter { it is FunctionToolSpec && it.deferLoading }
-            if (deferred.isEmpty()) return sent
+            if (deferred.isEmpty() && !clientSearch) return sent
 
             if (!searchesTools) {
                 val names = deferred.joinToString { it.name }
@@ -264,8 +275,23 @@ internal class OpenAIRequestMapper(
                 return sent
             }
 
-            return sent + Json.obj("type" to TOOL_SEARCH_TYPE)
+            return listOfNotNull(search.spec?.takeIf { clientSearch }?.let { toClientSearch(it) }) + sent +
+                listOfNotNull(Json.obj("type" to TOOL_SEARCH_TYPE).takeUnless { clientSearch })
         }
+
+        /**
+         * The search of the application as a tool search the client runs: *"Configure `tool_search` with `execution:
+         * "client"` ... `description` explains the search purpose, and `parameters` defines the arguments"*
+         * (tools-tool-search, read on 2026-09-30). The model then sees none of the deferred tools until the search
+         * answers with their definitions (see [toToolResultItem]), which is what makes it save on OpenAI: its hosted
+         * search still shows the name and description of each.
+         */
+        private fun toClientSearch(spec: FunctionToolSpec) = Json.obj(
+            "type" to TOOL_SEARCH_TYPE,
+            "execution" to CLIENT_EXECUTION,
+            "description" to spec.description,
+            "parameters" to schemaFor(spec.parameters, strict = true),
+        )
 
         private fun toTool(tool: ToolSpec) = when (tool) {
             is FunctionToolSpec -> Json.obj(
@@ -363,14 +389,31 @@ internal class OpenAIRequestMapper(
         private fun textType(role: String) = if (role == "assistant") "output_text" else "input_text"
 
         // Arguments and output travel as strings, not as objects
-        private fun toToolCallItem(part: ToolCallPart) = Json.obj(
+        private fun toToolCallItem(part: ToolCallPart) = if (isClientSearch(part.toolName)) Json.obj(
+            "type" to "tool_search_call",
+            "execution" to CLIENT_EXECUTION,
+            "call_id" to part.callId,
+            "arguments" to part.input,
+        ) else Json.obj(
             "type" to "function_call",
             "call_id" to part.callId,
             "name" to part.toolName,
             "arguments" to part.input.toString(),
         ).apply { part.metadata[OPENAI_PROVIDER]?.get("namespace")?.let { this["namespace"] = it } }
 
-        private fun toToolResultItem(part: ToolResultPart) = Json.obj(
+        /** Whether a call to [toolName] is the tool search the model asked the client for (see [toClientSearch]). */
+        private fun isClientSearch(toolName: String) = searchesTools && search.isSearch(toolName)
+
+        /**
+         * What the search of the application found goes back as the definitions of those tools, which OpenAI loads:
+         * *"The `tools` array contains full function definitions"*, with the same `call_id` as the search.
+         */
+        private fun toToolResultItem(part: ToolResultPart) = if (isClientSearch(part.toolName)) Json.obj(
+            "type" to "tool_search_output",
+            "execution" to CLIENT_EXECUTION,
+            "call_id" to part.callId,
+            "tools" to Json.array(search.found(part).mapNotNull { toTool(it) }),
+        ) else Json.obj(
             "type" to "function_call_output",
             "call_id" to part.callId,
             "output" to when (val output = part.output) {
@@ -397,5 +440,6 @@ internal data class MappedRequest(val body: JsonObject, val warnings: List<Model
 
 private const val ENCRYPTED_REASONING = "reasoning.encrypted_content"
 private const val TOOL_SEARCH_TYPE = "tool_search"
+private const val CLIENT_EXECUTION = "client"
 
 private const val NO_EFFORT = "none"

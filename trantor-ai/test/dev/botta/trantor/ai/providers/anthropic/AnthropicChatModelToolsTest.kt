@@ -3,6 +3,7 @@
 package dev.botta.trantor.ai.providers.anthropic
 
 import dev.botta.json.Json
+import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.*
@@ -174,6 +175,88 @@ class AnthropicChatModelToolsTest {
 
             return FunctionToolSpec(name, "A tool", Json.obj("type" to "object", "properties" to properties))
         }
+    }
+
+    @Nested
+    inner class `a search of the application` {
+        @Test
+        fun `goes as a tool up front, and the tool search of Anthropic does not`() {
+            generate(ChatRequest(listOf(Message.user("Hola")), tools = listOf(deferredWeather, searchTool)))
+
+            assertThat(sentBody()["tools"]!!.asArray()!!.map { it.asObject()!!["name"]?.asString() })
+                .containsExactly("search_tools", "getWeather")
+            assertThat(sentTool(1)["defer_loading"]?.asBoolean()).isTrue()
+        }
+
+        @Test
+        fun `and what it found goes back as references to the tools, which Anthropic loads`() {
+            val found = Json.obj("tools" to Json.array(Json.obj("name" to "getWeather", "description" to "")))
+
+            generate(searchedFor(found))
+
+            assertThat(sentBlock(0, message = 2)["content"].toString())
+                .isEqualTo("""[{"type":"tool_reference","tool_name":"getWeather"}]""")
+        }
+
+        @Test
+        fun `a search that found nothing goes back as it was written, with the names to search again with`() {
+            val answer = Json.obj("tools" to Json.array(), "names" to Json.array("getWeather"))
+
+            generate(searchedFor(answer))
+
+            assertThat(sentBlock(0, message = 2)["content"]?.asString()).isEqualTo(answer.toString())
+        }
+
+        @Test
+        fun `a tool the request does not have is left out, since Anthropic refuses a reference it cannot load`() {
+            val names = listOf("gone", "getWeather").map { Json.obj("name" to it) }
+
+            generate(searchedFor(Json.obj("tools" to Json.array(names))))
+
+            assertThat(sentBlock(0, message = 2)["content"].toString())
+                .isEqualTo("""[{"type":"tool_reference","tool_name":"getWeather"}]""")
+        }
+
+        @Test
+        fun `a search that failed goes back as the failure it was`() {
+            val failed = Json.obj("tools" to Json.array(Json.obj("name" to "getWeather")))
+
+            generate(searchedFor(failed, isError = true))
+
+            assertThat(sentBlock(0, message = 2)["content"]?.asString()).isEqualTo(failed.toString())
+            assertThat(sentBlock(0, message = 2)["is_error"]?.asBoolean()).isTrue()
+        }
+
+        @Test
+        fun `on a model that does not search tools, what it found goes back as it was written`() {
+            val answer = Json.obj("tools" to Json.array(Json.obj("name" to "getWeather")))
+            val model = AnthropicChatModel("claude-sonnet-4", AnthropicConfig(apiKey = "sk-ant-test"), httpClient)
+
+            model.generate(searchedFor(answer))
+
+            assertThat(sentBlock(0, message = 2)["content"]?.asString()).isEqualTo(answer.toString())
+        }
+
+        private fun searchedFor(answer: JsonObject, isError: Boolean = false) = ChatRequest(
+            messages = listOf(
+                Message.user("Llueve?"),
+                Message.Assistant(listOf(ToolCallPart("toolu_1", "search_tools", Json.obj("query" to "clima")))),
+                Message.toolResult(ToolResultPart("toolu_1", "search_tools", ToolOutput.Json(answer), isError)),
+            ),
+            tools = listOf(searchTool, deferredWeather),
+        )
+
+        private val deferredWeather = weatherTool.copy(deferLoading = true)
+
+        private val searchTool = FunctionToolSpec(
+            name = "search_tools",
+            description = "Searches the tools",
+            parameters = Json.obj(
+                "type" to "object",
+                "properties" to Json.obj("query" to Json.obj("type" to "string")),
+            ),
+            searchesTools = true,
+        )
     }
 
     @Nested

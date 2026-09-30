@@ -287,42 +287,62 @@ A catalog of tens of tools costs the tokens of all of them on every call, and a 
 stays for the ones it always needs. Whether a tool is searched depends on the run, not on the tool, so any tool can
 be one, those of an MCP server included.
 
-- **Where the provider searches, it does.** Claude from Haiku, Sonnet and Opus 4.5 on (Sonnet 5 is not on
-  Anthropic's list) and GPT from 5.4 on: the tools go deferred, the provider finds the ones the model needs and loads
-  them, and the model calls them in the same answer. The catalog says which model does (`ModelFeatures.ToolSearch`),
-  and a model it does not know is taken not to, since a model that does not search answers 400.
-- **Elsewhere, the loop searches.** The model gets one more tool, `search_tools(query)`, which looks for the words of
-  the query in the name, the description and the args of the searchable tools and answers up to five, with their
-  name and description. The ones it found are told to the model from the next step on. A search that finds nothing
-  answers the names of all of them (up to a hundred), so the model can search again with their words: a model asked
-  in Spanish searches Spanish words, and the tools may be named in English.
-- **What was found lives in the conversation**: the results of `search_tools`, or the blocks of the provider's
+- **The model searches with `search_tools(query)`**, a tool of Trantor that looks for the words of the query in the
+  name, the description and the args of the searchable tools, and answers up to five with their name and description.
+  A search that finds nothing answers the names of all of them (up to a hundred), so the model can search again with
+  their words: a model asked in Spanish searches Spanish words, and the tools may be named in English.
+- **Where the provider can load tools, it loads what the search found.** Claude from Haiku, Sonnet and Opus 4.5 on
+  (Sonnet 5 is not on Anthropic's list) and GPT from 5.4 on: the searchable tools go deferred, the model sees none of
+  them until a search finds them, and the provider loads those — from references to them on Anthropic, from their
+  definitions on OpenAI — without the cached prefix changing. The catalog says which model can
+  (`ModelFeatures.ToolSearch`), and a model it does not know is taken not to, since one that cannot answers 400.
+- **Elsewhere, the loop tells the model about what was found** from the next step on, like any other tool, which
+  breaks the cache from there.
+- **What was found lives in the conversation**: the results of `search_tools`, or the blocks of the provider's own
   search, stay in the history like any other part, so a `Session` keeps them and a later turn has those tools
   without searching again. After a [compaction](#compacting-the-old-part) the model searches again.
 - **A searchable tool is still a tool of the run**: one with the name of another fails the run with
   `DuplicateToolError` before the model is called, even if it would never be found.
 
-What it saves depends on who searches. A catalog of 47 small tools, one question, the input tokens of the whole run:
+**Another search** is given with `toolSearcher(...)`, in `ai.generate` and in an agent: a `ToolSearcher` takes the
+query and the specs of the searchable tools and answers the ones that fit, best first — with embeddings, a search
+engine of the application, anything. What it finds is loaded by the provider, or told by the loop, as above.
 
-| | all up front | searchable |
-|---|---|---|
-| Claude Sonnet 4.5, searched by Anthropic | 9,939 | 2,704 |
-| GPT-5.4, searched by OpenAI | 4,335 | 4,185 |
-| GPT-4.1 mini, searched by the loop | 4,316 | 1,450 |
+```kotlin
+class EmbeddingToolSearcher(private val embeddings: ToolEmbeddings): ToolSearcher {
+    override fun search(query: String, tools: List<FunctionToolSpec>) = embeddings.nearest(query, tools, limit = 5)
+}
 
-- **Anthropic** leaves the deferred tools out of the prompt, and what its search loads is added in the conversation,
-  so the cached prefix does not change. That prefix is now small — the tools up front and the search — and may be
-  below the minimum Anthropic caches.
-- **OpenAI** still shows the model the name and description of every deferred tool: *"in practice tool search is
-  mostly deferring the parameter schema"*. With the large schemas of many MCP servers that is most of it; with small
-  ones it is little. OpenAI saves more with tools grouped in namespaces, which Trantor does not have yet.
-- **The loop's own search** saves the most, at the cost of a step per search, and adds what it found to the tools of
-  the next step, which breaks the cache from there on.
+val support = Agent("support")
+    .searchableTools(*storeTools.toTypedArray())
+    .toolSearcher(EmbeddingToolSearcher(toolEmbeddings))
+    .build()
+```
 
-**The search is only as good as the words.** Both the loop's search and Anthropic's (BM25) match words, and the model
-searches with the words of the question. A searchable tool wants a name and a description with the words a user
-would say, and the instructions should say what kinds of tools there are to search, as Anthropic recommends: in one
-recording Claude searched only Spanish words for tools described in English, found nothing and gave up.
+**The provider's own search** is `toolSearcher(ProviderToolSearcher)`: the BM25 tool search of Anthropic and the
+hosted `tool_search` of OpenAI, where the model has one, and the search by words elsewhere. They search and call in
+the same answer, a step less, but what they find is theirs to decide, and they are not the default because of what
+they save and what they miss. A catalog of 47 small tools, one question, the input tokens of the whole run:
+
+| | all up front | searched by Trantor | searched by the provider |
+|---|---|---|---|
+| Claude Sonnet 4.5 | 9,939 | 2,445 | 2,704, and gave up in other runs |
+| Claude Sonnet 5.5 | 11,952 | 4,645 | 4,269 |
+| GPT-5.4 | 4,335 | 1,310 | 4,185 |
+| GPT-4.1 mini, which cannot load tools | 4,316 | 1,450 | — |
+
+- **OpenAI's own search still shows the model the name and description of every deferred tool**: *"in practice tool
+  search is mostly deferring the parameter schema"*. With the large schemas of many MCP servers that is most of it;
+  with small ones it is little. A search of Trantor is run by the client, and there the model sees no deferred tool
+  until the search answers.
+- **Anthropic's own search matches words, as Trantor's does**, but a search that finds nothing answers nothing: in
+  some runs Claude searched only Spanish words for tools described in English, found nothing and gave up.
+- **A search of Trantor costs a step**, since what it found goes back as the result of a tool before the model can
+  call it.
+
+**The search is only as good as the words.** The model searches with the words of the question. A searchable tool
+wants a name and a description with the words a user would say, and the instructions should say what kinds of tools
+there are to search, as Anthropic recommends.
 
 ### When a tool fails
 
@@ -1050,7 +1070,7 @@ changes the conversation is paid for again.
 | OpenAI | a system message at the end of the input |
 | Anthropic, a model that takes a system message in the middle | a `role: "system"` message after the conversation |
 | Anthropic, a model that does not | a second block under the system prompt, after the mark of the system cache |
-| Anthropic, a model that ties its thinking to the conversation (Opus 5.5, Fable 5.1) | a system message after the conversation that lasts one turn, with the earlier ones put back where they were (see [Thinking tied to the conversation](#thinking-tied-to-the-conversation)) |
+| Anthropic, a model that ties its thinking to the conversation (Opus 5.5, Sonnet 5.5, Fable 5.1) | a system message after the conversation that lasts one turn, with the earlier ones put back where they were (see [Thinking tied to the conversation](#thinking-tied-to-the-conversation)) |
 
 It is not a message of the conversation: it never shows up in `newMessages`, and a run sends it again on
 every step. The facade has it as `dynamicSystem(...)`.
@@ -1147,12 +1167,14 @@ closed exactly the way structured output closes it. Where the model has no gramm
 goes, without the guarantee and with a warning: half a tool beats no tool.
 
 **`deferLoading = true`** asks a provider that searches tools (`ChatModel.searchesTools`) to load the tool only when
-the model finds it. The adapter adds the provider's search tool and sends back what it searched, as it came; on a
-model that does not search the tool goes up front, with a warning. The tool loop sets it for the [searchable
-tools](#tool-search).
+the model finds it; on a model that does not search the tool goes up front, with a warning. Who finds it is the
+provider's own search, which the adapter adds and whose blocks it sends back as they came, unless one tool is
+**`searchesTools = true`**: the search of the application, which the adapter sends as a search the client runs, and
+whose answer — the JSON of `search_tools`, `{"tools": [{"name": ...}]}` — it turns into what the provider loads the
+tools from. The tool loop sets both for the [searchable tools](#tool-search).
 
-**Being told to call one is not something every model takes.** Claude Opus 5.5, Fable 5.1 and Mythos 5.1
-answer 400 to a forced call, and any Claude refuses it while it is thinking to a budget — the second capability that
+**Being told to call one is not something every model takes.** Claude Opus 5.5, Sonnet 5.5, Fable 5.1 and Mythos
+5.1 answer 400 to a forced call, and any Claude refuses it while it is thinking to a budget — the second capability that
 is not a property of the model but of two settings meeting. Either way the choice goes back to `auto`,
 which is the default anyway, and the warning says which of the two it was.
 
@@ -1312,11 +1334,12 @@ nobody filled it in. With that, an adapter does **three** things rather than one
 
 Some capabilities are not a property of the model but of two settings meeting. The GPT-5.x families
 refuse the sampling settings **while they are reasoning**, and take them again once they are told not to
-reason at all; GPT-6 Astra cannot be told that, so for it the refusal is flat. GPT-6 Sol and Luna can be
-told not to reason, but nothing says they take a `temperature` then, so they are kept without one.
+reason at all; GPT-6 Astra and GPT-6.1 Sol cannot be told that, so for them the refusal is flat. GPT-6 Sol and
+Luna can be told not to reason, but nothing says they take a `temperature` then, so they are kept without one.
 
-Being told not to reason is itself something a model can refuse: GPT-6 Astra answers 400 to an effort of
-`none`, and Claude Opus 5.5, Fable and Mythos always think and answer 400 to thinking disabled. There
+Being told not to reason is itself something a model can refuse: GPT-6 Astra and GPT-6.1 Sol answer 400 to an
+effort of `none`, and Claude Opus 5.5, Sonnet 5.5, Fable and Mythos always think and answer 400 to thinking
+disabled. There
 `Reasoning.Off` is not sent, and the warning says that a lower effort is how they think less.
 
 Anthropic has one of its own: every Claude refuses a forced tool call while it is thinking to a budget,
@@ -1720,8 +1743,8 @@ used.
 
 **The system prompt** is a field, so the first one goes there wherever it was written. The rest stay
 where they were, as `role: "system"` messages, on the models that take one in the middle of the
-conversation — Opus 4.8, 5 and 5.5, Fable and Mythos 5 and 5.1 — which keeps the cached prefix intact. On the
-others they are joined into the field, with a warning. The catalog says which is which, so there is
+conversation — Opus 4.8, 5 and 5.5, Sonnet 5.5, Fable and Mythos 5 and 5.1 — which keeps the cached prefix intact. On
+the others they are joined into the field, with a warning. The catalog says which is which, so there is
 nothing to configure. The `dynamicSystem` of a request goes by the same rule: last, as a system message,
 where the model takes it, and as a second block under the system prompt where it does not (see [What
 changes goes last](#what-changes-goes-last)).
@@ -1733,7 +1756,7 @@ same. Each flag puts a mark in a different place, and they add up:
 | flag | where the mark goes | pays off when |
 |---|---|---|
 | `system` | at the end of the system prompt, before the `dynamicSystem` when it goes under it | the same long system prompt comes before a new question every time |
-| `tools` | on the last tool | the tools stay the same and the system prompt does not |
+| `tools` | on the last tool that is not deferred | the tools stay the same and the system prompt does not |
 | `conversation` | Anthropic's own mark, on the last block, moving forward as the conversation grows; on the block before the `dynamicSystem` when that one goes last | each call repeats the one before and adds a turn |
 
 ```kotlin
@@ -1796,7 +1819,7 @@ This is the strangest rule of the whole API, and nothing an application has to d
 does it. It is written down because it shapes everything that touches a conversation, and because it
 fails in a way that is hard to trace back.
 
-**What Anthropic does.** On Claude Opus 5.5 and Fable 5.1, each thinking block the model returns is tied
+**What Anthropic does.** On Claude Opus 5.5, Sonnet 5.5 and Fable 5.1, each thinking block the model returns is tied
 to everything that came before it when it was produced: the system prompt, the tools and every earlier
 message. When the block goes back in a later call — the next step of a run, or the next turn of a chat —
 the API checks that all of that is still exactly the same, and answers 400 when it is not:

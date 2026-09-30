@@ -7,6 +7,8 @@ import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
+import dev.botta.trantor.ai.tools.search.ProviderToolSearcher
+import dev.botta.trantor.ai.tools.search.ToolSearcher
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -87,11 +89,27 @@ class ToolLoopSearchTest {
     }
 
     @Test
-    fun `on a model whose provider searches, the tools to search for are told deferred, with no search of ours`() {
+    fun `on a model that searches, the search of Trantor goes as its search, and the provider loads what it finds`() {
         model.searchesTools = true
         model.answers(listOf(TextPart("Hola")))
 
         loop().run(ChatRequest("Hola"))
+
+        val told = model.requests[0].tools.map { it as FunctionToolSpec }
+        assertThat(told.map { Triple(it.name, it.deferLoading, it.searchesTools) }).containsExactly(
+            Triple("getTime", false, false),
+            Triple("search_tools", false, true),
+            Triple("getWeather", true, false),
+            Triple("refund", true, false),
+        )
+    }
+
+    @Test
+    fun `asked for the provider's own search, the tools to search for are told deferred, with no search of ours`() {
+        model.searchesTools = true
+        model.answers(listOf(TextPart("Hola")))
+
+        loop(ProviderToolSearcher).run(ChatRequest("Hola"))
 
         val told = model.requests[0].tools.map { it as FunctionToolSpec }
         assertThat(told.map { it.name to it.deferLoading })
@@ -103,12 +121,63 @@ class ToolLoopSearchTest {
         model.searchesTools = true
         model.answers(listOf(weatherCall), listOf(TextPart("Llueve")))
 
-        loop().run(ChatRequest("Llueve?"))
+        loop(ProviderToolSearcher).run(ChatRequest("Llueve?"))
 
         assertThat(weather.cities).containsExactly("Bariloche")
     }
 
-    private fun loop() = ToolLoop(model, listOf(time), searchableTools = listOf(weather, refund))
+    @Test
+    fun `on a model that does not search, asking for the provider's own search is the search by words`() {
+        model.answers(listOf(search("weather")), listOf(TextPart("Listo")))
+
+        val result = loop(ProviderToolSearcher).run(ChatRequest("Llueve?"))
+
+        val found = (result.steps[0].toolResults.single().output as ToolOutput.Json).value.asObject()!!
+        assertThat(found["tools"]?.asArray()?.map { it.asObject()?.get("name")?.asString() })
+            .containsExactly("getWeather")
+    }
+
+    @Test
+    fun `a searcher of the application is the one that searches`() {
+        model.answers(listOf(search("clima")), listOf(TextPart("Listo")))
+
+        val result = loop(searcher).run(ChatRequest("Llueve?"))
+
+        assertThat(searcher.queries).containsExactly("clima")
+        val found = (result.steps[0].toolResults.single().output as ToolOutput.Json).value.asObject()!!
+        assertThat(found["tools"]?.asArray()?.map { it.asObject()?.get("name")?.asString() })
+            .containsExactly("refund")
+    }
+
+    @Test
+    fun `on a model that searches, a searcher of the application goes as its search, with the tools deferred`() {
+        model.searchesTools = true
+        model.answers(listOf(TextPart("Hola")))
+
+        loop(searcher).run(ChatRequest("Hola"))
+
+        val told = model.requests[0].tools.map { it as FunctionToolSpec }
+        assertThat(told.map { Triple(it.name, it.deferLoading, it.searchesTools) }).containsExactly(
+            Triple("getTime", false, false),
+            Triple("search_tools", false, true),
+            Triple("getWeather", true, false),
+            Triple("refund", true, false),
+        )
+    }
+
+    @Test
+    fun `and a tool it found runs when the model calls it, since the provider loads it`() {
+        model.searchesTools = true
+        model.answers(listOf(search("clima")), listOf(weatherCall), listOf(TextPart("Llueve")))
+
+        loop(searcher).run(ChatRequest("Llueve?"))
+
+        assertThat(searcher.queries).containsExactly("clima")
+        assertThat(weather.cities).containsExactly("Bariloche")
+    }
+
+    private fun loop(searcher: ToolSearcher? = null) =
+        ToolLoop(model, listOf(time), searchableTools = listOf(weather, refund), toolSearcher = searcher)
 
     private fun search(query: String) = ToolCallPart("call_s", "search_tools", Json.obj("query" to query))
 
@@ -118,6 +187,17 @@ class ToolLoopSearchTest {
     private val time = TimeTool()
     private val weather = WeatherTool()
     private val refund = RefundTool()
+    private val searcher = FakeSearcher()
+
+    /** A search of the application, which finds the refund whatever it is asked. */
+    class FakeSearcher: ToolSearcher {
+        val queries = mutableListOf<String>()
+
+        override fun search(query: String, tools: List<FunctionToolSpec>): List<FunctionToolSpec> {
+            queries.add(query)
+            return tools.filter { it.name == "refund" }
+        }
+    }
 
     class TimeTool: Tool<TimeTool.Args>() {
         override val name = "getTime"

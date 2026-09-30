@@ -8,6 +8,7 @@ import dev.botta.trantor.ai.models.chat.ChatSettings
 import dev.botta.trantor.ai.providers.ProviderOption
 import dev.botta.trantor.ai.tools.Tool
 import kotlin.reflect.KClass
+import dev.botta.trantor.ai.tools.search.ToolSearcher
 
 /**
  * A model with a role: its instructions, its tools, the agents it can hand the conversation over to and how it
@@ -35,6 +36,8 @@ class Agent internal constructor(
     val tools: List<Tool<*>>,
     /** The tools it searches for instead of being told about them up front. */
     val searchableTools: List<Tool<*>>,
+    /** How [searchableTools] are searched, by their words when null; see [ToolSearcher]. */
+    val toolSearcher: ToolSearcher?,
     /** The agents it can hand the conversation over to, by name. */
     val handoffs: List<String>,
     private val chatSettings: ChatSettings,

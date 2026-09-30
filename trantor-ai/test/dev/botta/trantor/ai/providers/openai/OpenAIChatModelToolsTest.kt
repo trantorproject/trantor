@@ -190,14 +190,88 @@ class OpenAIChatModelToolsTest {
     fun `sends back the namespace OpenAI gave the call of a tool it found, which it needs to match it`() {
         httpClient.body = fixture("tool-search-1")
         val searching = OpenAIChatModel("gpt-5.4", OpenAIConfig(apiKey = "sk-test"), httpClient)
-        val answer = searching.generate(requestWith(weatherTool.copy(deferLoading = true)))
+        val request = requestWith(weatherTool.copy(deferLoading = true))
+        val answer = searching.generate(request)
 
-        searching.generate(requestWith(weatherTool.copy(deferLoading = true)).copy(messages = listOf(answer.asMessage())))
+        searching.generate(request.copy(messages = listOf(answer.asMessage())))
 
         val call = sentBody()["input"]!!.asArray()!!.map { it.asObject()!! }
             .single { it["type"]?.asString() == "function_call" }
         assertThat(call["namespace"]?.asString()).isEqualTo("getWeather")
     }
+
+    @Test
+    fun `a search of the application goes as a tool search the client runs, in place of the hosted one`() {
+        httpClient.body = fixture("tool-call")
+
+        searchingModel.generate(searchRequest)
+
+        val tools = sentBody()["tools"]!!.asArray()!!.map { it.asObject()!! }
+        assertThat(tools.map { it["type"]?.asString() }).containsExactly("tool_search", "function")
+        assertThat(tools[0]["execution"]?.asString()).isEqualTo("client")
+        assertThat(tools[0]["description"]?.asString()).isEqualTo("Searches the tools")
+        assertThat(tools[0]["parameters"]?.asObject()?.get("required").toString()).isEqualTo("""["query"]""")
+    }
+
+    @Test
+    fun `and the tool search the model asks the client for is a call to the search of the application`() {
+        httpClient.body = fixture("tool-search-client-1")
+
+        val response = searchingModel.generate(searchRequest)
+
+        val call = response.toolCalls.single()
+        assertThat(call.toolName).isEqualTo("search_tools")
+        assertThat(call.callId).isEqualTo("call_4XeRHbGhiHND56661lPct5pE")
+        assertThat(call.input["query"]?.asString()).startsWith("weather current temperature")
+        assertThat(response.finishReason).isEqualTo(FinishReasons.ToolCalls)
+    }
+
+    @Test
+    fun `which goes back as the tool search it was, and its result as the definitions of the tools it found`() {
+        httpClient.body = fixture("tool-search-client-1")
+        val call = searchingModel.generate(searchRequest).toolCalls.single()
+        val found = Json.obj("tools" to Json.array(Json.obj("name" to "getWeather", "description" to "")))
+        val result = ToolResultPart(call.callId, call.toolName, ToolOutput.Json(found))
+
+        searchingModel.generate(
+            searchRequest.copy(messages = searchRequest.messages + call.asAssistant() + Message.toolResult(result)),
+        )
+
+        val input = sentBody()["input"]!!.asArray()!!.map { it.asObject()!! }
+        assertThat(input[1]["type"]?.asString()).isEqualTo("tool_search_call")
+        assertThat(input[1]["execution"]?.asString()).isEqualTo("client")
+        assertThat(input[1]["call_id"]?.asString()).isEqualTo(call.callId)
+        assertThat(input[1]["arguments"]).isEqualTo(call.input)
+        assertThat(input[2]["type"]?.asString()).isEqualTo("tool_search_output")
+        assertThat(input[2]["execution"]?.asString()).isEqualTo("client")
+        assertThat(input[2]["call_id"]?.asString()).isEqualTo(call.callId)
+        val loaded = input[2]["tools"]!!.asArray()!!.map { it.asObject()!! }
+        assertThat(loaded.map { it["name"]?.asString() }).containsExactly("getWeather")
+        assertThat(loaded.single()["parameters"]?.asObject()?.get("properties")?.asObject()?.keys)
+            .containsExactly("city")
+    }
+
+    private fun ToolCallPart.asAssistant() = Message.Assistant(listOf(this))
+
+    private val searchRequest by lazy {
+        ChatRequest(
+            messages = listOf(Message.user("Que temperatura hay en Bariloche?")),
+            tools = listOf(
+                FunctionToolSpec(
+                    name = "search_tools",
+                    description = "Searches the tools",
+                    parameters = Json.obj(
+                        "type" to "object",
+                        "properties" to Json.obj("query" to Json.obj("type" to "string")),
+                    ),
+                    searchesTools = true,
+                ),
+                weatherTool.copy(deferLoading = true),
+            ),
+        )
+    }
+
+    private val searchingModel by lazy { OpenAIChatModel("gpt-5.4", OpenAIConfig(apiKey = "sk-test"), httpClient) }
 
     private fun requestWith(tool: ToolSpec, choice: ToolChoice = ToolChoice.Auto) = ChatRequest(
         messages = listOf(Message.user("Que temperatura hay en Bariloche?")),

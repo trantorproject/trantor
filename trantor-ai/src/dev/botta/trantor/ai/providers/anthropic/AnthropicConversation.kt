@@ -1,11 +1,13 @@
 package dev.botta.trantor.ai.providers.anthropic
 
 import dev.botta.json.Json
+import dev.botta.json.values.JsonArray
 import dev.botta.json.values.JsonObject
 import dev.botta.json.values.JsonValue
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.tools.ToolOutput
+import dev.botta.trantor.ai.tools.search.ClientToolSearch
 
 /**
  * The conversation of a request to the Messages API: the `system` field, the `messages` and the mark of the
@@ -24,6 +26,8 @@ internal class AnthropicConversation(
     private val warnings: MappingWarnings,
     private val cache: AnthropicCache,
     private val modelId: String,
+    /** The search of the application among the tools of the request, whose answers go back as tool references. */
+    private val search: ClientToolSearch = ClientToolSearch(emptyList()),
 ) {
     private val placement = when {
         takes.boundThinking -> LastForOneTurn
@@ -235,21 +239,36 @@ internal class AnthropicConversation(
 
     /**
      * A result has no room for the name of the tool: Anthropic matches it to its call by id alone. The output goes
-     * as a string, which is the form every model takes.
+     * as a string, which is the form every model takes; what the search of the application found goes as references
+     * to the tools, which Anthropic loads (see [toolReferences]).
      */
     private fun toToolResultBlock(part: ToolResultPart): JsonObject {
         val json = Json.obj(
             "type" to "tool_result",
             "tool_use_id" to part.callId,
-            "content" to when (val output = part.output) {
-                is ToolOutput.Text -> output.value
-                is ToolOutput.Json -> output.value.toString()
-            },
+            "content" to (toolReferences(part) ?: when (val output = part.output) {
+                is ToolOutput.Text -> Json.value(output.value)
+                is ToolOutput.Json -> Json.value(output.value.toString())
+            }),
         )
 
         if (part.isError) json["is_error"] = true
 
         return json
+    }
+
+    /**
+     * What the search of the application found, as the tool references of a custom tool search: *"return a standard
+     * tool_result with tool_reference blocks"* (tool-search-tool, "Custom tool search implementation", read on
+     * 2026-09-30). Only on a model that searches tools, and only when it found something: an answer that found nothing
+     * goes as it was written, with the names of the tools to search again with.
+     */
+    private fun toolReferences(part: ToolResultPart): JsonArray? {
+        if (!takes.toolSearch || !search.isSearch(part.toolName)) return null
+
+        val found = search.found(part).ifEmpty { return null }
+
+        return Json.array(found.map { Json.obj("type" to "tool_reference", "tool_name" to it.name) })
     }
 
     private fun foreignReasoning(): JsonObject? {
@@ -302,7 +321,7 @@ private object Last: DynamicPlacement {
 }
 
 /**
- * On a model that ties its thinking to what came before it, which Opus 5.5 and Fable 5.1 do.
+ * On a model that ties its thinking to what came before it, which Opus 5.5, Sonnet 5.5 and Fable 5.1 do.
  *
  * The dynamic part still goes last, but that moves it on every call: the thinking of an answer was produced with it
  * right before, and on the next call it is not there anymore. Anthropic reads that as a change before the thinking

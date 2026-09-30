@@ -21,6 +21,7 @@ import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.ai.serialization.defaultJsonSerializer
 import kotlin.reflect.KType
 import dev.botta.trantor.ai.serialization.schemaFor
+import dev.botta.trantor.ai.tools.search.ToolSearcher
 
 /**
  * [AI] over the models of the [ModelRegistry], running every generation on the [ToolLoop]. Each step sends what the
@@ -74,7 +75,13 @@ class DefaultAI(
         val policies = request.contextPolicies.toList()
         val next = NextStep { chat, _ ->
             val messages = projected(policies, chat.messages, request.context)
-            StepSetup(model, chat.copy(messages = messages), tools, searchable = searchable)
+            StepSetup(
+                model,
+                chat.copy(messages = messages),
+                tools,
+                searchable = searchable,
+                searcher = request.toolSearcher,
+            )
         }
 
         return ToolLoop(

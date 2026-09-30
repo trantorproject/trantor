@@ -118,6 +118,20 @@ class DefaultAITest {
         }
 
         @Test
+        fun `a search of the application goes to a model that searches as its own search`() {
+            model.searchesTools = true
+
+            ai.generate {
+                user("Que temperatura hay en Bariloche?")
+                searchableTools(weather)
+                toolSearcher { _, tools -> tools }
+            }
+
+            assertThat(model.request?.tools?.map { it.name to (it as FunctionToolSpec).searchesTools })
+                .containsExactly("search_tools" to true, "getWeather" to false)
+        }
+
+        @Test
         fun `stops at the steps it is given`() {
             model.answers(listOf(weatherCall), listOf(weatherCall))
 

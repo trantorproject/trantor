@@ -9,11 +9,16 @@ import dev.botta.trantor.ai.tools.ToolResult
 import dev.botta.trantor.primitives.serialization.Description
 
 /**
- * The tool a model searches the searchable tools of a run with, where it has no tool search of its own. It answers
- * the names and descriptions of the ones found, not their schemas: the loop tells the model about them in the next
- * step, like any other tool, which is why a model cannot call one in the same answer it searched in.
+ * The tool a model searches the searchable tools of a run with, unless the run asks for the provider's own search. It
+ * answers the names and descriptions of the ones [searcher] found, not their schemas: where the provider loads tools,
+ * its adapter turns the answer into what the provider loads them from ([ClientToolSearch]); elsewhere the loop tells
+ * the model about them in the next step, like any other tool. Either way a model calls one in the answer after the
+ * one it searched in.
  */
-internal class SearchToolsTool(private val searchable: List<Tool<*>>): Tool<SearchToolsTool.Args>() {
+internal class SearchToolsTool(
+    private val searchable: List<Tool<*>>,
+    private val searcher: ToolSearcher = KeywordToolSearcher,
+): Tool<SearchToolsTool.Args>() {
     override val name = NAME
     override val description = "Searches the tools you do not see yet, by what they do. Search with the words the " +
         "tools would use, which may be in another language than the conversation. The ones found can be called from " +
@@ -26,7 +31,7 @@ internal class SearchToolsTool(private val searchable: List<Tool<*>>): Tool<Sear
      * gives up; with their names it searches again in their words.
      */
     override fun execute(args: Args, context: ToolContext): ToolResult {
-        val found = ToolSearch(searchable.map { it.spec(context.serializer) }).search(args.query)
+        val found = searcher.search(args.query, searchable.map { it.spec(context.serializer) })
         val tools = found.map { spec ->
             Json.obj("name" to spec.name).apply { spec.description?.let { this["description"] = it } }
         }
@@ -52,8 +57,13 @@ internal class SearchToolsTool(private val searchable: List<Tool<*>>): Tool<Sear
             .filterIsInstance<Message.Tool>()
             .flatMap { it.results.asSequence() }
             .filter { it.toolName == NAME && !it.isError }
-            .mapNotNull { (it.output as? ToolOutput.Json)?.value?.asObject()?.get("tools")?.asArray() }
-            .flatMap { tools -> tools.mapNotNull { it.asObject()?.get("name")?.asString() } }
+            .flatMap { namesIn(it.output) }
             .toSet()
+
+        /** The names of the tools an answer of this tool found, in its order. */
+        fun namesIn(output: ToolOutput): List<String> =
+            (output as? ToolOutput.Json)?.value?.asObject()?.get("tools")?.asArray()
+                ?.mapNotNull { it.asObject()?.get("name")?.asString() }
+                .orEmpty()
     }
 }

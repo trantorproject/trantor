@@ -401,6 +401,7 @@ class AgentRunner(
                 ),
                 tools = agent.tools,
                 searchable = agent.searchableTools,
+                searcher = agent.toolSearcher,
                 outputTool = agent.output?.tool?.name,
                 toolContext = { call -> toolContext(call.callId, call.toolName) },
                 team = team.keys,

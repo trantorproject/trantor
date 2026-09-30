@@ -147,6 +147,18 @@ class AgentRunnerTest {
         }
 
         @Test
+        fun `its own search goes to a model that searches as the model's search`() {
+            model.searchesTools = true
+            model.answers(listOf(TextPart("Hola")))
+            val agent = support().searchableTools(weather).toolSearcher { _, tools -> tools }.build()
+
+            runner.run(agent, Message.user("Hola"))
+
+            assertThat(model.request?.tools?.map { it.name to (it as FunctionToolSpec).searchesTools })
+                .containsExactly("search_tools" to true, "getWeather" to false)
+        }
+
+        @Test
         fun `one that needs an agent says so when it is called without one`() {
             val context = ToolContext("call_1", "assign")
 

@@ -1,0 +1,40 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "id": "msg_011CfZrWWeDN2cCstAyLHvmD",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "Perfecto, encontré la herramienta para consultar el clima. Ahora voy a buscar la temperatura en Bariloche:"
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_016YzhTuieEuYFcjarMgkjaJ",
+      "name": "getWeather",
+      "input": {
+        "city": "Bariloche, Argentina"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    }
+  ],
+  "container": null,
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 839,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 92,
+    "service_tier": "standard",
+    "inference_geo": "not_available"
+  },
+  "diagnostics": null
+}
