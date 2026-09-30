@@ -12,7 +12,6 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.catchThrowableOfType
@@ -424,7 +423,6 @@ class AgentGuardrailsTest {
             return ToolResult.text("7 grados en ${args.city}")
         }
 
-        @Serializable
         data class Args(val city: String)
     }
 }

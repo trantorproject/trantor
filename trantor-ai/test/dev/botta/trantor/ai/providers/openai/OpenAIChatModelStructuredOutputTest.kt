@@ -6,7 +6,6 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeHttpClient
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -48,7 +47,7 @@ class OpenAIChatModelStructuredOutputTest {
         model.generate(ChatRequest(listOf(Message.user("Leé el pedido")), output = output))
 
         assertThat(sentBody().path("text.format.strict")?.asBoolean()).isFalse()
-        // kotlinx leaves a property with a default out of required; strict mode is what puts it in
+        // The serializer leaves a property with a default out of required; strict mode is what puts it in
         assertThat(sentBody().path("text.format.schema.required")?.asArray()?.map { it.asString() })
             .containsExactly("customer", "items")
     }
@@ -111,9 +110,7 @@ class OpenAIChatModelStructuredOutputTest {
     private val httpClient = FakeHttpClient()
     private val model = OpenAIChatModel("gpt-4.1-mini", OpenAIConfig(apiKey = "sk-test"), httpClient)
 
-    @Serializable
     data class Order(val customer: String, val items: List<Item>, val deliverBefore: String? = null)
 
-    @Serializable
     data class Item(val sku: String, val quantity: Int)
 }

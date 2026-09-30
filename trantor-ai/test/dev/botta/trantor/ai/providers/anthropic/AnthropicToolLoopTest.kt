@@ -8,7 +8,6 @@ import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import dev.botta.trantor.serialization.gson.GsonSerializer
@@ -120,7 +119,6 @@ class AnthropicToolLoopTest {
     private val model = AnthropicChatModel("claude-sonnet-4-5", AnthropicConfig(apiKey = "sk-ant-test"), http)
     private val weather = WeatherTool()
 
-    @Serializable
     data class CityWeather(val city: String, val celsius: Int)
 
     /** The tool the recording was made with, answering what it answered then. */
@@ -135,7 +133,6 @@ class AnthropicToolLoopTest {
             return ToolResult.json(Json.obj("celsius" to 7))
         }
 
-        @Serializable
         data class Args(val city: String)
     }
 }

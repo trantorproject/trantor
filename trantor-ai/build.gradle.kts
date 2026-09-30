@@ -1,7 +1,3 @@
-plugins {
-    kotlin("plugin.serialization") version "2.3.10"
-}
-
 dependencies {
     api(project(":trantor-primitives"))
     api(project(":trantor-domain"))
@@ -11,8 +7,6 @@ dependencies {
     implementation(project(":trantor-gson"))
     // To end the processes of the MCP servers with the application
     implementation(project(":trantor-hosting"))
-    api("org.jetbrains.kotlinx:kotlinx-serialization-json")
-    api("org.jetbrains.kotlinx:kotlinx-schema-generator-json")
 }
 
 dependencies {

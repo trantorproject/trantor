@@ -9,7 +9,6 @@ import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolError
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -404,7 +403,6 @@ class McpEndpointTest {
             return ToolResult.text(args.text)
         }
 
-        @Serializable
         data class Args(val text: String)
     }
 
@@ -416,7 +414,6 @@ class McpEndpointTest {
         override fun execute(args: Args, context: ToolContext) =
             ToolResult.json(Json.obj("city" to args.city, "celsius" to 18))
 
-        @Serializable
         data class Args(val city: String)
     }
 
@@ -429,7 +426,6 @@ class McpEndpointTest {
             return ToolResult.text("Refunded")
         }
 
-        @Serializable
         data class Args(val amount: Int)
     }
 
@@ -440,7 +436,6 @@ class McpEndpointTest {
         override fun execute(args: Args, context: ToolContext): ToolResult =
             throw IllegalStateException("the database password is hunter2")
 
-        @Serializable
         class Args
     }
 }

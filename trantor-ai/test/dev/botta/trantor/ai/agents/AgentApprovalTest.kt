@@ -15,7 +15,6 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.ToolOutput
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -313,6 +312,5 @@ class AgentApprovalTest {
     /** What a run that paused on the refund left in its session. */
     private val paused = listOf(question, Message.Assistant(listOf(refundCall), "support"))
 
-    @Serializable
     data class Refund(val amount: Int)
 }

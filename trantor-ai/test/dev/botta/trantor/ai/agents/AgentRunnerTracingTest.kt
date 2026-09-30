@@ -19,7 +19,6 @@ import io.opentelemetry.api.common.AttributeKey.longKey
 import io.opentelemetry.api.common.AttributeKey.stringKey
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.data.SpanData
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -370,7 +369,6 @@ class AgentRunnerTracingTest {
 
         override fun execute(args: Args, context: ToolContext) = ToolResult.text("7 grados")
 
-        @Serializable
         class Args
     }
 
@@ -388,7 +386,6 @@ class AgentRunnerTracingTest {
             return ToolResult.text("Frio en ${args.city}")
         }
 
-        @Serializable
         data class Args(val city: String)
     }
 

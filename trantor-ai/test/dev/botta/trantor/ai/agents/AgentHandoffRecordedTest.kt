@@ -12,7 +12,6 @@ import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -215,7 +214,6 @@ class AgentHandoffRecordedTest {
 
         override fun execute(args: Args, context: ToolContext) = ToolResult.json(Json.obj("celsius" to 7))
 
-        @Serializable
         data class Args(val city: String)
     }
 
@@ -225,7 +223,6 @@ class AgentHandoffRecordedTest {
 
         override fun execute(args: Args, context: ToolContext) = ToolResult.json(Json.obj("dollars" to 900))
 
-        @Serializable
         data class Args(val city: String)
     }
 
@@ -235,7 +232,6 @@ class AgentHandoffRecordedTest {
 
         override fun execute(args: Args, context: ToolContext) = ToolResult.text("Asignada a ventas").handoffTo("sales")
 
-        @Serializable
         data class Args(val reason: String)
     }
 }

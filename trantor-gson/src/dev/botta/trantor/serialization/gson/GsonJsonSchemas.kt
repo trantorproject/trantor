@@ -45,9 +45,8 @@ import kotlin.reflect.full.withNullability
  * class by the parameters of its primary constructor, the types of the domain as the strings they are read from, and
  * what the application registered with the schema it gave.
  *
- * The shape is the one kotlinx-schema gives, which the providers of trantor-ai already take: the root inline, and the
- * classes, enums and hierarchies it uses in `$defs`. Hierarchies and nullable objects go as `anyOf`, since neither
- * OpenAI nor Anthropic take `oneOf`.
+ * The shape is one the providers of trantor-ai take: the root inline, and the classes, enums and hierarchies it uses
+ * in `$defs`. Hierarchies and nullable objects go as `anyOf`, since neither OpenAI nor Anthropic take `oneOf`.
  */
 internal class GsonJsonSchemas(
     private val gson: Gson,

@@ -14,7 +14,6 @@ import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -131,7 +130,6 @@ class AgentSessionRecordedTest {
 
         override fun execute(args: Args, context: ToolContext) = ToolResult.json(Json.obj("celsius" to 7))
 
-        @Serializable
         data class Args(val city: String)
     }
 }

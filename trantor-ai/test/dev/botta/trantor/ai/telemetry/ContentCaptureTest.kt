@@ -20,7 +20,6 @@ import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
 import io.opentelemetry.api.common.AttributeKey.stringKey
 import io.opentelemetry.sdk.trace.data.SpanData
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -207,7 +206,6 @@ class ContentCaptureTest {
 
         override fun execute(args: Args, context: ToolContext) = ToolResult.text("7 grados en ${args.city}")
 
-        @Serializable
         data class Args(val city: String)
     }
 

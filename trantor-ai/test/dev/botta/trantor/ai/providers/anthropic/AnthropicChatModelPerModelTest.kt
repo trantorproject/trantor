@@ -5,15 +5,14 @@ package dev.botta.trantor.ai.providers.anthropic
 import dev.botta.json.Json
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.ProviderOptions
-import dev.botta.trantor.ai.schemas.JsonSchemas
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.FunctionToolSpec
 import dev.botta.trantor.ai.tools.ToolChoice
 import dev.botta.trantor.ai.tools.ToolOutput
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /**
  * The same request against models of different generations.
@@ -851,10 +850,9 @@ class AnthropicChatModelPerModelTest {
         private val question = Message.user("Que temperatura hay en Bariloche?")
     }
 
-    @Serializable
     private data class Answer(val city: String)
 
-    private fun jsonOutput() = OutputSpec.Json(JsonSchemas.of<Answer>())
+    private fun jsonOutput() = OutputSpec.json<Answer>(GsonSerializer())
 
     private fun requestWith(choice: ToolChoice) = ChatRequest(
         messages = listOf(Message.user("Que temperatura hay en Bariloche?")),

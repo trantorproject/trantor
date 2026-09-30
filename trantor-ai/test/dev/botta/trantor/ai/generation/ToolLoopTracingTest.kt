@@ -26,7 +26,6 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.propagation.ContextPropagators
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -453,7 +452,6 @@ class ToolLoopTracingTest {
             return ToolResult.text("Frio en ${args.city}")
         }
 
-        @Serializable
         data class Args(val city: String)
     }
 
@@ -472,7 +470,6 @@ class ToolLoopTracingTest {
 
         override fun execute(args: Args, context: ToolContext): ToolResult = error("db down")
 
-        @Serializable
         class Args
     }
 

@@ -11,7 +11,6 @@ import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.web.client.HttpClientError
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -221,7 +220,6 @@ class ToolLoopErrorsTest {
             return ToolResult.text("7 grados")
         }
 
-        @Serializable
         data class Args(val city: String) {
             init {
                 require(city.isNotBlank()) { "The city cannot be blank" }
@@ -240,7 +238,6 @@ class ToolLoopErrorsTest {
             return ToolResult.text("12:00")
         }
 
-        @Serializable
         class Args
     }
 
@@ -257,7 +254,6 @@ class ToolLoopErrorsTest {
             throw HttpClientError("Canceled")
         }
 
-        @Serializable
         class Args
     }
 
@@ -268,7 +264,6 @@ class ToolLoopErrorsTest {
 
         override fun execute(args: Args, context: ToolContext): ToolResult = throw failure
 
-        @Serializable
         class Args
     }
 }

@@ -18,7 +18,6 @@ import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.RawOptions
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -467,7 +466,6 @@ class DefaultAITest {
     private val refundCall = ToolCallPart("call_1", "refund", Json.obj("amount" to 500))
     private val refunded = ToolResultPart("call_1", "refund", ToolOutput.Text("Devueltos 500"))
 
-    @Serializable
     data class Weather(val city: String, val celsius: Int)
 
     data class Stocked(val sku: SkuTool.Sku, val units: Int)
@@ -498,7 +496,6 @@ class DefaultAITest {
             return ToolResult.text("7 grados")
         }
 
-        @Serializable
         data class Args(val city: String)
     }
 }

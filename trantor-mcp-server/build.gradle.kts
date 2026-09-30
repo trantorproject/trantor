@@ -1,8 +1,3 @@
-plugins {
-    // For the @Serializable args of the tools in the tests
-    kotlin("plugin.serialization") version "2.3.10"
-}
-
 dependencies {
     api(project(":trantor-ai"))
     api(project(":trantor-web"))

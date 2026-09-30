@@ -24,7 +24,6 @@ import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentelemetry.sdk.metrics.data.HistogramPointData
 import io.opentelemetry.sdk.metrics.data.LongPointData
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -210,7 +209,6 @@ class GenAIMetricsTest {
         override fun execute(args: NoArgs, context: ToolContext): ToolResult = error("db down")
     }
 
-    @Serializable
     class NoArgs
 
     /** An OpenTelemetry whose every meter fails, as a broken instrumentation of the application might. */

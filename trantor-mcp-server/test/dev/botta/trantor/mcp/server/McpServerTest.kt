@@ -35,7 +35,6 @@ import io.opentelemetry.api.common.AttributeKey.stringKey
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.sdk.trace.data.SpanData
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -322,7 +321,6 @@ class McpServerTest {
 
         override fun execute(args: Args, context: ToolContext) = ToolResult.text(args.text)
 
-        @Serializable
         data class Args(val text: String)
     }
 
@@ -333,7 +331,6 @@ class McpServerTest {
         override fun execute(args: Args, context: ToolContext) =
             ToolResult.json(Json.obj("city" to args.city, "celsius" to 18))
 
-        @Serializable
         data class Args(val city: String)
     }
 
@@ -346,7 +343,6 @@ class McpServerTest {
             return ToolResult.text("Refunded")
         }
 
-        @Serializable
         data class Args(val amount: Int)
     }
 }

@@ -12,7 +12,6 @@ import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolOutput
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -75,7 +74,6 @@ class AgentRunnerRecordedTest {
     private val runner = AgentRunner(ModelRegistry())
     private val question = Message.user("Que temperatura hay en Bariloche?")
 
-    @Serializable
     data class CityWeather(val city: String, val celsius: Int)
 
     /** The tool the recordings were made with, answering what it answered then. */
@@ -85,7 +83,6 @@ class AgentRunnerRecordedTest {
 
         override fun execute(args: Args, context: ToolContext) = ToolResult.json(Json.obj("celsius" to 7))
 
-        @Serializable
         data class Args(val city: String)
     }
 }

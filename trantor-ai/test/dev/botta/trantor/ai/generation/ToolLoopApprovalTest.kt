@@ -6,7 +6,6 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -220,7 +219,6 @@ class ToolLoopApprovalTest {
             return ToolResult.text("Devueltos ${args.amount}")
         }
 
-        @Serializable
         data class Args(val amount: Int)
     }
 }

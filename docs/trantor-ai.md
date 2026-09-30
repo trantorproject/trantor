@@ -27,6 +27,10 @@ services.addOpenAI { openAI, services -> openAI.apiKey = services.config.require
 
 The order of `addAI` and `addOpenAI` does not matter. Both are idempotent.
 
+`AI` and the `AgentRunner` read and describe the args of the tools, the objects the models answer and the output of
+the agents with the `JsonSerializer` of the container, the one `addGsonSerializer` registers with the types of the
+application, or a `GsonSerializer` of its own when there is none.
+
 ```json
 {
   "ai": {
@@ -214,27 +218,44 @@ something that is not a `T`. `generateObject<T>` says so without failing, for wh
 to do. The schema of `T` goes on every step, tools included: the model can call tools and answers with the
 object at the end.
 
+The schema is the one the serializer of the application tells for `T`, and the answer is read by that same
+serializer, so the object can have the types of the domain: an id, `Money`, a value object the application
+registered, a hierarchy. See [The schema of what it reads](trantor-gson.md#the-schema-of-what-it-reads).
+
 ### Tools
 
 ```kotlin
-class SearchProductsTool(private val catalog: Catalog): Tool<SearchProductsTool.Args>(Args.serializer()) {
+class SearchProductsTool(private val catalog: Catalog): Tool<SearchProductsTool.Args>() {
     override val name = "searchProducts"
     override val description = "Products of the store whose name contains the text"
     override val readOnly = true
 
-    override fun execute(args: Args, context: ToolContext) = ToolResult.json(catalog.search(args.text))
+    override fun execute(args: Args, context: ToolContext) = context.json(catalog.search(args.text))
 
-    @Serializable
-    data class Args(@SerialDescription("Part of the name of the product") val text: String)
+    data class Args(@Description("Part of the name of the product") val text: String)
 }
 ```
 
 A tool plays the part of a controller: it turns what the model asked for into an operation of the
-application, and its result into something the model can read. The schema the model sees comes from the
-same serializer that decodes what it sends back, so the two cannot drift apart. The args are decoded
-leniently: a field the args do not have is ignored, and a nullable arg the model left out reads as null.
-An optional arg is best nullable, since OpenAI in strict mode sends every field and Anthropic leaves out
-the ones it has nothing for.
+application, and its result into something the model can read.
+
+- **The args are a class of the application**, which the serializer of the application reads and describes: the
+  `JsonSerializer` of the container, the `GsonSerializer` of [trantor-gson](trantor-gson.md) unless it registered
+  another. The schema the model sees is the one it reads by, so the two cannot drift apart, and the args can be of
+  the types of the domain: an id, `Money`, a value object the application registered, a hierarchy, `Maybe`.
+  `@Description` tells the model what the name and the type do not, and the validations of Jakarta go into the
+  schema. A type the serializer cannot describe fails the first run that uses the tool, naming the field.
+- **They are read leniently**: a field the args do not have is ignored, a nullable arg the model left out reads as
+  null, and a null for an arg that cannot be null reads as its default. An optional arg is best nullable, since
+  OpenAI in strict mode sends every field and Anthropic leaves out the ones it has nothing for. What does not fit
+  goes back to the model, which fixes the call.
+- **What it answers**: `context.json(value)` writes an object as the application writes JSON, with the types it
+  registered; `ToolResult.json` takes JSON the tool already has, and `ToolResult.text` text.
+- **It is strict**, holding the model to the schema, unless the args have a `Maybe` of what can be null: strict mode
+  sends every field, so the model could never leave that one as it is. The tool goes without it, and the log says
+  so once. A `Maybe` of what cannot be null is fine: its `null` is "leave it as it is".
+- **The type of the args** is the one `Tool<Args>` says. A tool that does not know it, like one generic in its
+  args, is given it: `Tool<T>(typeOf<Args>())`.
 
 `ToolContext` carries the `callId`, the `toolName` and the `RunContext` of the run, a typed bag that
 whoever launches the run fills: `context.run.require<Tenant>()`. What a tool needs from the application —
@@ -299,7 +320,7 @@ model asked for them, since two calls that write could depend on each other.
 A tool can ask for a person to approve a call before it runs:
 
 ```kotlin
-class RefundTool(private val payments: Payments): Tool<RefundTool.Args>(Args.serializer()) {
+class RefundTool(private val payments: Payments): Tool<RefundTool.Args>() {
     override val name = "refund"
     override val description = "Gives back the money of an order, in dollars"
 
@@ -307,7 +328,6 @@ class RefundTool(private val payments: Payments): Tool<RefundTool.Args>(Args.ser
 
     override fun execute(args: Args, context: ToolContext) = ToolResult.text(payments.refund(args.order, args.amount))
 
-    @Serializable
     data class Args(val order: Int, val amount: Int)
 }
 ```
@@ -1012,21 +1032,26 @@ is part of the output. Each part is named for what happened to those tokens beca
 ## Structured output
 
 ```kotlin
-@Serializable
-data class Invoice(val number: String, val total: Double)
+data class Invoice(val number: String, val total: Money)
 
 val response = models.chat().generate(
-    ChatRequest(listOf(Message.user("Extraé los datos")), output = OutputSpec.json<Invoice>()),
+    ChatRequest(listOf(Message.user("Extraé los datos")), output = OutputSpec.json<Invoice>(serializer)),
 )
 
-val invoice = response.objectAs<Invoice>()
+val invoice = response.objectAs<Invoice>(serializer)
 ```
 
-The schema is generated from the Kotlin class and closed before it is sent: every property required, no
-open maps. Both providers ask for the same thing — OpenAI calls it strict mode, Anthropic only demands
-`additionalProperties: false` — so the shaping is shared in `StrictSchema`. A sealed class, and a nullable
-object, are written as `anyOf` their options: neither provider takes `oneOf` in strict mode, which is what the
-generator writes for them.
+`serializer` is the `JsonSerializer` of the application, which tells the schema of `Invoice` and reads the answer
+back by the same rules. It has to be a `JsonSchemaSource`, as the `GsonSerializer` is.
+
+The schema is closed before it is sent: every property required, no open maps. Both providers ask for the same
+thing — OpenAI calls it strict mode, Anthropic only demands `additionalProperties: false` — so the shaping is shared
+in `StrictSchema`. What each holds a model to differs, as their docs list it: Anthropic takes no bound on a number
+or on the length of a string, OpenAI no length of a string. What a provider does not take goes to the description
+of its field, as the SDKs of Anthropic do (`{minimum: 1, maximum: 10}`), where the model reads it without being held
+to it; whoever reads the answer still checks it. A `oneOf` goes as `anyOf`, which is what both take. A schema that
+refers to itself is one Anthropic cannot hold a model to: a tool goes without strict, with a warning, and an answer
+is turned down with `UnsupportedRequestError` before anything is sent.
 
 Which wire field carries it is the adapter's business and not the caller's: `text.format` on OpenAI,
 `output_config.format` on Anthropic. A model too old to have one drops it with a warning.
@@ -1039,7 +1064,7 @@ Which wire field carries it is the adapter's business and not the caller's: `tex
 val weather = FunctionToolSpec(
     name = "get_weather",
     description = "The weather in a city",
-    parameters = JsonSchemas.of<WeatherQuery>(),
+    parameters = serializer.schemaOf<WeatherQuery>(),
 )
 
 val response = models.chat().generate(

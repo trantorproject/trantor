@@ -20,7 +20,6 @@ import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
 import dev.botta.trantor.primitives.serialization.Description
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -210,7 +209,6 @@ class AgentApprovalRecordedTest {
             return ToolResult.text("El pedido ${args.order} está en camino, llega el jueves")
         }
 
-        @Serializable
         data class Args(@Description("The number of the order") val order: Int)
     }
 
@@ -227,7 +225,6 @@ class AgentApprovalRecordedTest {
             return ToolResult.text("Devueltos ${args.amount} dólares del pedido ${args.order}")
         }
 
-        @Serializable
         data class Args(
             @Description("The number of the order") val order: Int,
             @Description("How many dollars to give back") val amount: Int,

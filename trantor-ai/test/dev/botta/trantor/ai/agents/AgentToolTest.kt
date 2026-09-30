@@ -16,7 +16,6 @@ import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.domain.Money
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -185,12 +184,10 @@ class AgentToolTest {
     private val researcher = Agent("researcher").model(researcherModel).instructions("Sos investigador").build()
     private val runner = AgentRunner(ModelRegistry())
 
-    @Serializable
     data class CityWeather(val city: String, val celsius: Int)
 
     data class Tenant(val name: String)
 
-    @Serializable
     class NoArgs
 
     /** Writes down whom the run is for. */

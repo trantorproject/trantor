@@ -17,7 +17,6 @@ import io.opentelemetry.api.trace.SpanContext
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.data.SpanData
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -306,7 +305,6 @@ class McpEndpointTracingTest {
 
         override fun execute(args: Args, context: ToolContext) = ToolResult.text(args.text)
 
-        @Serializable
         data class Args(val text: String)
     }
 
@@ -319,7 +317,6 @@ class McpEndpointTracingTest {
             return ToolResult.text("Refunded")
         }
 
-        @Serializable
         data class Args(val amount: Int)
     }
 
@@ -330,7 +327,6 @@ class McpEndpointTracingTest {
         override fun execute(args: Args, context: ToolContext): ToolResult =
             throw IllegalStateException("the database password is hunter2")
 
-        @Serializable
         class Args
     }
 
@@ -346,7 +342,6 @@ class McpEndpointTracingTest {
             return ToolResult.text("Loaded")
         }
 
-        @Serializable
         class Args
     }
 }

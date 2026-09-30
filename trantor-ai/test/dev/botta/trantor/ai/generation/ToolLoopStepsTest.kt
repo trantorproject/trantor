@@ -6,7 +6,6 @@ import dev.botta.json.Json
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
-import kotlinx.serialization.Serializable
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.models.Usage
 import org.assertj.core.api.Assertions.assertThat
@@ -375,6 +374,5 @@ class ToolLoopStepsTest {
         override fun execute(args: City, context: ToolContext) = ToolResult.text("100 dólares")
     }
 
-    @Serializable
     data class City(val city: String)
 }

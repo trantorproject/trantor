@@ -14,7 +14,6 @@ import dev.botta.trantor.ai.providers.openai.OpenAIOptions
 import dev.botta.trantor.ai.providers.openai.ServiceTiers
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
-import kotlinx.serialization.Serializable
 import dev.botta.trantor.serialization.gson.GsonSerializer
 import dev.botta.trantor.serialization.gson.adapters.StringValueSerializer
 import org.assertj.core.api.Assertions.assertThat
@@ -239,16 +238,12 @@ class AgentRunnerTest {
 
     data class Customer(val name: String)
 
-    @Serializable
     data class Weather(val city: String, val celsius: Int)
 
-    // Serializable only until structured output leaves kotlinx, which still reads the answer in the native mode
-    @Serializable
     data class Picked(val code: Code)
 
     data class Stocked(val sku: SkuTool.Sku, val units: Int)
 
-    @Serializable
     data class Code(val value: String)
 
     class FakeProvider(private val model: FakeChatModel): AIProvider {
@@ -274,7 +269,6 @@ class AgentRunnerTest {
             return ToolResult.text("7 grados")
         }
 
-        @Serializable
         data class Args(val city: String)
     }
 }

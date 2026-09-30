@@ -6,10 +6,8 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.openai.OpenAIOptions
-import dev.botta.trantor.ai.schemas.JsonSchemas
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -256,10 +254,8 @@ class AgentTest {
 
     data class Customer(val name: String)
 
-    @Serializable
     data class Invoice(val number: String, val total: Int)
 
-    @Serializable
     data class City(val city: String)
 
     data class Stocked(val sku: SkuTool.Sku, val units: Int)

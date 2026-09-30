@@ -100,7 +100,7 @@ A tool that is not one use case — it runs several, or asks something outside t
 trantor-ai, the same one an agent of the application uses ([Tools](trantor-ai.md#tools)):
 
 ```kotlin
-class SearchProductsTool(private val catalog: Catalog): Tool<SearchProductsTool.Args>(Args.serializer()) {
+class SearchProductsTool(private val catalog: Catalog): Tool<SearchProductsTool.Args>() {
     override val name = "search_products"
     override val description = "Products of the store whose name contains the text"
     override val readOnly = true
@@ -109,11 +109,10 @@ class SearchProductsTool(private val catalog: Catalog): Tool<SearchProductsTool.
         val call = context.run.require<McpCall>()
         val stock = call.execute(GetStock(args.text))
 
-        return ToolResult.json(catalog.search(args.text, onlyInStock = stock.units > 0))
+        return context.json(catalog.search(args.text, onlyInStock = stock.units > 0))
     }
 
-    @Serializable
-    data class Args(@SerialDescription("Part of the name of the product") val text: String)
+    data class Args(@Description("Part of the name of the product") val text: String)
 }
 
 http.mcp("/mcp", name = "store", version = "1.0.0") {
@@ -123,9 +122,10 @@ http.mcp("/mcp", name = "store", version = "1.0.0") {
 
 `McpCall`, in the `RunContext` of the call, runs a use case through the middlewares of the application with the HTTP
 request of the call, as a `tool<T>()` does, and `call.identity()` says who is asking. What the tool needs from the
-application otherwise comes by constructor. A `ToolError` it throws is a result with `isError`, as in the table
-above. On the routes of a plain `Controller` there is no application to run a use case with, and `call.execute`
-fails with a `McpServerError`.
+application otherwise comes by constructor. Its args and what it answers are read and written by the serializer of
+the application, as those of a use case are; on the routes of a plain `Controller`, by the `GsonSerializer`. A
+`ToolError` it throws is a result with `isError`, as in the table above. On the routes of a plain `Controller` there
+is no application to run a use case with, and `call.execute` fails with a `McpServerError`.
 
 ---
 

@@ -6,8 +6,9 @@ import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.providers.anthropic.AnthropicStrictRules
 import dev.botta.trantor.ai.providers.openai.OpenAIStrictRules
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import dev.botta.trantor.primitives.serialization.schemaOf
+import dev.botta.trantor.serialization.gson.GsonSerializer
+import dev.botta.trantor.serialization.gson.adapters.HierarchyTypeAdapterFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -23,7 +24,7 @@ class StrictSchemaTest {
         @Test
         fun `every property becomes required`() {
             forEach { strict ->
-                assertThat(strict(JsonSchemas.of<Order>())["required"]?.asArray()?.map { it.asString() })
+                assertThat(strict(serializer.schemaOf<Order>())["required"]?.asArray()?.map { it.asString() })
                     .containsExactly("customer", "note", "items")
             }
         }
@@ -31,7 +32,7 @@ class StrictSchemaTest {
         @Test
         fun `every object is closed`() {
             forEach { strict ->
-                val schema = strict(JsonSchemas.of<Order>())
+                val schema = strict(serializer.schemaOf<Order>())
 
                 assertThat(schema["additionalProperties"]?.asBoolean()).isFalse()
                 assertThat(schema.path($$"$defs.Item.additionalProperties")?.asBoolean()).isFalse()
@@ -39,43 +40,39 @@ class StrictSchemaTest {
         }
 
         @Test
-        fun `definitions take their simple name`() {
-            forEach { strict ->
-                assertThat(strict(JsonSchemas.of<Order>())[$$"$defs"]?.asObject()?.keys).containsExactly("Item")
-            }
-        }
+        fun `a oneOf, which a schema written by hand may say, is anyOf, since no provider takes oneOf`() {
+            val card = objectOf("last4" to Json.obj("type" to "string"))
+            val cash = objectOf("tendered" to Json.obj("type" to "number"))
 
-        @Test
-        fun `references point to the renamed definitions`() {
             forEach { strict ->
-                val items = strict(JsonSchemas.of<Order>()).path("properties.items.items")?.asObject()
-
-                assertThat(items?.get($$"$ref")?.asString()).isEqualTo($$"#/$defs/Item")
-            }
-        }
-
-        @Test
-        fun `a sealed class is any of its subtypes, since no provider takes oneOf in strict mode`() {
-            forEach { strict ->
-                val schema = strict(JsonSchemas.of<Payment>())
+                val schema = strict(objectOf("method" to Json.obj("oneOf" to Json.array(card, cash))))
 
                 assertThat(schema.toString()).doesNotContain("oneOf")
-                val subtypes = schema.path($$"$defs.Method.anyOf")?.asArray()?.map { it.asObject()?.get($$"$ref") }
-                assertThat(subtypes?.map { it?.asString() }).containsExactly($$"#/$defs/card", $$"#/$defs/cash")
+                assertThat(schema.path("properties.method.anyOf")?.asArray()).hasSize(2)
+            }
+        }
+
+        @Test
+        fun `a hierarchy is any of its subtypes`() {
+            forEach { strict ->
+                val subtypes = strict(serializer.schemaOf<Payment>()).path($$"$defs.Method.anyOf")?.asArray()
+
+                assertThat(subtypes?.map { it.asObject()?.get($$"$ref")?.asString() })
+                    .containsExactly($$"#/$defs/Card", $$"#/$defs/Cash")
             }
         }
 
         @Test
         fun `a nullable object is it or null`() {
             forEach { strict ->
-                assertThat(strict(JsonSchemas.of<Payment>()).path("properties.backup.anyOf")?.asArray()).hasSize(2)
+                assertThat(strict(serializer.schemaOf<Payment>()).path("properties.backup.anyOf")?.asArray()).hasSize(2)
             }
         }
 
         @Test
         fun `the original schema is not touched`() {
             forEach { strict ->
-                val schema = JsonSchemas.of<Order>()
+                val schema = serializer.schemaOf<Order>()
                 val before = schema.toString()
 
                 strict(schema)
@@ -216,7 +213,7 @@ class StrictSchemaTest {
 
         @Test
         fun `while one that only refers to its definitions is not`() {
-            assertThat(StrictSchema.refersToItself(JsonSchemas.of<Payment>())).isFalse()
+            assertThat(StrictSchema.refersToItself(serializer.schemaOf<Payment>())).isFalse()
         }
     }
 
@@ -227,23 +224,21 @@ class StrictSchemaTest {
 
     private fun listOfStrings() = Json.obj("type" to "array", "items" to Json.obj("type" to "string"))
 
-    @Serializable
+    private val serializer = GsonSerializer().apply {
+        registerTypeAdapterFactory(
+            HierarchyTypeAdapterFactory.of<Method>().subtype<Method.Card>("card").subtype<Method.Cash>("cash"),
+        )
+    }
+
     data class Order(val customer: String, val note: String? = null, val items: List<Item> = emptyList())
 
-    @Serializable
     data class Item(val sku: String)
 
-    @Serializable
     data class Payment(val method: Method, val backup: Item? = null)
 
-    @Serializable
     sealed class Method {
-        @Serializable
-        @SerialName("card")
         data class Card(val last4: String): Method()
 
-        @Serializable
-        @SerialName("cash")
         data class Cash(val tendered: Double? = null): Method()
     }
 }

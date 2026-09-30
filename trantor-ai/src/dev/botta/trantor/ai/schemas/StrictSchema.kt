@@ -12,10 +12,10 @@ import dev.botta.json.values.JsonValue
  * additionalProperties and **every** property listed in required. A field with a default is optional in Kotlin but
  * has to be required here, which is why an optional field has to be nullable to work: the model answers it as null.
  *
- * Definitions are also renamed to their simple name, since kotlinx generates them with the whole package, and every
- * `oneOf` becomes an `anyOf`: kotlinx writes a sealed class and a nullable object as `oneOf`, which neither provider
- * takes in strict mode ("'oneOf' is not permitted", "Schema type 'oneOf' is not supported", recorded on 2026-09-29).
- * Their options exclude each other anyway, by the label of each subtype or by being null, so `anyOf` says the same.
+ * Every `oneOf` becomes an `anyOf`, which neither provider takes in strict mode ("'oneOf' is not permitted", "Schema
+ * type 'oneOf' is not supported", recorded on 2026-09-29): the serializer of the application writes `anyOf` already,
+ * but a schema written by hand, or by another generator, may say `oneOf` for a hierarchy or a nullable object. Their
+ * options exclude each other anyway, by the label of each subtype or by being null, so `anyOf` says the same.
  *
  * Both OpenAI and Anthropic ask for that same shape, so it is shared rather than copied. What else each holds a model
  * to differs, and comes in its [StrictRules]: a keyword the provider does not take goes to the description of its
@@ -26,7 +26,6 @@ internal object StrictSchema {
     fun of(schema: JsonObject, rules: StrictRules): JsonObject {
         val copy = Json.parse(schema.toString()).asObject() ?: return schema
 
-        shortenDefinitionNames(copy)
         close(copy)
         replaceOneOf(copy)
         restrict(copy, rules)
@@ -67,29 +66,6 @@ internal object StrictSchema {
         }.toSet()
         is JsonArray -> value.flatMap { referencesIn(it) }.toSet()
         else -> emptySet()
-    }
-
-    private fun shortenDefinitionNames(schema: JsonObject) {
-        val definitions = schema[DEFS]?.asObject() ?: return
-        val shortNames = definitions.keys.associateWith { it.substringAfterLast(".") }
-
-        if (shortNames.values.distinct().size != shortNames.size) return
-
-        val renamed = Json.obj()
-        definitions.keys.toList().forEach { renamed[shortNames.getValue(it)] = definitions.getValue(it) }
-        schema[DEFS] = renamed
-
-        shortNames.forEach { (name, shortName) -> rewriteRefs(schema, "$REF_PREFIX$name", "$REF_PREFIX$shortName") }
-    }
-
-    private fun rewriteRefs(value: Any?, from: String, to: String) {
-        when (value) {
-            is JsonObject -> value.keys.toList().forEach { key ->
-                val child = value[key]
-                if (key == REF && child?.asString() == from) value[key] = to else rewriteRefs(child, from, to)
-            }
-            is JsonArray -> value.forEach { rewriteRefs(it, from, to) }
-        }
     }
 
     private fun close(value: Any?) {

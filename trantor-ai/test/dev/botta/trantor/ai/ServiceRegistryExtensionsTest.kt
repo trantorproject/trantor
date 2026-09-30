@@ -44,7 +44,6 @@ import dev.botta.trantor.serialization.gson.GsonSerializer
 import dev.botta.trantor.web.client.HttpClient
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.common.AttributeKey.stringKey
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -621,7 +620,6 @@ class ServiceRegistryExtensionsTest {
 
         override fun execute(args: Args, context: ToolContext): ToolResult = error("db down")
 
-        @Serializable
         class Args
     }
 

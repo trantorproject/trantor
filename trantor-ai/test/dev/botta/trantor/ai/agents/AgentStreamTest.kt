@@ -11,7 +11,6 @@ import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolOutput
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolResult
-import kotlinx.serialization.Serializable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -87,7 +86,6 @@ class AgentStreamTest {
     private val runner = AgentRunner(ModelRegistry())
     private val question = Message.user("Cuanto sale?")
 
-    @Serializable
     class NoArgs
 
     class AssignTool: Tool<NoArgs>() {
