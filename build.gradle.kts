@@ -2,7 +2,7 @@ import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     kotlin("jvm") version "2.4.20"
-    id("dev.botta.kotlin-conventions") version "0.4.3"
+    id("dev.botta.kotlin-conventions") version "0.4.4"
     id("com.vanniktech.maven.publish") version "0.32.0"
 }
 
