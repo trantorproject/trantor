@@ -4,9 +4,9 @@ import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.models.chat.*
-import dev.botta.trantor.ai.models.cost.CostEstimate
 import dev.botta.trantor.ai.models.chat.FinishReasons.Stop
 import dev.botta.trantor.ai.models.chat.FinishReasons.ToolCalls
+import dev.botta.trantor.ai.models.cost.CostEstimate
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -22,8 +22,8 @@ class FakeChatModel(
     var usage: Usage = Usage.Unknown,
     /** What each answer says it cost, as the CostMiddleware would leave it. */
     var cost: CostEstimate? = null,
-    /** Whether it plays a model whose provider searches the tools of a call. */
-    override var searchesTools: Boolean = false,
+    /** Whether it plays a model whose provider loads the deferred tools a search found. */
+    override var loadsDeferredTools: Boolean = false,
 ): ChatModel {
 
     val responses = ArrayDeque<ChatResponse>()

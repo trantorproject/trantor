@@ -1,14 +1,13 @@
 package dev.botta.trantor.ai.mcp
 
+import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.tools.FunctionToolSpec
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolError
 import dev.botta.trantor.ai.tools.ToolResult
-import dev.botta.json.values.JsonObject
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import java.security.MessageDigest
-import dev.botta.json.Json as BottaJson
 
 /**
  * The tools of the server, as tools of a generation or an agent:

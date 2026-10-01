@@ -7,14 +7,14 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.providers.anthropic.addAnthropic
 import dev.botta.trantor.ai.providers.openai.addOpenAI
+import dev.botta.trantor.ai.serialization.defaultJsonSerializer
 import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import dev.botta.trantor.ai.tools.ToolErrorHandlers
 import dev.botta.trantor.di.ServiceConfiguration
 import dev.botta.trantor.di.ServiceProvider
 import dev.botta.trantor.di.ServiceRegistry
-import io.opentelemetry.api.OpenTelemetry
 import dev.botta.trantor.primitives.serialization.JsonSerializer
-import dev.botta.trantor.ai.serialization.defaultJsonSerializer
+import io.opentelemetry.api.OpenTelemetry
 
 /**
  * Registers everything an application needs to use models: [AI], the [AgentRunner], the [ModelRegistry] and the
@@ -47,9 +47,25 @@ fun ServiceRegistry.addAI(configuration: ServiceConfiguration<ModelRegistry> = {
     addAnthropic()
     configure(configuration)
     if (!has<AITelemetrySettings>()) addConfig<AITelemetrySettings>("ai.telemetry")
-    addSingletonIfMissing<AI> { DefaultAI(it.get(), it.get(), it.openTelemetry(), it.get(), it.serializer()) }
+    addSingletonIfMissing<AI> {
+        DefaultAI(
+            models = it.get(),
+            errorHandlers = it.get(),
+            openTelemetry = it.openTelemetry(),
+            telemetrySettings = it.get(),
+            serializer = it.serializer(),
+        )
+    }
     addSingletonIfMissing<AgentRunner> {
-        AgentRunner(it.get(), it.get(), it.get(), it.get(), it.openTelemetry(), it.get(), it.serializer())
+        AgentRunner(
+            models = it.get(),
+            errorHandlers = it.get(),
+            hooks = it.get(),
+            guardrails = it.get(),
+            openTelemetry = it.openTelemetry(),
+            telemetrySettings = it.get(),
+            serializer = it.serializer(),
+        )
     }
 }
 

@@ -1,7 +1,6 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.json.Json
-import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.DefaultAI
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.errors.CancelledError
@@ -16,11 +15,12 @@ import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.domain.Money
+import dev.botta.trantor.primitives.Cancellation
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
-import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /** An agent that another one uses as a tool: it runs a run of its own, and the one that called it goes on. */
 class AgentToolTest {

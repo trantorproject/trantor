@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 class OpenAIChatModelToolsTest {
     @Test
     fun `sends the tools with their schema`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
 
         model.generate(requestWith(weatherTool))
 
@@ -25,7 +25,7 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `a tool that is not strict keeps its schema as it is`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
 
         model.generate(requestWith(weatherTool.copy(strict = false)))
 
@@ -35,7 +35,7 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `a tool whose schema refers to itself stays strict, which OpenAI holds a model to`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
         val tree = Json.obj(
             "type" to "object",
             "properties" to Json.obj("children" to Json.obj("type" to "array", "items" to Json.obj("\$ref" to "#"))),
@@ -51,7 +51,7 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `lets the model choose the tool by default`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
 
         model.generate(requestWith(weatherTool))
 
@@ -60,7 +60,7 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `asks for a tool by name`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
 
         model.generate(requestWith(weatherTool, choice = ToolChoice.Named("getWeather")))
 
@@ -69,7 +69,7 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `asks for any tool`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
 
         model.generate(requestWith(weatherTool, choice = ToolChoice.Required))
 
@@ -78,7 +78,7 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `sends a tool of the provider with its own arguments`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
         val webSearch = ProviderToolSpec("openai.web_search", Json.obj("search_context_size" to "low"))
 
         model.generate(requestWith(webSearch))
@@ -89,18 +89,19 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `drops a tool of another provider with a warning`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
         val anthropicTool = ProviderToolSpec("anthropic.computer", Json.obj())
 
         val response = model.generate(requestWith(anthropicTool))
 
         assertThat(sentBody()["tools"].toString()).isEqualTo("[]")
-        assertThat(response.warnings.map { it.message }).containsExactly("Tool anthropic.computer is not an OpenAI tool and was dropped")
+        assertThat(response.warnings.map { it.message })
+            .containsExactly("Tool anthropic.computer is not an OpenAI tool and was dropped")
     }
 
     @Test
     fun `sends whether tools can run in parallel`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
         val request = requestWith(weatherTool).copy(settings = ChatSettings(parallelToolCalls = false))
 
         model.generate(request)
@@ -110,7 +111,7 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `reads the tool the model asked for`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
 
         val response = model.generate(requestWith(weatherTool))
 
@@ -123,27 +124,33 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `keeps the item id of the call`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
 
         val call = model.generate(requestWith(weatherTool)).toolCalls.single()
 
-        assertThat(call.metadata["openai"]).isEqualTo(Json.obj("id" to "fc_0fa3f5f108a19346006aaf410db8a887d2bf2f6e4749804c5b"))
+        assertThat(call.metadata["openai"])
+            .isEqualTo(Json.obj("id" to "fc_0fa3f5f108a19346006aaf410db8a887d2bf2f6e4749804c5b"))
     }
 
     @Test
     fun `sends back the call and its result`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
         val call = model.generate(requestWith(weatherTool)).toolCalls.single()
         val result = ToolResultPart(call.callId, call.toolName, ToolOutput.Json(Json.obj("celsius" to 7)))
 
         model.generate(
             requestWith(weatherTool).copy(
-                messages = listOf(Message.user("Que temperatura hay?"), Message.Assistant(listOf(call)), Message.toolResult(result))
+                messages = listOf(
+                    Message.user("Que temperatura hay?"),
+                    Message.Assistant(listOf(call)),
+                    Message.toolResult(result),
+                )
             )
         )
 
         assertThat(sentBody()["input"]?.asArray()?.get(1).toString()).isEqualTo(
-            """{"type":"function_call","call_id":"call_Bh8ibYfKDf5kfsf1gsbUdqff","name":"getWeather","arguments":"{\"city\":\"Bariloche\"}"}"""
+            """{"type":"function_call","call_id":"call_Bh8ibYfKDf5kfsf1gsbUdqff","name":"getWeather",""" +
+                """"arguments":"{\"city\":\"Bariloche\"}"}"""
         )
         assertThat(sentBody()["input"]?.asArray()?.get(2).toString()).isEqualTo(
             """{"type":"function_call_output","call_id":"call_Bh8ibYfKDf5kfsf1gsbUdqff","output":"{\"celsius\":7}"}"""
@@ -152,7 +159,7 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `sends a text result of a tool as it is`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
         val result = ToolResultPart("call_Bh8ibYfKDf5kfsf1gsbUdqff", "getWeather", ToolOutput.Text("7 grados"))
 
         model.generate(requestWith(weatherTool).copy(messages = listOf(Message.toolResult(result))))
@@ -161,34 +168,31 @@ class OpenAIChatModelToolsTest {
     }
 
     @Test
-    fun `a deferred tool goes with defer_loading, and the tool search of OpenAI after the tools`() {
-        httpClient.body = fixture("tool-call")
-        val searching = OpenAIChatModel("gpt-5.4", OpenAIConfig(apiKey = "sk-test"), httpClient)
-        val request = requestWith(weatherTool.copy(deferLoading = true))
+    fun `without a search in the request a deferred tool goes up front, since nothing would find it, and says so`() {
+        httpClient.body = fixture("chat/tool-call")
 
-        searching.generate(request.copy(tools = request.tools + timeTool))
+        val response = searchingModel.generate(requestWith(weatherTool.copy(deferLoading = true)))
 
         val tools = sentBody()["tools"]!!.asArray()!!.map { it.asObject()!! }
-        assertThat(tools.map { it["name"]?.asString() ?: it["type"]?.asString() })
-            .containsExactly("getWeather", "getTime", "tool_search")
-        assertThat(tools.map { it["defer_loading"]?.asBoolean() }).containsExactly(true, null, null)
+        assertThat(tools.single().containsKey("defer_loading")).isFalse()
+        assertThat(response.warnings.single().message).contains("getWeather", "no search")
     }
 
     @Test
-    fun `a model that does not search tools gets them up front, and says so`() {
-        httpClient.body = fixture("tool-call")
+    fun `a model that does not load deferred tools gets them up front, and says so`() {
+        httpClient.body = fixture("chat/tool-call")
 
-        val response = model.generate(requestWith(weatherTool.copy(deferLoading = true)))
+        val response = model.generate(searchRequest)
 
         val tools = sentBody()["tools"]!!.asArray()!!.map { it.asObject()!! }
-        assertThat(tools.map { it["name"]?.asString() }).containsExactly("getWeather")
-        assertThat(tools.single().containsKey("defer_loading")).isFalse()
-        assertThat(response.warnings.single().message).contains("does not search tools", "getWeather")
+        assertThat(tools.map { it["type"]?.asString() }).containsExactly("function", "function")
+        assertThat(tools.none { it.containsKey("defer_loading") }).isTrue()
+        assertThat(response.warnings.single().message).contains("getWeather", "does not load them")
     }
 
     @Test
     fun `sends back the namespace OpenAI gave the call of a tool it found, which it needs to match it`() {
-        httpClient.body = fixture("tool-search-1")
+        httpClient.body = fixture("tool-search/search-2")
         val searching = OpenAIChatModel("gpt-5.4", OpenAIConfig(apiKey = "sk-test"), httpClient)
         val request = requestWith(weatherTool.copy(deferLoading = true))
         val answer = searching.generate(request)
@@ -201,21 +205,22 @@ class OpenAIChatModelToolsTest {
     }
 
     @Test
-    fun `a search of the application goes as a tool search the client runs, in place of the hosted one`() {
-        httpClient.body = fixture("tool-call")
+    fun `a search of the application goes as a tool search the client runs, and the tools deferred`() {
+        httpClient.body = fixture("chat/tool-call")
 
         searchingModel.generate(searchRequest)
 
         val tools = sentBody()["tools"]!!.asArray()!!.map { it.asObject()!! }
         assertThat(tools.map { it["type"]?.asString() }).containsExactly("tool_search", "function")
         assertThat(tools[0]["execution"]?.asString()).isEqualTo("client")
+        assertThat(tools[1]["defer_loading"]?.asBoolean()).isTrue()
         assertThat(tools[0]["description"]?.asString()).isEqualTo("Searches the tools")
         assertThat(tools[0]["parameters"]?.asObject()?.get("required").toString()).isEqualTo("""["query"]""")
     }
 
     @Test
     fun `and the tool search the model asks the client for is a call to the search of the application`() {
-        httpClient.body = fixture("tool-search-client-1")
+        httpClient.body = fixture("tool-search/search-1")
 
         val response = searchingModel.generate(searchRequest)
 
@@ -228,7 +233,7 @@ class OpenAIChatModelToolsTest {
 
     @Test
     fun `which goes back as the tool search it was, and its result as the definitions of the tools it found`() {
-        httpClient.body = fixture("tool-search-client-1")
+        httpClient.body = fixture("tool-search/search-1")
         val call = searchingModel.generate(searchRequest).toolCalls.single()
         val found = Json.obj("tools" to Json.array(Json.obj("name" to "getWeather", "description" to "")))
         val result = ToolResultPart(call.callId, call.toolName, ToolOutput.Json(found))

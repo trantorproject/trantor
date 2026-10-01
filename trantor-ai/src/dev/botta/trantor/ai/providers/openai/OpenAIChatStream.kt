@@ -76,7 +76,8 @@ internal class OpenAIChatStream(
             "response.reasoning_summary_text.delta" -> data["delta"]?.asString()
                 ?.let { pending.add(StreamPart.ReasoningDelta(it)) }
             "response.output_item.done" -> itemDone(data)
-            "response.completed", "response.incomplete", "response.failed" -> finalResponse = data["response"]?.asObject()
+            "response.completed", "response.incomplete", "response.failed" ->
+                finalResponse = data["response"]?.asObject()
             "error" -> throw ProviderError(
                 OPENAI_PROVIDER,
                 data["message"]?.asString() ?: "The stream failed",

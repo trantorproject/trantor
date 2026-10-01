@@ -7,7 +7,7 @@ package dev.botta.trantor.ai.agents
 sealed interface ToolGuardrailVerdict {
     /**
      * The call does not run, and the model reads [message] as its error, so it can try something else. The run goes
-     * on, with a warning that says which guardrail rejected what. It is OpenAI Agents' `reject_content`.
+     * on, with a warning that says which guardrail rejected what.
      */
     data class Reject(val message: String): ToolGuardrailVerdict
 

@@ -4,6 +4,10 @@ import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.tools.ToolChoice
 import dev.botta.trantor.ai.tools.ToolSpec
 
+/**
+ * Everything one call to a model sends: the conversation, the tools the model may call, the shape of the answer
+ * and the settings. The same for every provider: the adapter turns it into what its own takes.
+ */
 data class ChatRequest(
     val messages: List<Message>,
     val tools: List<ToolSpec> = emptyList(),

@@ -4,10 +4,10 @@ package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
-import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.testing.TestTelemetry
+import dev.botta.trantor.primitives.Cancellation
 import io.opentelemetry.api.common.AttributeKey.stringKey
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

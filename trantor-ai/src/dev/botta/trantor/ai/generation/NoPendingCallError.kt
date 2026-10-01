@@ -1,4 +1,6 @@
-package dev.botta.trantor.ai.errors
+package dev.botta.trantor.ai.generation
+
+import dev.botta.trantor.ai.errors.AIError
 
 /**
  * A run got a decision about a call that is not waiting for approval: the conversation has no such call, or it was

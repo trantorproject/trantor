@@ -1,7 +1,7 @@
 package dev.botta.trantor.ai.models.chat
 
 import com.google.gson.JsonParseException
-import dev.botta.trantor.ai.errors.NoObjectGeneratedError
+import dev.botta.trantor.ai.generation.NoObjectGeneratedError
 import dev.botta.trantor.ai.serialization.read
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import kotlin.reflect.KType
@@ -31,6 +31,7 @@ fun <T> ChatResponse.objectAs(type: KType, serializer: JsonSerializer): T {
     }
 }
 
+/** The answer read as a [T] by [serializer], for a call that asked for JSON. */
 inline fun <reified T> ChatResponse.objectAs(serializer: JsonSerializer): T = objectAs(typeOf<T>(), serializer)
 
 private fun ChatResponse.notTheObject(cause: Exception) =

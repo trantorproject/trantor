@@ -79,7 +79,7 @@ class CostMiddlewareTest {
     @Test
     fun `a recorded call is estimated at the list price, each part of its input at its own`() {
         // gpt-5.6-luna reading a cached prefix: 3 × 0.20 + 5125 × 0.02 read + 13 × 0.25 written + 15 × 1.20 out
-        val http = FakeHttpClient().apply { body = javaClass.getResource("/openai/cache-read.json")!!.readText() }
+        val http = FakeHttpClient().apply { body = javaClass.getResource("/openai/chat/cache-read.json")!!.readText() }
         val luna = OpenAIChatModel("gpt-5.6-luna", OpenAIConfig(apiKey = "sk-test"), http)
 
         val estimate = luna.with(CostMiddleware(ModelCatalog().addOpenAIModels()))

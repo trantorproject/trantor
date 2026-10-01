@@ -1,6 +1,5 @@
 package dev.botta.trantor.ai.generation
 
-import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.ChatResponse
 import dev.botta.trantor.ai.models.chat.ToolCallPart
@@ -13,7 +12,7 @@ import dev.botta.trantor.ai.models.chat.ToolResultPart
  * An exception in any of them fails the run, even around a tool: it is not a failure of the tool, which the model
  * could work around, but of the application.
  */
-interface StepHooks {
+internal interface StepHooks {
     /** The request as it goes to the model, tools included. What it returns goes instead, for this call alone. */
     fun beforeModel(request: ChatRequest) = request
 
@@ -38,16 +37,16 @@ interface StepHooks {
 }
 
 /** What a check of the step says about a call that is not to run as it is. */
-sealed interface ToolCheck
+internal sealed interface ToolCheck
 
 /** A call the step does not run: the model reads [message] as its error, and the run keeps [warning]. */
-class ToolRefusal(val message: String, val warning: String): ToolCheck
+internal class ToolRefusal(val message: String, val warning: String): ToolCheck
 
 /**
  * A call that waits for a person to approve it, for [reason]: it does not run, and the run ends paused, as it does when
  * its tool asks for approval.
  */
-class ToolApproval(val reason: String?): ToolCheck
+internal class ToolApproval(val reason: String?): ToolCheck
 
 /** The hooks that change nothing, for a step that brings none. */
 internal object NoStepHooks: StepHooks

@@ -7,15 +7,15 @@ import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.openai.OpenAIOptions
 import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.testing.SkuTool
 import dev.botta.trantor.ai.tools.*
+import dev.botta.trantor.primitives.serialization.schemaOf
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import dev.botta.trantor.serialization.gson.GsonSerializer
-import dev.botta.trantor.ai.testing.SkuTool
 import kotlin.reflect.typeOf
-import dev.botta.trantor.primitives.serialization.schemaOf
 
 class AgentTest {
     @Test

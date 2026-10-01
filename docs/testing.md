@@ -59,6 +59,7 @@ bottom of that file.
 package dev.botta.trantor.ai.models.middleware
 
 import dev.botta.trantor.ai.errors.*
+import dev.botta.trantor.ai.models.ModelNotFoundError
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

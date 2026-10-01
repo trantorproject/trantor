@@ -5,12 +5,12 @@ import dev.botta.cqbus.requests.Request
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.primitives.serialization.JsonSerializer
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import dev.botta.trantor.web.application.routes.ApplicationRouteRegister
 import dev.botta.trantor.web.server.RouteRegister
 import dev.botta.trantor.web.server.clientAddress
 import io.javalin.http.Context
 import io.javalin.http.Handler
-import dev.botta.trantor.serialization.gson.GsonSerializer
 import io.opentelemetry.api.OpenTelemetry
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf

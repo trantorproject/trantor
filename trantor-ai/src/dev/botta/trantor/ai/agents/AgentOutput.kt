@@ -1,9 +1,9 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.serialization.schemaFor
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import kotlin.reflect.KType
-import dev.botta.trantor.ai.serialization.schemaFor
 
 /** The object an agent answers with, and how it asks the model for it. */
 class AgentOutput<T: Any>(

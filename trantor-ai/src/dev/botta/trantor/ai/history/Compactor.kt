@@ -1,10 +1,10 @@
 package dev.botta.trantor.ai.history
 
+import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.chat.ChatResponse
 import dev.botta.trantor.ai.models.chat.Message
-import dev.botta.trantor.ai.generation.RunResult
-import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.primitives.logging.getLogger
 
 /**

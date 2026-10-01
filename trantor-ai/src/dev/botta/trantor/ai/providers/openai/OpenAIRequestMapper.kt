@@ -49,7 +49,10 @@ internal class OpenAIRequestMapper(
 
         private val takesReasoning get() = model == null || model.reasoningEfforts.isNotEmpty()
         private val reasons get() = model != null && model.reasoningEfforts.isNotEmpty()
-        private val searchesTools get() = model != null && ModelFeatures.ToolSearch in model
+        private val loadsDeferredTools get() = model != null && ModelFeatures.DeferredTools in model
+
+        /** Whether the deferred tools go deferred: the model loads them, and there is a search to find them. */
+        private val defersTools get() = loadsDeferredTools && search.spec != null
 
         /**
          * A reasoning model refuses every sampling setting **while it is reasoning**, which is the one capability
@@ -125,7 +128,7 @@ internal class OpenAIRequestMapper(
 
             val ours = options.forProvider(OPENAI_PROVIDER)
 
-            // Typed options first, so that what counts as a conflict for a raw one doesn't depend on the order they came in
+            // Typed options first, so that what is a conflict for a raw one doesn't depend on the order they came in
             ours.filterIsInstance<OpenAIOptions>().forEach { apply(body, it) }
             ours.filterIsInstance<RawOptions>().forEach { merge(body, it.values) }
             ours.filter { it !is OpenAIOptions && it !is RawOptions }.forEach {
@@ -162,7 +165,8 @@ internal class OpenAIRequestMapper(
                 when {
                     mine == null -> body[key] = theirs
                     mine is JsonObject && theirs is JsonObject -> merge(mine, theirs, here)
-                    mine is JsonArray && theirs is JsonArray -> theirs.forEach { if (mine.none { own -> own == it }) mine.add(it) }
+                    mine is JsonArray && theirs is JsonArray ->
+                        theirs.forEach { if (mine.none { own -> own == it }) mine.add(it) }
                     else -> throw InvalidProviderOptionError(
                         OPENAI_PROVIDER,
                         here,
@@ -259,24 +263,23 @@ internal class OpenAIRequestMapper(
             if (strict) StrictSchema.of(schema, OpenAIStrictRules) else schema
 
         /**
-         * The tools as OpenAI takes them. On a model that searches, a deferred one goes with `defer_loading` and a
-         * tool search after them all: the search of the application, run by the client, when the request has one,
-         * and OpenAI's own otherwise. Any other model gets them all up front, with a warning.
+         * The tools as OpenAI takes them. With the search of the application in the request, on a model that loads
+         * deferred tools, the search goes as a tool search the client runs and the deferred ones with `defer_loading`,
+         * and OpenAI loads the ones the search finds. Anywhere else they go up front, with a warning: nothing would
+         * find them.
          */
         private fun toTools(tools: List<ToolSpec>): List<JsonObject> {
-            val clientSearch = searchesTools && search.spec != null
-            val sent = tools.mapNotNull { if (clientSearch && it == search.spec) null else toTool(it) }
             val deferred = tools.filter { it is FunctionToolSpec && it.deferLoading }
-            if (deferred.isEmpty() && !clientSearch) return sent
-
-            if (!searchesTools) {
+            if (deferred.isNotEmpty() && !defersTools) {
                 val names = deferred.joinToString { it.name }
-                warnings.add(ModelWarning("$modelId does not search tools, so $names went up front", "tools"))
-                return sent
+                val why =
+                    if (loadsDeferredTools) "the request has no search to find them" else "$modelId does not load them"
+                warnings.add(ModelWarning("$names went up front: $why", "tools"))
             }
 
-            return listOfNotNull(search.spec?.takeIf { clientSearch }?.let { toClientSearch(it) }) + sent +
-                listOfNotNull(Json.obj("type" to TOOL_SEARCH_TYPE).takeUnless { clientSearch })
+            return tools.mapNotNull {
+                if (defersTools && it == search.spec) toClientSearch(it as FunctionToolSpec) else toTool(it)
+            }
         }
 
         /**
@@ -300,7 +303,7 @@ internal class OpenAIRequestMapper(
                 "description" to tool.description,
                 "strict" to tool.strict,
                 "parameters" to schemaFor(tool.parameters, tool.strict),
-            ).apply { if (tool.deferLoading && searchesTools) this["defer_loading"] = true }
+            ).apply { if (tool.deferLoading && defersTools) this["defer_loading"] = true }
             is ProviderToolSpec -> if (tool.name.startsWith("$OPENAI_PROVIDER.")) {
                 tool.args.with("type", tool.name.removePrefix("$OPENAI_PROVIDER."))
             } else {
@@ -402,7 +405,7 @@ internal class OpenAIRequestMapper(
         ).apply { part.metadata[OPENAI_PROVIDER]?.get("namespace")?.let { this["namespace"] = it } }
 
         /** Whether a call to [toolName] is the tool search the model asked the client for (see [toClientSearch]). */
-        private fun isClientSearch(toolName: String) = searchesTools && search.isSearch(toolName)
+        private fun isClientSearch(toolName: String) = defersTools && search.isSearch(toolName)
 
         /**
          * What the search of the application found goes back as the definitions of those tools, which OpenAI loads:

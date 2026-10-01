@@ -36,7 +36,7 @@ class AgentApprovalRecordedTest {
     inner class `on o4-mini` {
         @Test
         fun `a paused run keeps the lookup and waits with the refund`() {
-            http.answers(*fixtures("openai/approval", 2))
+            http.answers(*fixtures("openai/approvals/approval", 2))
 
             val paused = pause(openAI())
 
@@ -46,7 +46,7 @@ class AgentApprovalRecordedTest {
 
         @Test
         fun `approved, the result goes back after its call, and the model says it gave the money back`() {
-            http.answers(*fixtures("openai/approval", 3))
+            http.answers(*fixtures("openai/approvals/approval", 3))
             val model = openAI()
             val callId = pause(model).pending.single().call.callId
 
@@ -62,7 +62,7 @@ class AgentApprovalRecordedTest {
 
         @Test
         fun `rejected, the model reads why and does not try it again`() {
-            http.answers(*fixtures("openai/rejection", 3))
+            http.answers(*fixtures("openai/approvals/rejection", 3))
             val model = openAI()
             val callId = pause(model).pending.single().call.callId
 
@@ -77,7 +77,7 @@ class AgentApprovalRecordedTest {
 
         @Test
         fun `with a new message and no decision, the result goes before the message`() {
-            http.answers(*fixtures("openai/approval-new-message", 3))
+            http.answers(*fixtures("openai/approvals/new-message", 3))
             val model = openAI()
             val callId = pause(model).pending.single().call.callId
 
@@ -105,7 +105,7 @@ class AgentApprovalRecordedTest {
     inner class `on Claude Sonnet 4-5` {
         @Test
         fun `a paused run keeps the lookup and waits with the refund`() {
-            http.answers(*fixtures("anthropic/approval", 1))
+            http.answers(*fixtures("anthropic/approvals/approval", 1))
 
             val paused = pause(claude())
 
@@ -115,7 +115,7 @@ class AgentApprovalRecordedTest {
 
         @Test
         fun `approved, the result goes back with the other one, and the model says it gave the money back`() {
-            http.answers(*fixtures("anthropic/approval", 2))
+            http.answers(*fixtures("anthropic/approvals/approval", 2))
             val model = claude()
             val callId = pause(model).pending.single().call.callId
 
@@ -133,7 +133,7 @@ class AgentApprovalRecordedTest {
 
         @Test
         fun `rejected, the model reads it as an error and does not try it again`() {
-            http.answers(*fixtures("anthropic/rejection", 2))
+            http.answers(*fixtures("anthropic/approvals/rejection", 2))
             val model = claude()
             val callId = pause(model).pending.single().call.callId
 
@@ -149,7 +149,7 @@ class AgentApprovalRecordedTest {
 
         @Test
         fun `with a new message and no decision, the results go first in the message of the user`() {
-            http.answers(*fixtures("anthropic/approval-new-message", 2))
+            http.answers(*fixtures("anthropic/approvals/new-message", 2))
             val model = claude()
             pause(model)
 

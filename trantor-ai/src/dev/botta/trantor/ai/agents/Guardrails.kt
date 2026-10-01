@@ -24,8 +24,7 @@ import dev.botta.trantor.ai.models.chat.ToolCallPart
  * }
  * ```
  *
- * OpenAI Agents runs them at the same time as the agent by default, which saves the wait but lets the agent spend
- * tokens and run tools before the check stops it. Here they always come first.
+ * They always run before the agent, so that it spends no tokens and runs no tool on a conversation the check stops.
  */
 interface InputGuardrail {
     /** Which one it was, in the [GuardrailTrippedError]. The name of its class unless it says otherwise. */
@@ -49,8 +48,8 @@ interface InputGuardrail {
  * that answered. It sees the whole [AgentRunResult], so an object answered with a tool is read with
  * [AgentRunResult.output].
  *
- * Only the final answer is checked, as in OpenAI Agents: the text of an agent before it calls a tool, or of an agent
- * that handed the conversation over, is not.
+ * Only the final answer is checked: the text of an agent before it calls a tool, or of an agent that handed the
+ * conversation over, is not.
  *
  * In a stream, the text of the answer is held back until the check passes, and then comes out all together, because
  * a check of safety that lets the text out before it runs is no check at all. A check of quality can say [holdsText]
@@ -85,9 +84,9 @@ interface OutputGuardrail {
  * output tool included; a guardrail about one tool looks at [ToolCallPart.toolName].
  *
  * Every call of a step is checked before any of them runs, so a trip leaves no step half done: none of its tools had
- * any effect. OpenAI Agents checks each call right before it runs instead. A rejected call is answered to the model
- * as an error and the others run. A call can also be left waiting for a person to approve it, with the rules that
- * depend on the moment, like who the user is or how much it is: see [ToolGuardrailVerdict.AskForApproval].
+ * any effect. A rejected call is answered to the model as an error and the others run. A call can also be left
+ * waiting for a person to approve it, with the rules that depend on the moment, like who the user is or how much
+ * it is: see [ToolGuardrailVerdict.AskForApproval].
  */
 interface ToolGuardrail {
     /** Which one it was, in the [GuardrailTrippedError] and in the warning of a rejected call. */

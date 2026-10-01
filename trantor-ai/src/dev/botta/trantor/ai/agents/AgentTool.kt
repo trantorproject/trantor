@@ -1,6 +1,6 @@
 package dev.botta.trantor.ai.agents
 
-import dev.botta.trantor.ai.errors.NestedApprovalError
+import dev.botta.trantor.ai.generation.NestedApprovalError
 import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
@@ -14,8 +14,7 @@ import dev.botta.trantor.primitives.serialization.Description
  * the agent that called it.
  *
  * - **It gets only the task**, as a message of the user: not the conversation, nor a session, nor a context policy.
- *   The model is told so in the description of the arg, so it writes a task that carries what the agent needs. It
- *   is what OpenAI Agents, ADK, Microsoft and AI SDK do; Mastra passes the conversation along instead.
+ *   The model is told so in the description of the arg, so it writes a task that carries what the agent needs.
  * - **It runs for whom the run that called it runs**: the same [dev.botta.trantor.ai.RunContext] and the same call
  *   options, so a cancellation of that run stops this one too, and ends both. The hooks and guardrails registered
  *   globally apply to it as to any run; those of the run that called it do not.
@@ -27,8 +26,7 @@ import dev.botta.trantor.primitives.serialization.Description
  * - **A run of the agent that waits for approval** fails the run that called it with [NestedApprovalError]: that run
  *   cannot pause in its place. A tool guardrail can ask for approval of the call to the agent instead.
  * - **How deep it goes is bounded**: a run inside [maxDepth] agents that run as tools does not start another, and the
- *   call goes back to the model as an error. No other library bounds it; it is what ends a cycle of agents that use
- *   each other.
+ *   call goes back to the model as an error. It is what ends a cycle of agents that use each other.
  *
  * The events of its run do not reach the stream of the run that called it, which shows it as a tool that starts and
  * finishes.

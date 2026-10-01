@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test
 class AgentSessionRecordedTest {
     @Test
     fun `on o4-mini the session keeps every turn, and the calls send what the policy leaves`() {
-        http.answers(*fixtures("openai/session"))
+        http.answers(*fixtures("openai/sessions/session"))
 
         converse(OpenAIChatModel("o4-mini", OpenAIConfig("sk-test"), http))
 
@@ -36,7 +36,7 @@ class AgentSessionRecordedTest {
 
     @Test
     fun `on Claude Sonnet 4-5 too, and the cache comes back on the turn after the cut`() {
-        http.answers(*fixtures("anthropic/session"))
+        http.answers(*fixtures("anthropic/sessions/session"))
 
         val turns = converse(AnthropicChatModel("claude-sonnet-4-5", AnthropicConfig(apiKey = "sk-ant-test"), http))
 
@@ -56,7 +56,7 @@ class AgentSessionRecordedTest {
      */
     @Test
     fun `on Opus 5-5 the thinking from before the cut is left out, and the one produced after it goes back`() {
-        val answers = fixtures("anthropic/bound-session")
+        val answers = fixtures("anthropic/sessions/bound")
         http.answers(*answers)
         val model = AnthropicChatModel("claude-opus-5-5", AnthropicConfig(apiKey = "sk-ant-test"), http)
 

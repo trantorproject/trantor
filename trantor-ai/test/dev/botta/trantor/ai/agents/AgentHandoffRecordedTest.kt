@@ -27,7 +27,7 @@ class AgentHandoffRecordedTest {
     inner class `A declared handoff` {
         @Test
         fun `o4-mini takes the request of the new agent, with the turns of the one before told as context`() {
-            http.answers(*fixtures("openai/handoff", 4))
+            http.answers(*fixtures("openai/handoffs/handoff", 4))
 
             val result = runner.run(support(openAI()).handoffs("sales").build(), question) { team(sales(openAI())) }
 
@@ -46,20 +46,26 @@ class AgentHandoffRecordedTest {
 
         @Test
         fun `the handoff tool goes with a closed schema without properties, which OpenAI took as strict`() {
-            http.answers(*fixtures("openai/handoff", 4))
+            http.answers(*fixtures("openai/handoffs/handoff", 4))
 
             runner.run(support(openAI()).handoffs("sales").build(), question) { team(sales(openAI())) }
 
-            val transfer = sent(0)["tools"]!!.asArray()!!.map { it.asObject()!! }.single { it["name"]!!.asString() == "transfer_to_sales" }
+            val transfer = sent(0)["tools"]!!.asArray()!!.map { it.asObject()!! }
+                .single { it["name"]!!.asString() == "transfer_to_sales" }
             assertThat(transfer["strict"]!!.asBoolean()).isTrue()
             assertThat(transfer["parameters"]).isEqualTo(
-                Json.obj("type" to "object", "properties" to Json.obj(), "additionalProperties" to false, "required" to Json.array()),
+                Json.obj(
+                    "type" to "object",
+                    "properties" to Json.obj(),
+                    "additionalProperties" to false,
+                    "required" to Json.array(),
+                ),
             )
         }
 
         @Test
         fun `so does Claude Sonnet 4-5`() {
-            http.answers(*fixtures("anthropic/handoff", 4))
+            http.answers(*fixtures("anthropic/handoffs/handoff", 4))
 
             val result = runner.run(support(sonnet()).handoffs("sales").build(), question) { team(sales(sonnet())) }
 
@@ -77,7 +83,7 @@ class AgentHandoffRecordedTest {
     inner class `A tool of the application that hands over` {
         @Test
         fun `on o4-mini the new agent reads what the tool answered`() {
-            http.answers(*fixtures("openai/handoff-tool", 4))
+            http.answers(*fixtures("openai/handoffs/handoff-tool", 4))
 
             val result = runner.run(support(openAI()).tools(AssignTool()).build(), question) { team(sales(openAI())) }
 
@@ -88,7 +94,7 @@ class AgentHandoffRecordedTest {
 
         @Test
         fun `and on Claude Sonnet 4-5`() {
-            http.answers(*fixtures("anthropic/handoff-tool", 3))
+            http.answers(*fixtures("anthropic/handoffs/handoff-tool", 3))
 
             val result = runner.run(support(sonnet()).tools(AssignTool()).build(), question) { team(sales(sonnet())) }
 
@@ -109,8 +115,9 @@ class AgentHandoffRecordedTest {
     inner class `On a model that ties its thinking` {
         @Test
         fun `the requests of the new agent go without the thinking of the one before`() {
-            http.answers(*fixtures("anthropic/bound-handoff", 5))
-            val support = support(opus()).handoffs("sales").settings { reasoning = Reasoning.effort(ReasoningEfforts.High) }
+            http.answers(*fixtures("anthropic/handoffs/bound", 5))
+            val support = support(opus()).handoffs("sales")
+                .settings { reasoning = Reasoning.effort(ReasoningEfforts.High) }
             val sales = sales(opus())
 
             val first = runner.run(support.build(), question) {
@@ -122,7 +129,7 @@ class AgentHandoffRecordedTest {
             }
 
             assertThat(first.steps.map { it.agent.name }).containsExactly("support", "support", "sales", "sales")
-            assertThat(thinkingSent(1)).containsExactlyElementsOf(signaturesOf("anthropic/bound-handoff-1"))
+            assertThat(thinkingSent(1)).containsExactlyElementsOf(signaturesOf("anthropic/handoffs/bound-1"))
             assertThat((2..4).flatMap { thinkingSent(it) }).isEmpty()
             assertThat(textsSent(2)).contains("[support] called transfer_to_sales with {}")
             assertThat(first.warnings + next.warnings).isEmpty()
@@ -158,7 +165,8 @@ class AgentHandoffRecordedTest {
 
     private fun sent(call: Int) = Json.parse(http.requests[call].body as String).asObject()!!
 
-    private fun openAIToolNames(call: Int) = sent(call)["tools"]!!.asArray()!!.map { it.asObject()!!["name"]!!.asString() }
+    private fun openAIToolNames(call: Int) =
+        sent(call)["tools"]!!.asArray()!!.map { it.asObject()!!["name"]!!.asString() }
 
     private fun openAIItems(call: Int, type: String) =
         sent(call)["input"]!!.asArray()!!.map { it.asObject()!! }.filter { it["type"]?.asString() == type }

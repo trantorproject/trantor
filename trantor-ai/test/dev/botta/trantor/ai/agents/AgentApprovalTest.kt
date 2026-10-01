@@ -3,9 +3,9 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.errors.NestedApprovalError
-import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.Approve
+import dev.botta.trantor.ai.generation.NestedApprovalError
+import dev.botta.trantor.ai.generation.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.PendingCall
 import dev.botta.trantor.ai.generation.Reject
 import dev.botta.trantor.ai.generation.RunEvent

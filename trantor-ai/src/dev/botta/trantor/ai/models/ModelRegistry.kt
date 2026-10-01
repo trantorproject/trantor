@@ -1,6 +1,5 @@
 package dev.botta.trantor.ai.models
 
-import dev.botta.trantor.ai.errors.ModelNotFoundError
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.middleware.ChatModelMiddleware
 import dev.botta.trantor.ai.models.middleware.with
@@ -94,7 +93,8 @@ class ModelRegistry {
 
         while (current in aliases) {
             if (!seen.add(current)) {
-                throw ModelNotFoundError(reference, "The alias $reference goes in circles: ${seen.joinToString(" -> ")}")
+                val chain = seen.joinToString(" -> ")
+                throw ModelNotFoundError(reference, "The alias $reference goes in circles: $chain")
             }
             current = aliases.getValue(current)
         }

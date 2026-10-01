@@ -3,18 +3,18 @@
 package dev.botta.trantor.ai.providers.anthropic
 
 import dev.botta.json.Json
+import dev.botta.trantor.ai.models.catalog.ModelCatalog
+import dev.botta.trantor.ai.models.catalog.ModelFeatures
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.FunctionToolSpec
 import dev.botta.trantor.ai.tools.ToolChoice
 import dev.botta.trantor.ai.tools.ToolOutput
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import dev.botta.trantor.serialization.gson.GsonSerializer
-import dev.botta.trantor.ai.models.catalog.ModelCatalog
-import dev.botta.trantor.ai.models.catalog.ModelFeatures
 
 /**
  * The same request against models of different generations.
@@ -112,7 +112,8 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `minimal is asked for as low, because Anthropic has no level below it`() {
-            val response = generate("claude-opus-5", ChatSettings(reasoning = Reasoning.effort(ReasoningEfforts.Minimal)))
+            val response =
+                generate("claude-opus-5", ChatSettings(reasoning = Reasoning.effort(ReasoningEfforts.Minimal)))
 
             assertThat(sentBody().path("output_config.effort")?.asString()).isEqualTo("low")
             assertThat(response.warnings.map { it.setting }).containsExactly("reasoning")
@@ -621,7 +622,7 @@ class AnthropicChatModelPerModelTest {
          */
         @Test
         fun `recorded where it goes last, the second turn reads back everything but the dynamic part`() {
-            val next = twoRecordedTurns("claude-opus-5", "dynamic-system")
+            val next = twoRecordedTurns("claude-opus-5", "system/dynamic")
 
             assertThat(sentBody()["messages"]!!.asArray()!!.last().asObject()!!["role"]?.asString())
                 .isEqualTo("system")
@@ -632,7 +633,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `recorded where it goes under the system prompt, only the system prompt is read back`() {
-            val next = twoRecordedTurns("claude-sonnet-4-5", "dynamic-system-fallback")
+            val next = twoRecordedTurns("claude-sonnet-4-5", "system/fallback")
 
             assertThat(sentBody()["system"]!!.asArray()).hasSize(2)
             assertThat(next.usage.cacheReadTokens).isEqualTo(7_230)
@@ -688,7 +689,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `the thinking of the answer keeps the dynamic part it was produced with`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
 
             val answer = generateWith("claude-opus-5-5", request())
 
@@ -697,7 +698,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `and the next call puts that copy back before the answer, where it was`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
             val answer = generateWith("claude-opus-5-5", request())
             val history = listOf(question, answer.asMessage(), Message.user("Y en Lima?"))
 
@@ -722,7 +723,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `a streamed answer keeps it too`() {
-            httpClient.body = fixture("stream-thinking", "txt")
+            httpClient.body = fixture("chat/stream-thinking", "txt")
             val model = AnthropicChatModel("claude-opus-5-5", AnthropicConfig(apiKey = "sk-ant-test"), httpClient)
 
             val (done, response) = model.stream(request()).use { stream ->
@@ -737,7 +738,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `a model that does not tie its thinking gets none of this`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
 
             val answer = generateWith("claude-opus-5", request())
 
@@ -749,7 +750,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `and neither does a call without a dynamic part`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
 
             val answer = generateWith("claude-opus-5-5", request(dynamic = null))
 
@@ -760,7 +761,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `the thinking of the answer remembers the system prompt, the tools and the messages before it`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
 
             val support = Message.system("Sos soporte")
             val answer = generateWith("claude-opus-5-5", request(history = listOf(support, question)))
@@ -779,7 +780,7 @@ class AnthropicChatModelPerModelTest {
         @Test
         fun `thinking produced under another system prompt is left out, since Anthropic would refuse it`() {
             // What a handoff does: the agent that answers next has other instructions and other tools
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
             val support = Message.system("Sos soporte")
             val first = generateWith("claude-opus-5-5", request(history = listOf(support, question)))
             val second = generateWith(
@@ -802,7 +803,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `and so is the one under other tools`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
             val before = generateWith("claude-opus-5-5", request())
             val history = listOf(question, before.asMessage(), Message.user("Y en Lima?"))
 
@@ -814,7 +815,7 @@ class AnthropicChatModelPerModelTest {
         @Test
         fun `only up to the last one that changed, so the thinking produced after it stays`() {
             // Anthropic takes thinking left out from the start, not from the middle
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
             val support = Message.system("Sos soporte")
             val sales = Message.system("Sos ventas")
             val bySupport = generateWith("claude-opus-5-5", request(history = listOf(support, question)))
@@ -833,10 +834,10 @@ class AnthropicChatModelPerModelTest {
         }
 
         @Test
-        fun `and a block that still fits goes too when one after it changed, since none can be left out of the middle`() {
+        fun `and a block that still fits goes too when one after it changed, as none can be left out of the middle`() {
             // Sales hands over to support and support back to sales: the first thinking of sales still fits, but
             // keeping it would leave out the one of support from the middle
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
             val support = Message.system("Sos soporte")
             val sales = Message.system("Sos ventas")
             val bySales = generateWith("claude-opus-5-5", request(history = listOf(sales, question)))
@@ -856,7 +857,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `thinking after messages taken out of the start is left out, as a context policy that cuts does`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
             val first = generateWith("claude-opus-5-5", request())
             val second = generateWith(
                 "claude-opus-5-5",
@@ -872,7 +873,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `and the thinking produced after the cut stays`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
             val first = generateWith("claude-opus-5-5", request())
             val second = generateWith(
                 "claude-opus-5-5",
@@ -888,7 +889,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `thinking after a tool result that was shortened is left out too`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
             val call = Message.Assistant(listOf(ToolCallPart("toolu_1", "getWeather", Json.obj("city" to "Bariloche"))))
             fun resultOf(text: String) =
                 Message.Tool(listOf(ToolResultPart("toolu_1", "getWeather", ToolOutput.Text(text))))
@@ -908,7 +909,7 @@ class AnthropicChatModelPerModelTest {
 
         @Test
         fun `the same system prompt and tools keep all of it`() {
-            httpClient.body = fixture("bound-thinking-2")
+            httpClient.body = fixture("thinking/bound-2")
             val before = generateWith("claude-opus-5-5", request())
             val history = listOf(question, before.asMessage(), Message.user("Y en Lima?"))
 

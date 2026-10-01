@@ -3,9 +3,9 @@
 package dev.botta.trantor.ai
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.errors.NoObjectGeneratedError
-import dev.botta.trantor.ai.generation.MaxStepsExceededError
 import dev.botta.trantor.ai.generation.Approve
+import dev.botta.trantor.ai.generation.MaxStepsExceededError
+import dev.botta.trantor.ai.generation.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.RunEvent
 import dev.botta.trantor.ai.generation.ToolLoopApprovalTest.RefundTool
 import dev.botta.trantor.ai.generation.textDeltas
@@ -13,19 +13,19 @@ import dev.botta.trantor.ai.history.InMemorySession
 import dev.botta.trantor.ai.history.LastMessages
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
+import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.RawOptions
 import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.testing.FakeCompactor
+import dev.botta.trantor.ai.testing.SkuTool
 import dev.botta.trantor.ai.tools.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
-import dev.botta.trantor.ai.testing.FakeCompactor
-import dev.botta.trantor.ai.models.Usage
-import dev.botta.trantor.ai.testing.SkuTool
 
 class DefaultAITest {
     @Nested
@@ -119,7 +119,7 @@ class DefaultAITest {
 
         @Test
         fun `a search of the application goes to a model that searches as its own search`() {
-            model.searchesTools = true
+            model.loadsDeferredTools = true
 
             ai.generate {
                 user("Que temperatura hay en Bariloche?")

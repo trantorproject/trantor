@@ -5,10 +5,10 @@ import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.models.Usage
-import dev.botta.trantor.ai.providers.ProviderMetadata
 import dev.botta.trantor.ai.models.chat.*
-import kotlin.time.Duration
+import dev.botta.trantor.ai.providers.ProviderMetadata
 import dev.botta.trantor.ai.tools.search.SearchToolsTool
+import kotlin.time.Duration
 
 /** Turns a response of the OpenAI Responses API into a [ChatResponse]. */
 internal class OpenAIResponseMapper {
@@ -132,7 +132,7 @@ internal class OpenAIResponseMapper {
 
     /**
      * OpenAI reports cached, written and reasoning tokens as details of input and output, which is the contract of
-     * [Usage]. A recorded call on gpt-5.6-luna settles it for writes too: 5125 read and 13 written out of 5141.
+     * [Usage], writes included.
      */
     private fun toUsage(json: JsonObject?): Usage {
         if (json == null) return Usage.Unknown

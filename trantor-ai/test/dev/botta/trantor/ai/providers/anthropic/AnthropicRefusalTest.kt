@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 class AnthropicRefusalTest {
     @Test
     fun `says why the safeguards declined, as the provider named it`() {
-        http.body = fixture("refusal-1.json")
+        http.body = fixture("chat/refusal-1.json")
 
         val response = model.generate(request)
 
@@ -26,7 +26,7 @@ class AnthropicRefusalTest {
 
     @Test
     fun `and so does a stream`() {
-        http.body = fixture("refusal-stream-1.txt")
+        http.body = fixture("chat/refusal-stream-1.txt")
 
         val response = model.stream(request).use { stream -> stream.forEach { }; stream.response() }
 

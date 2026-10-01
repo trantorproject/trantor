@@ -1,17 +1,15 @@
 package dev.botta.trantor.ai.history
 
-import dev.botta.trantor.ai.errors.NoSummaryWrittenError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.FinishReasons
 import dev.botta.trantor.ai.models.chat.Message
-import io.opentelemetry.api.OpenTelemetry
 import dev.botta.trantor.ai.telemetry.GenAITelemetry
+import io.opentelemetry.api.OpenTelemetry
 
 /**
- * A [Compactor] that asks [model] for the summary: any model of any provider, a cheaper one included, which is
- * what Microsoft, LangChain and ADK do.
+ * A [Compactor] that asks [model] for the summary: any model of any provider, a cheaper one included.
  *
  * - **What stays:** the system messages the conversation starts with, and its last [keepTurns] turns, as they are.
  *   A turn starts at something the user said, so a call is never cut from its result.

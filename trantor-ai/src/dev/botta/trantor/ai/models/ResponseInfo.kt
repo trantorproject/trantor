@@ -3,6 +3,7 @@ package dev.botta.trantor.ai.models
 import dev.botta.trantor.ai.models.cost.CostEstimate
 import kotlin.time.Duration
 
+/** What a response says about the call that made it, besides what the model answered. */
 data class ResponseInfo(
     // Id given by the provider, to look the call up on their side
     val id: String? = null,

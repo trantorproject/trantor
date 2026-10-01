@@ -36,6 +36,7 @@ interface ChatModelMiddleware {
 fun ChatModel.with(middlewares: List<ChatModelMiddleware>): ChatModel =
     if (middlewares.isEmpty()) this else MiddlewareChatModel(this, middlewares)
 
+/** The model seen through [middlewares], the first one the outermost. */
 fun ChatModel.with(vararg middlewares: ChatModelMiddleware) = with(middlewares.toList())
 
 private typealias Call<T> = (ChatRequest, CallOptions) -> T
@@ -46,7 +47,7 @@ private class MiddlewareChatModel(
 ): ChatModel {
     override val provider = model.provider
     override val modelId = model.modelId
-    override val searchesTools = model.searchesTools
+    override val loadsDeferredTools = model.loadsDeferredTools
 
     // Built once and not per call: the registry hands out the same model to everyone who asks for it
     private val generateChain: Call<ChatResponse> =

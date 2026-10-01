@@ -1,13 +1,13 @@
 package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.providers.defaultHttpClient
 import dev.botta.trantor.web.client.HttpClient
-import dev.botta.trantor.ai.models.CallOptions
 import io.opentelemetry.api.OpenTelemetry
 import java.io.File
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * A connection to one MCP server, to list the tools it offers and call them.

@@ -3,18 +3,18 @@
 package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.errors.NoObjectGeneratedError
+import dev.botta.trantor.ai.generation.NoObjectGeneratedError
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
-import dev.botta.trantor.serialization.gson.GsonSerializer
 
 class OpenAIChatModelStructuredOutputTest {
     @Test
     fun `asks for the answer as a schema`() {
-        httpClient.body = fixture("structured-output")
+        httpClient.body = fixture("chat/structured-output")
 
         model.generate(orderRequest())
 
@@ -27,7 +27,7 @@ class OpenAIChatModelStructuredOutputTest {
 
     @Test
     fun `the schema it sends follows the rules of strict mode`() {
-        httpClient.body = fixture("structured-output")
+        httpClient.body = fixture("chat/structured-output")
 
         model.generate(orderRequest())
 
@@ -41,7 +41,7 @@ class OpenAIChatModelStructuredOutputTest {
 
     @Test
     fun `without strict the schema goes as it is`() {
-        httpClient.body = fixture("structured-output")
+        httpClient.body = fixture("chat/structured-output")
         val output = OutputSpec.json<Order>(GsonSerializer(), name = "order", strict = false)
 
         model.generate(ChatRequest(listOf(Message.user("Leé el pedido")), output = output))
@@ -54,7 +54,7 @@ class OpenAIChatModelStructuredOutputTest {
 
     @Test
     fun `a request without structured output does not ask for a format`() {
-        httpClient.body = fixture("structured-output")
+        httpClient.body = fixture("chat/structured-output")
 
         model.generate(ChatRequest("Hola"))
 
@@ -63,7 +63,7 @@ class OpenAIChatModelStructuredOutputTest {
 
     @Test
     fun `reads the answer as the object`() {
-        httpClient.body = fixture("structured-output")
+        httpClient.body = fixture("chat/structured-output")
 
         val order = model.generate(orderRequest()).objectAs<Order>(GsonSerializer())
 
@@ -74,7 +74,7 @@ class OpenAIChatModelStructuredOutputTest {
 
     @Test
     fun `a refusal is not an object`() {
-        httpClient.body = fixture("refusal")
+        httpClient.body = fixture("chat/refusal")
 
         val response = model.generate(orderRequest())
 
@@ -87,7 +87,7 @@ class OpenAIChatModelStructuredOutputTest {
 
     @Test
     fun `an answer that is not the object asked for fails with what came`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         val response = model.generate(orderRequest())
 

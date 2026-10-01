@@ -22,7 +22,7 @@ import dev.botta.trantor.ai.tools.search.ClientToolSearch
  * [markCache], the thinking it sent, for [bindThinking], and the [betas] and the [stamp] that come out of it.
  */
 internal class AnthropicConversation(
-    private val takes: WhatTheModelTakes,
+    private val supports: ModelSupport,
     private val warnings: MappingWarnings,
     private val cache: AnthropicCache,
     private val modelId: String,
@@ -30,11 +30,11 @@ internal class AnthropicConversation(
     private val search: ClientToolSearch = ClientToolSearch(emptyList()),
 ) {
     private val placement = when {
-        takes.boundThinking -> LastForOneTurn
-        takes.midConversationSystem -> Last
+        supports.boundThinking -> LastForOneTurn
+        supports.midConversationSystem -> Last
         else -> UnderTheSystemPrompt
     }
-    private val thinking = if (takes.boundThinking) BoundThinking(modelId, warnings) else null
+    private val thinking = if (supports.boundThinking) BoundThinking(modelId, warnings) else null
     private var dynamic: String? = null
     private var dynamicLast: SystemMessage? = null
     private val takenBetas = mutableSetOf<String>()
@@ -110,7 +110,7 @@ internal class AnthropicConversation(
     private fun systemPromptOf(messages: List<Message>): String? {
         val texts = messages.filterIsInstance<Message.System>().map { it.text }
 
-        if (takes.midConversationSystem) return texts.firstOrNull()
+        if (supports.midConversationSystem) return texts.firstOrNull()
 
         if (texts.size > 1) {
             warnings.add(
@@ -198,7 +198,7 @@ internal class AnthropicConversation(
 
     /** Null for whatever went into the system field, which is not a message here. */
     private fun roleOf(message: Message, isTheSystemPrompt: Boolean) = when (message) {
-        is Message.System -> if (isTheSystemPrompt || !takes.midConversationSystem) null else "system"
+        is Message.System -> if (isTheSystemPrompt || !supports.midConversationSystem) null else "system"
         is Message.User -> "user"
         is Message.Assistant -> "assistant"
         // A tool result is something the model is told, so Anthropic reads it as a turn of the user
@@ -264,7 +264,7 @@ internal class AnthropicConversation(
      * goes as it was written, with the names of the tools to search again with.
      */
     private fun toolReferences(part: ToolResultPart): JsonArray? {
-        if (!takes.toolSearch || !search.isSearch(part.toolName)) return null
+        if (!supports.deferredTools || !search.isSearch(part.toolName)) return null
 
         val found = search.found(part).ifEmpty { return null }
 

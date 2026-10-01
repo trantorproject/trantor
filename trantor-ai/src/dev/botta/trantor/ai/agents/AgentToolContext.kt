@@ -2,9 +2,9 @@ package dev.botta.trantor.ai.agents
 
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.ai.serialization.defaultJsonSerializer
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.primitives.serialization.JsonSerializer
-import dev.botta.trantor.ai.serialization.defaultJsonSerializer
 
 /** What a tool knows about its call when an agent makes it: also the agent and the run it belongs to. */
 class AgentToolContext(
@@ -15,7 +15,10 @@ class AgentToolContext(
     val agent: Agent,
     /** The run of the agents, the same in every call it makes. */
     val runId: String,
-    /** The names of the agents it can hand the conversation over to with [dev.botta.trantor.ai.tools.ToolResult.handoffTo]. */
+    /**
+     * The names of the agents it can hand the conversation over to with
+     * [dev.botta.trantor.ai.tools.ToolResult.handoffTo].
+     */
     val team: Set<String>,
     callOptions: CallOptions = CallOptions(),
     /**

@@ -9,8 +9,8 @@ import dev.botta.trantor.ai.models.chat.ToolResultPart
  * One call to the model within a run, and the results of the tools it asked for. A run is the whole of it: from the
  * request to the final answer, one step after another.
  *
- * The OpenAI and Claude agent SDKs call this a turn. Trantor says step, as AI SDK does, because "turn" also means an
- * exchange of a conversation — a message of the user and everything done to answer it — which is a different thing.
+ * It is not called a turn because a turn is an exchange of a conversation — a message of the user and everything
+ * done to answer it — which is a different thing.
  */
 data class Step(
     val response: ChatResponse,

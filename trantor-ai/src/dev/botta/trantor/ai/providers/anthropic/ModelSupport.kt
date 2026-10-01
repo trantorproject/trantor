@@ -10,7 +10,7 @@ import dev.botta.trantor.ai.models.catalog.ModelSpec
  * it back with. A spec that is a guess, a model nobody described standing in for the newest one, says so in
  * [isGuess], so that every decision taken out of it can say so too.
  */
-internal class WhatTheModelTakes(private val spec: ModelSpec?) {
+internal class ModelSupport(private val spec: ModelSpec?) {
     private val model = spec?.capabilities
 
     val isGuess get() = spec?.isGuess == true
@@ -28,8 +28,8 @@ internal class WhatTheModelTakes(private val spec: ModelSpec?) {
     /** Not taken for granted without a spec: the notes are asked for with a beta a model without them may refuse. */
     val progressNotes get() = model != null && ModelFeatures.ProgressNotes in model
 
-    /** Not taken for granted without a spec: a model that does not search answers 400, and the loop can search. */
-    val toolSearch get() = model != null && ModelFeatures.ToolSearch in model
+    /** Not taken for granted without a spec: a model that does not load tools answers 400, and the loop tells them. */
+    val deferredTools get() = model != null && ModelFeatures.DeferredTools in model
 
     /** Not something the model takes but something it demands, so a model with no spec is taken not to. */
     val boundThinking get() = model != null && ModelFeatures.BoundThinking in model

@@ -45,6 +45,7 @@ data class ModelCapabilities(
     }
 }
 
+/** What a model takes that is a plain yes or no, as the catalog writes it. */
 enum class ModelFeatures {
     Tools,
     /**
@@ -53,11 +54,11 @@ enum class ModelFeatures {
      */
     StructuredOutput,
     /**
-     * The provider loads the tools of a call it was told to defer once they are found, by its own search or by one
-     * the client runs: Anthropic from the 4.5 generation on, and OpenAI from GPT-5.4 on. Without it, the tool loop
-     * tells the model about the tools found like any other.
+     * The provider loads the tools of a call it was told to defer once the search of the application finds them:
+     * Anthropic from the 4.5 generation on, and OpenAI from GPT-5.4 on. Without it, the tool loop tells the model
+     * about the tools found like any other.
      */
-    ToolSearch,
+    DeferredTools,
     Images,
     Audio,
     PromptCaching,

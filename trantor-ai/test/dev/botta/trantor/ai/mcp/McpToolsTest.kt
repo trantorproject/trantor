@@ -4,10 +4,9 @@ package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
-import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.RunContext
-import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.generation.ToolLoop
+import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.TextPart
 import dev.botta.trantor.ai.models.chat.ToolCallPart
@@ -17,12 +16,13 @@ import dev.botta.trantor.ai.tools.FunctionToolSpec
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolError
 import dev.botta.trantor.ai.tools.ToolOutput
+import dev.botta.trantor.primitives.Cancellation
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
-import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /** The tools of an MCP server, as tools of trantor-ai for a generation or an agent. */
 class McpToolsTest {

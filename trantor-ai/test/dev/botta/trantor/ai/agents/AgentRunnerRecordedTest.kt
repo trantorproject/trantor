@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
 class AgentRunnerRecordedTest {
     @Test
     fun `o4-mini answers the object by calling the output tool`() {
-        http.answers(fixture("openai/agent-output-tool-1"), fixture("openai/agent-output-tool-2"))
+        http.answers(fixture("openai/agents/output-tool-1"), fixture("openai/agents/output-tool-2"))
 
         val result = runner.run(agent(OpenAIChatModel("o4-mini", OpenAIConfig("sk-test"), http)), question)
 
@@ -34,7 +34,7 @@ class AgentRunnerRecordedTest {
 
     @Test
     fun `so does Claude Sonnet 4-5`() {
-        http.answers(fixture("anthropic/agent-output-tool-1"), fixture("anthropic/agent-output-tool-2"))
+        http.answers(fixture("anthropic/agents/output-tool-1"), fixture("anthropic/agents/output-tool-2"))
 
         val result = runner.run(
             agent(AnthropicChatModel("claude-sonnet-4-5", AnthropicConfig(apiKey = "sk-ant-test"), http)),

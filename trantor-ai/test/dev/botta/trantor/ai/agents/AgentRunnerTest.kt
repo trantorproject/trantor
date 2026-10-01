@@ -4,15 +4,16 @@ package dev.botta.trantor.ai.agents
 
 import dev.botta.json.Json
 import dev.botta.trantor.ai.RunContext
-import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.MaxStepsExceededError
+import dev.botta.trantor.ai.generation.NoObjectGeneratedError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.openai.OpenAIOptions
-import dev.botta.trantor.ai.providers.openai.ServiceTiers
+import dev.botta.trantor.ai.providers.openai.OpenAIServiceTiers
 import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.testing.SkuTool
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.serialization.gson.GsonSerializer
 import dev.botta.trantor.serialization.gson.adapters.StringValueSerializer
@@ -21,7 +22,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
-import dev.botta.trantor.ai.testing.SkuTool
 
 class AgentRunnerTest {
     @Test
@@ -84,7 +84,7 @@ class AgentRunnerTest {
 
     @Test
     fun `the options of the run go after the ones of the agent, so the run wins where both say something`() {
-        val ofTheAgent = OpenAIOptions(serviceTier = ServiceTiers.Flex, promptCacheKey = "agente")
+        val ofTheAgent = OpenAIOptions(serviceTier = OpenAIServiceTiers.Flex, promptCacheKey = "agente")
         val ofTheRun = OpenAIOptions(promptCacheKey = "chat-1")
 
         runner.run(support().options(ofTheAgent).build(), Message.user("Hola")) { options(ofTheRun) }
@@ -148,7 +148,7 @@ class AgentRunnerTest {
 
         @Test
         fun `its own search goes to a model that searches as the model's search`() {
-            model.searchesTools = true
+            model.loadsDeferredTools = true
             model.answers(listOf(TextPart("Hola")))
             val agent = support().searchableTools(weather).toolSearcher { _, tools -> tools }.build()
 

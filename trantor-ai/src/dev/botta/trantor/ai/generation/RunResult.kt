@@ -1,11 +1,11 @@
 package dev.botta.trantor.ai.generation
 
+import dev.botta.trantor.ai.history.Compacted
+import dev.botta.trantor.ai.history.Session
+import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.models.cost.CostEstimate
-import dev.botta.trantor.ai.history.Compacted
-import dev.botta.trantor.ai.models.ModelWarning
-import dev.botta.trantor.ai.history.Session
 
 /**
  * What a run left: the answer, every step it took to get there and what it all cost.
@@ -73,7 +73,8 @@ data class RunResult(
                     step.response.asMessage(step.agent),
                     Message.Tool(step.toolResults).takeIf { step.toolResults.isNotEmpty() },
                 )
-                step.toolResults.isNotEmpty() -> listOf(step.response.asMessage(step.agent), Message.Tool(step.toolResults))
+                step.toolResults.isNotEmpty() ->
+                    listOf(step.response.asMessage(step.agent), Message.Tool(step.toolResults))
                 step.reminder != null -> listOf(step.response.asMessage(step.agent), step.reminder)
                 step.response.toolCalls.any { !it.providerExecuted } -> emptyList()
                 else -> listOf(step.response.asMessage(step.agent))

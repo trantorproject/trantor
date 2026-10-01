@@ -1,8 +1,8 @@
 package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.models.chat.Part
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
+import dev.botta.trantor.ai.models.chat.Part
 import dev.botta.trantor.ai.providers.AIProvider
 import dev.botta.trantor.ai.providers.ProviderMetadata
 import dev.botta.trantor.ai.providers.defaultHttpClient

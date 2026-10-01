@@ -6,8 +6,7 @@ import dev.botta.trantor.ai.tools.FunctionToolSpec
  * Finds tools by the words of what the model asks for, in their names, their descriptions and their arguments: the
  * fields the tool search of Anthropic looks in. Names are split into words however they are written (`getWeather`,
  * `github_create_issue`), and a word in the name counts more than one anywhere else. A word matches another that
- * starts like it, so `issues` finds `issue`. No embeddings and no call to a model, as the local search of the Vercel
- * AI SDK and Pydantic AI.
+ * starts like it, so `issues` finds `issue`. No embeddings and no call to a model.
  */
 internal class ToolSearch(private val specs: List<FunctionToolSpec>) {
     private val indexed = specs.map { Indexed(it) }

@@ -9,7 +9,7 @@ import dev.botta.trantor.ai.providers.ProviderOption
  */
 data class OpenAIOptions(
     // How the call is scheduled and billed
-    val serviceTier: ServiceTiers? = null,
+    val serviceTier: OpenAIServiceTiers? = null,
     // Overrides OpenAIConfig.store for this call only
     val store: Boolean? = null,
     // Steers prompt caching: calls sharing a key are likelier to hit the cache
@@ -17,15 +17,18 @@ data class OpenAIOptions(
     // Identifies the end user for abuse detection, without sending anything that identifies a person
     val safetyIdentifier: String? = null,
     // What to do when the conversation doesn't fit the context window
-    val truncation: Truncations? = null,
+    val truncation: OpenAITruncations? = null,
     // How long the answer should be
-    val verbosity: Verbosities? = null,
+    val verbosity: OpenAIVerbosities? = null,
 ): ProviderOption {
     override val provider = OPENAI_PROVIDER
 }
 
-enum class ServiceTiers { Auto, Default, Flex, Priority }
+/** Which capacity of OpenAI serves a call: flex is slower and cheaper, priority faster and dearer. */
+enum class OpenAIServiceTiers { Auto, Default, Flex, Priority }
 
-enum class Truncations { Auto, Disabled }
+/** What OpenAI does with a conversation that does not fit: drop its start, or fail. */
+enum class OpenAITruncations { Auto, Disabled }
 
-enum class Verbosities { Low, Medium, High }
+/** How long OpenAI is to make its answers. */
+enum class OpenAIVerbosities { Low, Medium, High }

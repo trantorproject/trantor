@@ -1,36 +1,36 @@
 package dev.botta.trantor.ai.agents
 
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.generation.HandsOver
 import dev.botta.trantor.ai.generation.NextStep
-import dev.botta.trantor.ai.generation.StepHooks
-import dev.botta.trantor.ai.generation.ToolFailure
 import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.Step
+import dev.botta.trantor.ai.generation.StepHooks
 import dev.botta.trantor.ai.generation.StepSetup
 import dev.botta.trantor.ai.generation.ToolApproval
 import dev.botta.trantor.ai.generation.ToolCheck
-import dev.botta.trantor.ai.generation.ToolRefusal
-import dev.botta.trantor.ai.history.projected
+import dev.botta.trantor.ai.generation.ToolFailure
 import dev.botta.trantor.ai.generation.ToolLoop
+import dev.botta.trantor.ai.generation.ToolRefusal
 import dev.botta.trantor.ai.generation.WaitingCalls
-import dev.botta.trantor.ai.generation.HandsOver
+import dev.botta.trantor.ai.history.projected
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.ChatResponse
-import dev.botta.trantor.ai.models.chat.ToolCallPart
-import dev.botta.trantor.ai.models.chat.ToolResultPart
 import dev.botta.trantor.ai.models.chat.Message
 import dev.botta.trantor.ai.models.chat.OutputSpec
+import dev.botta.trantor.ai.models.chat.ToolCallPart
+import dev.botta.trantor.ai.models.chat.ToolResultPart
 import dev.botta.trantor.ai.providers.ProviderOptions
-import dev.botta.trantor.ai.tools.ToolErrorHandlers
+import dev.botta.trantor.ai.serialization.defaultJsonSerializer
 import dev.botta.trantor.ai.telemetry.AITelemetrySettings
 import dev.botta.trantor.ai.telemetry.GenAITelemetry
+import dev.botta.trantor.ai.tools.ToolErrorHandlers
+import dev.botta.trantor.primitives.serialization.JsonSerializer
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.context.Context
 import java.util.UUID
-import dev.botta.trantor.primitives.serialization.JsonSerializer
-import dev.botta.trantor.ai.serialization.defaultJsonSerializer
 
 /**
  * Runs agents on the [ToolLoop], the same one a generation runs on: the loop keeps the conversation, the limit of
@@ -369,7 +369,7 @@ class AgentRunner(
         private val chatModels = mutableMapOf<Agent, ChatModel>()
 
         override fun setUp(request: ChatRequest, steps: List<Step>): StepSetup {
-            // The step before handed the conversation over, and its calls already ran with the agent that asked for them
+            // The step before handed the conversation over, and its calls already ran with the agent that made them
             steps.lastOrNull()?.handoff?.let { agent = team.getValue(it) }
 
             val agent = agent
@@ -449,7 +449,8 @@ class AgentRunner(
         /** The answer of the step, which the loop always hands over before asking about its calls. */
         private lateinit var response: ChatResponse
 
-        override fun beforeModel(request: ChatRequest) = hooks.fold(request) { sent, hook -> hook.beforeModel(step, sent) }
+        override fun beforeModel(request: ChatRequest) =
+            hooks.fold(request) { sent, hook -> hook.beforeModel(step, sent) }
 
         override fun afterModel(response: ChatResponse) {
             this.response = response

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 class AnthropicChatModelResponseTest {
     @Test
     fun `returns the text of the response`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         val response = model.generate(ChatRequest(Message.user("Contame un chiste corto")))
 
@@ -25,7 +25,7 @@ class AnthropicChatModelResponseTest {
 
     @Test
     fun `returns the id and the dated model that actually answered`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         val info = model.generate(ChatRequest(Message.user("Hola"))).info
 
@@ -38,7 +38,7 @@ class AnthropicChatModelResponseTest {
 
     @Test
     fun `returns the usage with details as subsets`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
 
@@ -56,7 +56,7 @@ class AnthropicChatModelResponseTest {
     fun `adds what went into the cache into the input, so the same field means the same as in OpenAI`() {
         // Anthropic leaves the cache out of input_tokens: here it says 19, the question, for a prompt of 7,249.
         // Recorded with the mark at the end of the system prompt, the first of two calls that share it
-        httpClient.body = fixture("cache-write")
+        httpClient.body = fixture("chat/cache-write")
 
         val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
 
@@ -69,7 +69,7 @@ class AnthropicChatModelResponseTest {
     @Test
     fun `and what came out of it too`() {
         // The second call, a moment later with another question: the whole system prompt is read back
-        httpClient.body = fixture("cache-read")
+        httpClient.body = fixture("chat/cache-read")
 
         val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
 
@@ -142,7 +142,9 @@ class AnthropicChatModelResponseTest {
         val sent = Json.parse(httpClient.requestBody!!).asObject()!!["messages"]?.asArray()?.get(1)
 
         assertThat(sent.toString())
-            .isEqualTo("""{"role":"assistant","content":[{"type":"thinking","thinking":"Lo pienso","signature":"abc"}]}""")
+            .isEqualTo(
+                """{"role":"assistant","content":[{"type":"thinking","thinking":"Lo pienso","signature":"abc"}]}""",
+            )
     }
 
     @Test
@@ -199,7 +201,7 @@ class AnthropicChatModelResponseTest {
 
     @Test
     fun `reads the tool the model asked for`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
 
         val response = model.generate(ChatRequest(Message.user("Que temperatura hay en Bariloche?")))
 
@@ -213,12 +215,12 @@ class AnthropicChatModelResponseTest {
 
     @Test
     fun `sends back the call as it came, with what we do not model, and its result after it`() {
-        httpClient.body = fixture("tool-call")
+        httpClient.body = fixture("chat/tool-call")
         val question = Message.user("Que temperatura hay en Bariloche?")
         val asked = model.generate(ChatRequest(question))
         val call = asked.toolCalls.single()
         val result = ToolResultPart(call.callId, call.toolName, ToolOutput.Json(Json.obj("celsius" to 7)))
-        httpClient.body = fixture("tool-answer")
+        httpClient.body = fixture("chat/tool-answer")
 
         val answer = model.generate(ChatRequest(question, asked.asMessage(), Message.toolResult(result)))
 

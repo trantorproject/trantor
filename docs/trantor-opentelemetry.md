@@ -97,7 +97,7 @@ POST /signups                         SERVER    trantor-web
 All of them follow the OpenTelemetry semantic conventions: HTTP (Stable) and messaging (Development).
 
 The calls to the models, their tools and the runs of the agents have spans of their own inside, following the
-conventions for generative AI; see [the telemetry of trantor-ai](trantor-ai.md#telemetry).
+conventions for generative AI; see [the telemetry of trantor-ai](trantor-ai/telemetry.md).
 
 ### The server
 

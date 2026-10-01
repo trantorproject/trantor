@@ -15,7 +15,7 @@ class OpenAIChatModelReasoningTest {
     inner class `what it asks for` {
         @Test
         fun `sends the effort`() {
-            httpClient.body = fixture("text-with-reasoning-item.json")
+            httpClient.body = fixture("chat/text-with-reasoning-item.json")
 
             generateWith(Reasoning.effort(ReasoningEfforts.High))
 
@@ -24,7 +24,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `sends the summary it wants`() {
-            httpClient.body = fixture("reasoning-with-summary.json")
+            httpClient.body = fixture("chat/reasoning-with-summary.json")
 
             generateWith(Reasoning.effort(ReasoningEfforts.Low, ReasoningSummaries.Detailed))
 
@@ -33,7 +33,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `asks for the encrypted reasoning, which is what lets the next turn go on`() {
-            httpClient.body = fixture("text-with-reasoning-item.json")
+            httpClient.body = fixture("chat/text-with-reasoning-item.json")
 
             generateWith(Reasoning.effort(ReasoningEfforts.Low))
 
@@ -43,7 +43,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `a request without reasoning does not ask for any`() {
-            httpClient.body = fixture("text-simple.json")
+            httpClient.body = fixture("chat/text-simple.json")
 
             model.generate(ChatRequest(Message.user("Hola")))
 
@@ -53,7 +53,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `reasoning off asks for nothing, like not setting it`() {
-            httpClient.body = fixture("text-simple.json")
+            httpClient.body = fixture("chat/text-simple.json")
 
             generateWith(Reasoning.Off)
 
@@ -62,7 +62,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `a token budget is not something OpenAI takes, and says so`() {
-            httpClient.body = fixture("text-simple.json")
+            httpClient.body = fixture("chat/text-simple.json")
 
             val response = generateWith(Reasoning.budget(4096))
 
@@ -72,7 +72,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `a budget with a summary still asks for the summary`() {
-            httpClient.body = fixture("reasoning-with-summary.json")
+            httpClient.body = fixture("chat/reasoning-with-summary.json")
 
             generateWith(Reasoning.budget(4096, ReasoningSummaries.Auto))
 
@@ -81,7 +81,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `does not say anything about storing unless the app asked`() {
-            httpClient.body = fixture("text-simple.json")
+            httpClient.body = fixture("chat/text-simple.json")
 
             model.generate(ChatRequest(Message.user("Hola")))
 
@@ -90,7 +90,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `an app that does not want OpenAI to keep the call says so`() {
-            httpClient.body = fixture("text-simple.json")
+            httpClient.body = fixture("chat/text-simple.json")
             val model = OpenAIChatModel("o4-mini", OpenAIConfig(apiKey = "sk-test", store = false), httpClient)
 
             model.generate(ChatRequest(Message.user("Hola")))
@@ -103,7 +103,7 @@ class OpenAIChatModelReasoningTest {
     inner class `what it reads` {
         @Test
         fun `reads the reasoning item as a reasoning part`() {
-            httpClient.body = fixture("text-with-reasoning-item.json")
+            httpClient.body = fixture("chat/text-with-reasoning-item.json")
 
             val response = generateWith(Reasoning.effort(ReasoningEfforts.Low))
 
@@ -116,7 +116,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `there is no summary unless it was asked for`() {
-            httpClient.body = fixture("text-with-reasoning-item.json")
+            httpClient.body = fixture("chat/text-with-reasoning-item.json")
 
             val response = generateWith(Reasoning.effort(ReasoningEfforts.Low))
 
@@ -125,7 +125,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `reads the summary`() {
-            httpClient.body = fixture("reasoning-with-summary.json")
+            httpClient.body = fixture("chat/reasoning-with-summary.json")
 
             val response = generateWith(Reasoning.effort(ReasoningEfforts.Medium, ReasoningSummaries.Auto))
 
@@ -135,7 +135,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `a summary can come back empty even when it was asked for`() {
-            httpClient.body = fixture("reasoning-empty-summary.json")
+            httpClient.body = fixture("chat/reasoning-empty-summary.json")
 
             val response = generateWith(Reasoning.effort(ReasoningEfforts.Medium, ReasoningSummaries.Auto))
 
@@ -155,7 +155,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `counts the reasoning tokens as part of the output`() {
-            httpClient.body = fixture("reasoning-with-summary.json")
+            httpClient.body = fixture("chat/reasoning-with-summary.json")
 
             val usage = generateWith(Reasoning.effort(ReasoningEfforts.Medium)).usage
 
@@ -190,7 +190,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `an output item it does not model is still kept whole`() {
-            httpClient.body = fixture("unknown-item.json")
+            httpClient.body = fixture("chat/unknown-item.json")
 
             val response = model.generate(ChatRequest(Message.user("Que temperatura hay?")))
 
@@ -205,18 +205,18 @@ class OpenAIChatModelReasoningTest {
     inner class `what it sends back` {
         @Test
         fun `sends the reasoning back exactly as it came`() {
-            httpClient.body = fixture("text-with-reasoning-item.json")
+            httpClient.body = fixture("chat/text-with-reasoning-item.json")
             val answer = generateWith(Reasoning.effort(ReasoningEfforts.Low)).content
 
             model.generate(ChatRequest(Message.user("Cuanto es 6 por 7?"), Message.Assistant(answer)))
 
             val sent = sentBody()["input"]?.asArray()?.get(1)
-            assertThat(sent).isEqualTo(fixtureJson("text-with-reasoning-item.json")["output"]?.asArray()?.get(0))
+            assertThat(sent).isEqualTo(fixtureJson("chat/text-with-reasoning-item.json")["output"]?.asArray()?.get(0))
         }
 
         @Test
         fun `the reasoning goes before the message it belongs to`() {
-            httpClient.body = fixture("reasoning-with-summary.json")
+            httpClient.body = fixture("chat/reasoning-with-summary.json")
             val answer = generateWith(Reasoning.effort(ReasoningEfforts.High)).content
 
             model.generate(ChatRequest(Message.user("Cuanto es 6 por 7?"), Message.Assistant(answer)))
@@ -227,7 +227,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `reasoning of another provider is dropped with a warning`() {
-            httpClient.body = fixture("text-simple.json")
+            httpClient.body = fixture("chat/text-simple.json")
             val foreign = ReasoningPart(
                 text = "pensando",
                 opaque = Json.obj("signature" to "abc"),
@@ -246,7 +246,7 @@ class OpenAIChatModelReasoningTest {
     inner class `while it streams` {
         @Test
         fun `returns the summary deltas as they arrive`() {
-            httpClient.body = fixture("stream-reasoning.txt")
+            httpClient.body = fixture("chat/stream-reasoning.txt")
 
             val deltas = model.stream(ChatRequest(Message.user("Cuanto es 6 por 7?"))).use { stream ->
                 stream.asSequence().filterIsInstance<StreamPart.ReasoningDelta>().map { it.text }.toList()
@@ -257,7 +257,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `the finished reasoning item comes out as a part`() {
-            httpClient.body = fixture("stream-reasoning.txt")
+            httpClient.body = fixture("chat/stream-reasoning.txt")
 
             val parts = model.stream(ChatRequest(Message.user("Cuanto es 6 por 7?"))).use { stream ->
                 stream.asSequence().filterIsInstance<StreamPart.PartDone>().map { it.part }.toList()
@@ -270,7 +270,7 @@ class OpenAIChatModelReasoningTest {
 
         @Test
         fun `the whole response carries the reasoning and its tokens`() {
-            httpClient.body = fixture("stream-reasoning.txt")
+            httpClient.body = fixture("chat/stream-reasoning.txt")
 
             val response = model.stream(ChatRequest(Message.user("Cuanto es 6 por 7?"))).use { it.response() }
 

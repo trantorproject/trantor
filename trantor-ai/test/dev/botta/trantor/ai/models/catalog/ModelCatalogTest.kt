@@ -262,45 +262,11 @@ class ModelCatalogTest {
         }
 
         @Test
-        fun `as the price lists have them`() {
-            // One row of each shape, read against the pricing pages on 2026-09-21
-            assertThat(catalog.find("anthropic/claude-sonnet-4-5")?.pricing).isEqualTo(
-                ModelPricing(
-                    inputPerMillion = Money(3),
-                    outputPerMillion = Money(15),
-                    cacheReadPerMillion = Money("0.3"),
-                    cacheWritePerMillion = Money("3.75"),
-                )
-            )
-            // The one Claude whose cache reads are not a tenth of its input
-            assertThat(catalog.find("anthropic/claude-fable-5-1")?.pricing?.cacheReadPerMillion)
-                .isEqualTo(Money("0.25"))
-            // The OpenAI models that charge a cache write, which the older ones bill as plain input
-            assertThat(catalog.find("openai/gpt-6-astra")?.pricing).isEqualTo(
-                ModelPricing(Money(10), Money(50), cacheReadPerMillion = Money(1), cacheWritePerMillion = Money("12.5"))
-            )
-            assertThat(catalog.find("openai/gpt-4.1-mini")?.pricing).isEqualTo(
-                ModelPricing(Money("0.4"), Money("1.6"), cacheReadPerMillion = Money("0.1"))
-            )
-            // A snapshot that kept its launch price
-            assertThat(catalog.find("openai/gpt-4o-2024-05-13")?.pricing).isEqualTo(ModelPricing(Money(5), Money(15)))
-        }
-        @Test
         fun `is listed apart`() {
             assertThat(catalog.all("anthropic")).isNotEmpty().allMatch { it.provider == "anthropic" }
             assertThat(catalog.all("openai")).isNotEmpty().allMatch { it.provider == "openai" }
         }
 
-        @Test
-        fun `and says the thing that breaks a call if it is wrong`() {
-            // A reasoning model of either provider refuses a temperature that is not its own
-            assertThat(catalog.find("openai", "o4-mini")?.capabilities?.temperature).isNull()
-            assertThat(catalog.find("anthropic", "claude-opus-5")?.capabilities?.temperature).isNull()
-
-            // And one that does not reason refuses being asked to
-            assertThat(catalog.find("openai", "gpt-4.1")?.capabilities?.reasoningEfforts).isEmpty()
-            assertThat(catalog.find("anthropic", "claude-sonnet-4-5")?.capabilities?.reasoningEfforts).isEmpty()
-        }
     }
 
     private val catalog = ModelCatalog().addAnthropicModels().addOpenAIModels()

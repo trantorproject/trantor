@@ -34,6 +34,7 @@ class Reasoning private constructor(
     }
 }
 
+/** How much a model is to think, from least to most. A model without a level gets the nearest one below. */
 enum class ReasoningEfforts { Minimal, Low, Medium, High }
 
 /** Whether to ask for a summary of the reasoning, and how detailed. */

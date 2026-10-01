@@ -2,7 +2,7 @@
 
 package dev.botta.trantor.ai.models.chat
 
-import dev.botta.trantor.ai.errors.NoObjectGeneratedError
+import dev.botta.trantor.ai.generation.NoObjectGeneratedError
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.testing.SkuTool
 import dev.botta.trantor.serialization.gson.GsonSerializer

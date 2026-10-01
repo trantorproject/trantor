@@ -4,6 +4,7 @@ import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.providers.ProviderMetadata
 import dev.botta.trantor.ai.tools.ToolOutput
 
+/** A piece of a message, in the order the model wrote it. */
 sealed interface Part {
     val metadata: ProviderMetadata
 }
@@ -33,7 +34,7 @@ data class ReasoningPart(
      * Whether it is a note the model wrote between tool calls for whoever watches the run — what it found and what
      * it will do next — and not reasoning. [text] is then the note, to show like the text of the answer. It goes
      * back to the provider like any reasoning. See
-     * [Notes](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai.md#notes-between-tool-calls).
+     * [Notes](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai/models.md#notes-between-tool-calls).
      */
     val note: Boolean = false,
 ): Part
@@ -53,6 +54,10 @@ data class RefusalPart(
     val category: String? = null,
 ): Part
 
+/**
+ * A call the model asked for. [providerExecuted] says the provider ran it already, so there is nothing to run and
+ * nothing to answer.
+ */
 data class ToolCallPart(
     val callId: String,
     val toolName: String,
@@ -62,6 +67,7 @@ data class ToolCallPart(
     override val metadata: ProviderMetadata = ProviderMetadata.None,
 ): Part
 
+/** What a tool answered to the call [callId]. [isError] tells the model it failed, so it can try something else. */
 data class ToolResultPart(
     val callId: String,
     val toolName: String,

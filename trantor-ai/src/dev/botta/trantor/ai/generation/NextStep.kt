@@ -3,9 +3,9 @@ package dev.botta.trantor.ai.generation
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.ToolCallPart
+import dev.botta.trantor.ai.telemetry.GenAITelemetry
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
-import dev.botta.trantor.ai.telemetry.GenAITelemetry
 import dev.botta.trantor.ai.tools.search.ToolSearcher
 
 /**
@@ -43,35 +43,46 @@ fun interface NextStep {
  * answer. The loop adds what the model is told about [tools] to the tools of [request], asking each tool again, so a
  * description that depends on the moment is up to date.
  */
-class StepSetup(
+class StepSetup internal constructor(
     val model: ChatModel,
     val request: ChatRequest,
-    val tools: List<Tool<*>> = emptyList(),
+    val tools: List<Tool<*>>,
     /**
      * The tool whose args are the answer, when the answer is an object asked for as a tool. One of [tools]. With it
      * the run ends when the model calls it, once every call of that step ran, and not when the model answers
      * without calling tools: that answer gets a reminder to call it, once in a row, and a second one ends the run.
      */
-    val outputTool: String? = null,
-    /** What each tool knows about its call. Without it, the call and the [dev.botta.trantor.ai.RunContext] of the loop. */
-    val toolContext: ((ToolCallPart) -> ToolContext)? = null,
+    internal val outputTool: String?,
+    /**
+     * What each tool knows about its call. Without it, the call and the [dev.botta.trantor.ai.RunContext] of the
+     * loop.
+     */
+    internal val toolContext: ((ToolCallPart) -> ToolContext)?,
     /**
      * The agents a tool of this step can hand the conversation over to, by name. Null where there are none, as in
      * a generation, whose handoffs are left with a warning.
      */
-    val team: Set<String>? = null,
+    internal val team: Set<String>?,
     /** The agent the step goes out as, which its answer is kept as written by. Null in a generation. */
-    val agent: String? = null,
+    internal val agent: String?,
     /** What the loop calls around the model and the tools of the step. */
-    val hooks: StepHooks? = null,
+    internal val hooks: StepHooks?,
     /**
      * The tools the model searches for instead of being told about them up front. The loop tells it about the ones
      * it found, which the conversation says, and gives it the tool to search with.
      */
-    val searchable: List<Tool<*>> = emptyList(),
+    val searchable: List<Tool<*>>,
     /** How [searchable] are searched, by their words when null; see [ToolSearcher]. */
-    val searcher: ToolSearcher? = null,
+    val searcher: ToolSearcher?,
 ) {
+    constructor(
+        model: ChatModel,
+        request: ChatRequest,
+        tools: List<Tool<*>> = emptyList(),
+        searchable: List<Tool<*>> = emptyList(),
+        searcher: ToolSearcher? = null,
+    ): this(model, request, tools, null, null, null, null, null, searchable, searcher)
+
     /**
      * The invocation the step is part of — the agent or the stretch of an agent — when whoever runs the loop traces
      * the run: the spans of the step hang from it, and its calls count in it.

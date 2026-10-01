@@ -97,7 +97,7 @@ served there.
 ## A tool written by hand
 
 A tool that is not one use case — it runs several, or asks something outside the application — is a `Tool` of
-trantor-ai, the same one an agent of the application uses ([Tools](trantor-ai.md#tools)):
+trantor-ai, the same one an agent of the application uses ([Tools](trantor-ai/tools.md)):
 
 ```kotlin
 class SearchProductsTool(private val catalog: Catalog): Tool<SearchProductsTool.Args>() {

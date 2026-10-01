@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
 class SummaryRecordedTest {
     @Test
     fun `o4-mini answers with what the summary says`() {
-        http.body = fixture("openai/summary-1")
+        http.body = fixture("openai/sessions/summary-1")
 
         val response = ask(OpenAIChatModel("o4-mini", OpenAIConfig("sk-test"), http))
 
@@ -29,7 +29,7 @@ class SummaryRecordedTest {
 
     @Test
     fun `and so does Claude Sonnet 4-5`() {
-        http.body = fixture("anthropic/summary-1")
+        http.body = fixture("anthropic/sessions/summary-1")
 
         val response = ask(AnthropicChatModel("claude-sonnet-4-5", AnthropicConfig(apiKey = "sk-ant-test"), http))
 

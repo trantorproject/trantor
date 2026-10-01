@@ -36,50 +36,50 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
 internal fun ModelCatalog.addOpenAIModels() = apply {
     add(
         "openai/gpt-6-astra",
-        gpt6.searchingTools(),
+        gpt6.loadingDeferredTools(),
         ModelPricing(input = "10", output = "50", cacheRead = "1", cacheWrite = "12.50"),
     )
     // Takes no effort of none, unlike GPT-6 Sol (developers.openai.com/api/docs/models/gpt-6.1-sol, 2026-09-30)
     add(
         "openai/gpt-6.1-sol",
-        gpt6.searchingTools(),
+        gpt6.loadingDeferredTools(),
         ModelPricing(input = "2", output = "10", cacheRead = "0.10", cacheWrite = "2.50"),
     )
     add(
         "openai/gpt-6-sol",
-        gpt6Optional.searchingTools(),
+        gpt6Optional.loadingDeferredTools(),
         ModelPricing(input = "2", output = "10", cacheRead = "0.20", cacheWrite = "2.50"),
     )
     add(
         "openai/gpt-6-luna",
-        gpt6Optional.searchingTools(),
+        gpt6Optional.loadingDeferredTools(),
         ModelPricing(input = "0.10", output = "0.50", cacheRead = "0.01", cacheWrite = "0.125"),
     )
 
     add(
         "openai/gpt-5.6-sol",
-        gpt56.searchingTools(),
+        gpt56.loadingDeferredTools(),
         ModelPricing(input = "4", output = "20", cacheRead = "0.40", cacheWrite = "5"),
     )
     add(
         "openai/gpt-5.6-terra",
-        gpt56.searchingTools(),
+        gpt56.loadingDeferredTools(),
         ModelPricing(input = "2", output = "12", cacheRead = "0.20", cacheWrite = "2.50"),
     )
     add(
         "openai/gpt-5.6-luna",
-        gpt56.searchingTools(),
+        gpt56.loadingDeferredTools(),
         ModelPricing(input = "0.20", output = "1.20", cacheRead = "0.02", cacheWrite = "0.25"),
     )
 
     add(
         "openai/gpt-5.5",
-        reasoningOptional.searchingTools(),
+        reasoningOptional.loadingDeferredTools(),
         ModelPricing(input = "5", output = "30", cacheRead = "0.50"),
     )
     add(
         "openai/gpt-5.4",
-        reasoningOptional.searchingTools(),
+        reasoningOptional.loadingDeferredTools(),
         ModelPricing(input = "2.50", output = "15", cacheRead = "0.25"),
     )
 
@@ -160,8 +160,8 @@ private val gpt5 = reasoning.copy(reasoningEfforts = setOf(Minimal, Low, Medium,
 private val beforeStructuredOutput = sampling.copy(features = sampling.features - StructuredOutput)
 
 /**
- * The models that search the tools of a call on OpenAI's side with `tool_search`: *"In the Responses API, only
- * `gpt-5.4` and later models support `tool_search`"* (developers.openai.com/api/docs/guides/tools-tool-search, read on
+ * The models that load deferred tools with `tool_search` run by the client: *"In the Responses API, only `gpt-5.4`
+ * and later models support `tool_search`"* (developers.openai.com/api/docs/guides/tools-tool-search, read on
  * 2026-09-30). Named model by model, since a profile is shared by some that have it and some that do not.
  */
-private fun ModelCapabilities.searchingTools() = copy(features = features + ToolSearch)
+private fun ModelCapabilities.loadingDeferredTools() = copy(features = features + DeferredTools)

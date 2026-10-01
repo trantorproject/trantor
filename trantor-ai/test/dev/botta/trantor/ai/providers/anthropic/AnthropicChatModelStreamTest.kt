@@ -3,13 +3,13 @@
 package dev.botta.trantor.ai.providers.anthropic
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.errors.CancelledError
-import dev.botta.trantor.ai.models.CallOptions
-import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.errors.AuthenticationError
+import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.errors.ProviderError
+import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.primitives.Cancellation
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 class AnthropicChatModelStreamTest {
     @Test
     fun `asks the provider to stream`() {
-        httpClient.body = fixture("stream-text")
+        httpClient.body = fixture("chat/stream-text")
 
         model.stream(ChatRequest(Message.user("Contame un chiste corto"))).use { it.response() }
 
@@ -30,7 +30,7 @@ class AnthropicChatModelStreamTest {
     inner class `a text` {
         @Test
         fun `arrives in deltas as it is written`() {
-            httpClient.body = fixture("stream-text")
+            httpClient.body = fixture("chat/stream-text")
 
             val deltas = model.stream(ChatRequest(Message.user("Contame un chiste corto"))).use { stream ->
                 stream.asSequence().filterIsInstance<StreamPart.TextDelta>().map { it.text }.toList()
@@ -42,7 +42,7 @@ class AnthropicChatModelStreamTest {
 
         @Test
         fun `and whole once its block is finished`() {
-            httpClient.body = fixture("stream-text")
+            httpClient.body = fixture("chat/stream-text")
 
             val parts = model.stream(ChatRequest(Message.user("Contame un chiste corto"))).use { stream ->
                 stream.asSequence().filterIsInstance<StreamPart.PartDone>().map { it.part }.toList()
@@ -53,7 +53,7 @@ class AnthropicChatModelStreamTest {
 
         @Test
         fun `what the adapter does not map is handed over rather than dropped`() {
-            httpClient.body = fixture("stream-text")
+            httpClient.body = fixture("chat/stream-text")
 
             val raw = model.stream(ChatRequest(Message.user("Contame un chiste corto"))).use { stream ->
                 stream.asSequence().filterIsInstance<StreamPart.Raw>().map { it.event }.toList()
@@ -67,7 +67,7 @@ class AnthropicChatModelStreamTest {
     inner class `the response of a stream` {
         @Test
         fun `is the one a call that did not stream would have returned`() {
-            httpClient.body = fixture("stream-text")
+            httpClient.body = fixture("chat/stream-text")
 
             val response = model.stream(ChatRequest(Message.user("Contame un chiste corto"))).use { stream ->
                 stream.asSequence().toList()
@@ -84,7 +84,7 @@ class AnthropicChatModelStreamTest {
 
         @Test
         fun `with the usage of the last event, which counts from the start and not since the one before`() {
-            httpClient.body = fixture("stream-text")
+            httpClient.body = fixture("chat/stream-text")
 
             val usage = model.stream(ChatRequest(Message.user("Contame un chiste corto"))).use { it.response() }.usage
 
@@ -96,7 +96,7 @@ class AnthropicChatModelStreamTest {
 
         @Test
         fun `consumes what is left of the stream when it was not read`() {
-            httpClient.body = fixture("stream-text")
+            httpClient.body = fixture("chat/stream-text")
 
             val response = model.stream(ChatRequest(Message.user("Contame un chiste corto"))).use { it.response() }
 
@@ -105,7 +105,7 @@ class AnthropicChatModelStreamTest {
 
         @Test
         fun `and of one cut before the message ended is what arrived, with a warning and no invented reason`() {
-            httpClient.body = fixture("stream-text").substringBefore("event: message_delta")
+            httpClient.body = fixture("chat/stream-text").substringBefore("event: message_delta")
 
             val response = model.stream(ChatRequest(Message.user("Contame un chiste corto"))).use { it.response() }
 
@@ -121,7 +121,7 @@ class AnthropicChatModelStreamTest {
     inner class `a tool call` {
         @Test
         fun `is put together out of the pieces of json its input arrives in`() {
-            httpClient.body = fixture("stream-tools")
+            httpClient.body = fixture("chat/stream-tools")
 
             val parts = model.stream(ChatRequest(Message.user("Que temperatura hay en Bariloche?"))).use { stream ->
                 stream.asSequence().filterIsInstance<StreamPart.PartDone>().map { it.part }.toList()
@@ -136,7 +136,7 @@ class AnthropicChatModelStreamTest {
 
         @Test
         fun `and the response says the model is waiting for it`() {
-            httpClient.body = fixture("stream-tools")
+            httpClient.body = fixture("chat/stream-tools")
 
             val response = model.stream(ChatRequest(Message.user("Que temperatura hay en Bariloche?")))
                 .use { it.response() }
@@ -150,7 +150,7 @@ class AnthropicChatModelStreamTest {
     inner class `thinking` {
         @Test
         fun `arrives in deltas of its own`() {
-            httpClient.body = fixture("stream-thinking")
+            httpClient.body = fixture("chat/stream-thinking")
 
             val deltas = model.stream(ChatRequest(Message.user("Cual es el MCD?"))).use { stream ->
                 stream.asSequence().filterIsInstance<StreamPart.ReasoningDelta>().map { it.text }.toList()
@@ -161,7 +161,7 @@ class AnthropicChatModelStreamTest {
 
         @Test
         fun `and whole with its signature, before the text it led to`() {
-            httpClient.body = fixture("stream-thinking")
+            httpClient.body = fixture("chat/stream-thinking")
 
             val response = model.stream(ChatRequest(Message.user("Cual es el MCD?"))).use { it.response() }
 
@@ -173,9 +173,9 @@ class AnthropicChatModelStreamTest {
 
         @Test
         fun `so it goes back on the next turn exactly as it came, which is what lets the model go on`() {
-            httpClient.body = fixture("stream-thinking")
+            httpClient.body = fixture("chat/stream-thinking")
             val first = model.stream(ChatRequest(Message.user("Cual es el MCD?"))).use { it.response() }
-            httpClient.body = fixture("text-simple")
+            httpClient.body = fixture("chat/text-simple")
 
             model.generate(ChatRequest(Message.user("Cual es el MCD?"), first.asMessage(), Message.user("Y el de 12?")))
 
@@ -186,7 +186,7 @@ class AnthropicChatModelStreamTest {
 
         @Test
         fun `and the tokens it took are a detail of the output`() {
-            httpClient.body = fixture("stream-thinking")
+            httpClient.body = fixture("chat/stream-thinking")
 
             val usage = model.stream(ChatRequest(Message.user("Cual es el MCD?"))).use { it.response() }.usage
 
@@ -201,7 +201,7 @@ class AnthropicChatModelStreamTest {
         fun `with an error event is cut there`() {
             // The event is the example of the Anthropic streaming guide: an error in the middle of a stream is not
             // something that can be asked for, so it cannot be recorded
-            httpClient.body = fixture("stream-text").substringBefore("event: content_block_stop") + """
+            httpClient.body = fixture("chat/stream-text").substringBefore("event: content_block_stop") + """
                 event: error
                 data: {"type": "error", "error": {"type": "overloaded_error", "message": "Overloaded"}}
 
@@ -226,7 +226,7 @@ class AnthropicChatModelStreamTest {
 
     @Test
     fun `closing the stream cancels the call`() {
-        httpClient.body = fixture("stream-text")
+        httpClient.body = fixture("chat/stream-text")
 
         model.stream(ChatRequest(Message.user("Contame un chiste corto"))).use { it.next() }
 
@@ -236,7 +236,7 @@ class AnthropicChatModelStreamTest {
 
     @Test
     fun `cancelling while it is read ends the stream as cancelled, not with half an answer`() {
-        httpClient.body = fixture("stream-text")
+        httpClient.body = fixture("chat/stream-text")
         val cancellation = Cancellation()
         httpClient.whileReading = { cancellation.cancel() }
 
@@ -259,7 +259,7 @@ class AnthropicChatModelStreamTest {
     private fun sentBody() = Json.parse(httpClient.requestBody!!).asObject()!!
 
     private fun fixture(name: String) =
-        javaClass.getResource("/anthropic/$name.${if (name.startsWith("stream")) "txt" else "json"}")?.readText()
+        javaClass.getResource("/anthropic/$name.${if ("/stream" in name) "txt" else "json"}")?.readText()
             ?: error("Missing fixture $name")
 
     companion object {

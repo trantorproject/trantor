@@ -1,10 +1,10 @@
 package dev.botta.trantor.mcp.server
 
+import dev.botta.cqbus.identity.AnonymousIdentity
+import dev.botta.cqbus.identity.Identity
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
 import dev.botta.json.values.JsonValue
-import dev.botta.cqbus.identity.AnonymousIdentity
-import dev.botta.cqbus.identity.Identity
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.mcp.McpProtocol
 import dev.botta.trantor.ai.tools.InvalidToolInputError

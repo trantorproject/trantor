@@ -4,6 +4,10 @@ import dev.botta.trantor.ai.models.ModelWarning
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.models.Usage
 
+/**
+ * What one call to a model answered: its parts in order, why it stopped, what it took and what was left out of
+ * the request on the way ([warnings]).
+ */
 data class ChatResponse(
     val content: List<Part>,
     val finishReason: FinishReasons,

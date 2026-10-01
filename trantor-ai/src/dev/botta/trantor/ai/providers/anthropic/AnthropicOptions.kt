@@ -24,7 +24,7 @@ data class AnthropicOptions(
     /** Goes as `metadata.user_id`, for abuse detection. Not an id that identifies a person. */
     val userId: String? = null,
     /** Whether the call can be served by spare capacity, which is cheaper and slower. */
-    val serviceTier: ServiceTiers? = null,
+    val serviceTier: AnthropicServiceTiers? = null,
 ): ProviderOption {
     override val provider = ANTHROPIC_PROVIDER
 
@@ -41,6 +41,10 @@ data class AnthropicOptions(
 /** The five levels Anthropic takes. `Reasoning` only reaches [High]; the two above it are asked for here. */
 enum class AnthropicEfforts { Low, Medium, High, XHigh, Max }
 
+/**
+ * Thinking asked for exactly as Anthropic takes it, past what [dev.botta.trantor.ai.models.chat.Reasoning] says
+ * and with no check against the catalog.
+ */
 sealed interface AnthropicThinking {
     /** No thinking blocks. Some models refuse this above a high effort. */
     data object Off: AnthropicThinking
@@ -59,4 +63,5 @@ sealed interface AnthropicThinking {
     data object BetweenTools: AnthropicThinking
 }
 
-enum class ServiceTiers { Auto, StandardOnly }
+/** Whether Anthropic may use its priority capacity for a call, or only the standard one. */
+enum class AnthropicServiceTiers { Auto, StandardOnly }

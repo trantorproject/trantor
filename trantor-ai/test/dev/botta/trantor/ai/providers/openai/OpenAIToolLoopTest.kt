@@ -8,9 +8,9 @@ import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /**
  * The tool loop against what OpenAI really answered: o4-mini reasoning at low effort, asking for the weather and
@@ -20,7 +20,7 @@ import dev.botta.trantor.serialization.gson.GsonSerializer
 class OpenAIToolLoopTest {
     @Test
     fun `runs the recorded loop to the answer`() {
-        http.answers(fixture("tool-loop-1"), fixture("tool-loop-2"))
+        http.answers(fixture("tool-loop/loop-1"), fixture("tool-loop/loop-2"))
 
         val result = loop().run(request())
 
@@ -33,8 +33,8 @@ class OpenAIToolLoopTest {
 
     @Test
     fun `the second call sends the reasoning back as it came, then the call and its result`() {
-        http.answers(fixture("tool-loop-1"), fixture("tool-loop-2"))
-        val recorded = Json.parse(fixture("tool-loop-1")).asObject()!!["output"]!!.asArray()!!
+        http.answers(fixture("tool-loop/loop-1"), fixture("tool-loop/loop-2"))
+        val recorded = Json.parse(fixture("tool-loop/loop-1")).asObject()!!["output"]!!.asArray()!!
         val reasoning = recorded[0].asObject()!!
 
         loop().run(request())
@@ -55,7 +55,7 @@ class OpenAIToolLoopTest {
 
     @Test
     fun `with an object asked for, the model calls the tool first and answers with the object`() {
-        http.answers(fixture("tool-loop-object-1"), fixture("tool-loop-object-2"))
+        http.answers(fixture("tool-loop/object-1"), fixture("tool-loop/object-2"))
 
         val result = loop().run(request(OutputSpec.json<CityWeather>(GsonSerializer())))
 

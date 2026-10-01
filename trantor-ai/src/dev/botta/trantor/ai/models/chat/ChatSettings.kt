@@ -1,5 +1,9 @@
 package dev.botta.trantor.ai.models.chat
 
+/**
+ * How the model answers. Each one is sent only to a model that takes it; to any other it is dropped with a
+ * warning, or brought into its range.
+ */
 data class ChatSettings(
     var maxOutputTokens: Int? = null,
     var temperature: Double? = null,

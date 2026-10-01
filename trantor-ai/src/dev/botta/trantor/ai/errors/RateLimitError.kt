@@ -2,6 +2,7 @@ package dev.botta.trantor.ai.errors
 
 import kotlin.time.Duration
 
+/** The provider throttled the calls. [retryAfter] is how long it asked to wait, when it says. */
 class RateLimitError(
     provider: String,
     val retryAfter: Duration? = null,

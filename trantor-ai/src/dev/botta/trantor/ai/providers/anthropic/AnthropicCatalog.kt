@@ -28,40 +28,41 @@ import dev.botta.trantor.ai.models.chat.ReasoningEfforts.*
  * [AnthropicOptions.effort], which is not checked against any of this.
  */
 internal fun ModelCatalog.addAnthropicModels() = apply {
-    add("anthropic/claude-opus-5-5", boundThinking.searchingTools().writingNotes(), opus55Price)
-    add("anthropic/claude-opus-5", systemAnywhere.searchingTools(), opusPrice)
+    add("anthropic/claude-opus-5-5", boundThinking.loadingDeferredTools().writingNotes(), opus55Price)
+    add("anthropic/claude-opus-5", systemAnywhere.loadingDeferredTools(), opusPrice)
     // Costs what Sonnet 5 does (models/sonnet-5-5/whats-new, read on 2026-09-30)
-    add("anthropic/claude-sonnet-5-5", thinkingBetweenTools.searchingTools().writingNotes(), sonnet5Price)
+    add("anthropic/claude-sonnet-5-5", thinkingBetweenTools.loadingDeferredTools().writingNotes(), sonnet5Price)
     add("anthropic/claude-sonnet-5", effortOnly, sonnet5Price)
-    add("anthropic/claude-opus-4-8", systemAnywhere.searchingTools(), opusPrice)
-    add("anthropic/claude-opus-4-7", effortOnly.searchingTools(), opusPrice)
-    add("anthropic/claude-fable-5", alwaysThinking.searchingTools().writingNotes(), fablePrice)
-    add("anthropic/claude-mythos-5", alwaysThinking.searchingTools(), fablePrice)
-    add("anthropic/claude-fable-5-1", boundThinking.searchingTools().writingNotes(), fable51Price)
-    add("anthropic/claude-mythos-5-1", withoutForcedToolUse.searchingTools().writingNotes(), fable51Price)
+    add("anthropic/claude-opus-4-8", systemAnywhere.loadingDeferredTools(), opusPrice)
+    add("anthropic/claude-opus-4-7", effortOnly.loadingDeferredTools(), opusPrice)
+    add("anthropic/claude-fable-5", alwaysThinking.loadingDeferredTools().writingNotes(), fablePrice)
+    add("anthropic/claude-mythos-5", alwaysThinking.loadingDeferredTools(), fablePrice)
+    add("anthropic/claude-fable-5-1", boundThinking.loadingDeferredTools().writingNotes(), fable51Price)
+    add("anthropic/claude-mythos-5-1", withoutForcedToolUse.loadingDeferredTools().writingNotes(), fable51Price)
 
-    add("anthropic/claude-opus-4-6", bothWays.searchingTools(), opusPrice)
-    add("anthropic/claude-sonnet-4-6", bothWays.searchingTools(), sonnetPrice)
+    add("anthropic/claude-opus-4-6", bothWays.loadingDeferredTools(), opusPrice)
+    add("anthropic/claude-sonnet-4-6", bothWays.loadingDeferredTools(), sonnetPrice)
 
     // The only one of its generation that takes an effort, alongside the budget
     add(
         "anthropic/claude-opus-4-5",
-        budgetOnly.copy(reasoningEfforts = setOf(Low, Medium, High)).searchingTools(),
+        budgetOnly.copy(reasoningEfforts = setOf(Low, Medium, High)).loadingDeferredTools(),
         opusPrice,
     )
-    add("anthropic/claude-sonnet-4-5", budgetOnly.searchingTools(), sonnetPrice)
-    add("anthropic/claude-haiku-4-5", budgetOnly.searchingTools(), haikuPrice)
+    add("anthropic/claude-sonnet-4-5", budgetOnly.loadingDeferredTools(), sonnetPrice)
+    add("anthropic/claude-haiku-4-5", budgetOnly.loadingDeferredTools(), haikuPrice)
 
     // A model that came out today is the newest one with something taken away, far more often than not
     setLatest("anthropic", "anthropic/claude-opus-5-5")
 }
 
 /**
- * The models that search the tools of a call on Anthropic's side, as "Model compatibility" of its tool search lists
- * them (read on 2026-09-30): every Claude from Haiku, Sonnet and Opus 4.5 on, but not Sonnet 5, which the list leaves
- * out. Named model by model, since a profile is shared by some that have it and some that do not.
+ * The models that load deferred tools from the references a search answers with, as "Model compatibility" of the
+ * tool search of Anthropic lists them (read on 2026-09-30): every Claude from Haiku, Sonnet and Opus 4.5 on, but not
+ * Sonnet 5, which the list leaves out. Named model by model, since a profile is shared by some that have it and some
+ * that do not.
  */
-private fun ModelCapabilities.searchingTools() = copy(features = features + ToolSearch)
+private fun ModelCapabilities.loadingDeferredTools() = copy(features = features + DeferredTools)
 
 /**
  * The models that write progress notes between tool calls, as "Progress updates between tool calls" of the thinking

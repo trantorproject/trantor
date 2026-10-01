@@ -1,4 +1,6 @@
-package dev.botta.trantor.ai.errors
+package dev.botta.trantor.ai.generation
+
+import dev.botta.trantor.ai.errors.AIError
 
 /**
  * The run of an agent used as a tool ended waiting for a person to approve some of its calls, which is not supported:

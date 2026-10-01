@@ -19,9 +19,11 @@ internal class AnthropicErrorMapper {
         val provider = ANTHROPIC_PROVIDER
 
         return when {
-            response.status == 401 || response.status == 403 -> AuthenticationError(provider, message, response.status, code)
+            response.status == 401 || response.status == 403 ->
+                AuthenticationError(provider, message, response.status, code)
             response.status == 429 -> RateLimitError(provider, retryAfter(response), message, response.status, code)
-            isContextLength(response.status, code, message) -> ContextLengthExceededError(provider, message, response.status, code)
+            isContextLength(response.status, code, message) ->
+                ContextLengthExceededError(provider, message, response.status, code)
             // 529 is Anthropic being overloaded, which is a wait and not a bad request
             response.status >= 500 -> ProviderUnavailableError(provider, message, response.status, code)
             else -> ProviderError(provider, message, response.status, code, retryable = false)
@@ -38,7 +40,8 @@ internal class AnthropicErrorMapper {
         if (hasCause<InterruptedIOException>(error)) return TimeoutError(error.message ?: "The call timed out", error)
 
         if (hasCause<IOException>(error) || error is HttpClientError) {
-            return ProviderUnavailableError(ANTHROPIC_PROVIDER, error.message ?: "Could not reach Anthropic", cause = error)
+            val message = error.message ?: "Could not reach Anthropic"
+            return ProviderUnavailableError(ANTHROPIC_PROVIDER, message, cause = error)
         }
 
         return ProviderError(

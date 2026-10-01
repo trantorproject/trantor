@@ -28,12 +28,12 @@ import org.junit.jupiter.api.Test
 class AgentCrossProviderRecordedTest {
     @Test
     fun `support on o4-mini hands over to sales on Claude Sonnet 4-5`() {
-        http.answers(*fixtures("openai/cross-handoff", 2), *fixtures("anthropic/cross-handoff", 3))
+        http.answers(*fixtures("openai/handoffs/cross", 2), *fixtures("anthropic/handoffs/cross", 3))
 
         val (first, next) = twoTurns(support = openAI(), sales = sonnet())
 
         assertThat(first.steps.map { it.agent.name }).containsExactly("support", "support", "sales", "sales")
-        assertThat(bodyOf(2)).doesNotContain(idsOf("openai/cross-handoff", 2))
+        assertThat(bodyOf(2)).doesNotContain(idsOf("openai/handoffs/cross", 2))
         assertThat(anthropicTexts(2)).contains(OtherAgentsTurns.PREAMBLE, WEATHER_TOLD)
         assertThat(anthropicToolUses(4)).containsExactly("getPrice")
         assertThat(anthropicTexts(4)).contains(WEATHER_TOLD)
@@ -46,12 +46,12 @@ class AgentCrossProviderRecordedTest {
 
     @Test
     fun `and support on Claude Sonnet 4-5 hands over to sales on o4-mini`() {
-        http.answers(*fixtures("anthropic/cross-handoff-back", 2), *fixtures("openai/cross-handoff-back", 3))
+        http.answers(*fixtures("anthropic/handoffs/cross-back", 2), *fixtures("openai/handoffs/cross-back", 3))
 
         val (first, next) = twoTurns(support = sonnet(), sales = openAI())
 
         assertThat(first.steps.map { it.agent.name }).containsExactly("support", "support", "sales", "sales")
-        assertThat(bodyOf(2)).doesNotContain(idsOf("anthropic/cross-handoff-back", 2))
+        assertThat(bodyOf(2)).doesNotContain(idsOf("anthropic/handoffs/cross-back", 2))
         assertThat(openAIUserTexts(2)).contains(OtherAgentsTurns.PREAMBLE, WEATHER_TOLD)
         assertThat(openAIItems(4, "function_call").map { it["name"]!!.asString() }).containsExactly("getPrice")
         assertThat(openAIUserTexts(4)).contains(WEATHER_TOLD)

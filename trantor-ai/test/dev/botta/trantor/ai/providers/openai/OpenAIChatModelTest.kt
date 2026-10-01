@@ -3,11 +3,12 @@
 package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.errors.*
 import dev.botta.trantor.ai.models.CallOptions
-import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.providers.ProviderMetadata
+import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpMethods
 import org.assertj.core.api.Assertions.assertThat
@@ -17,12 +18,11 @@ import java.io.InterruptedIOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
-import dev.botta.trantor.ai.providers.ProviderMetadata
 
 class OpenAIChatModelTest {
     @Test
     fun `posts the request to the responses endpoint`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         model.generate(ChatRequest(Message.user("Hola")))
 
@@ -34,7 +34,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `sends the model and the messages as input items`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         model.generate(ChatRequest(Message.system("Sos un asistente"), Message.user("Hola")))
 
@@ -47,7 +47,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `sends the dynamic system prompt last, so what comes before it stays cached`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         val messages = listOf(Message.system("Sos un asistente"), Message.user("Hola"))
 
@@ -65,7 +65,7 @@ class OpenAIChatModelTest {
     fun `and a recorded second turn with another dynamic part reads back everything before it`() {
         // Two turns recorded on gpt-5.6-luna with the long system prompt of the cache recordings, and the time as
         // the dynamic part, which changed between them
-        httpClient.answers(fixture("dynamic-system-1"), fixture("dynamic-system-2"))
+        httpClient.answers(fixture("system/dynamic-1"), fixture("system/dynamic-2"))
         val luna = OpenAIChatModel("gpt-5.6-luna", OpenAIConfig(apiKey = "sk-test"), httpClient)
         val first = ChatRequest(
             listOf(Message.system("Sos un asistente"), Message.user("Y el 42?")),
@@ -84,7 +84,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `sends an assistant message as output text`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         model.generate(ChatRequest(Message.user("Hola"), Message.assistant("Buenas"), Message.user("Todo bien?")))
 
@@ -94,7 +94,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `sends the settings it supports`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
         val settings = ChatSettings(maxOutputTokens = 100, temperature = 0.2, topP = 0.9)
 
         model.generate(ChatRequest(listOf(Message.user("Hola")), settings = settings))
@@ -106,7 +106,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `sends a summary of the conversation as something the user tells, where it is`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         model.generate(ChatRequest(Message.Summary("Nico viaja a Bariloche en julio"), Message.user("Cuando viajo?")))
 
@@ -119,7 +119,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `leaves out a summary it cannot read, and says so`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
         val opaque = Message.Summary(null, ProviderMetadata.of("other", Json.obj("encrypted" to "abc")))
 
         val response = model.generate(ChatRequest(opaque, Message.user("Cuando viajo?")))
@@ -131,7 +131,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `warns about a setting it cannot send`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
         val settings = ChatSettings(seed = 42)
 
         val response = model.generate(ChatRequest(listOf(Message.user("Hola")), settings = settings))
@@ -142,7 +142,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `returns the text of the response`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         val response = model.generate(ChatRequest(Message.user("Hola")))
 
@@ -152,7 +152,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `returns the usage with details as subsets`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
 
@@ -168,7 +168,7 @@ class OpenAIChatModelTest {
     @Test
     fun `counts what went into the cache inside the input, as OpenAI does`() {
         // Recorded on gpt-5.6-luna, one of the models that bill a cache write apart
-        httpClient.body = fixture("cache-write")
+        httpClient.body = fixture("chat/cache-write")
 
         val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
 
@@ -181,7 +181,7 @@ class OpenAIChatModelTest {
     @Test
     fun `and what came out of it too, so the three parts add up to the input`() {
         // The same prefix a moment later: most of it is read, and the little that changed is written
-        httpClient.body = fixture("cache-read")
+        httpClient.body = fixture("chat/cache-read")
 
         val usage = model.generate(ChatRequest(Message.user("Hola"))).usage
 
@@ -193,7 +193,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `returns the id and the model that actually answered`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         val info = model.generate(ChatRequest(Message.user("Hola"))).info
 
@@ -205,7 +205,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `a response cut by max output tokens finishes by length`() {
-        httpClient.body = fixture("text-incomplete")
+        httpClient.body = fixture("chat/text-incomplete")
 
         val response = model.generate(ChatRequest(Message.user("Contame una historia")))
 
@@ -218,7 +218,7 @@ class OpenAIChatModelTest {
     @Test
     fun `says which parameter the provider complained about`() {
         httpClient.status = 400
-        httpClient.body = fixture("error-400-unsupported-value")
+        httpClient.body = fixture("chat/error-400-unsupported-value")
 
         assertThatThrownBy { model.generate(ChatRequest(Message.user("Hola"))) }
             .isInstanceOfSatisfying(ProviderError::class.java) {
@@ -244,7 +244,7 @@ class OpenAIChatModelTest {
     @Test
     fun `invalid credentials throw an authentication error`() {
         httpClient.status = 401
-        httpClient.body = fixture("error-401")
+        httpClient.body = fixture("chat/error-401")
 
         assertThatThrownBy { model.generate(ChatRequest(Message.user("Hola"))) }
             .isInstanceOf(AuthenticationError::class.java)
@@ -315,7 +315,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `sends the timeout of the call as the total timeout of the stream`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         model.generate(ChatRequest(Message.user("Hola")), CallOptions(timeout = 30.seconds))
 
@@ -324,7 +324,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `waits for a model that goes silent as long as its config says, whatever the http client says`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
         val model = OpenAIChatModel("gpt-4.1-mini", OpenAIConfig(apiKey = "sk-test", readTimeout = 300_000), httpClient)
 
         model.generate(ChatRequest(Message.user("Hola")))
@@ -334,7 +334,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `and two minutes when the config says nothing`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         model.generate(ChatRequest(Message.user("Hola")))
 
@@ -343,7 +343,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `sends extra headers of the call`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         model.generate(ChatRequest(Message.user("Hola")), CallOptions(headers = mapOf("X-Tenant" to "crafty")))
 
@@ -354,14 +354,16 @@ class OpenAIChatModelTest {
     fun `does not call when it was already cancelled`() {
         val cancellation = Cancellation().apply { cancel() }
 
-        assertThatThrownBy { model.generate(ChatRequest(Message.user("Hola")), CallOptions(cancellation = cancellation)) }
+        assertThatThrownBy {
+            model.generate(ChatRequest(Message.user("Hola")), CallOptions(cancellation = cancellation))
+        }
             .isInstanceOf(CancelledError::class.java)
         assertThat(httpClient.request).isNull()
     }
 
     @Test
     fun `cancelling while it runs ends the call as cancelled`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
         val cancellation = Cancellation()
         val reading = CountDownLatch(1)
         val letGo = CountDownLatch(1)
@@ -399,7 +401,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `lets go of the cancellation once the call is over`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
         val cancellation = Cancellation()
 
         repeat(3) { model.generate(ChatRequest(Message.user("Hola")), CallOptions(cancellation = cancellation)) }
@@ -411,7 +413,7 @@ class OpenAIChatModelTest {
 
     @Test
     fun `closes the response`() {
-        httpClient.body = fixture("text-simple")
+        httpClient.body = fixture("chat/text-simple")
 
         model.generate(ChatRequest(Message.user("Hola")))
 

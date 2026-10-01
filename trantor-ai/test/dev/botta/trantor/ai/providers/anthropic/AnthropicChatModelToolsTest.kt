@@ -4,10 +4,10 @@ package dev.botta.trantor.ai.providers.anthropic
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.errors.UnsupportedRequestError
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.*
-import dev.botta.trantor.ai.errors.UnsupportedRequestError
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -50,28 +50,35 @@ class AnthropicChatModelToolsTest {
         }
 
         @Test
-        fun `a deferred tool goes after the rest, and the tool search of Anthropic last, where the cache mark goes`() {
+        fun `a deferred tool goes after the rest, so that the search finds it, with the search up front`() {
             val request = requestWith(weatherTool.copy(deferLoading = true))
 
-            generate(request.copy(tools = request.tools + timeTool))
+            generate(request.copy(tools = request.tools + timeTool + searchTool))
 
             assertThat(sentBody()["tools"]!!.asArray()!!.map { it.asObject()!!["name"]?.asString() })
-                .containsExactly("getTime", "getWeather", "tool_search_tool_bm25")
-            assertThat(sentTool(1)["defer_loading"]?.asBoolean()).isTrue()
-            assertThat(sentTool(2)["type"]?.asString()).isEqualTo("tool_search_tool_bm25_20251119")
+                .containsExactly("getTime", "search_tools", "getWeather")
+            assertThat(sentTool(2)["defer_loading"]?.asBoolean()).isTrue()
             assertThat(sentTool(0).containsKey("defer_loading")).isFalse()
         }
 
         @Test
-        fun `a model that does not search tools gets them up front, and says so`() {
+        fun `without a search in the request a deferred tool goes up front, as nothing would find it, and says so`() {
+            val response = generate(requestWith(weatherTool.copy(deferLoading = true)))
+
+            assertThat(sentTool().containsKey("defer_loading")).isFalse()
+            assertThat(response.warnings.single().message).contains("getWeather", "no search")
+        }
+
+        @Test
+        fun `a model that does not load deferred tools gets them up front, and says so`() {
             val model = AnthropicChatModel("claude-sonnet-5", AnthropicConfig(apiKey = "sk-ant-test"), httpClient)
 
-            val response = model.generate(requestWith(weatherTool.copy(deferLoading = true)))
+            val request = requestWith(weatherTool.copy(deferLoading = true))
 
-            assertThat(sentBody()["tools"]!!.asArray()!!.map { it.asObject()!!["name"]?.asString() })
-                .containsExactly("getWeather")
+            val response = model.generate(request.copy(tools = request.tools + searchTool))
+
             assertThat(sentTool().containsKey("defer_loading")).isFalse()
-            assertThat(response.warnings.single().message).contains("does not search tools", "getWeather")
+            assertThat(response.warnings.single().message).contains("getWeather", "does not load them")
         }
 
         @Test
@@ -118,10 +125,10 @@ class AnthropicChatModelToolsTest {
         fun `the tools to search for are the first to go without it, since they are the ones sent last`() {
             val deferred = (0..19).map { tool("d$it").copy(deferLoading = true) }
 
-            generate(requestWith(deferred + tool("u")))
+            generate(requestWith(listOf(searchTool) + deferred + tool("u")))
 
             assertThat(sentTools().filter { it.containsKey("strict") }.map { it["name"]?.asString() })
-                .containsExactly("u", *Array(19) { "d$it" })
+                .containsExactly("search_tools", "u", *Array(18) { "d$it" })
         }
 
         @Test
@@ -164,7 +171,6 @@ class AnthropicChatModelToolsTest {
             ChatRequest(messages = listOf(Message.user("Hola")), tools = tools)
 
         private fun sentTools() = sentBody()["tools"]!!.asArray()!!.map { it.asObject()!! }
-            .filter { it["name"]?.asString() != "tool_search_tool_bm25" }
 
         /** A tool with a required string, and parameters that can be null written as a list of types or as anyOf. */
         private fun tool(name: String, typeLists: Int = 0, anyOfs: Int = 0): FunctionToolSpec {
@@ -247,16 +253,6 @@ class AnthropicChatModelToolsTest {
         )
 
         private val deferredWeather = weatherTool.copy(deferLoading = true)
-
-        private val searchTool = FunctionToolSpec(
-            name = "search_tools",
-            description = "Searches the tools",
-            parameters = Json.obj(
-                "type" to "object",
-                "properties" to Json.obj("query" to Json.obj("type" to "string")),
-            ),
-            searchesTools = true,
-        )
     }
 
     @Nested
@@ -401,6 +397,13 @@ class AnthropicChatModelToolsTest {
             "type" to "object",
             "properties" to Json.obj("city" to Json.obj("type" to "string")),
         ),
+    )
+
+    private val searchTool = FunctionToolSpec(
+        name = "search_tools",
+        description = "Searches the tools",
+        parameters = Json.obj("type" to "object", "properties" to Json.obj("query" to Json.obj("type" to "string"))),
+        searchesTools = true,
     )
 
     private val timeTool = FunctionToolSpec(

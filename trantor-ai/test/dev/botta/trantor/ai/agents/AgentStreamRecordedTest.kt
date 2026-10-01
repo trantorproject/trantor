@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test
 class AgentStreamRecordedTest {
     @Test
     fun `on o4-mini the handoff comes between the steps of support and those of sales`() {
-        http.answers(*fixtures("openai/agent-stream", 4))
+        http.answers(*fixtures("openai/agents/stream", 4))
 
         val (events, result) = stream(OpenAIChatModel("o4-mini", OpenAIConfig("sk-test"), http))
 
@@ -39,7 +39,7 @@ class AgentStreamRecordedTest {
 
     @Test
     fun `and on Claude Sonnet 4-5`() {
-        http.answers(*fixtures("anthropic/agent-stream", 3))
+        http.answers(*fixtures("anthropic/agents/stream", 3))
 
         val (events, result) = stream(AnthropicChatModel("claude-sonnet-4-5", AnthropicConfig(apiKey = "sk-ant-test"), http))
 
@@ -55,7 +55,9 @@ class AgentStreamRecordedTest {
 
     private fun stream(model: ChatModel): Pair<List<RunEvent>, AgentRunResult> {
         val support = Agent("support").model(model)
-            .instructions("Sos el soporte de una agencia de viajes. Para precios o compras, pasá la conversación a ventas.")
+            .instructions(
+                "Sos el soporte de una agencia de viajes. Para precios o compras, pasá la conversación a ventas.",
+            )
             .tools(WeatherTool()).handoffs("sales").build()
         val sales = Agent("sales").model(model)
             .instructions("Sos ventas de una agencia de viajes. Usá getPrice para los precios.")

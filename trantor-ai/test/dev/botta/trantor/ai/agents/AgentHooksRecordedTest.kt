@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test
 class AgentHooksRecordedTest {
     @Test
     fun `o4-mini asks for the weather where the hook says the user lives`() {
-        http.answers(fixture("openai/hooks-1"), fixture("openai/hooks-2"))
+        http.answers(fixture("openai/agents/hooks-1"), fixture("openai/agents/hooks-2"))
 
         val result = run(OpenAIChatModel("o4-mini", OpenAIConfig("sk-test"), http))
 
@@ -35,7 +35,7 @@ class AgentHooksRecordedTest {
 
     @Test
     fun `so does Claude Sonnet 4-5`() {
-        http.answers(fixture("anthropic/hooks-1"), fixture("anthropic/hooks-2"))
+        http.answers(fixture("anthropic/agents/hooks-1"), fixture("anthropic/agents/hooks-2"))
 
         val result = run(AnthropicChatModel("claude-sonnet-4-5", AnthropicConfig(apiKey = "sk-ant-test"), http))
 
@@ -58,7 +58,8 @@ class AgentHooksRecordedTest {
     /** The hooks the recordings were made with. */
     class WhereTheUserLives: AgentHooks {
         override fun beforeModel(step: AgentHookContext, request: ChatRequest) = request.copy(
-            dynamicSystem = listOfNotNull(request.dynamicSystem, "El cliente vive en Córdoba, Argentina.").joinToString(" "),
+            dynamicSystem = listOfNotNull(request.dynamicSystem, "El cliente vive en Córdoba, Argentina.")
+                .joinToString(" "),
         )
     }
 

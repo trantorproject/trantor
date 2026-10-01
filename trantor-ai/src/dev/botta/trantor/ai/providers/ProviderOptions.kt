@@ -23,6 +23,10 @@ class ProviderOptions private constructor(private val options: List<ProviderOpti
     }
 }
 
+/**
+ * Options for one provider, sent as they are written. An adapter drops the ones of another provider with a
+ * warning.
+ */
 interface ProviderOption {
     val provider: String
 }

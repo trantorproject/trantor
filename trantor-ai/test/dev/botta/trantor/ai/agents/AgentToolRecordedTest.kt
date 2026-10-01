@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
 class AgentToolRecordedTest {
     @Test
     fun `on o4-mini the researcher gets only the task, and the run counts what it spent`() {
-        http.answers(*fixtures("openai/agent-tool", 5))
+        http.answers(*fixtures("openai/agents/agent-tool", 5))
 
         val result = run(OpenAIChatModel("o4-mini", OpenAIConfig("sk-test"), http))
 
@@ -38,7 +38,7 @@ class AgentToolRecordedTest {
 
     @Test
     fun `and on Claude Sonnet 4-5`() {
-        http.answers(*fixtures("anthropic/agent-tool", 4))
+        http.answers(*fixtures("anthropic/agents/agent-tool", 4))
 
         val result = run(AnthropicChatModel("claude-sonnet-4-5", AnthropicConfig(apiKey = "sk-ant-test"), http))
 

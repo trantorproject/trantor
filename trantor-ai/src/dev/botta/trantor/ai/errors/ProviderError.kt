@@ -1,5 +1,9 @@
 package dev.botta.trantor.ai.errors
 
+/**
+ * The provider answered with an error: [status] and [code] are what it said, and [retryable] whether trying again
+ * can work.
+ */
 open class ProviderError(
     val provider: String,
     message: String,

@@ -4,7 +4,7 @@ import dev.botta.trantor.ai.agents.AgentRunResult
 import dev.botta.trantor.ai.agents.GuardrailVerdict
 import dev.botta.trantor.ai.agents.ToolGuardrailVerdict
 import dev.botta.trantor.ai.generation.RunResult
-import dev.botta.trantor.ai.generation.ToolLoop
+import dev.botta.trantor.ai.generation.ToolExecution
 import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
@@ -34,8 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * they are at commit `e57c543` of open-telemetry/semantic-conventions-genai (2026-09-24). They are all in Development
  * and still change often, so every name they give is written here and in [GenAIMetrics], and nowhere else.
  *
- * - `invoke_agent` for a whole generation: it is an agent without a name, which is how other libraries report
- *   theirs, and it adds up the usage of its calls.
+ * - `invoke_agent` for a whole generation: it is an agent without a name, and it adds up the usage of its calls.
  * - `chat {model}` (`CLIENT`) for each call to the model, current while it runs, so that the http call of the
  *   provider is inside it.
  * - `execute_tool {tool}` for each call the loop runs, current while it runs, so that what the tool does is inside.
@@ -156,8 +155,8 @@ internal class GenAITelemetry(openTelemetry: OpenTelemetry, settings: AITelemetr
         tool: Tool<*>?,
         agent: String?,
         invocation: OpenSpan?,
-        block: () -> ToolLoop.Execution,
-    ): ToolLoop.Execution {
+        block: () -> ToolExecution,
+    ): ToolExecution {
         val attributes = Attributes.builder()
             .put(TOOL_NAME, call.toolName)
             .put(TOOL_TYPE, "function")
@@ -181,8 +180,8 @@ internal class GenAITelemetry(openTelemetry: OpenTelemetry, settings: AITelemetr
         tool: Tool<*>?,
         agent: String?,
         invocation: OpenSpan?,
-        block: () -> ToolLoop.Execution,
-    ): ToolLoop.Execution {
+        block: () -> ToolExecution,
+    ): ToolExecution {
         val span = start("execute_tool ${call.toolName}", SpanKind.INTERNAL, invocation?.context) {
             setAttribute(OPERATION, "execute_tool")
             agent?.let { setAttribute(AGENT_NAME, it) }

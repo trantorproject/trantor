@@ -3,8 +3,8 @@ package dev.botta.trantor.ai.tools
 import dev.botta.json.Json
 import dev.botta.trantor.ai.RunContext
 import dev.botta.trantor.ai.models.CallOptions
-import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.ai.serialization.defaultJsonSerializer
+import dev.botta.trantor.primitives.serialization.JsonSerializer
 
 /**
  * What a tool knows about the call it is answering. It carries only what every tool can count on, whether it runs

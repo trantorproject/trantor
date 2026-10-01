@@ -2,7 +2,6 @@
 
 package dev.botta.trantor.ai.models
 
-import dev.botta.trantor.ai.errors.ModelNotFoundError
 import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.ChatResponse

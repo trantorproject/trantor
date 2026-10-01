@@ -5,9 +5,9 @@ import dev.botta.trantor.ai.errors.AuthenticationError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.providers.defaultHttpClient
 import dev.botta.trantor.ai.throwIfCancelled
 import dev.botta.trantor.web.client.*
-import dev.botta.trantor.ai.providers.defaultHttpClient
 import kotlin.time.TimeSource
 
 /**
@@ -25,7 +25,7 @@ class AnthropicChatModel(
     constructor(modelId: String, apiKey: String): this(modelId, AnthropicConfig(apiKey))
 
     override val provider = ANTHROPIC_PROVIDER
-    override val searchesTools = WhatTheModelTakes(catalog.find(ANTHROPIC_PROVIDER, modelId)).toolSearch
+    override val loadsDeferredTools = ModelSupport(catalog.find(ANTHROPIC_PROVIDER, modelId)).deferredTools
 
     private val requestMapper = AnthropicRequestMapper(config, catalog)
     private val errorMapper = AnthropicErrorMapper()

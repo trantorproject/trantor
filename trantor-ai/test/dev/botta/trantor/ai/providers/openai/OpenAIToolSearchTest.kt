@@ -8,90 +8,25 @@ import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
-import dev.botta.trantor.ai.tools.search.ProviderToolSearcher
 import dev.botta.trantor.ai.tools.search.ToolSearcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 /**
- * The tool loop with tools to search for against what OpenAI really answered, gpt-5.4 loading getWeather among the
- * deferred tools in both ways: with the search of Trantor, which is how a run searches unless told otherwise, run by
- * the client and answered with the definitions of the tools found; and with its own hosted tool search, asked for with
- * [ProviderToolSearcher], which searches and calls in the same answer. OpenAI took the calls after the first of each
- * recording, the search sent back as it came and the call with the namespace it gave it, so what these tests pin down
- * is what it took.
+ * The tool loop with tools to search for against what OpenAI really answered: gpt-5.4 searching with `search_tools`,
+ * as a tool search the client runs, whose answer goes back as the definitions of the tools found, which OpenAI loads,
+ * and calling getWeather in the next answer with the namespace OpenAI gave it. OpenAI took the calls after the first
+ * of each recording, so what these tests pin down is what it took.
  */
 class OpenAIToolSearchTest {
     @Test
-    fun `asked for its own search, the provider searches, and the tool it found runs`() {
-        http.answers(fixture("tool-search-1.json"), fixture("tool-search-2.json"))
-
-        val result = loop(ProviderToolSearcher).run(request())
-
-        assertThat(weather.cities).containsExactly("Bariloche, Argentina")
-        assertThat(result.text).isEqualTo("En Bariloche hay 7 °C ahora.")
-    }
-
-    @Test
-    fun `the search is not run by the loop, and the next call sends it back as it came`() {
-        http.answers(fixture("tool-search-1.json"), fixture("tool-search-2.json"))
-        val recorded = Json.parse(fixture("tool-search-1.json")).asObject()!!["output"]!!.asArray()!!
-
-        val result = loop(ProviderToolSearcher).run(request())
-
-        assertThat(result.steps[0].toolResults.map { it.toolName }).containsExactly("getWeather")
-        val input = sent(1)["input"]!!.asArray()!!
-        assertThat(input[1]).isEqualTo(recorded[0])
-        assertThat(input[2]).isEqualTo(recorded[1])
-    }
-
-    @Test
-    fun `and the call to the tool it found goes back with its namespace`() {
-        http.answers(fixture("tool-search-1.json"), fixture("tool-search-2.json"))
-
-        loop(ProviderToolSearcher).run(request())
-
-        val call = sent(1)["input"]!!.asArray()!!.map { it.asObject()!! }.single { it.type == "function_call" }
-        assertThat(call["namespace"]?.asString()).isEqualTo("getWeather")
-    }
-
-    @Test
-    fun `every call tells the deferred tools, and the tool search after them`() {
-        http.answers(fixture("tool-search-1.json"), fixture("tool-search-2.json"))
-
-        loop(ProviderToolSearcher).run(request())
-
-        (0..1).forEach { call ->
-            val tools = sent(call)["tools"]!!.asArray()!!.map { it.asObject()!! }
-            assertThat(tools.map { it["name"]?.asString() ?: it.type })
-                .containsExactly("getTime", "getWeather", "refund", "listInvoices", "tool_search")
-            assertThat(tools.filter { it["defer_loading"]?.asBoolean() == true }.map { it["name"]?.asString() })
-                .containsExactly("getWeather", "refund", "listInvoices")
-        }
-    }
-
-    @Test
-    fun `and so does a stream searched by the provider`() {
-        http.answers(fixture("tool-search-stream-1.txt"), fixture("tool-search-stream-2.txt"))
-
-        val result = loop(ProviderToolSearcher).stream(request()).use { it.forEach { }; it.result() }
-
-        assertThat(weather.cities).containsExactly("Bariloche, Argentina")
-        val input = sent(1)["input"]!!.asArray()!!.map { it.asObject()!! }
-        assertThat(input.drop(1).map { it.type })
-            .containsExactly("tool_search_call", "tool_search_output", "function_call", "function_call_output")
-        assertThat(input.single { it.type == "function_call" }["namespace"]?.asString()).isEqualTo("getWeather")
-        assertThat(result.text).isNotBlank()
-    }
-
-    @Test
-    fun `by default Trantor searches, and what it found goes back as the definitions of the tools, and one runs`() {
-        http.answers(*(1..3).map { fixture("tool-search-client-$it.json") }.toTypedArray())
+    fun `what the search found goes back as the definitions of the tools, and one of them runs`() {
+        http.answers(*(1..3).map { fixture("tool-search/search-$it.json") }.toTypedArray())
 
         val result = loop().run(request())
 
         assertThat(weather.cities).containsExactly("Bariloche, Argentina")
-        assertThat(result.text).isEqualTo(recordedText("tool-search-client-3.json"))
+        assertThat(result.text).isEqualTo(recordedText("tool-search/search-3.json"))
         val input = sent(1)["input"]!!.asArray()!!.map { it.asObject()!! }
         assertThat(input.drop(1).map { it.type }).containsExactly("tool_search_call", "tool_search_output")
         assertThat(input[2]["call_id"]).isEqualTo(input[1]["call_id"])
@@ -100,21 +35,18 @@ class OpenAIToolSearchTest {
     }
 
     @Test
-    fun `and every call asks the client for the search of Trantor, with no hosted one`() {
-        http.answers(*(1..3).map { fixture("tool-search-client-$it.json") }.toTypedArray())
+    fun `and the call to a tool it found goes back with the namespace OpenAI gave it`() {
+        http.answers(*(1..3).map { fixture("tool-search/search-$it.json") }.toTypedArray())
 
         loop().run(request())
 
-        (0..2).forEach { call ->
-            val tools = sent(call)["tools"]!!.asArray()!!.map { it.asObject()!! }
-            assertThat(tools.map { it["name"]?.asString() ?: "${it.type}:${it["execution"]?.asString()}" })
-                .containsExactly("tool_search:client", "getTime", "getWeather", "refund", "listInvoices")
-        }
+        val call = sent(2)["input"]!!.asArray()!!.map { it.asObject()!! }.single { it.type == "function_call" }
+        assertThat(call["namespace"]?.asString()).isEqualTo("getWeather")
     }
 
     @Test
-    fun `and so does a stream searched by Trantor`() {
-        http.answers(*(1..3).map { fixture("tool-search-client-stream-$it.txt") }.toTypedArray())
+    fun `and so does a stream`() {
+        http.answers(*(1..3).map { fixture("tool-search/stream-$it.txt") }.toTypedArray())
 
         val result = loop().stream(request()).use { it.forEach { }; it.result() }
 

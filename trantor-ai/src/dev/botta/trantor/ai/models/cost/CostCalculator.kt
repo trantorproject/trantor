@@ -2,7 +2,6 @@ package dev.botta.trantor.ai.models.cost
 
 import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.models.catalog.ModelCatalog
-import dev.botta.trantor.ai.models.catalog.ModelPricing
 import dev.botta.trantor.ai.models.chat.ChatResponse
 import dev.botta.trantor.domain.Money
 

@@ -1,7 +1,6 @@
 package dev.botta.trantor.ai.history
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.errors.NoSummaryWrittenError
 import dev.botta.trantor.ai.errors.ProviderUnavailableError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.ResponseInfo

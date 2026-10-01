@@ -3,6 +3,8 @@ package dev.botta.trantor.ai.tools
 import com.google.gson.JsonParseException
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
+import dev.botta.trantor.ai.serialization.read
+import dev.botta.trantor.ai.serialization.schemaFor
 import dev.botta.trantor.primitives.lang.Maybe
 import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.primitives.serialization.JsonSchemaError
@@ -11,8 +13,6 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.allSupertypes
 import kotlin.reflect.full.primaryConstructor
-import dev.botta.trantor.ai.serialization.schemaFor
-import dev.botta.trantor.ai.serialization.read
 
 /**
  * A tool the application runs when the model asks for it.

@@ -22,10 +22,10 @@ class OpenAIChatModelOptionsTest {
         @Test
         fun `go into the body with the names OpenAI uses`() {
             val options = OpenAIOptions(
-                serviceTier = ServiceTiers.Flex,
+                serviceTier = OpenAIServiceTiers.Flex,
                 promptCacheKey = "tenant-7",
                 safetyIdentifier = "user-42",
-                truncation = Truncations.Auto,
+                truncation = OpenAITruncations.Auto,
             )
 
             generateWith(options)
@@ -38,7 +38,7 @@ class OpenAIChatModelOptionsTest {
 
         @Test
         fun `only send what was set`() {
-            generateWith(OpenAIOptions(serviceTier = ServiceTiers.Priority))
+            generateWith(OpenAIOptions(serviceTier = OpenAIServiceTiers.Priority))
 
             assertThat(sentBody().containsKey("truncation")).isFalse()
             assertThat(sentBody().containsKey("prompt_cache_key")).isFalse()
@@ -48,7 +48,7 @@ class OpenAIChatModelOptionsTest {
         fun `several add up in order, and what a later one sets wins`() {
             // An agent brings its options and the run its own after them
             val options = ProviderOptions.of(
-                OpenAIOptions(serviceTier = ServiceTiers.Flex, promptCacheKey = "del-agente"),
+                OpenAIOptions(serviceTier = OpenAIServiceTiers.Flex, promptCacheKey = "del-agente"),
                 OpenAIOptions(promptCacheKey = "del-run"),
             )
 
@@ -60,7 +60,7 @@ class OpenAIChatModelOptionsTest {
 
         @Test
         fun `verbosity travels inside text, where OpenAI takes it`() {
-            generateWith(OpenAIOptions(verbosity = Verbosities.Low))
+            generateWith(OpenAIOptions(verbosity = OpenAIVerbosities.Low))
 
             assertThat(sentBody()["text"].toString()).isEqualTo("""{"verbosity":"low"}""")
         }
@@ -70,7 +70,7 @@ class OpenAIChatModelOptionsTest {
             val request = ChatRequest(
                 messages = listOf(Message.user("Hola")),
                 output = OutputSpec.Json(Json.obj("type" to "object"), name = "answer"),
-                providerOptions = ProviderOptions.of(OpenAIOptions(verbosity = Verbosities.High)),
+                providerOptions = ProviderOptions.of(OpenAIOptions(verbosity = OpenAIVerbosities.High)),
             )
 
             model.generate(request)
@@ -182,7 +182,7 @@ class OpenAIChatModelOptionsTest {
         fun `a typed option is what conflicts, whatever order they came in`() {
             val options = ProviderOptions.of(
                 RawOptions("openai", Json.obj("service_tier" to "flex")),
-                OpenAIOptions(serviceTier = ServiceTiers.Priority),
+                OpenAIOptions(serviceTier = OpenAIServiceTiers.Priority),
             )
 
             assertThatThrownBy { model.generate(requestWith(options)) }
@@ -265,7 +265,7 @@ class OpenAIChatModelOptionsTest {
 
         @Test
         fun `it also applies while streaming`() {
-            httpClient.body = fixture("stream-text.txt")
+            httpClient.body = fixture("chat/stream-text.txt")
             val request = ChatRequest(
                 messages = listOf(Message.user("Hola")),
                 settings = ChatSettings(seed = 7, failOnWarnings = true),
@@ -292,6 +292,6 @@ class OpenAIChatModelOptionsTest {
     }
 
     private val httpClient = FakeHttpClient(body = OpenAIChatModelOptionsTest::class.java
-        .getResource("/openai/text-simple.json")!!.readText())
+        .getResource("/openai/chat/text-simple.json")!!.readText())
     private val model = OpenAIChatModel("gpt-4.1-mini", OpenAIConfig(apiKey = "sk-test"), httpClient)
 }

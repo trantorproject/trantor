@@ -5,17 +5,17 @@ import dev.botta.json.values.JsonObject
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.throwIfCancelled
-import dev.botta.trantor.web.client.StreamOptions
-import java.io.InterruptedIOException
-import io.opentelemetry.api.OpenTelemetry
-import kotlin.time.Duration
+import dev.botta.trantor.primitives.logging.getLogger
 import dev.botta.trantor.web.client.HttpClient
 import dev.botta.trantor.web.client.HttpMethods
 import dev.botta.trantor.web.client.HttpRequest
 import dev.botta.trantor.web.client.HttpStreamResponse
+import dev.botta.trantor.web.client.StreamOptions
 import dev.botta.trantor.web.client.sse.sseEvents
-import dev.botta.trantor.primitives.logging.getLogger
+import io.opentelemetry.api.OpenTelemetry
+import java.io.InterruptedIOException
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration
 
 /**
  * An MCP client over Streamable HTTP. Every request is a POST of its own, and the server answers it with its JSON,

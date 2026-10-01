@@ -47,18 +47,21 @@ interface AI {
     fun models(): ModelRegistry
 }
 
+/** A run built in place: `ai.generate { user(question); tools(search) }`. */
 fun AI.generate(build: GenerateRequest.() -> Unit) = generate(GenerateRequest().apply(build))
 
+/** The run of [generate], received as it happens. Closing the stream stops it. */
 fun AI.stream(build: GenerateRequest.() -> Unit) = stream(GenerateRequest().apply(build))
 
 /**
  * The answer as an object of type [T], whose schema the serializer of the application tells the model.
  *
- * @throws dev.botta.trantor.ai.errors.NoObjectGeneratedError when the model refused, ran out of tokens or wrote
+ * @throws dev.botta.trantor.ai.generation.NoObjectGeneratedError when the model refused, ran out of tokens or wrote
  * something that is not a [T]. [generateObject] says so without failing.
  */
 inline fun <reified T> AI.generate(noinline build: GenerateRequest.() -> Unit): T =
     generateObject<T>(build).getOrThrow()
 
+/** A run that answers with a [T], read by the serializer of the application, or says why it did not. */
 inline fun <reified T> AI.generateObject(noinline build: GenerateRequest.() -> Unit) =
     generateObject<T>(GenerateRequest().apply(build), typeOf<T>())

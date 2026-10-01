@@ -2,6 +2,7 @@ package dev.botta.trantor.ai.models.chat
 
 import dev.botta.trantor.ai.providers.ProviderMetadata
 
+/** A turn of a conversation: of the system, the user, the model, or the results of its tools. */
 sealed interface Message {
     data class System(val text: String): Message
 

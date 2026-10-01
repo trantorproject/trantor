@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test
 class AnthropicProgressNotesTest {
     @Test
     fun `a note between tool calls is told apart from thinking`() {
-        http.answers(*recording("notes-between-%d.json"))
+        http.answers(*recording("thinking/notes-between-%d.json"))
 
         val result = loop().run(request(Reasoning.Off))
 
@@ -32,8 +32,8 @@ class AnthropicProgressNotesTest {
 
     @Test
     fun `and goes back as the thinking block it came as`() {
-        http.answers(*recording("notes-between-%d.json"))
-        val recorded = Json.parse(fixture("notes-between-3.json")).asObject()!!["content"]!!.asArray()!![0]
+        http.answers(*recording("thinking/notes-between-%d.json"))
+        val recorded = Json.parse(fixture("thinking/notes-between-3.json")).asObject()!!["content"]!!.asArray()!![0]
 
         loop().run(request(Reasoning.Off))
 
@@ -43,7 +43,7 @@ class AnthropicProgressNotesTest {
 
     @Test
     fun `in a stream it comes as a note, piece by piece, and nothing as thinking`() {
-        http.answers(*recording("notes-updates-stream-%d.txt"))
+        http.answers(*recording("thinking/notes-updates-stream-%d.txt"))
         val parts = mutableListOf<StreamPart>()
 
         val result = loop().stream(request()).use { stream ->
@@ -59,7 +59,7 @@ class AnthropicProgressNotesTest {
 
     @Test
     fun `asked for a summary of the thinking, a block with text is thinking, since a note cannot be told from it`() {
-        http.body = fixture("notes-between-3.json")
+        http.body = fixture("thinking/notes-between-3.json")
         val summarized = Reasoning.effort(ReasoningEfforts.Low, ReasoningSummaries.Auto)
 
         val response = model.generate(request(summarized))

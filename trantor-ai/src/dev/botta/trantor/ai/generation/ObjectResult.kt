@@ -1,7 +1,5 @@
 package dev.botta.trantor.ai.generation
 
-import dev.botta.trantor.ai.errors.NoObjectGeneratedError
-
 /**
  * The object a run was asked for, or why it did not come: the model refused, ran out of tokens or wrote something
  * that is not the type. For whoever prefers deciding what to do over catching an exception.

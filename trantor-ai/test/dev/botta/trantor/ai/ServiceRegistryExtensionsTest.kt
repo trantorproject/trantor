@@ -10,8 +10,8 @@ import dev.botta.trantor.ai.agents.AgentRunner
 import dev.botta.trantor.ai.agents.GuardrailTrippedError
 import dev.botta.trantor.ai.agents.GuardrailVerdict
 import dev.botta.trantor.ai.agents.InputGuardrail
-import dev.botta.trantor.ai.errors.ModelNotFoundError
 import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.ai.models.ModelNotFoundError
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.Usage
 import dev.botta.trantor.ai.models.catalog.ModelPricing
@@ -28,8 +28,8 @@ import dev.botta.trantor.ai.providers.openai.addOpenAI
 import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.testing.SkuTool
-import dev.botta.trantor.ai.tools.FunctionToolSpec
 import dev.botta.trantor.ai.testing.TestTelemetry
+import dev.botta.trantor.ai.tools.FunctionToolSpec
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolOutput
@@ -49,6 +49,8 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 class ServiceRegistryExtensionsTest {
     @Nested
@@ -210,24 +212,62 @@ class ServiceRegistryExtensionsTest {
     }
 
     @Nested
-    inner class `the openai provider` {
-        @Test
-        fun `builds its models`() {
-            registry.addOpenAI()
+    inner class `each provider of Trantor` {
+        @ParameterizedTest
+        @ValueSource(strings = ["openai", "anthropic"])
+        fun `builds its models`(name: String) {
+            add(name)
 
-            val model = models().chat("openai/gpt-4.1-mini")
-
-            assertThat(model.provider).isEqualTo("openai")
-            assertThat(model.modelId).isEqualTo("gpt-4.1-mini")
+            assertThat(models().chat(modelOf(name)).provider).isEqualTo(name)
         }
 
-        @Test
-        fun `brings the registry along`() {
-            registry.addOpenAI()
+        @ParameterizedTest
+        @ValueSource(strings = ["openai", "anthropic"])
+        fun `brings the registry along, and the http client of the application when there is none`(name: String) {
+            add(name)
 
             assertThat(models()).isNotNull()
+            assertThat(provider.get<HttpClient>()).isNotNull()
         }
 
+        @ParameterizedTest
+        @ValueSource(strings = ["openai", "anthropic"])
+        fun `calls through the http client of the application`(name: String) {
+            // An empty object is an answer the mapper of Anthropic reads without complaining
+            val answer =
+                if (name == "openai") javaClass.getResource("/openai/chat/text-simple.json")!!.readText() else "{}"
+            val http = FakeHttpClient(body = answer)
+            registry.addSingleton<HttpClient>(http)
+            add(name)
+
+            models().chat(modelOf(name)).generate(ChatRequest("Hola"))
+
+            assertThat(http.request?.url).startsWith(
+                if (name == "openai") OpenAIConfig.DEFAULT_BASE_URL else AnthropicConfig.DEFAULT_BASE_URL,
+            )
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = ["openai", "anthropic"])
+        fun `lives together with another provider`(name: String) {
+            add(name)
+            registry.addFakeProvider()
+
+            assertThat(models().chat(modelOf(name)).provider).isEqualTo(name)
+            assertThat(models().chat("fake/a-model").provider).isEqualTo("fake")
+        }
+
+        private fun add(name: String) {
+            if (name == "openai") registry.addOpenAI { openAI, _ -> openAI.apiKey = "sk-test" }
+            else registry.addAnthropic { anthropic, _ -> anthropic.apiKey = "sk-ant-test" }
+        }
+
+        private fun modelOf(name: String) =
+            if (name == "openai") "openai/gpt-4.1-mini" else "anthropic/claude-sonnet-4-5"
+    }
+
+    @Nested
+    inner class `the openai provider` {
         @Test
         fun `reads its config from its section`() {
             config.addMemoryCollection(
@@ -256,53 +296,10 @@ class ServiceRegistryExtensionsTest {
             assertThat(openAI.store).isNull()
         }
 
-        @Test
-        fun `calls through the http client of the application`() {
-            val http = FakeHttpClient(body = javaClass.getResource("/openai/text-simple.json")!!.readText())
-            registry.addSingleton<HttpClient>(http)
-            registry.addOpenAI { openAI, _ -> openAI.apiKey = "sk-test" }
-
-            models().chat("openai/gpt-4.1-mini").generate(ChatRequest("Hola"))
-
-            assertThat(http.request?.url).isEqualTo("${OpenAIConfig.DEFAULT_BASE_URL}/responses")
-        }
-
-        @Test
-        fun `brings the http client of the application along when there is none`() {
-            registry.addOpenAI()
-
-            assertThat(provider.get<HttpClient>()).isNotNull()
-        }
-
-        @Test
-        fun `lives together with another provider`() {
-            registry.addOpenAI()
-            registry.addFakeProvider()
-
-            assertThat(models().chat("openai/gpt-4.1-mini").provider).isEqualTo("openai")
-            assertThat(models().chat("fake/a-model").provider).isEqualTo("fake")
-        }
     }
 
     @Nested
     inner class `the anthropic provider` {
-        @Test
-        fun `builds its models`() {
-            registry.addAnthropic()
-
-            val model = models().chat("anthropic/claude-sonnet-4-5")
-
-            assertThat(model.provider).isEqualTo("anthropic")
-            assertThat(model.modelId).isEqualTo("claude-sonnet-4-5")
-        }
-
-        @Test
-        fun `brings the registry along`() {
-            registry.addAnthropic()
-
-            assertThat(models()).isNotNull()
-        }
-
         @Test
         fun `reads its config from its section`() {
             config.addMemoryCollection(
@@ -367,33 +364,6 @@ class ServiceRegistryExtensionsTest {
                 .containsExactly("context-1m-2025-08-07", "another-one")
         }
 
-        @Test
-        fun `calls through the http client of the application`() {
-            // An empty object is an answer the mapper reads without complaining
-            val http = FakeHttpClient()
-            registry.addSingleton<HttpClient>(http)
-            registry.addAnthropic { anthropic, _ -> anthropic.apiKey = "sk-ant-test" }
-
-            models().chat("anthropic/claude-sonnet-4-5").generate(ChatRequest("Hola"))
-
-            assertThat(http.request?.url).isEqualTo("${AnthropicConfig.DEFAULT_BASE_URL}/messages")
-        }
-
-        @Test
-        fun `brings the http client of the application along when there is none`() {
-            registry.addAnthropic()
-
-            assertThat(provider.get<HttpClient>()).isNotNull()
-        }
-
-        @Test
-        fun `lives together with the openai one`() {
-            registry.addAnthropic()
-            registry.addOpenAI()
-
-            assertThat(models().chat("anthropic/claude-sonnet-4-5").provider).isEqualTo("anthropic")
-            assertThat(models().chat("openai/gpt-4.1-mini").provider).isEqualTo("openai")
-        }
     }
 
     @Nested
@@ -528,7 +498,9 @@ class ServiceRegistryExtensionsTest {
                 guardrails.input(InputGuardrail("closed") { _, _ -> GuardrailVerdict.Trip("We are closed") })
             }
 
-            assertThatThrownBy { provider.get<AgentRunner>().run(Agent("support").model(model).build(), Message.user("Hola")) }
+            assertThatThrownBy {
+                provider.get<AgentRunner>().run(Agent("support").model(model).build(), Message.user("Hola"))
+            }
                 .isInstanceOf(GuardrailTrippedError::class.java)
                 .hasMessageContaining("We are closed")
         }

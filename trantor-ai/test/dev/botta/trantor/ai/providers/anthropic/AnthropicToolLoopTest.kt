@@ -8,9 +8,9 @@ import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /**
  * The tool loop against what Anthropic really answered: Claude Sonnet 4.5 thinking, asking for the weather and
@@ -20,7 +20,7 @@ import dev.botta.trantor.serialization.gson.GsonSerializer
 class AnthropicToolLoopTest {
     @Test
     fun `runs the recorded loop to the answer`() {
-        http.answers(fixture("tool-loop-1"), fixture("tool-loop-2"))
+        http.answers(fixture("tool-loop/loop-1"), fixture("tool-loop/loop-2"))
 
         val result = loop().run(request())
 
@@ -33,8 +33,8 @@ class AnthropicToolLoopTest {
 
     @Test
     fun `the second call sends the signed thinking back as it came, then the call and its result`() {
-        http.answers(fixture("tool-loop-1"), fixture("tool-loop-2"))
-        val recorded = Json.parse(fixture("tool-loop-1")).asObject()!!["content"]!!.asArray()!!
+        http.answers(fixture("tool-loop/loop-1"), fixture("tool-loop/loop-2"))
+        val recorded = Json.parse(fixture("tool-loop/loop-1")).asObject()!!["content"]!!.asArray()!!
         val thinking = recorded[0].asObject()!!
 
         loop().run(request())
@@ -54,7 +54,7 @@ class AnthropicToolLoopTest {
 
     @Test
     fun `with an object asked for, the model calls the tool first and answers with the object`() {
-        http.answers(fixture("tool-loop-object-1"), fixture("tool-loop-object-2"))
+        http.answers(fixture("tool-loop/object-1"), fixture("tool-loop/object-2"))
 
         val result = loop().run(request(OutputSpec.json<CityWeather>(GsonSerializer())))
 
@@ -72,7 +72,7 @@ class AnthropicToolLoopTest {
      */
     @Test
     fun `on a model that ties its thinking, the next turn puts the dynamic part back where its thinking saw it`() {
-        http.answers(*(1..4).map { fixture("bound-thinking-$it") }.toTypedArray())
+        http.answers(*(1..4).map { fixture("thinking/bound-$it") }.toTypedArray())
         val opus = AnthropicChatModel("claude-opus-5-5", AnthropicConfig(apiKey = "sk-ant-test"), http)
         val loop = ToolLoop(opus, listOf(weather))
         val first = ChatRequest(listOf(Message.user("Bariloche o Bogota?")), dynamicSystem = "Son las 10:00")

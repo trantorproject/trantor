@@ -5,6 +5,7 @@ package dev.botta.trantor.ai.generation
 import dev.botta.json.Json
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.testing.stepSetup
 import dev.botta.trantor.ai.tools.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -187,7 +188,7 @@ class ToolLoopApprovalTest {
     }
 
     private fun loop(hooks: StepHooks? = null) = ToolLoop(
-        NextStep { request, _ -> StepSetup(model, request, listOf(weather, refund), hooks = hooks) },
+        NextStep { request, _ -> stepSetup(model, request, listOf(weather, refund), hooks = hooks) },
     )
 
     private fun weatherCall(callId: String, city: String) =

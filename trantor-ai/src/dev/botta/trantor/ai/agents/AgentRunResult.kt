@@ -4,15 +4,15 @@ import dev.botta.json.Json
 import dev.botta.json.values.JsonArray
 import dev.botta.json.values.JsonObject
 import dev.botta.json.values.JsonValue
-import dev.botta.trantor.ai.errors.NoObjectGeneratedError
+import dev.botta.trantor.ai.generation.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.Step
 import dev.botta.trantor.ai.models.chat.ToolCallPart
 import dev.botta.trantor.ai.models.chat.objectAs
-import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.ai.serialization.defaultJsonSerializer
-import kotlin.reflect.typeOf
+import dev.botta.trantor.primitives.serialization.JsonSerializer
 import kotlin.reflect.KType
+import kotlin.reflect.typeOf
 
 /**
  * What a run of the agents left: what [RunResult] says about any run, plus which agent ran each step and the id of

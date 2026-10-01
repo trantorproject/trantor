@@ -13,8 +13,6 @@ data class ModelSpec(
     val provider: String,
     val modelId: String,
     val capabilities: ModelCapabilities,
-    val displayName: String? = null,
-    val contextWindow: Int? = null,
     /** The list price, written on the same line as the capabilities. Nothing in the call path reads it. */
     val pricing: ModelPricing? = null,
     /**

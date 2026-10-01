@@ -4,11 +4,11 @@ package dev.botta.trantor.ai.generation
 
 import dev.botta.json.Json
 import dev.botta.json.values.JsonObject
-import dev.botta.trantor.ai.errors.NoPendingCallError
 import dev.botta.trantor.ai.generation.ToolLoop.Companion.GENERIC_FAILURE
 import dev.botta.trantor.ai.generation.ToolLoopApprovalTest.RefundTool
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.testing.stepSetup
 import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.ai.tools.ToolOutput.Text
 import org.assertj.core.api.Assertions.assertThat
@@ -222,7 +222,7 @@ class ToolLoopResumeTest {
     }
 
     private fun loop(hooks: StepHooks? = null) = ToolLoop(
-        NextStep { request, _ -> StepSetup(model, request, listOf(weather, refund), hooks = hooks) },
+        NextStep { request, _ -> stepSetup(model, request, listOf(weather, refund), hooks = hooks) },
     )
 
     /** What the model read as the result of [callId]. */

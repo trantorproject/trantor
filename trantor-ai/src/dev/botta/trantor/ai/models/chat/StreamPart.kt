@@ -2,6 +2,10 @@ package dev.botta.trantor.ai.models.chat
 
 import dev.botta.json.values.JsonValue
 
+/**
+ * What a stream of a model hands over: pieces of text, reasoning or notes as they are written, and each part once
+ * it is whole.
+ */
 sealed interface StreamPart {
     data class TextDelta(val text: String): StreamPart
 

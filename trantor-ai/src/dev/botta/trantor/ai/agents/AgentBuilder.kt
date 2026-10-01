@@ -7,9 +7,9 @@ import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatSettings
 import dev.botta.trantor.ai.providers.ProviderOption
 import dev.botta.trantor.ai.tools.Tool
+import dev.botta.trantor.ai.tools.search.ToolSearcher
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
-import dev.botta.trantor.ai.tools.search.ToolSearcher
 
 /** Builds an [Agent]. What it gets after [build] does not reach the agent already built. */
 class AgentBuilder internal constructor(private val name: String) {
@@ -47,14 +47,11 @@ class AgentBuilder internal constructor(private val name: String) {
 
     /**
      * Tools the agent searches for instead of being told about them up front, for a catalog too large to send whole.
-     * See [Tool search](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai.md#tool-search).
+     * See [Tool search](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai/tools.md#tool-search).
      */
     fun searchableTools(vararg tools: Tool<*>) = apply { searchableTools.addAll(tools) }
 
-    /**
-     * How the [searchableTools] are searched: by their words unless told otherwise, and by the provider with
-     * [ProviderToolSearcher][dev.botta.trantor.ai.tools.search.ProviderToolSearcher]; see [ToolSearcher].
-     */
+    /** How the [searchableTools] are searched, by their words unless told otherwise; see [ToolSearcher]. */
     fun toolSearcher(searcher: ToolSearcher) = apply { toolSearcher = searcher }
 
     /** Agents of the team it can hand the conversation over to, each with a tool `transfer_to_<name>`. */

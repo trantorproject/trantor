@@ -156,7 +156,7 @@ This component is implemented as a **HostedService**, meaning it is tied to the 
 `addOpenTelemetry()` builds the OpenTelemetry SDK and sends traces and metrics over OTLP, to a collector or
 straight to a backend. The server, the HTTP client, the jobs and the calls to the models trace with the
 OpenTelemetry API, which lives in `trantor-primitives` and costs nothing without this module. See
-[trantor-opentelemetry](trantor-opentelemetry.md) and [the telemetry of trantor-ai](trantor-ai.md#telemetry).
+[trantor-opentelemetry](trantor-opentelemetry.md) and [the telemetry of trantor-ai](trantor-ai/telemetry.md).
 
 ---
 
@@ -170,7 +170,7 @@ Provides:
 - `ChatModel`: generate and stream, with messages, tools, structured output and reasoning
 - `ModelRegistry`: resolves a model from a `provider/model` reference or from an alias in configuration
 - Middlewares that wrap any model, such as retries with backoff
-- Provider adapters, currently OpenAI
+- Provider adapters, currently OpenAI and Anthropic
 
 Provider specifics that do not fit the shared contract travel in `providerOptions` and come back in
 `providerMetadata`, so that using one does not mean leaving the contract.

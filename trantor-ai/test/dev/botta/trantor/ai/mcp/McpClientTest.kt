@@ -3,17 +3,17 @@
 package dev.botta.trantor.ai.mcp
 
 import dev.botta.json.Json
-import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.primitives.TrantorBuildInfo
+import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpMethods
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import dev.botta.trantor.web.client.HttpClientError
 import java.io.IOException
 import java.io.InterruptedIOException
 import kotlin.time.Duration.Companion.seconds

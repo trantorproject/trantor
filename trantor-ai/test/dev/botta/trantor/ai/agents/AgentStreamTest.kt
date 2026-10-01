@@ -7,9 +7,9 @@ import dev.botta.trantor.ai.generation.textDeltas
 import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.*
 import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolOutput
-import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolResult
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -26,7 +26,9 @@ class AgentStreamTest {
         assertThat(events.filterNot { it is RunEvent.Model }).containsExactly(
             RunEvent.StepStarted(1),
             RunEvent.ToolStarted(transfer),
-            RunEvent.ToolFinished(ToolResultPart("call_1", "transfer_to_sales", ToolOutput.Text("Transferred to sales."))),
+            RunEvent.ToolFinished(
+                ToolResultPart("call_1", "transfer_to_sales", ToolOutput.Text("Transferred to sales.")),
+            ),
             RunEvent.StepFinished(1),
             RunEvent.Handoff("support", "sales"),
             RunEvent.StepStarted(2),
@@ -73,7 +75,8 @@ class AgentStreamTest {
     fun `a generation never tells of a handoff, since it has no team`() {
         supportModel.answers(listOf(ToolCallPart("call_1", "assign", Json.obj())), listOf(TextPart("Listo")))
 
-        val events = ToolLoop(supportModel, listOf(AssignTool())).stream(ChatRequest(question)).use { it.asSequence().toList() }
+        val events = ToolLoop(supportModel, listOf(AssignTool())).stream(ChatRequest(question))
+            .use { it.asSequence().toList() }
 
         assertThat(events.filterIsInstance<RunEvent.Handoff>()).isEmpty()
     }
@@ -92,6 +95,7 @@ class AgentStreamTest {
         override val name = "assign"
         override val description = "Assigns the conversation to sales"
 
-        override fun execute(args: NoArgs, context: ToolContext) = ToolResult.text("Te paso con ventas").handoffTo("sales")
+        override fun execute(args: NoArgs, context: ToolContext) =
+            ToolResult.text("Te paso con ventas").handoffTo("sales")
     }
 }

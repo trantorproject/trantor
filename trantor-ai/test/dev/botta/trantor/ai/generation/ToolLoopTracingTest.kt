@@ -15,6 +15,7 @@ import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
 import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.common.AttributeKey.booleanKey
 import io.opentelemetry.api.common.AttributeKey.doubleKey
 import io.opentelemetry.api.common.AttributeKey.longKey
 import io.opentelemetry.api.common.AttributeKey.stringArrayKey
@@ -30,10 +31,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.milliseconds
-import io.opentelemetry.api.common.AttributeKey.booleanKey
 import org.slf4j.MDC
 import java.util.Collections
+import kotlin.time.Duration.Companion.milliseconds
 
 class ToolLoopTracingTest {
     @Nested

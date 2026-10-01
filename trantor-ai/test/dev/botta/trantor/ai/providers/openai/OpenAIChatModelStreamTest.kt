@@ -3,13 +3,13 @@
 package dev.botta.trantor.ai.providers.openai
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.errors.CancelledError
-import dev.botta.trantor.ai.models.CallOptions
-import dev.botta.trantor.primitives.Cancellation
-import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.errors.AuthenticationError
+import dev.botta.trantor.ai.errors.CancelledError
 import dev.botta.trantor.ai.errors.ProviderError
+import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.primitives.Cancellation
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test
 class OpenAIChatModelStreamTest {
     @Test
     fun `asks the provider to stream`() {
-        httpClient.body = fixture("stream-text.txt")
+        httpClient.body = fixture("chat/stream-text.txt")
 
         model.stream(ChatRequest(Message.user("Hola"))).use { it.response() }
 
@@ -26,7 +26,7 @@ class OpenAIChatModelStreamTest {
 
     @Test
     fun `returns the text deltas as they arrive`() {
-        httpClient.body = fixture("stream-text.txt")
+        httpClient.body = fixture("chat/stream-text.txt")
 
         val deltas = model.stream(ChatRequest(Message.user("Hola"))).use { stream ->
             stream.asSequence().filterIsInstance<StreamPart.TextDelta>().map { it.text }.toList()
@@ -38,7 +38,7 @@ class OpenAIChatModelStreamTest {
 
     @Test
     fun `returns a finished item as a part`() {
-        httpClient.body = fixture("stream-text.txt")
+        httpClient.body = fixture("chat/stream-text.txt")
 
         val parts = model.stream(ChatRequest(Message.user("Hola"))).use { stream ->
             stream.asSequence().filterIsInstance<StreamPart.PartDone>().map { it.part }.toList()
@@ -49,7 +49,7 @@ class OpenAIChatModelStreamTest {
 
     @Test
     fun `returns the events it does not map as raw`() {
-        httpClient.body = fixture("stream-text.txt")
+        httpClient.body = fixture("chat/stream-text.txt")
 
         val raw = model.stream(ChatRequest(Message.user("Hola"))).use { stream ->
             stream.asSequence().filterIsInstance<StreamPart.Raw>().map { it.event }.toList()
@@ -67,7 +67,7 @@ class OpenAIChatModelStreamTest {
 
     @Test
     fun `the aggregated response is the same one generate would return`() {
-        httpClient.body = fixture("stream-text.txt")
+        httpClient.body = fixture("chat/stream-text.txt")
 
         val response = model.stream(ChatRequest(Message.user("Hola"))).use { stream ->
             stream.asSequence().toList()
@@ -84,7 +84,7 @@ class OpenAIChatModelStreamTest {
 
     @Test
     fun `response consumes what is left of the stream`() {
-        httpClient.body = fixture("stream-text.txt")
+        httpClient.body = fixture("chat/stream-text.txt")
 
         val response = model.stream(ChatRequest(Message.user("Hola"))).use { it.response() }
 
@@ -94,7 +94,7 @@ class OpenAIChatModelStreamTest {
 
     @Test
     fun `a stream cut before the final event returns what arrived, with a warning`() {
-        httpClient.body = fixture("stream-text.txt").substringBefore("event: response.output_text.done")
+        httpClient.body = fixture("chat/stream-text.txt").substringBefore("event: response.output_text.done")
 
         val response = model.stream(ChatRequest(Message.user("Hola"))).use { it.response() }
 
@@ -126,7 +126,7 @@ class OpenAIChatModelStreamTest {
     @Test
     fun `an error status is raised before streaming`() {
         httpClient.status = 401
-        httpClient.body = fixture("error-401.json")
+        httpClient.body = fixture("chat/error-401.json")
 
         assertThatThrownBy { model.stream(ChatRequest(Message.user("Hola"))) }
             .isInstanceOf(AuthenticationError::class.java)
@@ -134,7 +134,7 @@ class OpenAIChatModelStreamTest {
 
     @Test
     fun `closing the stream cancels the call`() {
-        httpClient.body = fixture("stream-text.txt")
+        httpClient.body = fixture("chat/stream-text.txt")
 
         model.stream(ChatRequest(Message.user("Hola"))).use { it.next() }
 
@@ -144,7 +144,7 @@ class OpenAIChatModelStreamTest {
 
     @Test
     fun `cancelling while it is read ends the stream as cancelled, not with half an answer`() {
-        httpClient.body = fixture("stream-text.txt")
+        httpClient.body = fixture("chat/stream-text.txt")
         val cancellation = Cancellation()
         httpClient.whileReading = { cancellation.cancel() }
 

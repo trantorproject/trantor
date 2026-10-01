@@ -32,9 +32,12 @@ class GenerateRequest {
     /** A model reference or an alias. Null is the `default` alias. */
     var model: String? = null
         private set
-    val messages = mutableListOf<Message>()
-    val tools = mutableListOf<Tool<*>>()
-    val searchableTools = mutableListOf<Tool<*>>()
+    private val messageList = mutableListOf<Message>()
+    val messages: List<Message> get() = messageList
+    private val toolList = mutableListOf<Tool<*>>()
+    val tools: List<Tool<*>> get() = toolList
+    private val searchableList = mutableListOf<Tool<*>>()
+    val searchableTools: List<Tool<*>> get() = searchableList
     var toolSearcher: ToolSearcher? = null
         private set
     var toolChoice: ToolChoice = ToolChoice.Auto
@@ -44,19 +47,22 @@ class GenerateRequest {
     var output: OutputSpec = OutputSpec.Text
         private set
     val settings = ChatSettings()
-    val providerOptions = mutableListOf<ProviderOption>()
+    private val optionList = mutableListOf<ProviderOption>()
+    val providerOptions: List<ProviderOption> get() = optionList
     var context = RunContext()
         private set
     var callOptions = CallOptions()
         private set
     var dynamicSystem: String? = null
         private set
-    val contextPolicies = mutableListOf<ContextPolicy>()
+    private val policyList = mutableListOf<ContextPolicy>()
+    val contextPolicies: List<ContextPolicy> get() = policyList
     var session: Session? = null
         private set
     var compaction: Compaction? = null
         private set
-    val decisions = mutableListOf<Decision>()
+    private val decisionList = mutableListOf<Decision>()
+    val decisions: List<Decision> get() = decisionList
 
     /** Where the conversation of the session starts in the request, and where what comes after it does. */
     private var sessionStart = 0
@@ -64,17 +70,17 @@ class GenerateRequest {
 
     fun model(reference: String?) = apply { model = reference }
 
-    fun system(text: String) = apply { messages.add(Message.system(text)) }
+    fun system(text: String) = apply { messageList.add(Message.system(text)) }
 
     /** Instructions that change from one call to the next, sent where they do not undo the cache of the rest. */
     fun dynamicSystem(text: String) = apply { dynamicSystem = text }
 
-    fun user(text: String) = apply { messages.add(Message.user(text)) }
+    fun user(text: String) = apply { messageList.add(Message.user(text)) }
 
-    fun user(vararg parts: Part) = apply { messages.add(Message.User(parts.toList())) }
+    fun user(vararg parts: Part) = apply { messageList.add(Message.User(parts.toList())) }
 
     /** The conversation so far, as the application kept it. */
-    fun messages(history: List<Message>) = apply { messages.addAll(history) }
+    fun messages(history: List<Message>) = apply { messageList.addAll(history) }
 
     /**
      * The conversation [session] keeps, read here and placed where this is called, since the request is written in
@@ -86,7 +92,7 @@ class GenerateRequest {
 
         this.session = session
         sessionStart = messages.size
-        messages.addAll(session.load())
+        messageList.addAll(session.load())
         afterSession = messages.size
     }
 
@@ -94,20 +100,18 @@ class GenerateRequest {
      * What part of the conversation each call sends, in the order given; the conversation itself stays whole. The
      * system messages it starts with always go. See [ContextPolicy].
      */
-    fun contextPolicy(vararg policies: ContextPolicy) = apply { contextPolicies.addAll(policies) }
+    fun contextPolicy(vararg policies: ContextPolicy) = apply { policyList.addAll(policies) }
 
-    fun tools(vararg tools: Tool<*>) = apply { this.tools.addAll(tools) }
+    fun tools(vararg tools: Tool<*>) = apply { toolList.addAll(tools) }
 
     /**
      * Tools the model searches for instead of being told about them up front, for a catalog too large to send whole
-     * on every call. See [Tool search](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai.md#tool-search).
+     * on every call.
+     * See [Tool search](https://github.com/nbottarini/trantor/blob/main/docs/trantor-ai/tools.md#tool-search).
      */
-    fun searchableTools(vararg tools: Tool<*>) = apply { searchableTools.addAll(tools) }
+    fun searchableTools(vararg tools: Tool<*>) = apply { searchableList.addAll(tools) }
 
-    /**
-     * How the [searchableTools] are searched: by their words unless told otherwise, and by the provider with
-     * [ProviderToolSearcher][dev.botta.trantor.ai.tools.search.ProviderToolSearcher]; see [ToolSearcher].
-     */
+    /** How the [searchableTools] are searched, by their words unless told otherwise; see [ToolSearcher]. */
     fun toolSearcher(searcher: ToolSearcher) = apply { toolSearcher = searcher }
 
     fun toolChoice(choice: ToolChoice) = apply { toolChoice = choice }
@@ -120,7 +124,7 @@ class GenerateRequest {
     fun settings(configure: ChatSettings.() -> Unit) = apply { settings.configure() }
 
     /** Options of a provider. The ones for another provider are left out with a warning. */
-    fun options(vararg options: ProviderOption) = apply { providerOptions.addAll(options) }
+    fun options(vararg options: ProviderOption) = apply { optionList.addAll(options) }
 
     /** What the tools can read about who they act for. */
     fun context(run: RunContext) = apply { context = run }
@@ -138,9 +142,9 @@ class GenerateRequest {
      * What a person decided about the calls the conversation left waiting for approval, when a run paused on them.
      * The run answers them before it calls the model: the approved ones run, the others are answered as not approved,
      * and so is any call that got no decision. A decision about a call that is not waiting fails the run with
-     * [dev.botta.trantor.ai.errors.NoPendingCallError] before anything happens. See [Decision].
+     * [dev.botta.trantor.ai.generation.NoPendingCallError] before anything happens. See [Decision].
      */
-    fun decisions(vararg decisions: Decision) = apply { this.decisions.addAll(decisions) }
+    fun decisions(vararg decisions: Decision) = apply { decisionList.addAll(decisions) }
 
     /** [result] with the conversation compacted, if the request asked for it and it went past its tokens. */
     internal fun compacted(result: RunResult) = compaction?.after(
@@ -163,7 +167,7 @@ class GenerateRequest {
     }
 
     /** The request of the first step. */
-    fun toChatRequest() = ChatRequest(
+    internal fun toChatRequest() = ChatRequest(
         messages = messages.toList(),
         toolChoice = toolChoice,
         output = output,

@@ -1,12 +1,13 @@
 package dev.botta.trantor.ai.providers.anthropic
 
 import dev.botta.json.Json
-import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.ai.errors.*
 import dev.botta.trantor.ai.models.CallOptions
 import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.providers.ProviderMetadata
 import dev.botta.trantor.ai.providers.ProviderOptions
 import dev.botta.trantor.ai.testing.FakeHttpClient
+import dev.botta.trantor.primitives.Cancellation
 import dev.botta.trantor.web.client.HttpClientError
 import dev.botta.trantor.web.client.HttpMethods
 import org.assertj.core.api.Assertions.assertThat
@@ -16,7 +17,6 @@ import java.io.InterruptedIOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
-import dev.botta.trantor.ai.providers.ProviderMetadata
 
 /**
  * What the adapter sends. What it reads back is tested against recorded answers: asserting here on a body written
@@ -181,7 +181,7 @@ class AnthropicChatModelTest {
     fun `several options of its own add up in order, and what a later one sets wins`() {
         // An agent brings its options and the run its own after them
         val options = ProviderOptions.of(
-            AnthropicOptions(userId = "del-agente", serviceTier = ServiceTiers.StandardOnly),
+            AnthropicOptions(userId = "del-agente", serviceTier = AnthropicServiceTiers.StandardOnly),
             AnthropicOptions(userId = "del-run"),
         )
 

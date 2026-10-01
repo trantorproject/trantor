@@ -1,5 +1,6 @@
-package dev.botta.trantor.ai.errors
+package dev.botta.trantor.ai.history
 
+import dev.botta.trantor.ai.errors.AIError
 import dev.botta.trantor.ai.models.chat.ChatResponse
 
 /**

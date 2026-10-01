@@ -3,16 +3,17 @@
 package dev.botta.trantor.ai.generation
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.models.chat.*
-import dev.botta.trantor.ai.testing.FakeChatModel
-import dev.botta.trantor.ai.tools.*
 import dev.botta.trantor.ai.models.ResponseInfo
 import dev.botta.trantor.ai.models.Usage
+import dev.botta.trantor.ai.models.chat.*
+import dev.botta.trantor.ai.testing.FakeChatModel
+import dev.botta.trantor.ai.testing.stepSetup
+import dev.botta.trantor.ai.tools.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
-import kotlin.time.Duration.Companion.milliseconds
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 /** A loop whose steps do not all go out the same, which is what an agent needs: it is asked before each one. */
 class ToolLoopStepsTest {
@@ -22,7 +23,7 @@ class ToolLoopStepsTest {
         val seen = mutableListOf<Pair<ChatRequest, List<Step>>>()
         val question = Message.user("Que temperatura hay?")
 
-        ToolLoop({ request, steps -> seen.add(request to steps); StepSetup(first, request, listOf(weather)) })
+        ToolLoop({ request, steps -> seen.add(request to steps); stepSetup(first, request, listOf(weather)) })
             .run(ChatRequest(question))
 
         assertThat(seen.map { it.first.messages.size }).containsExactly(1, 3)
@@ -37,9 +38,9 @@ class ToolLoopStepsTest {
 
         val result = ToolLoop({ request, steps ->
             if (steps.isEmpty()) {
-                StepSetup(first, request.copy(dynamicSystem = "Sos soporte"), listOf(weather))
+                stepSetup(first, request.copy(dynamicSystem = "Sos soporte"), listOf(weather))
             } else {
-                StepSetup(second, request.copy(dynamicSystem = "Sos ventas"), listOf(price))
+                stepSetup(second, request.copy(dynamicSystem = "Sos ventas"), listOf(price))
             }
         }).run(ChatRequest("Que temperatura hay?"))
 
@@ -58,7 +59,7 @@ class ToolLoopStepsTest {
 
         ToolLoop({ request, _ ->
             seen.add(request.messages.size)
-            StepSetup(first, request.copy(messages = request.messages.drop(1)), listOf(weather))
+            stepSetup(first, request.copy(messages = request.messages.drop(1)), listOf(weather))
         }).run(ChatRequest(Message.user("Hola"), Message.user("Que temperatura hay?")))
 
         assertThat(seen).containsExactly(2, 4)
@@ -70,7 +71,7 @@ class ToolLoopStepsTest {
         first.answers(listOf(call("call_1", "getWeather")), listOf(call("call_2", "getWeather")))
 
         val result = ToolLoop({ request, steps ->
-            StepSetup(first, request, if (steps.isEmpty()) listOf(weather) else listOf(price))
+            stepSetup(first, request, if (steps.isEmpty()) listOf(weather) else listOf(price))
         }).run(ChatRequest("Que temperatura hay?"))
 
         assertThat(weather.calls).isEqualTo(1)
@@ -86,7 +87,7 @@ class ToolLoopStepsTest {
 
         val result = ToolLoop({ request, _ ->
             seen.add(request)
-            StepSetup(first, request, listOf(weather), agent = "support")
+            stepSetup(first, request, listOf(weather), agent = "support")
         }).run(ChatRequest("Que temperatura hay?"))
 
         assertThat((seen[1].messages[1] as Message.Assistant).agent).isEqualTo("support")
@@ -120,7 +121,7 @@ class ToolLoopStepsTest {
         second.answers(listOf(TextPart("7 grados")))
 
         val result = ToolLoop({ request, steps ->
-            StepSetup(if (steps.isEmpty()) first else second, request, listOf(weather))
+            stepSetup(if (steps.isEmpty()) first else second, request, listOf(weather))
         }).stream(ChatRequest("Que temperatura hay?")).use { it.result() }
 
         assertThat(first.requests).hasSize(1)
@@ -135,7 +136,7 @@ class ToolLoopStepsTest {
         weather.onExecute = { contexts.add(it) }
         val made = ToolContext("call_1", "getWeather")
 
-        ToolLoop({ request, _ -> StepSetup(first, request, listOf(weather), toolContext = { made }) })
+        ToolLoop({ request, _ -> stepSetup(first, request, listOf(weather), toolContext = { made }) })
             .run(ChatRequest("Que temperatura hay?"))
 
         assertThat(contexts).containsExactly(made)
@@ -224,7 +225,7 @@ class ToolLoopStepsTest {
         }
 
         private fun loop(maxSteps: Int = 5, agent: String? = null) = ToolLoop(
-            { request, _ -> StepSetup(first, request, listOf(weather, output), outputTool = "final", agent = agent) },
+            { request, _ -> stepSetup(first, request, listOf(weather, output), outputTool = "final", agent = agent) },
             maxSteps,
         )
 
@@ -307,7 +308,7 @@ class ToolLoopStepsTest {
         }
 
         private fun sending(history: List<Message>) =
-            ToolLoop({ request, _ -> StepSetup(first, request.copy(messages = history), listOf(weather)) })
+            ToolLoop({ request, _ -> stepSetup(first, request.copy(messages = history), listOf(weather)) })
                 .run(ChatRequest(question))
 
         private fun result(callId: String) = ToolResultPart(callId, "getWeather", ToolOutput.Text("7 grados"))

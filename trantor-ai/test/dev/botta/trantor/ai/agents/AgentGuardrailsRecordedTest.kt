@@ -14,11 +14,11 @@ import dev.botta.trantor.ai.testing.FakeHttpClient
 import dev.botta.trantor.ai.tools.Tool
 import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
+import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.catchThrowableOfType
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import dev.botta.trantor.serialization.gson.GsonSerializer
 
 /**
  * Guardrails against what the providers really answered. On the input, a guardrail that asks the same model whether
@@ -30,7 +30,7 @@ class AgentGuardrailsRecordedTest {
     inner class `On the input` {
         @Test
         fun `o4-mini lets a question about the weather through, and the agent answers it`() {
-            http.answers(*fixtures("openai/guardrail-on-topic", 3, "json"))
+            http.answers(*fixtures("openai/guardrails/on-topic", 3, "json"))
 
             val result = run(openAI(), "Qué clima hay en Bariloche?")
 
@@ -41,7 +41,7 @@ class AgentGuardrailsRecordedTest {
 
         @Test
         fun `and stops the one for a poem with the reason the model gave, before the agent is called`() {
-            http.answers(*fixtures("openai/guardrail-off-topic", 1, "json"))
+            http.answers(*fixtures("openai/guardrails/off-topic", 1, "json"))
 
             val error = catchThrowableOfType(GuardrailTrippedError::class.java) {
                 run(openAI(), "Escribime un poema sobre gatos")
@@ -54,7 +54,7 @@ class AgentGuardrailsRecordedTest {
 
         @Test
         fun `Claude Sonnet 4-5 lets a question about the weather through, and the agent answers it`() {
-            http.answers(*fixtures("anthropic/guardrail-on-topic", 3, "json"))
+            http.answers(*fixtures("anthropic/guardrails/on-topic", 3, "json"))
 
             val result = run(anthropic(), "Qué clima hay en Bariloche?")
 
@@ -65,7 +65,7 @@ class AgentGuardrailsRecordedTest {
 
         @Test
         fun `and stops the one for a poem`() {
-            http.answers(*fixtures("anthropic/guardrail-off-topic", 1, "json"))
+            http.answers(*fixtures("anthropic/guardrails/off-topic", 1, "json"))
 
             val error = catchThrowableOfType(GuardrailTrippedError::class.java) {
                 run(anthropic(), "Escribime un poema sobre gatos")
@@ -91,7 +91,7 @@ class AgentGuardrailsRecordedTest {
     inner class `On the output, in a stream` {
         @Test
         fun `o4-mini's answer comes out once the guardrail passed`() {
-            http.answers(*fixtures("openai/guardrail-output-pass", 2, "txt"))
+            http.answers(*fixtures("openai/guardrails/output-pass", 2, "txt"))
 
             val events = streamAnswering(openAI(), "Qué clima hay en Bariloche?")
 
@@ -101,7 +101,7 @@ class AgentGuardrailsRecordedTest {
 
         @Test
         fun `and nothing of the one that names a competitor comes out`() {
-            http.answers(*fixtures("openai/guardrail-output-trip", 1, "txt"))
+            http.answers(*fixtures("openai/guardrails/output-trip", 1, "txt"))
 
             val (events, error) = streamTripping(openAI())
 
@@ -112,7 +112,7 @@ class AgentGuardrailsRecordedTest {
 
         @Test
         fun `Claude Sonnet 4-5's answer comes out once the guardrail passed`() {
-            http.answers(*fixtures("anthropic/guardrail-output-pass", 2, "txt"))
+            http.answers(*fixtures("anthropic/guardrails/output-pass", 2, "txt"))
 
             val events = streamAnswering(anthropic(), "Qué clima hay en Bariloche?")
 
@@ -122,7 +122,7 @@ class AgentGuardrailsRecordedTest {
 
         @Test
         fun `and nothing of its answer naming a competitor comes out either`() {
-            http.answers(*fixtures("anthropic/guardrail-output-trip", 1, "txt"))
+            http.answers(*fixtures("anthropic/guardrails/output-trip", 1, "txt"))
 
             val (events, error) = streamTripping(anthropic())
 
@@ -193,7 +193,8 @@ class AgentGuardrailsRecordedTest {
             val request = ChatRequest(
                 listOf(
                     Message.system(
-                        "Decidí si el mensaje del usuario es algo que atiende una agencia de viajes: viajes, destinos, " +
+                        "Decidí si el mensaje del usuario es algo que atiende una agencia de viajes: " +
+                        "viajes, destinos, " +
                             "clima, precios o reservas. En reason, explicá en una oración por qué.",
                     ),
                     conversation.last(),

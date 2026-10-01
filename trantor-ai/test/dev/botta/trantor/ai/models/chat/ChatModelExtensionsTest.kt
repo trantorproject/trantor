@@ -3,8 +3,8 @@
 package dev.botta.trantor.ai.models.chat
 
 import dev.botta.json.Json
-import dev.botta.trantor.ai.testing.FakeChatModel
 import dev.botta.trantor.ai.models.CallOptions
+import dev.botta.trantor.ai.testing.FakeChatModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds

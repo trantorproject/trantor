@@ -20,10 +20,9 @@ package dev.botta.trantor.ai.providers.anthropic
  * on the block before it when it goes last.
  *
  * **[conversation] alone does not cache a shared prompt.** The mark lands on the last block, which in a one-off
- * question is the question itself: new every time, so every call pays for a write and none reads it back. A
- * recording showed exactly that — 7,246 tokens of system prompt written twice and read zero times. The same two
- * calls with [system] wrote 7,230 tokens once and read all of them back the second time, paying the plain price
- * only for the twenty tokens of each question. Pair the two for an agent or a chat whose prompt is long:
+ * question is the question itself: new every time, so every call writes the whole system prompt and none reads it
+ * back. With [system], the second call reads it back and pays the plain price only for the question. Pair the two
+ * for an agent or a chat whose prompt is long:
  *
  * ```kotlin
  * anthropic.cache = AnthropicCache(system = true, conversation = true)
@@ -57,4 +56,5 @@ data class AnthropicCache(
     }
 }
 
+/** How long Anthropic keeps what it cached. An hour costs more to write than five minutes. */
 enum class AnthropicCacheTtl { FiveMinutes, OneHour }

@@ -26,10 +26,6 @@ import dev.botta.trantor.ai.models.chat.Message
  * What goes first is what the providers cache, so a policy that changes it on every call pays the whole input every
  * time. The ones of Trantor cut in steps, and a policy of the application should too. On the Claude models that tie
  * their thinking to what came before it, a cut costs the thinking of the turns it kept, which the adapter leaves out.
- *
- * Other libraries call this memory and cut what they keep (LangChain4j's and Spring's windows, Microsoft's reducers);
- * this one follows PydanticAI's history processors and OpenAI Agents' model input filter, which only change what the
- * model sees.
  */
 fun interface ContextPolicy {
     fun project(messages: List<Message>, run: RunContext): List<Message>

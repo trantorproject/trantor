@@ -4,6 +4,7 @@ import dev.botta.json.values.JsonObject
 import dev.botta.trantor.primitives.serialization.JsonSchemaSource
 import kotlin.reflect.typeOf
 
+/** The shape of the answer: text, or JSON held to a schema where the model takes one. */
 sealed interface OutputSpec {
     data object Text: OutputSpec
 

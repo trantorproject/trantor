@@ -1,8 +1,8 @@
 package dev.botta.trantor.ai
 
-import dev.botta.trantor.ai.errors.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.GenerateRequest
 import dev.botta.trantor.ai.generation.NextStep
+import dev.botta.trantor.ai.generation.NoObjectGeneratedError
 import dev.botta.trantor.ai.generation.ObjectResult
 import dev.botta.trantor.ai.generation.RunResult
 import dev.botta.trantor.ai.generation.RunStream
@@ -14,14 +14,13 @@ import dev.botta.trantor.ai.models.ModelRegistry
 import dev.botta.trantor.ai.models.chat.ChatRequest
 import dev.botta.trantor.ai.models.chat.OutputSpec
 import dev.botta.trantor.ai.models.chat.objectAs
-import dev.botta.trantor.ai.tools.ToolErrorHandlers
-import dev.botta.trantor.ai.telemetry.AITelemetrySettings
-import io.opentelemetry.api.OpenTelemetry
-import dev.botta.trantor.primitives.serialization.JsonSerializer
 import dev.botta.trantor.ai.serialization.defaultJsonSerializer
-import kotlin.reflect.KType
 import dev.botta.trantor.ai.serialization.schemaFor
-import dev.botta.trantor.ai.tools.search.ToolSearcher
+import dev.botta.trantor.ai.telemetry.AITelemetrySettings
+import dev.botta.trantor.ai.tools.ToolErrorHandlers
+import dev.botta.trantor.primitives.serialization.JsonSerializer
+import io.opentelemetry.api.OpenTelemetry
+import kotlin.reflect.KType
 
 /**
  * [AI] over the models of the [ModelRegistry], running every generation on the [ToolLoop]. Each step sends what the

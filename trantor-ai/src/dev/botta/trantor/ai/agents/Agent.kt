@@ -7,8 +7,8 @@ import dev.botta.trantor.ai.models.chat.ChatModel
 import dev.botta.trantor.ai.models.chat.ChatSettings
 import dev.botta.trantor.ai.providers.ProviderOption
 import dev.botta.trantor.ai.tools.Tool
-import kotlin.reflect.KClass
 import dev.botta.trantor.ai.tools.search.ToolSearcher
+import kotlin.reflect.KClass
 
 /**
  * A model with a role: its instructions, its tools, the agents it can hand the conversation over to and how it

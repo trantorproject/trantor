@@ -18,9 +18,11 @@ internal class OpenAIErrorMapper {
         val provider = OPENAI_PROVIDER
 
         return when {
-            response.status == 401 || response.status == 403 -> AuthenticationError(provider, message, response.status, code)
+            response.status == 401 || response.status == 403 ->
+                AuthenticationError(provider, message, response.status, code)
             response.status == 429 -> RateLimitError(provider, retryAfter(response), message, response.status, code)
-            response.status == 400 && isContextLength(code, message) -> ContextLengthExceededError(provider, message, response.status, code)
+            response.status == 400 && isContextLength(code, message) ->
+                ContextLengthExceededError(provider, message, response.status, code)
             response.status >= 500 -> ProviderUnavailableError(provider, message, response.status, code)
             else -> ProviderError(provider, message, response.status, code, retryable = false, parameter = parameter)
         }

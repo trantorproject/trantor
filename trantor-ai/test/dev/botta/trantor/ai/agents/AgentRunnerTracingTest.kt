@@ -17,14 +17,14 @@ import dev.botta.trantor.ai.tools.ToolContext
 import dev.botta.trantor.ai.tools.ToolResult
 import io.opentelemetry.api.common.AttributeKey.longKey
 import io.opentelemetry.api.common.AttributeKey.stringKey
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanContext
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.sdk.trace.data.SpanData
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import io.opentelemetry.api.trace.Span
-import io.opentelemetry.api.trace.SpanContext
 import java.util.Collections
 
 class AgentRunnerTracingTest {
