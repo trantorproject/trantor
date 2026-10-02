@@ -1,11 +1,38 @@
-# Trantor
+<p align="center">
+  <a href="https://trantor.nbottarini.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="brand/svg/trantor-logo-horizontal-dark.svg">
+      <img alt="Trantor" src="brand/svg/trantor-logo-horizontal-light.svg" width="360">
+    </picture>
+  </a>
+</p>
 
-[![Maven Central](https://img.shields.io/maven-central/v/dev.botta.trantor/trantor-bom)](https://central.sonatype.com/artifact/dev.botta.trantor/trantor-bom)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+<h3 align="center">Sustainable code for the agentic era.</h3>
 
-A backend framework for Kotlin. It takes the good ideas of .NET Core, Laravel and Spring Boot — a host that runs
-the application, a service container, layered configuration, use cases behind HTTP routes — and leaves out the
-magic.
+<p align="center">
+  A batteries-included Kotlin framework with no magic, so the code you and your agents write stays easy to change.
+</p>
+
+<p align="center">
+  <a href="https://central.sonatype.com/artifact/dev.botta.trantor/trantor-bom"><img alt="Maven Central" src="https://img.shields.io/maven-central/v/dev.botta.trantor/trantor-bom?color=A47AE4"></a>
+  <a href="https://github.com/trantorproject/trantor/actions/workflows/main.yml"><img alt="Build" src="https://github.com/trantorproject/trantor/actions/workflows/main.yml/badge.svg?branch=main"></a>
+  <a href="https://kotlinlang.org"><img alt="Kotlin 2.4" src="https://img.shields.io/badge/kotlin-2.4-7F52FF?logo=kotlin&amp;logoColor=white"></a>
+  <a href="https://openjdk.org/projects/jdk/25/"><img alt="JDK 25" src="https://img.shields.io/badge/jdk-25-437291?logo=openjdk&amp;logoColor=white"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
+  <a href="https://trantor.nbottarini.com"><img alt="Docs" src="https://img.shields.io/badge/docs-trantor.nbottarini.com-A47AE4"></a>
+</p>
+
+<p align="center">
+  <a href="https://trantor.nbottarini.com/getting-started/quickstart/">Quickstart</a> ·
+  <a href="https://trantor.nbottarini.com">Documentation</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
+
+---
+
+Trantor is a backend framework for Kotlin. It takes the good ideas of .NET Core, Laravel and Spring Boot — a host
+that runs the application, a service container, layered configuration, use cases behind HTTP routes — and leaves
+out the magic.
 
 ```kotlin
 import dev.botta.cqbus.identity.Identity
@@ -42,6 +69,10 @@ fun main(args: Array<String>) {
 - **AI as part of the application.** Models of OpenAI and Anthropic behind one contract, tool loops, agents with
   handoffs, guardrails and approvals, MCP clients and servers — and a use case of the application can be a tool,
   going through the same pipeline, authorization and traces as an HTTP request.
+- **Practices that hold up over time.** Use cases, domain building blocks and dependencies that point one way, so
+  an application stays as easy to change in its second year as in its first week.
+- **Ready for coding agents.** The repository has an `AGENTS.md` and docs written for agents, and the code has
+  nothing implicit to misread: what an agent can follow, it can extend the same way you would.
 
 ## Requirements
 
@@ -103,6 +134,10 @@ Issues are welcome. Before you open a pull request, open an issue to talk about 
 
 To report a vulnerability, use [private vulnerability reporting](https://github.com/trantorproject/trantor/security/advisories/new)
 instead of a public issue.
+
+## Brand
+
+The logo, its variants, the favicons and the colors are in [brand/](brand/README.md).
 
 ## License
 
