@@ -4,6 +4,7 @@ package dev.botta.trantor.core.jobs
 
 import dev.botta.trantor.config.Config
 import dev.botta.trantor.config.ConfigManager
+import dev.botta.trantor.config.ConfigSection
 import dev.botta.trantor.config.providers.addMemoryCollection
 import dev.botta.trantor.core.queues.*
 import org.assertj.core.api.Assertions.assertThat
@@ -102,6 +103,33 @@ class JobQueueRegistryTest {
         }
 
         @Test
+        fun `gives the driver the section the queue is declared in, whatever the queue is called`() {
+            val config = configOf(
+                "jobs.queues.emails.driver" to "fake",
+                "jobs.queues.emails.name" to "app-emails-production",
+                "jobs.queues.emails.region" to "sa-east-1",
+            )
+            val factory = FakeQueueFactory()
+            registry.addQueueDriver("fake", factory)
+
+            registry.loadFromConfig(config)
+
+            assertThat(factory.sections.single().path).isEqualTo("jobs.queues.emails")
+            assertThat(factory.sections.single()["region"]).isEqualTo("sa-east-1")
+        }
+
+        @Test
+        fun `reads the section it is told`() {
+            val config = configOf("workers.queues.emails.driver" to "fake")
+            val factory = FakeQueueFactory()
+            registry.addQueueDriver("fake", factory)
+
+            registry.loadFromConfig(config, "workers.queues")
+
+            assertThat(factory.sections.single().path).isEqualTo("workers.queues.emails")
+        }
+
+        @Test
         fun `the default is the one the configuration points at`() {
             val config = configOf(
                 "jobs.queues.default" to "reports",
@@ -171,7 +199,12 @@ class JobQueueRegistryTest {
         ConfigManager().apply { addMemoryCollection(*pairs) }
 
     private class FakeQueueFactory: QueueFactory {
-        override fun createFromConfig(name: String, config: Config) = FakeQueue(name)
+        val sections = mutableListOf<ConfigSection>()
+
+        override fun createFromConfig(name: String, section: ConfigSection): MessageQueue {
+            sections += section
+            return FakeQueue(name)
+        }
     }
 
     private class FakeQueue(override val name: String): MessageQueue {

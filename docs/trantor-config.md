@@ -226,6 +226,31 @@ Helper:
 
 ---
 
+### Command Line Provider
+
+`CommandLineConfigProvider(args)` reads the arguments the application was started with, the way .NET does:
+
+| Argument | Sets |
+|---|---|
+| `--httpServer.port=9000` | `httpServer.port` = `9000` |
+| `httpServer.port=9000` | `httpServer.port` = `9000` |
+| `--env staging` | `env` = `staging` (the next argument is the value) |
+| `--verbose` (last, or followed by another `--`) | `verbose` = `true` |
+
+- Everything after the first `=` is the value, so `--db.url=jdbc:...?ssl=true` keeps its own `=`.
+- An argument with a single dash (`-v`, `-p=9000`), or with no dashes and no `=` (`migrate`), is left alone, so
+  the application can still have commands and short options of its own.
+- When a key is given twice, the last one counts.
+
+Helper:
+
+- `config.addCommandLine(args)`
+
+The host builder adds it for the `args` it was given (`Application.builder(args)`), last, so a flag at startup
+overrides any file or environment variable: `java -jar app.jar --env=staging --httpServer.port=9000`.
+
+---
+
 ## Precedence Pattern (Equivalent to .NET-style layering)
 
 Typical order:
@@ -233,7 +258,8 @@ Typical order:
 1. Base settings (`settings.json`)
 2. Environment-specific settings (`settings.production.json`)
 3. Environment variables
-4. In-memory overrides for tests
+4. Command line arguments
+5. In-memory overrides for tests
 
 Since the last provider wins, add providers from lowest to highest priority.
 

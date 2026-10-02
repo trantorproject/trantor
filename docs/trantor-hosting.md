@@ -56,19 +56,22 @@ It also coordinates:
 1. Create/resolve `ConfigManager`.
 2. Create `ServiceRegistry(config)`.
 3. If defaults enabled (`disableDefaults == false`), preload `TRANTOR__` environment variables.
-4. Inject builder config values into config memory:
+4. Add the command line `args` (always, even with defaults disabled: they are what the application was started
+   with, not something it found around). `--env staging` is read here, so it decides which settings file is next.
+5. Inject builder config values into config memory, which win over the above:
    - `env` from `environmentName`
    - `appName` from `appName`
-5. Build `HostEnvironment` from config:
+6. Build `HostEnvironment` from config:
    - `env` default: `"PRODUCTION"`
    - `appName` default: `"Unnamed App"`
-6. Register `HostEnvironment` singleton.
-7. If defaults enabled, add default config providers and services:
+7. Register `HostEnvironment` singleton.
+8. If defaults enabled, add default config providers and services:
    - `settings.json`
    - `settings.<env>.json` (env lowercased)
    - `settings.local.json`
    - environment variables (no prefix)
    - environment variables with `TRANTOR__`
+   - the command line `args` again, so they win over every file and variable
    - default `HostLifetime` (`DefaultHostLifetime`) if missing
 
 Build result (`build()`):
@@ -205,9 +208,12 @@ Convenience properties:
 - `isStaging`
 - `isProduction`
 
-Current implementation note:
-- `isEnvironment(environment)` currently checks whether the input string is uppercase, not whether it matches the host environment name.
-- As a result, `isDevelopment`/`isStaging`/`isProduction` do not perform a real environment comparison.
+`isEnvironment(name)` compares `name` with the environment, ignoring case, so it also answers for an environment
+Trantor does not name (`isEnvironment("qa")`).
+
+The environment is decided before the settings files are read, since it picks `settings.<env>.json`: it comes from
+`HostBuilderConfig.environmentName`, the command line (`--env`) or the `TRANTOR__ENV` variable, in that order, and
+an `env` in `settings.json` does not change it.
 
 ---
 

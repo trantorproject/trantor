@@ -14,7 +14,8 @@ class DefaultHostBuilder(private val builderConfig: HostBuilderConfig): HostBuil
         if (!builderConfig.disableDefaults) {
             config.addEnvironmentVariables("TRANTOR__")
         }
-        // TODO config.addCommandLineArgsConfig(builderConfig.args)
+        // Before the environment is created, so `--env staging` decides which settings file is read
+        config.addCommandLine(builderConfig.args)
 
         addBuilderConfigToConfig()
         environment = createHostEnvironment()
@@ -26,7 +27,7 @@ class DefaultHostBuilder(private val builderConfig: HostBuilderConfig): HostBuil
             config.addJsonResource("settings.local.json")
             config.addEnvironmentVariables()
             config.addEnvironmentVariables("TRANTOR__")
-            // TODO config.addCommandLineArgsConfig(builderConfig.args)
+            config.addCommandLine(builderConfig.args)
             addDefaultServices()
         }
     }

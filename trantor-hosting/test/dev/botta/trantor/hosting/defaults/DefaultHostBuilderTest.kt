@@ -46,6 +46,21 @@ class DefaultHostBuilderTest {
         }
 
         @Test
+        fun `can come from the command line`() {
+            val builder = builderOf(HostBuilderConfig(args = arrayOf("--env=development", "--appName", "billing")))
+
+            assertThat(builder.environment.isDevelopment).isTrue()
+            assertThat(builder.environment.appName).isEqualTo("billing")
+        }
+
+        @Test
+        fun `what the builder was told wins over the command line`() {
+            val builder = builderOf(HostBuilderConfig(environmentName = "staging", args = arrayOf("--env=development")))
+
+            assertThat(builder.environment.isStaging).isTrue()
+        }
+
+        @Test
         fun `is in the container, so anything can ask where it is running`() {
             val builder = builderOf(HostBuilderConfig(environmentName = "staging"))
 
@@ -65,6 +80,27 @@ class DefaultHostBuilderTest {
         @Test
         fun `is one of its own when nobody gave it any`() {
             assertThat(builderOf().config).isNotNull()
+        }
+
+        @Test
+        fun `takes the command line over what it was given`() {
+            val config = ConfigManager().apply { addMemoryCollection("httpServer.port" to "8080") }
+
+            val builder = builderOf(HostBuilderConfig(config = config, args = arrayOf("--httpServer.port=9000")))
+
+            assertThat(builder.config["httpServer.port"]).isEqualTo("9000")
+        }
+
+        @Test
+        fun `with the defaults, takes the command line over the settings files`() {
+            val builder = DefaultHostBuilder(HostBuilderConfig(args = arrayOf("--greeting=from the command line")))
+
+            assertThat(builder.config["greeting"]).isEqualTo("from the command line")
+        }
+
+        @Test
+        fun `with the defaults, reads the settings files`() {
+            assertThat(DefaultHostBuilder(HostBuilderConfig()).config["greeting"]).isEqualTo("from settings.json")
         }
     }
 

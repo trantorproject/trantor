@@ -2,8 +2,8 @@
 
 package dev.botta.trantor.core
 
-import dev.botta.trantor.config.Config
 import dev.botta.trantor.config.ConfigManager
+import dev.botta.trantor.config.ConfigSection
 import dev.botta.trantor.config.providers.addMemoryCollection
 import dev.botta.trantor.core.cache.CacheModule
 import dev.botta.trantor.core.cache.DefaultInMemoryCacheFactory
@@ -37,6 +37,8 @@ import io.opentelemetry.api.trace.SpanKind
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.SECONDS
 
 class ModulesTest {
     @Nested
@@ -93,6 +95,24 @@ class ModulesTest {
             JobsModule().initialize(services, config)
 
             assertThat(services.get<JobQueueRegistry>().getQueue("emails")).isNotNull()
+        }
+
+        @Test
+        fun `run on a queue in memory with nothing but its driver in the configuration`() {
+            config.addMemoryCollection("jobs.queues.emails.driver" to "memory")
+            registry.addTheModulesAnApplicationGets()
+            registry.addJobProcessor("emails")
+            val services = provider()
+            JobsModule().initialize(services, config)
+            val ran = CountDownLatch(1)
+            services.get<JobDispatcher>().registerHandler(Ping::class, JobHandler { ran.countDown() })
+            val processor = services.getAll<HostedService>().single().apply { start() }
+
+            services.get<JobDispatcher>().dispatch(Ping())
+
+            assertThat(ran.await(5, SECONDS)).isTrue()
+            assertThat(services.get<JobQueueRegistry>().getQueue("emails")).isInstanceOf(InMemoryQueue::class.java)
+            processor.stop(2)
         }
 
         @Test
@@ -194,7 +214,7 @@ class ModulesTest {
     }
 
     private class FakeQueueFactory: QueueFactory {
-        override fun createFromConfig(name: String, config: Config) = FakeQueue(name)
+        override fun createFromConfig(name: String, section: ConfigSection) = FakeQueue(name)
     }
 
     private class FakeQueue(override val name: String): MessageQueue {

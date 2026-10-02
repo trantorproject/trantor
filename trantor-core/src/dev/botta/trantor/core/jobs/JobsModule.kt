@@ -2,6 +2,7 @@ package dev.botta.trantor.core.jobs
 
 import dev.botta.trantor.config.*
 import dev.botta.trantor.core.jobs.serialization.*
+import dev.botta.trantor.core.queues.InMemoryQueueFactory
 import dev.botta.trantor.core.tx.TransactionsModule
 import dev.botta.trantor.di.*
 import dev.botta.trantor.hosting.Module
@@ -19,6 +20,10 @@ class JobsModule: Module {
         services.addSingletonIfMissing<JobHandlerRegistry, JobHandlerRegistry>()
         services.addSingletonIfMissing<JobDispatcher, DefaultJobDispatcher>()
         services.addSingletonIfMissing<JobSerializer, DefaultJobSerializer>()
+        // Costs nothing until a queue of the configuration names it
+        services.configure<JobQueueRegistry> { registry, provider ->
+            registry.addQueueDriver("memory", provider.create<InMemoryQueueFactory>())
+        }
     }
 
     override fun initialize(services: ServiceProvider, config: Config) {

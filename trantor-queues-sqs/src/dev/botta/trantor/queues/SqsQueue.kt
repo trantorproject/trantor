@@ -14,11 +14,16 @@ import software.amazon.awssdk.services.sqs.model.*
 import java.net.*
 import java.util.*
 
+/**
+ * A [MessageQueue] on SQS, found by its [name] in the region of the [settings]. A poll is a long poll, so it waits up
+ * to `pollWaitTimeSeconds` for a message. A queue whose name ends in `.fifo` is sent the group and deduplication ids
+ * of [EnqueueOptions], and ignores their delay.
+ */
 class SqsQueue(
     override val name: String,
     private val credentialsProvider: AwsCredentialsProvider,
     private val serializer: JsonSerializer,
-    private val settings: SqsQueueSettings = SqsQueueSettings(),
+    val settings: SqsQueueSettings = SqsQueueSettings(),
 ): MessageQueue {
     /** The name OpenTelemetry gives to SQS. */
     override val system = "aws_sqs"

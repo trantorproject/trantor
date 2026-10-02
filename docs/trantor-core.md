@@ -19,6 +19,24 @@ app.registerMiddleware(ValidationMiddleware(), MiddlewarePriorities.High)
 val result = app.execute(PlaceOrder(customerId, items))
 ```
 
+**Handlers** are registered with `addHandler`, on an `Application` or a `WebApplication`:
+
+```kotlin
+class PlaceOrderHandler(private val orders: OrderRepository): RequestHandler<PlaceOrder, Order> { ... }
+
+app.addHandler<PlaceOrderHandler>()
+app.addHandler(RequestHandler<GetOrder, Order> { request, _ -> ... })
+```
+
+- `addHandler<H>()` handles the request the declaration of `H` names (`RequestHandler<PlaceOrder, Order>`
+  handles `PlaceOrder`, also when it comes from a base class), and the container builds one for every request,
+  so the constructor gets its dependencies, the scoped services of that request included.
+- A `ContextAwareRequestHandler` is registered the same way, and gets the whole `ExecutionContext`.
+- `addHandler(handler)` takes an instance, which handles every request of its type.
+- A class that is not a handler, or whose request is a type parameter, fails when it is registered, at startup,
+  not when the first request arrives.
+- Registering a second handler for a request replaces the first, as `CQBus` does.
+
 `ExecutionContext` carries who is asking. `executeAsSystem(request)` runs one with `SystemIdentity`, for
 work that has no user behind it — a job, a scheduled task, a migration.
 
@@ -87,8 +105,9 @@ transaction is only pushed once that transaction commits, so a rolled back chang
 ## Queues
 
 `MessageQueue` is the abstraction — enqueue, poll, delete, clear, size, and the `system` it runs on, as
-OpenTelemetry names it (`aws_sqs`). A `QueueFactory` builds one from configuration, which is how a driver plugs
-in (`trantor-queues-sqs` is the one that ships).
+OpenTelemetry names it (`aws_sqs`). A `QueueFactory` builds one from the section of configuration it is declared
+in, which is how a driver plugs in. Two ship: `memory`, here, which `JobsModule` registers, and `sqs` in
+`trantor-queues-sqs`.
 
 A `Message` is a type, a body, the correlation id and the trace context of whoever sent it. A driver stores the
 whole message, so both travel without the driver knowing.
@@ -98,11 +117,35 @@ whole message, so both travel without the driver knowing.
   "jobs": {
     "queues": {
       "default": "emails",
-      "emails": { "driver": "sqs", "url": "..." }
+      "emails": { "driver": "sqs", "name": "app-emails-production", "pollVisibilityTimeout": 300 }
     }
-  }
+  },
+  "aws": { "region": "sa-east-1" }
 }
 ```
+
+Each key of `jobs.queues` is a queue, and its section is everything the driver gets: the `driver`, the `name` of the
+queue where it lives (the key, when it says none) and the settings of the driver. The application asks for it by
+the key.
+
+**The `sqs` driver** (`services.addSqsQueue()`) reads `SqsQueueSettings` from that section: `region`,
+`endpointOverride`, `pollMaxMessages` (10), `pollWaitTimeSeconds` (20) and `pollVisibilityTimeout` (60). The region
+and the endpoint are those of `aws` when the queue says none, so they are written once for all the queues.
+
+**The `memory` driver** keeps the queue in the process, for development, for tests, and for an application that
+runs as a single instance and can afford to lose what is pending when it stops:
+
+```json
+{ "jobs": { "queues": { "emails": { "driver": "memory", "pollVisibilityTimeout": 300 } } } }
+```
+
+- It behaves like SQS where a job can tell: a poll waits for a message (`pollWaitTimeSeconds`, 20, and an enqueue
+  wakes it at once), a message being handled is hidden for `pollVisibilityTimeout` seconds (60) and comes back as a
+  retry unless it was deleted, and `delaySeconds` holds one back. A poll takes up to `pollMaxMessages` (10).
+- Its settings have the names of those of `sqs`, so a queue can change driver and keep them. Group and
+  deduplication ids are ignored.
+- What it holds dies with the process, and each instance of an application has its own: a job dispatched on one
+  is only run there. More than one instance, or work that must survive a restart, needs a real queue.
 
 ---
 

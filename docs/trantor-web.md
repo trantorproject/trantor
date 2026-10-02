@@ -16,8 +16,12 @@ services.addHttpServer()
 `HttpServer`, and adds it as a `HostedService` — so it starts and stops with the host.
 
 ```json
-{ "httpServer": { "port": 8080, "maxThreads": 16, "isMetricsEnabled": true } }
+{ "httpServer": { "port": 9000, "maxThreads": 16, "isMetricsEnabled": true } }
 ```
+
+The port is **8080** when configuration says nothing. Not 80: on Linux only root, or a process with
+`CAP_NET_BIND_SERVICE`, can open a port below 1024, so a container running as an unprivileged user would fail to
+start. Whatever must answer on 80 or 443 — a proxy, a load balancer, the ingress — sits in front.
 
 `HttpServerSettings` also carries two lambdas for what configuration cannot express:
 

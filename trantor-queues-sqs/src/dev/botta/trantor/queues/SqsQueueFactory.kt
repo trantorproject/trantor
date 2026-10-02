@@ -1,27 +1,24 @@
 package dev.botta.trantor.queues
 
 import dev.botta.trantor.config.Config
+import dev.botta.trantor.config.ConfigSection
 import dev.botta.trantor.core.queues.*
-import dev.botta.trantor.core.queues.MessageQueue
 import dev.botta.trantor.primitives.serialization.JsonSerializer
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 
+/**
+ * The `sqs` driver: builds an [SqsQueue] with the [SqsQueueSettings] of the section of the queue. The `region` and
+ * the `endpointOverride` of the queue, when it says none, are those of `aws`, so they are written once for all.
+ */
 class SqsQueueFactory(
     private val credentialsProvider: AwsCredentialsProvider,
     private val serializer: JsonSerializer,
+    private val config: Config,
 ): QueueFactory {
-    override fun createFromConfig(name: String, config: Config): MessageQueue {
-        val settings = SqsQueueSettings()
-        val path = "queues.${name}"
-        val configRegion = config["$path.region"] ?: config["aws.region"]
-        configRegion?.let { settings.region = it }
-
-        val configEndpointOverride = config["$path.endpointOverride"] ?: config["aws.endpointOverride"]
-        configEndpointOverride?.let { settings.endpointOverride = it }
-
-        config["$path.pollMaxMessages"]?.toIntOrNull()?.let { settings.pollMaxMessages = it }
-        config["$path.pollWaitTimeSeconds"]?.toIntOrNull()?.let { settings.pollWaitTimeSeconds = it }
-        config["$path.pollVisibilityTimeout"]?.toIntOrNull()?.let { settings.pollVisibilityTimeout = it }
+    override fun createFromConfig(name: String, section: ConfigSection): MessageQueue {
+        val settings = serializer.deserialize(section.toJson().toString(), SqsQueueSettings::class.java)
+        if (section["region"] == null) config["aws.region"]?.let { settings.region = it }
+        if (section["endpointOverride"] == null) config["aws.endpointOverride"]?.let { settings.endpointOverride = it }
 
         return SqsQueue(name, credentialsProvider, serializer, settings)
     }

@@ -34,7 +34,7 @@ class JobQueueRegistry {
             val queueName = it["name"] ?: it.key
             val driverName = it["driver"] ?: error("Invalid configuration: missing driver for queue ${it.key}")
             val factory = drivers[driverName.lowercase()] ?: error("Queue driver $driverName not registered")
-            val queue = factory.createFromConfig(queueName, config)
+            val queue = factory.createFromConfig(queueName, it)
             addQueue(it.key, queue)
         }
         defaultQueue = config["$section.default"] ?: queues.keys.firstOrNull()
