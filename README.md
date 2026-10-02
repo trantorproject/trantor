@@ -56,7 +56,7 @@ above, and add each module without a version:
 
 ```kotlin
 dependencies {
-    implementation(platform("dev.botta.trantor:trantor-bom:0.8.1-beta13"))
+    implementation(platform("dev.botta.trantor:trantor-bom:0.9.0"))
     implementation("dev.botta.trantor:trantor-web")
 
     testImplementation("dev.botta.trantor:trantor-test")
