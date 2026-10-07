@@ -10,7 +10,7 @@
 <h3 align="center">Sustainable code for the agentic era.</h3>
 
 <p align="center">
-  A batteries-included Kotlin framework with no magic, so the code you and your agents write stays easy to change.
+  A batteries-included Kotlin framework built on best practices for crafting clean code.
 </p>
 
 <p align="center">
