@@ -67,6 +67,16 @@ Two things a handler decides for itself:
 - `queued`: extend `QueuedEventHandler(queueName, delaySeconds)` and the handler runs as a job instead of
   in line.
 
+**What a failure does depends on where the handler runs.** In line, it is logged and that is all: the other
+handlers still run, whoever published never sees it, and nothing tries again. Queued, each handler is a job of
+its own, and one that throws makes its job fail, so the queue gives it again — only that handler, not the
+others of the event. So a handler whose effect has to happen is a queued one, and **a queued handler has to be
+idempotent**, because it may run more than once. The easy way is to bring things up to date from what is true
+now, rather than apply what the event says changed.
+
+Neither covers a process that dies between the commit and the handler, or the enqueue: that event is lost
+without anything failing. Where that matters, sweep for what is out of date on a schedule.
+
 **An event type is a name, not a class.** `@EventType("order.placed.v2")` fixes the name so the class can
 be renamed or moved without breaking what is already in a queue. Without it the simple class name is used.
 `DefaultEventSerializer` refuses two classes with the same type, because the alternative is deserializing
@@ -95,6 +105,12 @@ services.addJobProcessor(queueName = "emails", maxConcurrentWorkers = 4)
 
 **Dispatch waits for the commit** (`jobs.afterCommit`, default `true`): a job enqueued inside a
 transaction is only pushed once that transaction commits, so a rolled back change never produces work.
+
+**A job that cannot be run stays on its queue**, whatever the reason: its handler threw, it has no handler, its
+type is unknown here or its body does not parse. The queue gives it again when its visibility runs out, and the
+queue decides how many times and where it ends: the redrive policy and the dead letter queue in SQS,
+`maxReceiveCount` in the `memory` driver. `JobProcessor` drops nothing, so that a job of the release being
+deployed is not lost on an instance of the previous one.
 
 **A job goes on in the trace of whoever dispatched it.** It carries the correlation id and, when there is an
 `OpenTelemetry` in the container, the trace: sending it is a `send {queue}` span and running it a
@@ -130,7 +146,9 @@ the key.
 
 **The `sqs` driver** (`services.addSqsQueue()`) reads `SqsQueueSettings` from that section: `region`,
 `endpointOverride`, `pollMaxMessages` (10), `pollWaitTimeSeconds` (20) and `pollVisibilityTimeout` (60). The region
-and the endpoint are those of `aws` when the queue says none, so they are written once for all the queues.
+and the endpoint are those of `aws` when the queue says none, so they are written once for all the queues. How
+many times a failing message is given, and the dead letter queue it ends in, are the redrive policy of the queue
+in AWS: without one, it is given again until its retention runs out.
 
 **The `memory` driver** keeps the queue in the process, for development, for tests, and for an application that
 runs as a single instance and can afford to lose what is pending when it stops:
@@ -142,6 +160,8 @@ runs as a single instance and can afford to lose what is pending when it stops:
 - It behaves like SQS where a job can tell: a poll waits for a message (`pollWaitTimeSeconds`, 20, and an enqueue
   wakes it at once), a message being handled is hidden for `pollVisibilityTimeout` seconds (60) and comes back as a
   retry unless it was deleted, and `delaySeconds` holds one back. A poll takes up to `pollMaxMessages` (10).
+- A message given `maxReceiveCount` times (5) is discarded, with an error in the log: there is no dead letter
+  queue to keep it. `null` gives it for ever.
 - Its settings have the names of those of `sqs`, so a queue can change driver and keep them. Group and
   deduplication ids are ignored.
 - What it holds dies with the process, and each instance of an application has its own: a job dispatched on one

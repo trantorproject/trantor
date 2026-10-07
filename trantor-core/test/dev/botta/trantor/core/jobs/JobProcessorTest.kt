@@ -82,22 +82,24 @@ class JobProcessorTest {
     @Nested
     inner class `a message that is not a job this application knows` {
         @Test
-        fun `is dropped rather than retried forever`() {
+        fun `is left on the queue, because it may be a job of the release being deployed`() {
             processor().start()
 
-            queue.arrive("SomethingFromAnotherApplication", "{}")
+            queue.arrive("JobOfTheNextRelease", "{}")
+            Thread.sleep(500)
 
-            assertThat(queue.awaitDeleted()).isEqualTo(1)
+            assertThat(queue.deleted).isEmpty()
         }
 
         @Test
-        fun `a body that does not parse is dropped too`() {
+        fun `a body that does not parse is left too, so it ends where the queue puts what fails and not nowhere`() {
             serializer.register(SendEmail::class)
             processor().start()
 
             queue.arrive("SendEmail", """{"to":{"not":"a string"}}""")
+            Thread.sleep(500)
 
-            assertThat(queue.awaitDeleted()).isEqualTo(1)
+            assertThat(queue.deleted).isEmpty()
         }
 
         @Test
@@ -106,7 +108,7 @@ class JobProcessorTest {
             registerSendEmail { executed.countDown() }
             processor().start()
 
-            queue.arrive("SomethingFromAnotherApplication", "{}")
+            queue.arrive("JobOfTheNextRelease", "{}")
             queue.arrive("SendEmail", """{"to":"nico@example.com"}""")
 
             assertThat(executed.await(5, SECONDS)).isTrue()

@@ -11,6 +11,17 @@ import dev.botta.trantor.primitives.logging.getLogger
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.reflect.KClass
 
+/**
+ * Hands each event to the handlers subscribed to its type, after the commit of the transaction in course for the
+ * ones that ask for it.
+ *
+ * **What a failure does depends on where the handler runs.** In line, it is logged and nothing else: the other
+ * handlers still run and whoever published never sees it, since by then the change is committed and there is
+ * nobody to retry. Queued, the handler runs as a job of its own, and a failure makes that job fail, so the queue
+ * gives it again: a queued handler has to be idempotent. The same goes for a job this application cannot run, with
+ * a handler or an event it does not know ([EventHandlerNotRegisteredError], `EventClassNotFound`) or a body that
+ * does not parse. How many times it is retried, and where it ends up, is up to the queue.
+ */
 class DefaultEventDispatcher(
     private val transactionManager: TransactionManager,
     private val jobDispatcher: JobDispatcher,
@@ -105,27 +116,20 @@ class DefaultEventDispatcher(
         subscribe(EventListenerHandler(eventType, listener))
     }
 
+    // Nothing is caught here, unlike in line: a job that throws stays on its queue, and that is the retry
     private fun processQueuedEventHandlerJob(job: ProcessEventHandlerJob) {
-        try {
-            val event = serializer.deserialize(job.eventType, job.eventBody)
-            val handler = getQueuedHandler(job.handlerType)
-            if (handler == null) {
-                logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: handler not registered")
-                return
-            }
-            if (!handler.canHandle(event)) {
-                logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: handler cannot handle event type")
-                return
-            }
-            invokeEventHandler(event, handler)
-        } catch (e: EventClassNotFound) {
-            logger.error("Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message}", e)
+        val event = try {
+            serializer.deserialize(job.eventType, job.eventBody)
         } catch (e: JsonParseException) {
-            logger.error(
-                "Skipping event handler ${job.handlerType} processing event ${job.eventType}: ${e.message} - ${job.eventBody}",
-                e
-            )
+            // Whoever logs the failure of the job does not log its body, and here it is what went wrong
+            logger.error("Event ${job.eventType} for the handler ${job.handlerType} does not parse: ${job.eventBody}")
+            throw e
         }
+        val handler = getQueuedHandler(job.handlerType)?.takeIf { it.canHandle(event) }
+            ?: throw EventHandlerNotRegisteredError(job.handlerType, job.eventType)
+
+        logger.info("Invoking queued event handler ${handler.handlerType}")
+        handler.on(event)
     }
 
     private fun getQueuedHandler(handlerType: String) =

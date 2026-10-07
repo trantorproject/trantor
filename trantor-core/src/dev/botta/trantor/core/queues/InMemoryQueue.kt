@@ -1,5 +1,6 @@
 package dev.botta.trantor.core.queues
 
+import dev.botta.trantor.primitives.logging.getLogger
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -17,6 +18,10 @@ import kotlin.concurrent.withLock
  * one more attempt unless it is deleted, and [EnqueueOptions.delaySeconds] holds a message back. The group and
  * deduplication ids are ignored.
  *
+ * **A message given [InMemoryQueueSettings.maxReceiveCount] times is discarded**, five by default, with an error in
+ * the log: there is no dead letter queue to keep it, and without a limit a job that always fails would go round
+ * until the process stops.
+ *
  * What it holds dies with the process, and each instance of an application has a queue of its own: a job dispatched
  * by one is only run by that one.
  */
@@ -27,6 +32,7 @@ class InMemoryQueue(
 ): MessageQueue {
     override val system = "memory"
 
+    private val logger = getLogger()
     private val lock = ReentrantLock()
     private val changed = lock.newCondition()
     private val entries = mutableListOf<Entry>()
@@ -45,6 +51,7 @@ class InMemoryQueue(
         try {
             while (true) {
                 val now = clock.instant()
+                discardExhausted(now)
                 val visible = entries.filter { !it.visibleAt.isAfter(now) }.take(settings.pollMaxMessages)
                 if (visible.isNotEmpty()) return visible.map { receive(it, now) }
 
@@ -57,6 +64,22 @@ class InMemoryQueue(
             }
         } finally {
             lock.unlock()
+        }
+    }
+
+    // Discarded when it would be given once more and not when it failed, as SQS does: the queue never learns
+    // that a message failed, only that nobody deleted it
+    private fun discardExhausted(now: Instant) {
+        val maxReceiveCount = settings.maxReceiveCount ?: return
+        entries.removeIf { entry ->
+            val exhausted = !entry.visibleAt.isAfter(now) && entry.attempts >= maxReceiveCount
+            if (exhausted) {
+                logger.error(
+                    "Queue '$name' discarding message id=${entry.id} type=${entry.message.type} " +
+                        "after ${entry.attempts} attempts: ${entry.message.body}"
+                )
+            }
+            exhausted
         }
     }
 

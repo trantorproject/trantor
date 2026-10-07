@@ -103,6 +103,49 @@ class InMemoryQueueTest {
     }
 
     @Nested
+    inner class `a message that keeps coming back` {
+        @Test
+        fun `is given maxReceiveCount times and then discarded, so one that always fails does not go round for ever`() {
+            val queue = queueOf(InMemoryQueueSettings(pollWaitTimeSeconds = 0, maxReceiveCount = 2))
+            queue.enqueue(Message("SendEmail", "1"))
+
+            assertThat(attemptsOfEachPoll(queue, polls = 3)).containsExactly(listOf(1), listOf(2), emptyList())
+            assertThat(queue.size()).isZero()
+        }
+
+        @Test
+        fun `is given five times when the settings say nothing`() {
+            queue.enqueue(Message("SendEmail", "1"))
+
+            assertThat(attemptsOfEachPoll(queue, polls = 6).flatten()).containsExactly(1, 2, 3, 4, 5)
+        }
+
+        @Test
+        fun `is given for ever when maxReceiveCount is null`() {
+            val queue = queueOf(InMemoryQueueSettings(pollWaitTimeSeconds = 0, maxReceiveCount = null))
+            queue.enqueue(Message("SendEmail", "1"))
+
+            assertThat(attemptsOfEachPoll(queue, polls = 20).flatten()).hasSize(20)
+        }
+
+        @Test
+        fun `does not take the ones behind it with it`() {
+            val queue = queueOf(InMemoryQueueSettings(pollWaitTimeSeconds = 0, maxReceiveCount = 1))
+            queue.enqueue(Message("SendEmail", "failing"))
+            queue.poll()
+            queue.enqueue(Message("SendEmail", "new"))
+
+            clock.advance(Duration.ofSeconds(60))
+
+            assertThat(queue.poll().map { it.message.body }).containsExactly("new")
+        }
+
+        private fun attemptsOfEachPoll(queue: InMemoryQueue, polls: Int) = (1..polls).map {
+            queue.poll().map { it.attempts }.also { clock.advance(Duration.ofSeconds(60)) }
+        }
+    }
+
+    @Nested
     inner class `a delayed message` {
         @Test
         fun `is not given before its delay`() {

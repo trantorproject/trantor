@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.validator.HibernateValidator
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator
 import org.junit.jupiter.api.Test
+import java.util.Locale
 
 class NullOrNotBlankTest {
     @Test
@@ -32,9 +33,10 @@ class NullOrNotBlankTest {
 
     class RenameBook(@NullOrNotBlank val title: String?)
 
+    // In English whatever the machine speaks: the interpolator translates the message to the locale of the JVM
     private val validator = Validation.byProvider(HibernateValidator::class.java)
         .configure()
-        .messageInterpolator(ParameterMessageInterpolator())
+        .messageInterpolator(ParameterMessageInterpolator(setOf(Locale.ENGLISH), Locale.ENGLISH, false))
         .buildValidatorFactory()
         .validator
 }

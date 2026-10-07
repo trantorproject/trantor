@@ -1,10 +1,18 @@
+@file:Suppress("ClassName")
+
 package dev.botta.trantor.core.events
 
+import com.google.gson.JsonParseException
 import dev.botta.trantor.core.events.serialization.DefaultEventSerializer
+import dev.botta.trantor.core.jobs.*
+import dev.botta.trantor.core.queues.EnqueueOptions
 import dev.botta.trantor.core.tx.NullTransactionManager
 import dev.botta.trantor.primitives.events.*
+import dev.botta.trantor.primitives.events.serialization.EventClassNotFound
 import dev.botta.trantor.serialization.gson.GsonSerializer
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.reflect.KClass
 
@@ -118,6 +126,81 @@ class DefaultEventDispatcherTest {
         }
     }
 
+    @Nested
+    inner class `a handler in line that fails` {
+        @Test
+        fun `stops neither the other handlers nor whoever published`() {
+            var otherHandlerCalled = false
+            subscribe<MyEvent> { error("the server is down") }
+            subscribe<MyEvent> { otherHandlerCalled = true }
+
+            dispatcher.publish(MyEvent())
+
+            assertThat(otherHandlerCalled).isTrue
+        }
+    }
+
+    @Nested
+    inner class `a queued handler` {
+        @Test
+        fun `runs when its job does, and not in line`() {
+            val handled = mutableListOf<Event>()
+            dispatcher.subscribe(SyncInventory { handled.add(it) })
+            val event = MyEvent()
+
+            dispatcher.publish(event)
+
+            assertThat(handled).isEmpty()
+
+            jobs.runDispatched()
+
+            assertThat(handled).containsExactly(event)
+        }
+
+        @Test
+        fun `that fails makes its job fail, so the queue retries it`() {
+            dispatcher.subscribe(SyncInventory { error("the server is down") })
+            dispatcher.publish(MyEvent())
+
+            assertThatThrownBy { jobs.runDispatched() }.hasMessage("the server is down")
+        }
+
+        @Test
+        fun `that is not registered here makes its job fail, because it may be a deploy in progress`() {
+            subscribe<MyEvent> { }
+
+            assertThatThrownBy { jobs.run(ProcessEventHandlerJob("SyncInventory", "MyEvent", "{}")) }
+                .isInstanceOf(EventHandlerNotRegisteredError::class.java)
+                .hasFieldOrPropertyWithValue("handlerType", "SyncInventory")
+                .hasFieldOrPropertyWithValue("eventType", "MyEvent")
+        }
+
+        @Test
+        fun `that does not take the event of its job makes it fail too`() {
+            dispatcher.subscribe(SyncInventory { })
+            subscribe<OtherEvent> { }
+
+            assertThatThrownBy { jobs.run(ProcessEventHandlerJob("SyncInventory", "OtherEvent", "{}")) }
+                .isInstanceOf(EventHandlerNotRegisteredError::class.java)
+        }
+
+        @Test
+        fun `whose event is of a type nobody here knows makes its job fail`() {
+            dispatcher.subscribe(SyncInventory { })
+
+            assertThatThrownBy { jobs.run(ProcessEventHandlerJob("SyncInventory", "EventOfTheNextRelease", "{}")) }
+                .isInstanceOf(EventClassNotFound::class.java)
+        }
+
+        @Test
+        fun `whose event does not parse makes its job fail, rather than vanish`() {
+            dispatcher.subscribe(SyncInventory { })
+
+            assertThatThrownBy { jobs.run(ProcessEventHandlerJob("SyncInventory", "MyEvent", """{"id":{"not":"a uuid"}}""")) }
+                .isInstanceOf(JsonParseException::class.java)
+        }
+    }
+
     private fun subscribe(eventTypes: List<KClass<out Event>>, onEventFunc: (event: Event) -> Unit) {
         dispatcher.subscribe(SimpleEventHandler(eventTypes, onEventFunc))
     }
@@ -135,9 +218,10 @@ class DefaultEventDispatcherTest {
         otherThread.join()
     }
 
+    private val jobs = RunningJobDispatcher()
     private val dispatcher = DefaultEventDispatcher(
         NullTransactionManager(),
-        NullJobDispatcher(),
+        jobs,
         DefaultEventSerializer(GsonSerializer()),
     )
 
@@ -153,6 +237,37 @@ class DefaultEventDispatcherTest {
 
         override fun on(event: Event) {
             onEventFunc(event)
+        }
+    }
+
+    class SyncInventory(private val onEventFunc: (event: Event) -> Unit): QueuedEventHandler() {
+        override val eventTypes = listOf(MyEvent::class)
+
+        override fun on(event: Event) {
+            onEventFunc(event)
+        }
+    }
+
+    /** Keeps what is dispatched and runs it when the test says, as a job processor would on another thread. */
+    private class RunningJobDispatcher: JobDispatcher {
+        private val handlers = mutableMapOf<KClass<*>, JobHandler<*>>()
+        private val dispatched = mutableListOf<Job>()
+
+        override fun dispatch(job: Job, queueName: String?, options: EnqueueOptions) {
+            dispatched.add(job)
+        }
+
+        override fun <T: Job> registerHandler(jobType: KClass<T>, handler: JobHandler<T>) {
+            handlers[jobType] = handler
+        }
+
+        fun runDispatched() {
+            dispatched.toList().also { dispatched.clear() }.forEach { run(it) }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        fun run(job: Job) {
+            (handlers.getValue(job::class) as JobHandler<Job>).execute(job)
         }
     }
 }

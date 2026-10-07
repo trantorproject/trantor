@@ -8,7 +8,15 @@ import dev.botta.trantor.primitives.logging.getLogger
 import io.opentelemetry.api.OpenTelemetry
 import kotlin.reflect.KClass
 
-/** Runs the jobs that arrive on [queue] with their handlers, as a hosted service. */
+/**
+ * Runs the jobs that arrive on [queue] with their handlers, as a hosted service.
+ *
+ * **A job that cannot be run is left on the queue, whatever the reason**: its handler threw, it has no handler, its
+ * type is one this application does not know or its body does not parse. Some of those mend themselves, as a job of
+ * the release being deployed that reaches an instance of the previous one, and the rest end where the queue puts
+ * what keeps failing, which is better than nowhere. Nothing is dropped here, so a queue with no limit of attempts
+ * and no dead letter queue gives such a job again until it expires.
+ */
 class JobProcessor(
     private val handlerRegistry: JobHandlerRegistry,
     private val serializer: JobSerializer,
@@ -24,15 +32,10 @@ class JobProcessor(
     private fun onMessage(message: ReceivedMessage) {
         val job = try {
             serializer.deserialize(message.message.type, message.message.body)
-        } catch (e: JobClassNotFound) {
-            logger.error("Dropping job: ${e.message}. type=${message.message.type}, id=${message.id}", e)
-            return
         } catch (e: JsonParseException) {
-            logger.error(
-                "Dropping job: ${e.message}. type=${message.message.type}, id=${message.id}, body=${message.message.body}",
-                e
-            )
-            return
+            // Whoever logs the failure of the message does not log its body, and here it is what went wrong
+            logger.error("Job ${message.message.type} id=${message.id} does not parse: ${message.message.body}")
+            throw e
         }
 
         executeJob(job)

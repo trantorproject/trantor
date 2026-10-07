@@ -48,6 +48,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /** The MCP client of trantor-ai talking to an MCP route of a running application. */
@@ -222,6 +223,8 @@ class McpServerTest {
         val builder = WebApplication.builder { appName = "test"; environmentName = "DEVELOPMENT" }
         builder.config.addMemoryCollection("httpServer.port" to port.toString())
         builder.services.addSingleton<OpenTelemetry>(telemetry.openTelemetry)
+        // In English whatever the machine speaks: the validator translates its messages to the locale of the JVM
+        Locale.setDefault(Locale.ENGLISH)
         app = builder.build()
 
         app.routes.mcp("/mcp", name = "store", version = "1.0.0") {
@@ -272,8 +275,10 @@ class McpServerTest {
         client.close()
         seller.close()
         app.stop(10)
+        Locale.setDefault(localeOfTheMachine)
     }
 
+    private val localeOfTheMachine = Locale.getDefault()
     private lateinit var app: WebApplication
     private lateinit var url: String
     private lateinit var client: McpClient
