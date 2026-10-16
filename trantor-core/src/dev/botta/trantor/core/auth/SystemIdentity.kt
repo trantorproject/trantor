@@ -7,5 +7,5 @@ class SystemIdentity: Identity {
     override val isAuthenticated = true
     override val name = "system"
     override val properties = mapOf<String, Any>()
-    override val roles = listOf("system")
+    override val grants = listOf("system")
 }

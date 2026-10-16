@@ -41,7 +41,7 @@ class CurrentIdentityTest {
         override val name = "nico"
         override val isAuthenticated = true
         override val authenticationType = "token"
-        override val roles = listOf("seller")
+        override val grants = listOf("seller")
         override val properties = emptyMap<String, Any>()
     }
 }

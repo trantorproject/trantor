@@ -20,7 +20,7 @@ dependencies {
     constraints {
         api("io.mockk:mockk:1.14.7")
         api("io.rest-assured:rest-assured:6.0.0")
-        api("dev.botta:cqbus:2.0.1")
+        api("dev.botta:cqbus:3.0.0")
         api("dev.botta:kotlin-extensions:1.0.2")
         api("dev.botta:time:1.0.0")
         api("dev.botta:env:3.0.0")

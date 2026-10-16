@@ -181,7 +181,7 @@ class DefaultBroadcasterTest {
     private data class NamedIdentity(override val name: String): Identity {
         override val isAuthenticated = true
         override val authenticationType = "test"
-        override val roles = emptyList<String>()
+        override val grants = emptyList<String>()
         override val properties = emptyMap<String, Any>()
     }
 

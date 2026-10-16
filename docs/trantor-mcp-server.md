@@ -50,7 +50,7 @@ say what its body says is turned down with 400.
 ## A use case as a tool
 
 ```kotlin
-@RolesAuthorization(["seller"])
+@GrantsAuthorization(["seller"])
 @Description("An order of a customer")
 data class PlaceOrder(
     @Description("The customer who buys") val customer: CustomerId,
@@ -136,7 +136,7 @@ http.mcp("/mcp", name = "store", version = "1.0.0") {
     tool<PlaceOrder>("place_order", "Places an order for a customer")
     tool<GetStock>("stock", "How many units of a product are in stock")
     requireAuthentication()
-    visibleTools { tools, identity -> if ("seller" in identity.roles) tools else tools.filter { it.readOnly } }
+    visibleTools { tools, identity -> if ("seller" in identity.grants) tools else tools.filter { it.readOnly } }
 }
 ```
 

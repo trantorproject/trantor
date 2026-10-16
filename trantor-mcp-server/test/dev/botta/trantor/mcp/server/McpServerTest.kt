@@ -21,8 +21,8 @@ import dev.botta.trantor.ai.tools.ToolError
 import dev.botta.trantor.ai.tools.ToolResult
 import dev.botta.trantor.config.providers.addMemoryCollection
 import dev.botta.trantor.core.auth.NotAuthenticatedError
-import dev.botta.trantor.core.auth.RolesAuthorization
-import dev.botta.trantor.core.auth.middlewares.RolesAuthorizationMiddleware
+import dev.botta.trantor.core.auth.GrantsAuthorization
+import dev.botta.trantor.core.auth.middlewares.GrantsAuthorizationMiddleware
 import dev.botta.trantor.core.validation.ValidationMiddleware
 import dev.botta.trantor.mcp.server.testing.TestTelemetry
 import dev.botta.trantor.web.application.WebApplication
@@ -238,7 +238,7 @@ class McpServerTest {
         bus.registerHandler<PlaceOrder, Unit> { RequestHandler { request, _ -> orders += request } }
         bus.registerHandler<SpanOfTheUseCase, String> { RequestHandler { _, _ -> Span.current().spanContext.spanId } }
         // In the order crafty registers them: the last of a priority is the first to run
-        app.registerMiddleware(RolesAuthorizationMiddleware())
+        app.registerMiddleware(GrantsAuthorizationMiddleware())
         app.registerMiddleware(ValidationMiddleware(app.services.get()))
         app.registerMiddleware(TokenAuthenticationMiddleware())
         app.registerMiddleware(SessionTokenFromHeadersMiddleware())
@@ -253,7 +253,7 @@ class McpServerTest {
             tool<WhoAmI>("who_am_i", "Who asks")
             tool<PlaceOrder>("place_order", "Places an order")
             requireAuthentication()
-            visibleTools { tools, identity -> if ("seller" in identity.roles) tools else tools.filter { it.readOnly } }
+            visibleTools { tools, identity -> if ("seller" in identity.grants) tools else tools.filter { it.readOnly } }
         }
 
         app.start()
@@ -299,7 +299,7 @@ class McpServerTest {
 
     data class Me(val name: String)
 
-    @RolesAuthorization(["seller"])
+    @GrantsAuthorization(["seller"])
     data class PlaceOrder(@NotBlank val sku: String, val quantity: Int): Command<Unit>
 
     /** Who asks, by the session token the middleware of Trantor took off the header, as crafty does with its own. */
@@ -313,7 +313,7 @@ class McpServerTest {
         }
     }
 
-    class Person(override val name: String, override val roles: List<String>): Identity {
+    class Person(override val name: String, override val grants: List<String>): Identity {
         override val isAuthenticated = true
         override val authenticationType = "token"
         override val properties = emptyMap<String, Any>()

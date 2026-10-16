@@ -206,8 +206,10 @@ implementation for applications with no database.
 
 ## The rest
 
-- **Auth**: `SystemIdentity`, `RolesAuthorization` and `RolesAuthorizationMiddleware`, plus
-  `NotAuthenticatedError` and `UnauthorizedAccessError`. `app.identityOf(context)` says who is asking in an
+- **Auth**: `SystemIdentity`, `GrantsAuthorization` and `GrantsAuthorizationMiddleware`, plus
+  `NotAuthenticatedError` and `UnauthorizedAccessError`. The grants of an `Identity` are strings that mean
+  whatever the application encodes in them: roles, permissions, permissions with a scope. The middleware lets a
+  request through when the identity has any of the grants its `@GrantsAuthorization` names, ignoring case. `app.identityOf(context)` says who is asking in an
   `ExecutionContext` as the middlewares of the application tell it: it runs the query `CurrentIdentity`, whose
   handler the application registers, through them.
 - **Broadcast**: `Broadcaster`, `Channel`, `ClientSession`. The implementation is in `trantor-web` over

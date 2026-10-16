@@ -192,7 +192,7 @@ class UseCaseToolTest {
             .requireAuthentication()
             .visibleTools { tools, identity ->
                 filtered++
-                tools.filter { tool -> tool.name != "forget_order" && ("seller" in identity.roles || tool.readOnly) }
+                tools.filter { tool -> tool.name != "forget_order" && ("seller" in identity.grants || tool.readOnly) }
             }
             .build()
 
@@ -291,7 +291,7 @@ class UseCaseToolTest {
         .tool<ListOrders>("orders", "The orders placed")
         .build()
 
-    class Person(override val name: String, override val roles: List<String>): Identity {
+    class Person(override val name: String, override val grants: List<String>): Identity {
         override val isAuthenticated = true
         override val authenticationType = "token"
         override val properties = emptyMap<String, Any>()
