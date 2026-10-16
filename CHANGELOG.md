@@ -2,6 +2,28 @@
 
 All notable changes to Trantor. Versions before 0.9.0 are in the git history.
 
+## [0.10.0] - 2026-10-16
+
+### Breaking
+
+- **trantor-core:** Trantor uses cqbus 3.0.0, where an `Identity` has `grants` where it had `roles`: a grant is any
+  string the application encodes in it, a role, a permission or a permission with a scope. `override val roles` is
+  now `override val grants`, `identity.roles` is now `identity.grants`, `@RolesAuthorization(roles = [...])` is now
+  `@GrantsAuthorization(grants = [...])` and `RolesAuthorizationMiddleware` is now `GrantsAuthorizationMiddleware`.
+  `SystemIdentity` has the grant `system`.
+- **trantor-core:** a queued event handler that throws makes its job fail, so the queue gives it again, where the
+  failure was logged and the job ended well: a queued handler has to be idempotent. A job that cannot be run stays on
+  its queue too, where it was dropped: one with a handler or an event this application does not know
+  (`EventHandlerNotRegisteredError`, `EventClassNotFound`), a job type it does not know or a body that does not
+  parse. So a job of the release being deployed is not lost on an instance of the previous one. How many times a job
+  is retried, and where it ends, is up to the queue: on SQS, its redrive policy and dead letter queue.
+
+### Changed
+
+- **trantor-core:** the `memory` queue discards a message given `maxReceiveCount` times, `5` by default, with an
+  error in the log, since it has no dead letter queue and nothing else would stop a job that always fails. `null`
+  gives it for ever.
+
 ## [0.9.0] - 2026-10-02
 
 ### Breaking
