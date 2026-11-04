@@ -11,6 +11,7 @@ import dev.botta.trantor.hosting.addHostedService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.lang.ref.WeakReference
 
 class DefaultHostTest {
     @Nested
@@ -126,6 +127,38 @@ class DefaultHostTest {
 
             assertThat(calls).containsExactly("start only", "body", "stop only")
         }
+    }
+
+    @Nested
+    inner class `once it is discarded` {
+        @Test
+        fun `it can be collected, even if it never started`() {
+            val host = discardedHost()
+
+            assertThat(isCollected(host)).isTrue()
+        }
+
+        @Test
+        fun `it can be collected after starting and stopping`() {
+            val host = discardedHost {
+                it.start()
+                it.stop()
+            }
+
+            assertThat(isCollected(host)).isTrue()
+        }
+    }
+
+    // Built in a frame of its own: a local variable of the test could keep the host alive
+    private fun discardedHost(use: (DefaultHost) -> Unit = {}) = WeakReference(host().also(use))
+
+    // A request to collect is only a hint to the JVM, so it is asked more than once before giving up
+    private fun isCollected(reference: WeakReference<DefaultHost>): Boolean {
+        repeat(20) {
+            System.gc()
+            if (reference.get() == null) return true
+        }
+        return false
     }
 
     private fun host() = DefaultHost(
