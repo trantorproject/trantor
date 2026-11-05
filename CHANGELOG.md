@@ -2,6 +2,14 @@
 
 All notable changes to Trantor. Versions before 0.9.0 are in the git history.
 
+## [0.10.1] - 2026-11-05
+
+### Fixed
+
+- **trantor-hosting:** a `DefaultHost` that is discarded can be collected. Its JVM shutdown hook held the host, and
+  with it every service, until the JVM exited, so a process that builds several hosts (tests, for example) kept all
+  of them in memory. The hook now holds only the host's lifetime.
+
 ## [0.10.0] - 2026-10-16
 
 ### Breaking
